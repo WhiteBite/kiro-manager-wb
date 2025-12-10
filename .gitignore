@@ -47,8 +47,11 @@ desktop.ini
 *.log
 npm-debug.log*
 
-# Copied autoreg (copied at build time from parent)
+# Copied autoreg (copied at build time from autoreg-src)
 autoreg/
+
+# But NOT autoreg-src - that's the source!
+!autoreg-src/
 
 # Test artifacts
 coverage/

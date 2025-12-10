@@ -1,0 +1,11 @@
+# Browser automation (DrissionPage - работает через CDP, не требует WebDriver)
+DrissionPage>=4.0.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Optional: Playwright (если нужен fallback)
+# playwright>=1.40.0
