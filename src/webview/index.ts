@@ -16,9 +16,13 @@ import {
 } from './components';
 import { AutoRegSettings } from './types';
 import { generateWebviewScript } from './scripts';
+import { Language, getTranslations } from './i18n';
 
 // Re-export types
 export { RegProgress, AutoRegSettings };
+
+// Re-export Language from i18n
+export { Language, getTranslations } from './i18n';
 
 export interface WebviewProps {
   accounts: AccountInfo[];
@@ -29,6 +33,7 @@ export interface WebviewProps {
   autoRegSettings?: AutoRegSettings;
   consoleLogs?: string[];
   version?: string;
+  language?: Language;
 }
 
 function parseAutoRegStatus(status: string): { progress: RegProgress | null; statusText: string; isRunning: boolean } {
@@ -57,7 +62,8 @@ export function generateWebviewHtml(
   kiroUsage?: KiroUsageData | null,
   autoRegSettings?: AutoRegSettings,
   consoleLogs?: string[],
-  version?: string
+  version?: string,
+  language?: Language
 ): string;
 
 export function generateWebviewHtml(
@@ -68,7 +74,8 @@ export function generateWebviewHtml(
   kiroUsage?: KiroUsageData | null,
   autoRegSettings?: AutoRegSettings,
   consoleLogs?: string[],
-  version?: string
+  version?: string,
+  language?: Language
 ): string {
   // Handle both call signatures
   const props: WebviewProps = Array.isArray(propsOrAccounts) 
@@ -81,11 +88,16 @@ export function generateWebviewHtml(
         autoRegSettings,
         consoleLogs,
         version,
+        language,
       }
     : propsOrAccounts;
 
   const { accounts } = props;
   const EXTENSION_VERSION = props.version || 'dev';
+  const lang = props.language || 'en';
+  
+  // Get translations from centralized i18n
+  const t = getTranslations(lang);
   
   // Calculate stats
   const validCount = accounts.filter(a => !a.isExpired).length;
@@ -100,12 +112,13 @@ export function generateWebviewHtml(
   const settingsHtml = renderSettingsPanel({
     autoSwitchEnabled: props.autoSwitchEnabled,
     autoRegSettings: props.autoRegSettings,
+    language: lang,
   });
   
-  const usageHtml = renderUsageCard({ usage: props.kiroUsage });
-  const progressHtml = renderProgressPanel({ progress, statusText });
-  const accountsHtml = renderAccountList(accounts);
-  const consoleHtml = renderConsolePanel({ logs: props.consoleLogs });
+  const usageHtml = renderUsageCard({ usage: props.kiroUsage, language: lang });
+  const progressHtml = renderProgressPanel({ progress, statusText, language: lang });
+  const accountsHtml = renderAccountList(accounts, lang);
+  const consoleHtml = renderConsolePanel({ logs: props.consoleLogs, language: lang });
   const script = generateWebviewScript(accounts.length);
 
   return `<!DOCTYPE html>
@@ -115,17 +128,17 @@ export function generateWebviewHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>${getStyles()}</style>
 </head>
-<body>
+<body data-lang="${lang}">
   <div class="content" id="content">
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <span class="header-title">Kiro Accounts</span>
+        <span class="header-title">${t.kiroAccounts}</span>
         <span class="header-badge">${accounts.length}</span>
       </div>
       <div class="header-actions">
-        <button class="icon-btn tooltip tooltip-left" data-tip="Compact view" onclick="toggleCompact()">${ICONS.menu}</button>
-        <button class="icon-btn tooltip tooltip-left" data-tip="Settings" onclick="openSettings()">${ICONS.settings}</button>
+        <button class="icon-btn tooltip tooltip-left" data-tip="${t.compactViewTip}" onclick="toggleCompact()">${ICONS.menu}</button>
+        <button class="icon-btn tooltip tooltip-left" data-tip="${t.settingsTip}" onclick="openSettings()">${ICONS.settings}</button>
       </div>
     </div>
     
@@ -135,24 +148,24 @@ export function generateWebviewHtml(
     <div class="stats-bar">
       <div class="stat-item">
         <span class="stat-dot ${activeAccount ? 'active' : 'valid'}"></span>
-        <span>${activeAccount ? escapeHtml(getAccountEmail(activeAccount).split('@')[0]) : 'No active'}</span>
+        <span>${activeAccount ? escapeHtml(getAccountEmail(activeAccount).split('@')[0]) : t.noActive}</span>
       </div>
-      <div class="stat-item"><span class="stat-dot valid"></span><span>${validCount} valid</span></div>
-      ${expiredCount > 0 ? `<div class="stat-item"><span class="stat-dot expired"></span><span>${expiredCount} expired</span></div>` : ''}
-      <div class="stat-total">${ICONS.chart} ${totalUsage.toLocaleString()} total</div>
+      <div class="stat-item"><span class="stat-dot valid"></span><span>${validCount} ${t.valid}</span></div>
+      ${expiredCount > 0 ? `<div class="stat-item"><span class="stat-dot expired"></span><span>${expiredCount} ${t.expired}</span></div>` : ''}
+      <div class="stat-total">${ICONS.chart} ${totalUsage.toLocaleString()} ${t.total}</div>
     </div>
     
     ${usageHtml}
     
     <!-- Action Buttons -->
     <div class="actions">
-      <button class="btn btn-primary" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
+      <button class="btn btn-primary tooltip" data-tip="${t.autoRegTip}" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
         ${isRunning ? '<span class="spinner"></span>' : ICONS.bolt}
-        ${isRunning ? 'Running...' : 'Auto-Reg'}
+        ${isRunning ? t.running : t.autoReg}
       </button>
-      <button class="btn btn-secondary" onclick="importToken()">${ICONS.import} Import</button>
-      <button class="btn btn-secondary btn-icon tooltip" data-tip="Refresh" onclick="refresh()">${ICONS.refresh}</button>
-      <button class="btn btn-secondary btn-icon tooltip" data-tip="Export" onclick="exportAccounts()">${ICONS.export}</button>
+      <button class="btn btn-secondary tooltip" data-tip="${t.importTip}" onclick="importToken()">${ICONS.import} ${t.import}</button>
+      <button class="btn btn-secondary btn-icon tooltip" data-tip="${t.refreshTip}" onclick="refresh()">${ICONS.refresh}</button>
+      <button class="btn btn-secondary btn-icon tooltip" data-tip="${t.exportTip}" onclick="exportAccounts()">${ICONS.export}</button>
     </div>
     
     ${progressHtml}
@@ -160,14 +173,14 @@ export function generateWebviewHtml(
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-tabs">
-        <button class="filter-tab active" onclick="filterAccounts('all')">All</button>
-        <button class="filter-tab" onclick="filterAccounts('valid')">Valid</button>
-        <button class="filter-tab" onclick="filterAccounts('expired')">Expired</button>
+        <button class="filter-tab active" onclick="filterAccounts('all')">${t.all}</button>
+        <button class="filter-tab" onclick="filterAccounts('valid')">${lang === 'ru' ? 'Активные' : 'Valid'}</button>
+        <button class="filter-tab" onclick="filterAccounts('expired')">${lang === 'ru' ? 'Истекшие' : 'Expired'}</button>
       </div>
       <select class="sort-select" onchange="sortAccounts(this.value)">
-        <option value="email">By Email</option>
-        <option value="usage">By Usage</option>
-        <option value="expiry">By Expiry</option>
+        <option value="email">${t.byEmail}</option>
+        <option value="usage">${t.byUsage}</option>
+        <option value="expiry">${t.byExpiry}</option>
       </select>
     </div>
     
@@ -179,17 +192,17 @@ export function generateWebviewHtml(
     <!-- Footer -->
     <div class="footer">
       <div class="footer-version"><span>v${EXTENSION_VERSION}</span></div>
-      <div class="footer-status"><span class="footer-dot"></span><span>Connected</span></div>
+      <div class="footer-status"><span class="footer-dot"></span><span>${t.connected}</span></div>
     </div>
     
     <!-- Dialog -->
     <div class="dialog-overlay" id="dialogOverlay">
       <div class="dialog">
-        <div class="dialog-title" id="dialogTitle">Confirm</div>
-        <div class="dialog-text" id="dialogText">Are you sure?</div>
+        <div class="dialog-title" id="dialogTitle">${lang === 'ru' ? 'Удалить аккаунт' : 'Delete Account'}</div>
+        <div class="dialog-text" id="dialogText">${lang === 'ru' ? 'Вы уверены?' : 'Are you sure?'}</div>
         <div class="dialog-actions">
-          <button class="btn btn-secondary" onclick="closeDialog()">Cancel</button>
-          <button class="btn btn-primary" onclick="dialogAction()">Confirm</button>
+          <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
+          <button class="btn btn-primary" onclick="dialogAction()">${t.confirm}</button>
         </div>
       </div>
     </div>
@@ -298,6 +311,7 @@ function getStyles(): string {
     .toggle-slider { position: absolute; inset: 0; background: rgba(128,128,128,0.3); border-radius: 10px; transition: all var(--transition-fast); }
     .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: all var(--transition-fast); }
     .toggle input:checked + .toggle-slider { background: var(--accent); } .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+    .settings-select { padding: 6px 10px; font-size: 11px; font-family: inherit; font-weight: 500; background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--border-medium); border-radius: var(--radius-sm); cursor: pointer; min-width: 100px; }
     .console-panel { margin: 12px 14px; background: var(--vscode-terminal-background, #1e1e1e); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
     .console-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-subtle); }
     .console-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }

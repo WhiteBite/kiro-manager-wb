@@ -61,11 +61,14 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _accounts: import('./types').AccountInfo[] = [];
   private _consoleLogs: string[] = [];
   private _version: string;
+  private _language: 'en' | 'ru' = 'en';
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
     // Get version from package.json
     this._version = context.extension.packageJSON.version || 'unknown';
+    // Load saved language preference
+    this._language = context.globalState.get<'en' | 'ru'>('language', 'en');
   }
   
   addLog(message: string) {
@@ -259,6 +262,11 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
           await importToken();
           this.refresh();
           break;
+        case 'setLanguage':
+          this._language = msg.language;
+          this._context.globalState.update('language', msg.language);
+          this.refresh();
+          break;
       }
     });
   }
@@ -346,7 +354,7 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
       };
       
       // Render immediately with basic data
-      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version);
+      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
       
       // Then load usage for all accounts in background
       this.loadAllUsage();
@@ -369,7 +377,7 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
       };
       
-      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version);
+      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
     } catch (err) {
       console.error('Failed to load all usage:', err);
     }
@@ -399,7 +407,7 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
             screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
           };
           
-          this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version);
+          this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
         }
       }
     } catch (err) {
@@ -487,15 +495,15 @@ function getAutoregDir(context: vscode.ExtensionContext): string {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   const workspacePath = path.join(workspaceFolder, 'kiro-batch-login', 'autoreg');
   const homePath = path.join(os.homedir(), '.kiro-autoreg');
-  const bundledPath = path.join(context.extensionPath, 'autoreg');
+  const bundledPath = path.join(context.extensionPath, 'autoreg-bundled');
   
   // Check workspace first
-  if (fs.existsSync(path.join(workspacePath, 'register_auto.py'))) {
+  if (fs.existsSync(path.join(workspacePath, 'registration', 'register_auto.py'))) {
     return workspacePath;
   }
   
   // Check home dir
-  if (fs.existsSync(path.join(homePath, 'register_auto.py'))) {
+  if (fs.existsSync(path.join(homePath, 'registration', 'register_auto.py'))) {
     return homePath;
   }
   
@@ -630,7 +638,7 @@ async function installDependencies(autoregDir: string, provider: KiroAccountsPro
 
 async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
   const autoregDir = getAutoregDir(context);
-  const finalPath = autoregDir ? path.join(autoregDir, 'register_auto.py') : '';
+  const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register_auto.py') : '';
   
   if (!finalPath || !fs.existsSync(finalPath)) {
     vscode.window.showWarningMessage('Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-autoreg/');

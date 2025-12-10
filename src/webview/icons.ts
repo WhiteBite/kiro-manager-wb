@@ -15,6 +15,7 @@ export const ICONS = {
   plus: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7 7V1h2v6h6v2H9v6H7V9H1V7h6z"/></svg>`,
   import: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10L3 5h3V1h4v4h3l-5 5zm6 3v1H2v-1h12z"/></svg>`,
   search: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l4 4 1.4-1.4-4-4zM6 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>`,
+  file: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1H3v14h10V5l-4-4zm3 13H4V2h4v4h4v8z"/></svg>`,
 } as const;
 
 export type IconName = keyof typeof ICONS;

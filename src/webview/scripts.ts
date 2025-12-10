@@ -34,6 +34,10 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
     
+    function changeLanguage(lang) {
+      vscode.postMessage({ command: 'setLanguage', language: lang });
+    }
+    
     function startAutoReg() {
       vscode.postMessage({ command: 'startAutoReg' });
     }
@@ -69,8 +73,11 @@ export function generateWebviewScript(totalAccounts: number): string {
     // Dialog
     function confirmDelete(filename) {
       pendingAction = { type: 'delete', filename };
-      document.getElementById('dialogTitle').textContent = 'Delete Account';
-      document.getElementById('dialogText').textContent = 'Are you sure you want to delete this account?';
+      const lang = document.body.dataset.lang || 'en';
+      const titles = { en: 'Delete Account', ru: 'Удалить аккаунт' };
+      const texts = { en: 'Are you sure you want to delete this account?', ru: 'Вы уверены, что хотите удалить этот аккаунт?' };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     

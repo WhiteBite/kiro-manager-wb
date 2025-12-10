@@ -26,9 +26,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Copy autoreg files
-        run: cp -r autoreg-src autoreg
-
       - name: Build extension
         run: npm run build
 
