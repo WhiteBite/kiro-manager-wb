@@ -1,0 +1,81 @@
+name: Build VSIX
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  # Set to your kiro-batch-login repo (owner/repo format)
+  PARENT_REPO: ${{ github.repository_owner }}/kiro-batch-login
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout extension
+        uses: actions/checkout@v4
+
+      - name: Checkout parent repo (autoreg + src)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PARENT_REPO }}
+          path: parent
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Copy autoreg files
+        run: |
+          mkdir -p autoreg/core autoreg/services autoreg/registration autoreg/src/providers
+
+          # Python files
+          cp parent/autoreg/__init__.py autoreg/
+          cp parent/autoreg/cli.py autoreg/
+          cp parent/autoreg/requirements.txt autoreg/
+          cp parent/autoreg/.env.example autoreg/ 2>/dev/null || true
+          cp -r parent/autoreg/core/*.py autoreg/core/
+          cp -r parent/autoreg/services/*.py autoreg/services/
+          cp -r parent/autoreg/registration/*.py autoreg/registration/
+
+          # Node.js files
+          cp parent/src/*.js autoreg/src/ 2>/dev/null || true
+          cp -r parent/src/providers/* autoreg/src/providers/ 2>/dev/null || true
+          cp parent/package.json autoreg/ 2>/dev/null || true
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Package VSIX
+        run: |
+          npm install -g @vscode/vsce
+          vsce package --no-dependencies
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiro-account-switcher-${{ github.sha }}
+          path: "*.vsix"
+          retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.vsix"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
