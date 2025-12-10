@@ -166,8 +166,9 @@
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:better-sqlite3 --format=cjs --platform=node",
     "watch": "npm run build -- --watch",
+    "lint": "tsc --noEmit",
     "copy-autoreg": "powershell -ExecutionPolicy Bypass -File copy-autoreg.ps1",
-    "package": "npm run copy-autoreg && npm run build && npx vsce package --no-dependencies"
+    "package": "npm run build && npx vsce package --no-dependencies"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",

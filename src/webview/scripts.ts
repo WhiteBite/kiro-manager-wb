@@ -58,6 +58,10 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'switchAccount', email: filename });
     }
     
+    function openUpdateUrl(url) {
+      vscode.postMessage({ command: 'openUrl', url: url });
+    }
+    
     function copyToken(filename) {
       vscode.postMessage({ command: 'copyToken', email: filename });
     }
@@ -74,8 +78,20 @@ export function generateWebviewScript(totalAccounts: number): string {
     function confirmDelete(filename) {
       pendingAction = { type: 'delete', filename };
       const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Delete Account', ru: 'Удалить аккаунт' };
-      const texts = { en: 'Are you sure you want to delete this account?', ru: 'Вы уверены, что хотите удалить этот аккаунт?' };
+      const titles = { 
+        en: 'Delete Account', ru: 'Удалить аккаунт', zh: '删除账户', 
+        es: 'Eliminar cuenta', pt: 'Excluir conta', ja: 'アカウントを削除',
+        de: 'Konto löschen', fr: 'Supprimer le compte', ko: '계정 삭제', hi: 'खाता हटाएं'
+      };
+      const texts = { 
+        en: 'Are you sure you want to delete this account?', 
+        ru: 'Вы уверены, что хотите удалить этот аккаунт?',
+        zh: '您确定要删除此账户吗？', es: '¿Está seguro de que desea eliminar esta cuenta?',
+        pt: 'Tem certeza de que deseja excluir esta conta?', ja: 'このアカウントを削除してもよろしいですか？',
+        de: 'Sind Sie sicher, dass Sie dieses Konto löschen möchten?', 
+        fr: 'Êtes-vous sûr de vouloir supprimer ce compte ?',
+        ko: '이 계정을 삭제하시겠습니까?', hi: 'क्या आप वाकई इस खाते को हटाना चाहते हैं?'
+      };
       document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
       document.getElementById('dialogText').textContent = texts[lang] || texts.en;
       document.getElementById('dialogOverlay').classList.add('visible');

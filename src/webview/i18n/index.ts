@@ -3,9 +3,8 @@
  * Supports 10 languages: en, ru, zh, es, pt, ja, de, fr, ko, hi
  */
 
-export { Language, Translations } from './types';
-
 import { Language, Translations } from './types';
+export type { Language, Translations };
 import { en } from './locales/en';
 import { ru } from './locales/ru';
 import { zh } from './locales/zh';

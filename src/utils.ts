@@ -6,8 +6,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import * as crypto from 'crypto';
-import { TokenData, UsageStats } from './types';
+import { UsageStats } from './types';
 
 export function getKiroAuthTokenPath(): string {
   return path.join(os.homedir(), '.aws', 'sso', 'cache', 'kiro-auth-token.json');
@@ -233,7 +232,7 @@ export function saveAccountUsage(accountName: string, usage: KiroUsageData): voi
 }
 
 // Fetch usage for a specific account - uses cached data since API is not available
-export async function fetchAccountUsage(accessToken: string): Promise<KiroUsageData | null> {
+export async function fetchAccountUsage(_accessToken: string): Promise<KiroUsageData | null> {
   // API endpoint is not publicly available, return null
   // Usage will be loaded from Kiro DB when account is active
   return null;

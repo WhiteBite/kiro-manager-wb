@@ -3,7 +3,7 @@
  */
 
 import { escapeHtml } from '../helpers';
-import { Language } from '../index';
+import { Language, getTranslations } from '../i18n';
 
 export interface RegProgress {
   step: number;
@@ -18,13 +18,8 @@ export interface ProgressPanelProps {
   language?: Language;
 }
 
-const progressI18n = {
-  en: { step: 'Step' },
-  ru: { step: 'Шаг' },
-};
-
 export function renderProgressPanel({ progress, statusText, language = 'en' }: ProgressPanelProps): string {
-  const t = progressI18n[language];
+  const t = getTranslations(language);
   
   if (progress) {
     const percentage = (progress.step / progress.totalSteps) * 100;
