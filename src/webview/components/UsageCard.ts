@@ -14,7 +14,7 @@ export interface UsageCardProps {
 export function renderUsageCard({ usage, language = 'en' }: UsageCardProps): string {
   if (!usage) return '';
 
-  const t = usageI18n[language];
+  const t = getTranslations(language);
   const percentage = usage.percentageUsed;
   const fillClass = percentage < 50 ? 'low' : percentage < 80 ? 'medium' : 'high';
   const resetText = usage.daysRemaining > 0 

@@ -10,12 +10,16 @@ import * as os from 'os';
 import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, refreshAllAccounts, getCurrentToken, deleteAccount } from './accounts';
 import { getTokensDir, getKiroUsageFromDB, KiroUsageData } from './utils';
 import { generateWebviewHtml } from './webview';
+import { checkForUpdates, getAvailableUpdate } from './update-checker';
 
 let statusBarItem: vscode.StatusBarItem;
 let accountsProvider: KiroAccountsProvider;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Kiro Account Switcher v2.1 activated');
+  
+  // Check for updates in background
+  checkForUpdates(context);
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBarItem.command = 'kiroAccountSwitcher.switchAccount';
@@ -61,14 +65,14 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _accounts: import('./types').AccountInfo[] = [];
   private _consoleLogs: string[] = [];
   private _version: string;
-  private _language: 'en' | 'ru' = 'en';
+  private _language: import('./webview/i18n').Language = 'en';
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
     // Get version from package.json
     this._version = context.extension.packageJSON.version || 'unknown';
     // Load saved language preference
-    this._language = context.globalState.get<'en' | 'ru'>('language', 'en');
+    this._language = context.globalState.get<import('./webview/i18n').Language>('language', 'en');
   }
   
   addLog(message: string) {
@@ -266,6 +270,9 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
           this._language = msg.language;
           this._context.globalState.update('language', msg.language);
           this.refresh();
+          break;
+        case 'openUrl':
+          vscode.env.openExternal(vscode.Uri.parse(msg.url));
           break;
       }
     });

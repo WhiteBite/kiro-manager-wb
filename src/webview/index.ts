@@ -22,7 +22,8 @@ import { Language, getTranslations } from './i18n';
 export { RegProgress, AutoRegSettings };
 
 // Re-export Language from i18n
-export { Language, getTranslations } from './i18n';
+export type { Language } from './i18n';
+export { getTranslations } from './i18n';
 
 export interface WebviewProps {
   accounts: AccountInfo[];
@@ -34,6 +35,7 @@ export interface WebviewProps {
   consoleLogs?: string[];
   version?: string;
   language?: Language;
+  availableUpdate?: { version: string; url: string } | null;
 }
 
 function parseAutoRegStatus(status: string): { progress: RegProgress | null; statusText: string; isRunning: boolean } {
@@ -174,8 +176,8 @@ export function generateWebviewHtml(
     <div class="filter-bar">
       <div class="filter-tabs">
         <button class="filter-tab active" onclick="filterAccounts('all')">${t.all}</button>
-        <button class="filter-tab" onclick="filterAccounts('valid')">${lang === 'ru' ? 'Активные' : 'Valid'}</button>
-        <button class="filter-tab" onclick="filterAccounts('expired')">${lang === 'ru' ? 'Истекшие' : 'Expired'}</button>
+        <button class="filter-tab" onclick="filterAccounts('valid')">${t.validFilter}</button>
+        <button class="filter-tab" onclick="filterAccounts('expired')">${t.expiredFilter}</button>
       </div>
       <select class="sort-select" onchange="sortAccounts(this.value)">
         <option value="email">${t.byEmail}</option>
@@ -191,15 +193,18 @@ export function generateWebviewHtml(
     
     <!-- Footer -->
     <div class="footer">
-      <div class="footer-version"><span>v${EXTENSION_VERSION}</span></div>
+      <div class="footer-version">
+        <span>v${EXTENSION_VERSION}</span>
+        ${props.availableUpdate ? `<a href="#" onclick="openUpdateUrl('${props.availableUpdate.url}')" class="update-badge" title="v${props.availableUpdate.version} available">⬆ Update</a>` : ''}
+      </div>
       <div class="footer-status"><span class="footer-dot"></span><span>${t.connected}</span></div>
     </div>
     
     <!-- Dialog -->
     <div class="dialog-overlay" id="dialogOverlay">
       <div class="dialog">
-        <div class="dialog-title" id="dialogTitle">${lang === 'ru' ? 'Удалить аккаунт' : 'Delete Account'}</div>
-        <div class="dialog-text" id="dialogText">${lang === 'ru' ? 'Вы уверены?' : 'Are you sure?'}</div>
+        <div class="dialog-title" id="dialogTitle">${t.deleteTitle}</div>
+        <div class="dialog-text" id="dialogText">${t.deleteConfirm}</div>
         <div class="dialog-actions">
           <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
           <button class="btn btn-primary" onclick="dialogAction()">${t.confirm}</button>
@@ -319,6 +324,8 @@ function getStyles(): string {
     .console-line { white-space: pre-wrap; word-break: break-all; } .console-line.error { color: var(--danger); } .console-line.success { color: var(--accent); } .console-line.warning { color: var(--warning); }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--vscode-sideBar-background); border-top: 1px solid var(--border-subtle); font-size: 10px; color: var(--muted); z-index: 100; }
     .footer-version { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--accent); background: var(--accent-dim); padding: 2px 8px; border-radius: 4px; } .footer-status { display: flex; align-items: center; gap: 4px; }
+    .update-badge { color: #fff; background: var(--warning); padding: 2px 6px; border-radius: 3px; font-size: 9px; text-decoration: none; animation: pulse 1.5s infinite; } .update-badge:hover { background: var(--danger); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .footer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: glow 2s ease-in-out infinite; }
     .dialog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; } .dialog-overlay.visible { display: flex; }
     .dialog { background: var(--vscode-editorWidget-background, #252526); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); padding: 20px; max-width: 320px; box-shadow: var(--shadow-md); }

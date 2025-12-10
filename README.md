@@ -1,5 +1,12 @@
 # ⚡ Kiro Account Switcher
 
+[![Build](https://github.com/YOUR_USERNAME/kiro-extension/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/kiro-extension/actions/workflows/build.yml)
+[![Version](https://img.shields.io/github/v/release/YOUR_USERNAME/kiro-extension?label=version)](https://github.com/YOUR_USERNAME/kiro-extension/releases)
+[![License](https://img.shields.io/github/license/YOUR_USERNAME/kiro-extension)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/YOUR_USERNAME/kiro-extension/total)](https://github.com/YOUR_USERNAME/kiro-extension/releases)
+
+Русский | [English](README.en.md) | [中文](README.zh.md)
+
 Расширение для тех, кто устал ебаться с лимитами Kiro.
 
 > ⚠️ **ДИСКЛЕЙМЕР**

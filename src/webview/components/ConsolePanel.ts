@@ -4,26 +4,13 @@
 
 import { ICONS } from '../icons';
 import { escapeHtml } from '../helpers';
-import { Language } from '../index';
+import { Language, getTranslations } from '../i18n';
 
 export interface ConsolePanelProps {
   logs: string[] | undefined;
   maxLines?: number;
   language?: Language;
 }
-
-const consoleI18n = {
-  en: { 
-    console: 'Console', 
-    clear: 'Clear console output', 
-    openLog: 'Open full log file in editor' 
-  },
-  ru: { 
-    console: 'Консоль', 
-    clear: 'Очистить вывод консоли', 
-    openLog: 'Открыть полный лог в редакторе' 
-  },
-};
 
 function getLogClass(log: string): string {
   if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗')) return 'error';
@@ -35,7 +22,7 @@ function getLogClass(log: string): string {
 export function renderConsolePanel({ logs, maxLines = 50, language = 'en' }: ConsolePanelProps): string {
   if (!logs || logs.length === 0) return '';
 
-  const t = consoleI18n[language];
+  const t = getTranslations(language);
   const visibleLogs = logs.slice(-maxLines);
 
   return `
@@ -43,8 +30,8 @@ export function renderConsolePanel({ logs, maxLines = 50, language = 'en' }: Con
       <div class="console-header">
         <span class="console-title">${t.console} (${logs.length})</span>
         <div style="display:flex;gap:4px;">
-          <button class="icon-btn tooltip" data-tip="${t.openLog}" onclick="vscode.postMessage({command:'openLog'})">${ICONS.file}</button>
-          <button class="icon-btn tooltip" data-tip="${t.clear}" onclick="clearConsole()">${ICONS.trash}</button>
+          <button class="icon-btn tooltip" data-tip="${t.openLogTip}" onclick="vscode.postMessage({command:'openLog'})">${ICONS.file}</button>
+          <button class="icon-btn tooltip" data-tip="${t.clearTip}" onclick="clearConsole()">${ICONS.trash}</button>
         </div>
       </div>
       <div class="console-body" id="consoleBody">
