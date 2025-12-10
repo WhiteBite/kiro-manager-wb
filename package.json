@@ -1,0 +1,183 @@
+{
+  "name": "kiro-account-switcher",
+  "displayName": "Kiro Account Switcher",
+  "description": "Switch between multiple Kiro accounts with beautiful UI",
+  "version": "4.3.0",
+  "publisher": "kiro-batch-login",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/kiro-batch-login"
+  },
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kiroAccountSwitcher.switchAccount",
+        "title": "Kiro: Switch Account",
+        "icon": "$(account)"
+      },
+      {
+        "command": "kiroAccountSwitcher.listAccounts",
+        "title": "Kiro: List Available Accounts"
+      },
+      {
+        "command": "kiroAccountSwitcher.importToken",
+        "title": "Kiro: Import Token from File"
+      },
+      {
+        "command": "kiroAccountSwitcher.currentAccount",
+        "title": "Kiro: Show Current Account"
+      },
+      {
+        "command": "kiroAccountSwitcher.signOut",
+        "title": "Kiro: Sign Out"
+      },
+      {
+        "command": "kiroAccountSwitcher.openDashboard",
+        "title": "Kiro: Open Account Dashboard"
+      },
+      {
+        "command": "kiroAccountSwitcher.refreshAccounts",
+        "title": "Refresh Accounts",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "kiroAccountSwitcher.openSettings",
+        "title": "Settings",
+        "icon": "$(gear)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kiro-accounts",
+          "title": "Kiro Accounts",
+          "icon": "$(account)"
+        }
+      ]
+    },
+    "views": {
+      "kiro-accounts": [
+        {
+          "type": "webview",
+          "id": "kiroAccountsPanel",
+          "name": "Accounts"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "kiroAccountSwitcher.switchAccount"
+        },
+        {
+          "command": "kiroAccountSwitcher.listAccounts"
+        },
+        {
+          "command": "kiroAccountSwitcher.signOut"
+        },
+        {
+          "command": "kiroAccountSwitcher.openDashboard"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "kiroAccountSwitcher.refreshAccounts",
+          "when": "view == kiroAccountsPanel",
+          "group": "navigation"
+        },
+        {
+          "command": "kiroAccountSwitcher.openSettings",
+          "when": "view == kiroAccountsPanel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Kiro Account Switcher",
+      "properties": {
+        "kiroAccountSwitcher.autoSwitch.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic token refresh when expiring"
+        },
+        "kiroAccountSwitcher.autoSwitch.intervalMinutes": {
+          "type": "number",
+          "default": 50,
+          "description": "Minutes before token expiry to auto-refresh"
+        },
+        "kiroAccountSwitcher.tokensPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to tokens directory"
+        },
+        "kiroAccountSwitcher.autoreg.headless": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run browser in headless mode during auto-registration (hide browser window)"
+        },
+        "kiroAccountSwitcher.autoreg.autoInject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically inject token to Kiro after registration"
+        },
+        "kiroAccountSwitcher.autoreg.emailDomain": {
+          "type": "string",
+          "default": "example.com",
+          "description": "Email domain for auto-registration"
+        },
+        "kiroAccountSwitcher.imap.server": {
+          "type": "string",
+          "default": "",
+          "description": "IMAP server address (e.g., mail.example.com)"
+        },
+        "kiroAccountSwitcher.imap.user": {
+          "type": "string",
+          "default": "",
+          "description": "IMAP username/email"
+        },
+        "kiroAccountSwitcher.imap.password": {
+          "type": "string",
+          "default": "",
+          "description": "IMAP password"
+        },
+        "kiroAccountSwitcher.debug.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose logging"
+        },
+        "kiroAccountSwitcher.debug.screenshotsOnError": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save screenshots when errors occur during registration"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:better-sqlite3 --format=cjs --platform=node",
+    "watch": "npm run build -- --watch",
+    "copy-autoreg": "powershell -ExecutionPolicy Bypass -File copy-autoreg.ps1",
+    "package": "npm run copy-autoreg && npm run build && npx vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "sql.js": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.94.0",
+    "@types/node": "^20.0.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.0.0"
+  }
+}
