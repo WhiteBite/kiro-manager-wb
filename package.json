@@ -6,7 +6,7 @@
   "publisher": "kiro-batch-login",
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/kiro-batch-login"
+    "url": "https://github.com/WhiteBite/Kiro-auto-reg-extension"
   },
   "engines": {
     "vscode": "^1.94.0"
