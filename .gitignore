@@ -10,23 +10,46 @@ out/
 .env
 .env.local
 .env.*.local
+*.env
+
+# Sensitive data files
+accounts.json
+settings.json
+*.sqlite
+*.db
+tokens/
+*.pem
+*.key
+*.crt
+secrets/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.deps_installed
 
 # IDE
 .idea/
 *.swp
 *.swo
 *~
+.vscode/
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
 npm-debug.log*
 
-# Copied autoreg (should be copied at build time)
+# Copied autoreg (copied at build time from parent)
 autoreg/
 
-# Lock files (optional - uncomment if you want to track it)
-# package-lock.json
+# Test artifacts
+coverage/
+.nyc_output/
