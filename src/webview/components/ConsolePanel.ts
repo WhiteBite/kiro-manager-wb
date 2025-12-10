@@ -4,29 +4,48 @@
 
 import { ICONS } from '../icons';
 import { escapeHtml } from '../helpers';
+import { Language } from '../index';
 
 export interface ConsolePanelProps {
   logs: string[] | undefined;
   maxLines?: number;
+  language?: Language;
 }
 
+const consoleI18n = {
+  en: { 
+    console: 'Console', 
+    clear: 'Clear console output', 
+    openLog: 'Open full log file in editor' 
+  },
+  ru: { 
+    console: 'Консоль', 
+    clear: 'Очистить вывод консоли', 
+    openLog: 'Открыть полный лог в редакторе' 
+  },
+};
+
 function getLogClass(log: string): string {
-  if (log.includes('ERROR') || log.includes('FAIL')) return 'error';
-  if (log.includes('SUCCESS') || log.includes('✓')) return 'success';
+  if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗')) return 'error';
+  if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅')) return 'success';
   if (log.includes('WARN') || log.includes('⚠')) return 'warning';
   return '';
 }
 
-export function renderConsolePanel({ logs, maxLines = 50 }: ConsolePanelProps): string {
+export function renderConsolePanel({ logs, maxLines = 50, language = 'en' }: ConsolePanelProps): string {
   if (!logs || logs.length === 0) return '';
 
+  const t = consoleI18n[language];
   const visibleLogs = logs.slice(-maxLines);
 
   return `
     <div class="console-panel">
       <div class="console-header">
-        <span class="console-title">Console (${logs.length})</span>
-        <button class="icon-btn tooltip" data-tip="Clear" onclick="clearConsole()">${ICONS.trash}</button>
+        <span class="console-title">${t.console} (${logs.length})</span>
+        <div style="display:flex;gap:4px;">
+          <button class="icon-btn tooltip" data-tip="${t.openLog}" onclick="vscode.postMessage({command:'openLog'})">${ICONS.file}</button>
+          <button class="icon-btn tooltip" data-tip="${t.clear}" onclick="clearConsole()">${ICONS.trash}</button>
+        </div>
       </div>
       <div class="console-body" id="consoleBody">
         ${visibleLogs.map(log => `<div class="console-line ${getLogClass(log)}">${escapeHtml(log)}</div>`).join('')}

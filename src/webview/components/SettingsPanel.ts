@@ -3,10 +3,12 @@
  */
 
 import { AutoRegSettings } from '../types';
+import { Language, getLanguageOptions, getTranslations } from '../i18n';
 
 export interface SettingsPanelProps {
   autoSwitchEnabled: boolean;
   autoRegSettings?: AutoRegSettings;
+  language?: Language;
 }
 
 function renderToggle(id: string, checked: boolean, onChange: string): string {
@@ -18,46 +20,62 @@ function renderToggle(id: string, checked: boolean, onChange: string): string {
   `;
 }
 
-function renderSettingRow(label: string, desc: string, toggle: string): string {
+function renderSettingRow(label: string, desc: string, control: string): string {
   return `
     <div class="settings-row">
       <div>
         <div class="settings-label">${label}</div>
         <div class="settings-desc">${desc}</div>
       </div>
-      ${toggle}
+      ${control}
     </div>
   `;
 }
 
-export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings }: SettingsPanelProps): string {
+function renderLanguageSelect(currentLang: Language = 'en'): string {
+  const options = getLanguageOptions();
+  return `
+    <select class="settings-select" onchange="changeLanguage(this.value)">
+      ${options.map(opt => `<option value="${opt.value}" ${opt.value === currentLang ? 'selected' : ''}>${opt.label}</option>`).join('')}
+    </select>
+  `;
+}
+
+export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, language = 'en' }: SettingsPanelProps): string {
+  const t = getTranslations(language);
+
   const settings = [
     {
-      label: 'Auto-switch on expiry',
-      desc: 'Automatically switch to next valid account',
-      toggle: renderToggle('autoSwitch', autoSwitchEnabled, "toggleAutoSwitch(this.checked)"),
+      label: t.autoSwitch,
+      desc: t.autoSwitchDesc,
+      control: renderToggle('autoSwitch', autoSwitchEnabled, "toggleAutoSwitch(this.checked)"),
     },
     {
-      label: 'Headless mode',
-      desc: 'Run browser in background',
-      toggle: renderToggle('headless', autoRegSettings?.headless !== false, "updateSetting('headless', this.checked)"),
+      label: t.headless,
+      desc: t.headlessDesc,
+      control: renderToggle('headless', autoRegSettings?.headless !== false, "updateSetting('headless', this.checked)"),
     },
     {
-      label: 'Verbose logging',
-      desc: 'Show detailed logs',
-      toggle: renderToggle('verbose', autoRegSettings?.verbose ?? false, "updateSetting('verbose', this.checked)"),
+      label: t.verbose,
+      desc: t.verboseDesc,
+      control: renderToggle('verbose', autoRegSettings?.verbose ?? false, "updateSetting('verbose', this.checked)"),
     },
     {
-      label: 'Screenshots on error',
-      desc: 'Save screenshots when errors occur',
-      toggle: renderToggle('screenshots', autoRegSettings?.screenshotsOnError ?? true, "updateSetting('screenshotsOnError', this.checked)"),
+      label: t.screenshots,
+      desc: t.screenshotsDesc,
+      control: renderToggle('screenshots', autoRegSettings?.screenshotsOnError ?? true, "updateSetting('screenshotsOnError', this.checked)"),
+    },
+    {
+      label: t.language,
+      desc: t.languageDesc,
+      control: renderLanguageSelect(language),
     },
   ];
 
   return `
     <div class="settings-panel" id="settingsPanel">
-      <div class="settings-title">Settings</div>
-      ${settings.map(s => renderSettingRow(s.label, s.desc, s.toggle)).join('')}
+      <div class="settings-title">${t.settingsTitle}</div>
+      ${settings.map(s => renderSettingRow(s.label, s.desc, s.control)).join('')}
     </div>
   `;
 }

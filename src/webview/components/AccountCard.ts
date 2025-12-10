@@ -5,13 +5,16 @@
 import { AccountInfo } from '../../types';
 import { ICONS } from '../icons';
 import { escapeHtml, getAccountEmail, formatExpiry } from '../helpers';
+import { Language, getTranslations } from '../i18n';
 
 export interface AccountCardProps {
   account: AccountInfo;
   index: number;
+  language?: Language;
 }
 
-export function renderAccountCard({ account, index }: AccountCardProps): string {
+export function renderAccountCard({ account, index, language = 'en' }: AccountCardProps): string {
+  const t = getTranslations(language);
   const email = getAccountEmail(account);
   const avatar = email.charAt(0).toUpperCase();
   
@@ -32,30 +35,31 @@ export function renderAccountCard({ account, index }: AccountCardProps): string 
             <span class="card-meta-item">${ICONS.clock} ${account.expiresIn ? formatExpiry(account.expiresIn) : '—'}</span>
           </div>
         </div>
-        ${account.isActive ? '<span class="card-status active">Active</span>' : ''}
-        ${account.isExpired ? '<span class="card-status expired">Expired</span>' : ''}
+        ${account.isActive ? `<span class="card-status active">${t.active}</span>` : ''}
+        ${account.isExpired ? `<span class="card-status expired">${t.expired}</span>` : ''}
         <div class="card-actions">
-          <button class="card-btn tooltip" data-tip="Copy token" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
-          <button class="card-btn tooltip" data-tip="View quota" onclick="event.stopPropagation(); viewQuota('${escapeHtml(account.filename)}')">${ICONS.chart}</button>
-          <button class="card-btn danger tooltip" data-tip="Delete" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(account.filename)}')">${ICONS.trash}</button>
+          <button class="card-btn tooltip" data-tip="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
+          <button class="card-btn tooltip" data-tip="${t.viewQuotaTip}" onclick="event.stopPropagation(); viewQuota('${escapeHtml(account.filename)}')">${ICONS.chart}</button>
+          <button class="card-btn danger tooltip" data-tip="${t.deleteTip}" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(account.filename)}')">${ICONS.trash}</button>
         </div>
       </div>
     </div>
   `;
 }
 
-export function renderAccountList(accounts: AccountInfo[]): string {
+export function renderAccountList(accounts: AccountInfo[], language: Language = 'en'): string {
+  const t = getTranslations(language);
   if (accounts.length === 0) {
     return `
       <div class="list-empty">
         <div class="list-empty-icon">📭</div>
-        <div class="list-empty-text">No accounts yet</div>
-        <button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} Create First Account</button>
+        <div class="list-empty-text">${t.noAccounts}</div>
+        <button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>
       </div>
     `;
   }
   
-  return accounts.map((acc, i) => renderAccountCard({ account: acc, index: i })).join('');
+  return accounts.map((acc, i) => renderAccountCard({ account: acc, index: i, language })).join('');
 }
 
 // Skeleton loading for accounts
