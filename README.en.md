@@ -1,9 +1,9 @@
 # ⚡ Kiro Account Switcher
 
-[![Build](https://github.com/YOUR_USERNAME/kiro-extension/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/kiro-extension/actions/workflows/build.yml)
-[![Version](https://img.shields.io/github/v/release/YOUR_USERNAME/kiro-extension?label=version)](https://github.com/YOUR_USERNAME/kiro-extension/releases)
-[![License](https://img.shields.io/github/license/YOUR_USERNAME/kiro-extension)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/YOUR_USERNAME/kiro-extension/total)](https://github.com/YOUR_USERNAME/kiro-extension/releases)
+[![Build](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml)
+[![Version](https://img.shields.io/github/v/release/WhiteBite/Kiro-auto-reg-extension?label=version)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
+[![License](https://img.shields.io/github/license/WhiteBite/Kiro-auto-reg-extension)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/WhiteBite/Kiro-auto-reg-extension/total)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
 
 [Русский](README.md) | English | [中文](README.zh.md)
 
