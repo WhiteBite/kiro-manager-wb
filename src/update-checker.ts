@@ -6,8 +6,8 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 
 // GitHub repo info - UPDATE THIS when you create the repo
-const GITHUB_OWNER = 'YOUR_USERNAME';
-const GITHUB_REPO = 'kiro-extension';
+const GITHUB_OWNER = 'WhiteBite';
+const GITHUB_REPO = 'Kiro-auto-reg-extension';
 
 interface GitHubRelease {
   tag_name: string;
