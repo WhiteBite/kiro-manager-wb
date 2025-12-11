@@ -73,8 +73,13 @@ export function getStyles(): string {
       transform: none; 
       margin-top: 4px;
     }
-    /* Card actions - справа */
-    .card-actions [title]:hover::after { left: auto; right: 0; transform: none; }
+    /* Card actions - сверху и справа */
+    .card-actions [title]:hover::after { 
+      left: auto; 
+      right: 0; 
+      transform: none;
+      margin-bottom: 4px;
+    }
     
     /* Stats Bar */
     .stats-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 6px 12px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); font-size: 10px; }
@@ -133,7 +138,7 @@ export function getStyles(): string {
     .list-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; } .list-empty-text { font-size: 12px; margin-bottom: 16px; }
     
     /* Account Card */
-    .card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 6px; transition: all var(--transition-normal); overflow: hidden; animation: fadeIn 0.3s ease forwards; }
+    .card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 6px; transition: all var(--transition-normal); animation: fadeIn 0.3s ease forwards; position: relative; }
     .card:hover { border-color: var(--border-medium); box-shadow: var(--shadow-sm); }
     .card.active { border-color: var(--accent); background: var(--accent-dim); }
     .card.expired { opacity: 0.7; border-color: var(--danger); background: var(--danger-dim); } .card.expired:hover { opacity: 0.85; }
