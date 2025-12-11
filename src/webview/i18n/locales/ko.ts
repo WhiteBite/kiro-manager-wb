@@ -37,6 +37,7 @@ export const ko: Translations = {
   console: '콘솔',
   clearTip: '콘솔 출력 지우기',
   openLogTip: '편집기에서 전체 로그 파일 열기',
+  copyLogsTip: '로그 복사',
   step: '단계',
   connected: '연결됨',
   confirm: '확인',

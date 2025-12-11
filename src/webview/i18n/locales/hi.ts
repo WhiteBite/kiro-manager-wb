@@ -37,6 +37,7 @@ export const hi: Translations = {
   console: 'कंसोल',
   clearTip: 'कंसोल आउटपुट साफ़ करें',
   openLogTip: 'संपादक में पूर्ण लॉग फ़ाइल खोलें',
+  copyLogsTip: 'लॉग कॉपी करें',
   step: 'चरण',
   connected: 'जुड़ा हुआ',
   confirm: 'पुष्टि करें',

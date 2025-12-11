@@ -37,6 +37,7 @@ export const ja: Translations = {
   console: 'コンソール',
   clearTip: 'コンソール出力をクリア',
   openLogTip: 'エディタで完全なログファイルを開く',
+  copyLogsTip: 'ログをコピー',
   step: 'ステップ',
   connected: '接続済み',
   confirm: '確認',

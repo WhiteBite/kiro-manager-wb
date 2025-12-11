@@ -48,6 +48,7 @@ export interface Translations {
   console: string;
   clearTip: string;
   openLogTip: string;
+  copyLogsTip: string;
   // Progress
   step: string;
   // Footer

@@ -37,6 +37,7 @@ export const en: Translations = {
   console: 'Console',
   clearTip: 'Clear console output',
   openLogTip: 'Open full log file in editor',
+  copyLogsTip: 'Copy logs to clipboard',
   step: 'Step',
   connected: 'Connected',
   confirm: 'Confirm',

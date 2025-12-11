@@ -37,6 +37,7 @@ export const zh: Translations = {
   console: '控制台',
   clearTip: '清除控制台输出',
   openLogTip: '在编辑器中打开完整日志',
+  copyLogsTip: '复制日志',
   step: '步骤',
   connected: '已连接',
   confirm: '确认',

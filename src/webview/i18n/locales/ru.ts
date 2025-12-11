@@ -37,6 +37,7 @@ export const ru: Translations = {
   console: 'Консоль',
   clearTip: 'Очистить вывод консоли',
   openLogTip: 'Открыть полный лог в редакторе',
+  copyLogsTip: 'Копировать логи',
   step: 'Шаг',
   connected: 'Подключено',
   confirm: 'Подтвердить',

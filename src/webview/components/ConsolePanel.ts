@@ -30,6 +30,7 @@ export function renderConsolePanel({ logs, maxLines = 50, language = 'en' }: Con
       <div class="console-header">
         <span class="console-title">${t.console} (${logs.length})</span>
         <div style="display:flex;gap:4px;">
+          <button class="icon-btn tooltip" data-tip="${t.copyLogsTip || 'Copy logs'}" onclick="copyLogs()">${ICONS.copy || '📋'}</button>
           <button class="icon-btn tooltip" data-tip="${t.openLogTip}" onclick="vscode.postMessage({command:'openLog'})">${ICONS.file}</button>
           <button class="icon-btn tooltip" data-tip="${t.clearTip}" onclick="clearConsole()">${ICONS.trash}</button>
         </div>
