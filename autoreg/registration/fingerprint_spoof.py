@@ -334,10 +334,14 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
         }}
     }};
     
-    // AudioBuffer.getChannelData
+    // AudioBuffer.getChannelData - будет применено позже через safeDefineProperty
+    let spoofedGetChannelData = null;
+    let spoofedGetFloatFrequencyData = null;
+    let spoofedGetByteFrequencyData = null;
+    
     if (typeof AudioBuffer !== 'undefined') {{
         const originalGetChannelData = AudioBuffer.prototype.getChannelData;
-        const spoofedGetChannelData = new Proxy(originalGetChannelData, {{
+        spoofedGetChannelData = new Proxy(originalGetChannelData, {{
             apply(target, thisArg, args) {{
                 const result = Reflect.apply(target, thisArg, args);
                 addAudioNoise(result);
@@ -345,34 +349,22 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
                 return result;
             }}
         }});
-        Object.defineProperty(AudioBuffer.prototype, 'getChannelData', {{
-            value: spoofedGetChannelData,
-            writable: false,
-            configurable: false
-        }});
         spoofedFunctions.set(spoofedGetChannelData, 'getChannelData');
     }}
     
-    // AnalyserNode.getFloatFrequencyData
     if (typeof AnalyserNode !== 'undefined') {{
         const originalGetFloatFrequencyData = AnalyserNode.prototype.getFloatFrequencyData;
-        const spoofedGetFloatFrequencyData = new Proxy(originalGetFloatFrequencyData, {{
+        spoofedGetFloatFrequencyData = new Proxy(originalGetFloatFrequencyData, {{
             apply(target, thisArg, args) {{
                 Reflect.apply(target, thisArg, args);
                 if (args[0]) addAudioNoise(args[0]);
                 log('AnalyserNode.getFloatFrequencyData spoofed');
             }}
         }});
-        Object.defineProperty(AnalyserNode.prototype, 'getFloatFrequencyData', {{
-            value: spoofedGetFloatFrequencyData,
-            writable: false,
-            configurable: false
-        }});
         spoofedFunctions.set(spoofedGetFloatFrequencyData, 'getFloatFrequencyData');
         
-        // getByteFrequencyData тоже
         const originalGetByteFrequencyData = AnalyserNode.prototype.getByteFrequencyData;
-        const spoofedGetByteFrequencyData = new Proxy(originalGetByteFrequencyData, {{
+        spoofedGetByteFrequencyData = new Proxy(originalGetByteFrequencyData, {{
             apply(target, thisArg, args) {{
                 Reflect.apply(target, thisArg, args);
                 if (args[0]) {{
@@ -381,11 +373,6 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
                     }}
                 }}
             }}
-        }});
-        Object.defineProperty(AnalyserNode.prototype, 'getByteFrequencyData', {{
-            value: spoofedGetByteFrequencyData,
-            writable: false,
-            configurable: false
         }});
         spoofedFunctions.set(spoofedGetByteFrequencyData, 'getByteFrequencyData');
     }}
@@ -442,69 +429,9 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // Headless часто имеет 800x600, что палевно
     // ========================================================================
     
-    const screenProps = ['width', 'height', 'availWidth', 'availHeight', 'colorDepth', 'pixelDepth'];
-    for (const prop of screenProps) {{
-        if (SPOOF_CONFIG.screen[prop] !== undefined) {{
-            Object.defineProperty(screen, prop, {{
-                get: () => SPOOF_CONFIG.screen[prop],
-                configurable: false
-            }});
-        }}
-    }}
-    
-    // window.innerWidth/innerHeight тоже важны
-    Object.defineProperty(window, 'innerWidth', {{
-        get: () => SPOOF_CONFIG.screen.width,
-        configurable: false
-    }});
-    Object.defineProperty(window, 'innerHeight', {{
-        get: () => SPOOF_CONFIG.screen.availHeight,
-        configurable: false
-    }});
-    Object.defineProperty(window, 'outerWidth', {{
-        get: () => SPOOF_CONFIG.screen.width,
-        configurable: false
-    }});
-    Object.defineProperty(window, 'outerHeight', {{
-        get: () => SPOOF_CONFIG.screen.height,
-        configurable: false
-    }});
-    
-    // ========================================================================
-    // 6. ERROR STACK SANITIZATION
-    // ========================================================================
-    // Скрываем следы инжектированного кода в стек-трейсах
-    // ========================================================================
-    
-    const originalPrepareStackTrace = Error.prepareStackTrace;
-    Error.prepareStackTrace = (error, stack) => {{
-        // Фильтруем фреймы с нашим кодом
-        const filteredStack = stack.filter(frame => {{
-            const fileName = frame.getFileName() || '';
-            const funcName = frame.getFunctionName() || '';
-            // Убираем фреймы из VM, extensions, и наших прокси
-            return !fileName.includes('VM') && 
-                   !fileName.includes('extension') &&
-                   !fileName.includes('content_script') &&
-                   !funcName.includes('Proxy');
-        }});
-        
-        if (originalPrepareStackTrace) {{
-            return originalPrepareStackTrace(error, filteredStack);
-        }}
-        
-        return filteredStack.map(frame => `    at ${{frame}}`).join('\\n');
-    }};
-    
-    // ========================================================================
-    // 7. NAVIGATOR PROPERTIES
-    // ========================================================================
-    
-    // webdriver - главный маркер автоматизации
-    Object.defineProperty(navigator, 'webdriver', {{
-        get: () => undefined,
-        configurable: false
-    }});
+    // Screen и Navigator properties будут применены через safeDefineProperty в конце
+    // Сохраняем конфиг для применения
+    const screenConfig = SPOOF_CONFIG.screen;
     
     // plugins - пустой массив выдаёт headless
     const fakePlugins = [
@@ -512,61 +439,21 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
         {{ name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' }},
         {{ name: 'Native Client', filename: 'internal-nacl-plugin', description: '' }}
     ];
-    
-    // Создаём PluginArray-like объект
     const pluginArray = Object.create(PluginArray.prototype);
     fakePlugins.forEach((p, i) => {{ pluginArray[i] = p; }});
-    Object.defineProperty(pluginArray, 'length', {{ value: fakePlugins.length }});
+    try {{ Object.defineProperty(pluginArray, 'length', {{ value: fakePlugins.length, configurable: true }}); }} catch(e) {{}}
     
-    Object.defineProperty(navigator, 'plugins', {{
-        get: () => pluginArray,
-        configurable: false
-    }});
-    
-    // languages
-    Object.defineProperty(navigator, 'languages', {{
-        get: () => ['en-US', 'en'],
-        configurable: false
-    }});
-    
-    // hardwareConcurrency - количество ядер CPU
-    Object.defineProperty(navigator, 'hardwareConcurrency', {{
-        get: () => 8,  // Типичное значение для современного ПК
-        configurable: false
-    }});
-    
-    // deviceMemory - объём RAM в GB
-    Object.defineProperty(navigator, 'deviceMemory', {{
-        get: () => 8,
-        configurable: false
-    }});
-    
-    // maxTouchPoints - 0 для десктопа
-    Object.defineProperty(navigator, 'maxTouchPoints', {{
-        get: () => 0,
-        configurable: false
-    }});
-
+    // Navigator properties будут применены через safeDefineProperty в конце
     
     // ========================================================================
     // 8. NOTIFICATION & PERMISSIONS
     // ========================================================================
-    // Headless часто имеет Notification.permission = 'denied'
-    // ========================================================================
     
-    if (typeof Notification !== 'undefined') {{
-        Object.defineProperty(Notification, 'permission', {{
-            get: () => 'default',
-            configurable: false
-        }});
-    }}
-    
-    // Permissions API
+    let spoofedPermissionsQuery = null;
     if (navigator.permissions) {{
         const originalQuery = navigator.permissions.query;
-        navigator.permissions.query = (parameters) => {{
+        spoofedPermissionsQuery = (parameters) => {{
             return originalQuery.call(navigator.permissions, parameters).then(result => {{
-                // Для некоторых permissions возвращаем 'prompt' вместо 'denied'
                 if (result.state === 'denied' && 
                     ['notifications', 'push', 'midi'].includes(parameters.name)) {{
                     return {{ state: 'prompt', onchange: null }};
@@ -574,6 +461,7 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
                 return result;
             }});
         }};
+        spoofedFunctions.set(spoofedPermissionsQuery, 'query');
     }}
     
     // ========================================================================
@@ -613,54 +501,129 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     }};
     
     // ========================================================================
-    // ПРИМЕНЕНИЕ ПОДМЕН
+    // ПРИМЕНЕНИЕ ПОДМЕН (с безопасной проверкой)
     // ========================================================================
     
-    // toString первым
-    Object.defineProperty(Function.prototype, 'toString', {{
+    // Безопасная функция для переопределения свойств
+    const safeDefineProperty = (obj, prop, descriptor) => {{
+        try {{
+            const existing = Object.getOwnPropertyDescriptor(obj, prop);
+            // Если свойство уже не configurable, пропускаем
+            if (existing && !existing.configurable) {{
+                log('Cannot redefine non-configurable property:', prop);
+                return false;
+            }}
+            Object.defineProperty(obj, prop, descriptor);
+            return true;
+        }} catch (e) {{
+            log('Failed to define property:', prop, e.message);
+            return false;
+        }}
+    }};
+    
+    // toString первым - ВАЖНО: writable и configurable должны быть true
+    safeDefineProperty(Function.prototype, 'toString', {{
         value: stealthToString,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
     
     // Canvas
-    Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', {{
+    safeDefineProperty(HTMLCanvasElement.prototype, 'toDataURL', {{
         value: spoofedToDataURL,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
-    Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {{
+    safeDefineProperty(HTMLCanvasElement.prototype, 'toBlob', {{
         value: spoofedToBlob,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
-    Object.defineProperty(CanvasRenderingContext2D.prototype, 'getImageData', {{
+    safeDefineProperty(CanvasRenderingContext2D.prototype, 'getImageData', {{
         value: spoofedGetImageData,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
     
     // WebGL
-    Object.defineProperty(WebGLRenderingContext.prototype, 'getParameter', {{
+    safeDefineProperty(WebGLRenderingContext.prototype, 'getParameter', {{
         value: spoofedGetParameter,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
-    Object.defineProperty(WebGL2RenderingContext.prototype, 'getParameter', {{
+    safeDefineProperty(WebGL2RenderingContext.prototype, 'getParameter', {{
         value: spoofedGetParameter2,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
-    Object.defineProperty(WebGLRenderingContext.prototype, 'getSupportedExtensions', {{
+    safeDefineProperty(WebGLRenderingContext.prototype, 'getSupportedExtensions', {{
         value: spoofedGetSupportedExtensions,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
-    Object.defineProperty(WebGL2RenderingContext.prototype, 'getSupportedExtensions', {{
+    safeDefineProperty(WebGL2RenderingContext.prototype, 'getSupportedExtensions', {{
         value: spoofedGetSupportedExtensions2,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
     }});
+    
+    // Audio
+    if (spoofedGetChannelData) {{
+        safeDefineProperty(AudioBuffer.prototype, 'getChannelData', {{
+            value: spoofedGetChannelData,
+            writable: true,
+            configurable: true
+        }});
+    }}
+    if (spoofedGetFloatFrequencyData) {{
+        safeDefineProperty(AnalyserNode.prototype, 'getFloatFrequencyData', {{
+            value: spoofedGetFloatFrequencyData,
+            writable: true,
+            configurable: true
+        }});
+    }}
+    if (spoofedGetByteFrequencyData) {{
+        safeDefineProperty(AnalyserNode.prototype, 'getByteFrequencyData', {{
+            value: spoofedGetByteFrequencyData,
+            writable: true,
+            configurable: true
+        }});
+    }}
+    
+    // Screen properties
+    const screenProps = ['width', 'height', 'availWidth', 'availHeight', 'colorDepth', 'pixelDepth'];
+    for (const prop of screenProps) {{
+        if (screenConfig[prop] !== undefined) {{
+            safeDefineProperty(screen, prop, {{
+                get: () => screenConfig[prop],
+                configurable: true
+            }});
+        }}
+    }}
+    
+    // Window dimensions
+    safeDefineProperty(window, 'innerWidth', {{ get: () => screenConfig.width, configurable: true }});
+    safeDefineProperty(window, 'innerHeight', {{ get: () => screenConfig.availHeight, configurable: true }});
+    safeDefineProperty(window, 'outerWidth', {{ get: () => screenConfig.width, configurable: true }});
+    safeDefineProperty(window, 'outerHeight', {{ get: () => screenConfig.height, configurable: true }});
+    
+    // Navigator properties
+    safeDefineProperty(navigator, 'webdriver', {{ get: () => undefined, configurable: true }});
+    safeDefineProperty(navigator, 'plugins', {{ get: () => pluginArray, configurable: true }});
+    safeDefineProperty(navigator, 'languages', {{ get: () => ['en-US', 'en'], configurable: true }});
+    safeDefineProperty(navigator, 'hardwareConcurrency', {{ get: () => 8, configurable: true }});
+    safeDefineProperty(navigator, 'deviceMemory', {{ get: () => 8, configurable: true }});
+    safeDefineProperty(navigator, 'maxTouchPoints', {{ get: () => 0, configurable: true }});
+    
+    // Notification
+    if (typeof Notification !== 'undefined') {{
+        safeDefineProperty(Notification, 'permission', {{ get: () => 'default', configurable: true }});
+    }}
+    
+    // Permissions
+    if (spoofedPermissionsQuery) {{
+        navigator.permissions.query = spoofedPermissionsQuery;
+    }}
     
     // ========================================================================
     // 11. CDP ARTIFACTS REMOVAL (КРИТИЧНО)
@@ -709,14 +672,16 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // В headless режиме visibilityState = 'hidden', что палевно
     // ========================================================================
     
-    Object.defineProperty(document, 'visibilityState', {{
-        get: () => 'visible',
-        configurable: false
-    }});
-    Object.defineProperty(document, 'hidden', {{
-        get: () => false,
-        configurable: false
-    }});
+    try {{
+        Object.defineProperty(document, 'visibilityState', {{
+            get: () => 'visible',
+            configurable: true
+        }});
+        Object.defineProperty(document, 'hidden', {{
+            get: () => false,
+            configurable: true
+        }});
+    }} catch(e) {{ log('visibilityState spoof failed:', e.message); }}
     window.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
     
     // ========================================================================

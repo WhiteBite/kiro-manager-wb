@@ -54,19 +54,14 @@ BASE_DIR = get_paths().autoreg_dir
 class BrowserAutomation:
     """Автоматизация браузера для регистрации с обходом fingerprinting"""
     
-    def __init__(self, headless: bool = None, spoof_fingerprint: bool = None):
+    def __init__(self, headless: bool = None, spoof_fingerprint: bool = True):
         """
         Args:
             headless: Запуск без GUI (по умолчанию из настроек)
-            spoof_fingerprint: Включить обход fingerprinting (по умолчанию True на Windows, False на Linux)
+            spoof_fingerprint: Включить обход fingerprinting (по умолчанию True)
         """
-        import platform
         settings = load_settings()
         browser_settings = settings.get('browser', {})
-        
-        # На Linux spoofing вызывает проблемы с AWS страницей
-        if spoof_fingerprint is None:
-            spoof_fingerprint = platform.system() != 'Linux'
         
         # headless можно переопределить параметром
         if headless is None:
