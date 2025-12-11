@@ -191,6 +191,25 @@ SCREEN_RESOLUTIONS = [
     {"width": 1440, "height": 900, "availHeight": 860},    # MacBook
 ]
 
+# Таймзоны - КРИТИЧНО: должна соответствовать IP прокси!
+# offset - смещение в минутах (для JS getTimezoneOffset, обратный знак)
+# Например: UTC+3 (Москва) = offset -180, UTC-5 (NY) = offset 300
+TIMEZONE_PROFILES = {
+    "europe_moscow": {"id": "Europe/Moscow", "offset": -180, "locale": "ru-RU"},
+    "europe_berlin": {"id": "Europe/Berlin", "offset": -60, "locale": "de-DE"},
+    "europe_london": {"id": "Europe/London", "offset": 0, "locale": "en-GB"},
+    "america_new_york": {"id": "America/New_York", "offset": 300, "locale": "en-US"},
+    "america_los_angeles": {"id": "America/Los_Angeles", "offset": 480, "locale": "en-US"},
+    "asia_tokyo": {"id": "Asia/Tokyo", "offset": -540, "locale": "ja-JP"},
+}
+
+# Реалистичные названия аудио устройств для Windows
+AUDIO_DEVICES_WINDOWS = [
+    {"deviceId": "default", "kind": "audioinput", "label": "Microphone (Realtek High Definition Audio)", "groupId": "audio1"},
+    {"deviceId": "communications", "kind": "audiooutput", "label": "Speakers (Realtek High Definition Audio)", "groupId": "audio1"},
+    {"deviceId": "default", "kind": "videoinput", "label": "Integrated Webcam", "groupId": "video1"},
+]
+
 # Уровень шума для Canvas (0.001 - минимальный, незаметный глазу)
 CANVAS_NOISE_ALPHA = 0.001
 
@@ -207,14 +226,16 @@ def generate_screen_config() -> dict:
 
 
 def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
+                   timezone_config: dict = None,
                    canvas_noise: float = CANVAS_NOISE_ALPHA,
                    seed: int = None) -> str:
     """
-    Генерирует JavaScript payload для инъекции в браузер v3.2
+    Генерирует JavaScript payload для инъекции в браузер v3.3
     
     Args:
         gpu_profile: Профиль GPU (vendor, renderer, extensions, params)
         screen_config: Конфигурация экрана
+        timezone_config: Конфигурация таймзоны (id, offset, locale) - ДОЛЖНА соответствовать IP!
         canvas_noise: Уровень шума для Canvas
         seed: Seed для генератора случайных чисел
     
@@ -231,6 +252,10 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     if screen_config is None:
         screen_config = generate_screen_config()
     
+    # Таймзона по умолчанию - Москва (для российских IP)
+    if timezone_config is None:
+        timezone_config = TIMEZONE_PROFILES["europe_moscow"]
+    
     # Генерируем уникальный noise seed
     noise_seed = seed or random.randint(1, 1000000)
     
@@ -240,6 +265,7 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     # Конвертируем WebGL params в JS объект
     import json
     params_js = json.dumps(gpu_profile.get("params", {}))
+    audio_devices_js = json.dumps(AUDIO_DEVICES_WINDOWS)
     
     return f'''
 (() => {{
@@ -270,6 +296,14 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
         }},
         navigator: {{
             platform: 'Win32'  // Синхронизировано с типичным Windows UA
+        }},
+        timezone: {{
+            id: '{timezone_config["id"]}',
+            offset: {timezone_config["offset"]},  // getTimezoneOffset() возвращает это
+            locale: '{timezone_config["locale"]}'
+        }},
+        audio: {{
+            devices: {audio_devices_js}
         }},
         debug: false
     }};
@@ -815,14 +849,17 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // 14. BATTERY API MOCK
     // ========================================================================
     // Headless часто не имеет Battery API или возвращает странные значения
+    // Реальная батарея имеет дискретные значения (0.95, 0.96), не 0.95123812
     // ========================================================================
     
     if (navigator.getBattery) {{
+        // Округляем до 2 знаков - реалистичное поведение контроллера батареи
+        const batteryLevel = parseFloat((0.85 + (seededRandom() * 0.14)).toFixed(2));
         const mockBattery = {{
             charging: true,
             chargingTime: 0,
             dischargingTime: Infinity,
-            level: 0.95 + (seededRandom() * 0.05),
+            level: batteryLevel,
             addEventListener: () => {{}},
             removeEventListener: () => {{}}
         }};
@@ -846,15 +883,15 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // ========================================================================
     
     // ========================================================================
-    // 17. TIMEZONE SPOOFING
+    // 17. TIMEZONE SPOOFING (КРИТИЧНО - должна соответствовать IP!)
     // ========================================================================
-    // Таймзона должна соответствовать IP прокси
-    // По умолчанию ставим US Eastern (UTC-5)
+    // Geo-IP mismatch - 100% признак прокси/спуфинга
+    // Таймзона берётся из SPOOF_CONFIG.timezone
     // ========================================================================
     
     const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
     Date.prototype.getTimezoneOffset = function() {{
-        return 300; // UTC-5 (New York)
+        return SPOOF_CONFIG.timezone.offset;
     }};
     spoofedFunctions.set(Date.prototype.getTimezoneOffset, 'getTimezoneOffset');
     
@@ -862,25 +899,32 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
         const originalDateTimeFormat = Intl.DateTimeFormat;
         Intl.DateTimeFormat = new Proxy(originalDateTimeFormat, {{
             construct(target, args) {{
-                args[0] = args[0] || 'en-US';
-                args[1] = {{ ...args[1], timeZone: 'America/New_York' }};
+                args[0] = args[0] || SPOOF_CONFIG.timezone.locale;
+                args[1] = {{ ...args[1], timeZone: SPOOF_CONFIG.timezone.id }};
                 return new target(...args);
             }}
         }});
     }} catch(e) {{}}
     
+    // Также спуфим resolvedOptions для полной согласованности
+    try {{
+        const origResolvedOptions = Intl.DateTimeFormat.prototype.resolvedOptions;
+        Intl.DateTimeFormat.prototype.resolvedOptions = function() {{
+            const result = origResolvedOptions.call(this);
+            result.timeZone = SPOOF_CONFIG.timezone.id;
+            result.locale = SPOOF_CONFIG.timezone.locale;
+            return result;
+        }};
+    }} catch(e) {{}}
+    
     // ========================================================================
-    // 18. MEDIA DEVICES SPOOFING
+    // 18. MEDIA DEVICES SPOOFING (реалистичные названия для Windows)
     // ========================================================================
-    // Возвращаем фиксированный список устройств
+    // Стерильные названия типа "Default Audio Input" выдают headless/Linux
     // ========================================================================
     
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {{
-        const spoofedEnumerateDevices = () => Promise.resolve([
-            {{ deviceId: 'default', kind: 'audioinput', label: 'Default Audio Input', groupId: 'default' }},
-            {{ deviceId: 'default', kind: 'audiooutput', label: 'Default Audio Output', groupId: 'default' }},
-            {{ deviceId: 'default', kind: 'videoinput', label: 'Integrated Camera', groupId: 'default' }}
-        ]);
+        const spoofedEnumerateDevices = () => Promise.resolve(SPOOF_CONFIG.audio.devices);
         navigator.mediaDevices.enumerateDevices = spoofedEnumerateDevices;
         spoofedFunctions.set(spoofedEnumerateDevices, 'enumerateDevices');
     }}
@@ -1032,16 +1076,17 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     }}
     
     // ========================================================================
-    // ГОТОВО v3.2
+    // ГОТОВО v3.3
     // ========================================================================
     
-    log('Fingerprint spoofing v3.2 initialized');
+    log('Fingerprint spoofing v3.3 initialized');
     log('GPU:', SPOOF_CONFIG.webgl.vendor, '/', SPOOF_CONFIG.webgl.renderer);
     log('Screen:', SPOOF_CONFIG.screen.width, 'x', SPOOF_CONFIG.screen.height);
+    log('Timezone:', SPOOF_CONFIG.timezone.id, '(offset', SPOOF_CONFIG.timezone.offset + ')');
     log('Extensions:', SPOOF_CONFIG.webgl.extensions.length);
     log('WebGL Params:', Object.keys(SPOOF_CONFIG.webgl.params).length);
     log('Platform:', SPOOF_CONFIG.navigator.platform);
-    log('Modules: Canvas, WebGL+Params, Audio, Screen, Navigator+Platform, WebRTC, Battery, Timezone, MediaDevices, IFrame, Worker+BlobInjection');
+    log('Modules: Canvas, WebGL+Params, Audio, Screen, Navigator+Platform, WebRTC, Battery, Timezone(dynamic), MediaDevices(Win), IFrame, Worker+BlobInjection');
     
     window.__FP_SPOOF_CONFIG__ = SPOOF_CONFIG;
 }})();
@@ -1065,12 +1110,13 @@ class FingerprintSpoofer:
     """
     
     def __init__(self, page, gpu_profile: str = None, screen_resolution: str = None,
-                 canvas_noise: float = CANVAS_NOISE_ALPHA, seed: int = None):
+                 timezone: str = None, canvas_noise: float = CANVAS_NOISE_ALPHA, seed: int = None):
         """
         Args:
             page: DrissionPage ChromiumPage instance
             gpu_profile: Имя профиля GPU (intel_uhd_620, nvidia_gtx_1650, etc.)
             screen_resolution: Разрешение экрана (1920x1080, 2560x1440, etc.)
+            timezone: Таймзона (europe_moscow, america_new_york, etc.) - ДОЛЖНА соответствовать IP!
             canvas_noise: Уровень шума Canvas
             seed: Seed для воспроизводимости
         """
@@ -1100,12 +1146,20 @@ class FingerprintSpoofer:
                 self.screen_config = generate_screen_config()
         else:
             self.screen_config = generate_screen_config()
+        
+        # Выбираем таймзону - КРИТИЧНО для соответствия IP!
+        if timezone and timezone in TIMEZONE_PROFILES:
+            self.timezone_config = TIMEZONE_PROFILES[timezone].copy()
+        else:
+            # По умолчанию Москва (для российских IP)
+            self.timezone_config = TIMEZONE_PROFILES["europe_moscow"].copy()
     
     def get_js_payload(self) -> str:
         """Возвращает JS код для инъекции"""
         return get_stealth_js(
             gpu_profile=self.gpu_profile,
             screen_config=self.screen_config,
+            timezone_config=self.timezone_config,
             canvas_noise=self.canvas_noise,
             seed=self.seed
         )
@@ -1138,12 +1192,13 @@ class FingerprintSpoofer:
                     self.page.run_js(js_payload)
             
             self._injected = True
-            print(f"🛡️ Fingerprint spoofing v3.2 injected")
+            print(f"🛡️ Fingerprint spoofing v3.3 injected")
             print(f"   GPU: {self.gpu_profile['vendor']} / {self.gpu_profile['renderer']}")
             print(f"   Screen: {self.screen_config['width']}x{self.screen_config['height']}")
+            print(f"   Timezone: {self.timezone_config['id']} (offset {self.timezone_config['offset']})")
             print(f"   Extensions: {len(self.gpu_profile.get('extensions', []))}")
             print(f"   WebGL Params: {len(self.gpu_profile.get('params', {}))}")
-            print(f"   Modules: Canvas, WebGL+Params, Audio, Navigator+Platform, Worker+BlobInjection")
+            print(f"   Modules: Canvas, WebGL+Params, Audio, Navigator+Platform, Timezone, Worker+BlobInjection")
             return True
             
         except Exception as e:
@@ -1156,8 +1211,11 @@ class FingerprintSpoofer:
             "gpu_vendor": self.gpu_profile['vendor'],
             "gpu_renderer": self.gpu_profile['renderer'],
             "extensions_count": len(self.gpu_profile.get('extensions', [])),
+            "webgl_params_count": len(self.gpu_profile.get('params', {})),
             "screen_width": self.screen_config['width'],
             "screen_height": self.screen_config['height'],
+            "timezone_id": self.timezone_config['id'],
+            "timezone_offset": self.timezone_config['offset'],
             "canvas_noise": self.canvas_noise,
             "seed": self.seed,
             "injected": self._injected
