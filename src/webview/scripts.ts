@@ -63,6 +63,10 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'openUrl', url: url });
     }
     
+    function checkForUpdates() {
+      vscode.postMessage({ command: 'checkForUpdates' });
+    }
+    
     function copyToken(filename) {
       vscode.postMessage({ command: 'copyToken', email: filename });
     }
