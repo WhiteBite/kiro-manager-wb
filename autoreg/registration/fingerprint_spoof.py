@@ -21,7 +21,8 @@ from typing import Optional
 # КОНФИГУРАЦИЯ СПУФИНГА v2.0
 # ============================================================================
 
-# Согласованные профили GPU (vendor + renderer + extensions)
+# Согласованные профили GPU (vendor + renderer + extensions + numeric params)
+# Numeric params критичны - AWS FWCIM проверяет их согласованность с GPU
 GPU_PROFILES = {
     "intel_uhd_620": {
         "vendor": "Intel Inc.",
@@ -37,7 +38,21 @@ GPU_PROFILES = {
             "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info",
             "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers",
             "WEBGL_lose_context", "WEBGL_multi_draw"
-        ]
+        ],
+        "params": {
+            "MAX_TEXTURE_SIZE": 16384,
+            "MAX_RENDERBUFFER_SIZE": 16384,
+            "MAX_VIEWPORT_DIMS": [16384, 16384],
+            "MAX_VERTEX_ATTRIBS": 16,
+            "MAX_VERTEX_UNIFORM_VECTORS": 4096,
+            "MAX_FRAGMENT_UNIFORM_VECTORS": 1024,
+            "MAX_VARYING_VECTORS": 30,
+            "MAX_TEXTURE_IMAGE_UNITS": 16,
+            "MAX_VERTEX_TEXTURE_IMAGE_UNITS": 16,
+            "MAX_COMBINED_TEXTURE_IMAGE_UNITS": 32,
+            "ALIASED_LINE_WIDTH_RANGE": [1, 1],
+            "ALIASED_POINT_SIZE_RANGE": [1, 1024]
+        }
     },
     "intel_iris_xe": {
         "vendor": "Intel Inc.",
@@ -54,7 +69,21 @@ GPU_PROFILES = {
             "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info",
             "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers",
             "WEBGL_lose_context", "WEBGL_multi_draw"
-        ]
+        ],
+        "params": {
+            "MAX_TEXTURE_SIZE": 16384,
+            "MAX_RENDERBUFFER_SIZE": 16384,
+            "MAX_VIEWPORT_DIMS": [16384, 16384],
+            "MAX_VERTEX_ATTRIBS": 16,
+            "MAX_VERTEX_UNIFORM_VECTORS": 4096,
+            "MAX_FRAGMENT_UNIFORM_VECTORS": 1024,
+            "MAX_VARYING_VECTORS": 31,
+            "MAX_TEXTURE_IMAGE_UNITS": 16,
+            "MAX_VERTEX_TEXTURE_IMAGE_UNITS": 16,
+            "MAX_COMBINED_TEXTURE_IMAGE_UNITS": 32,
+            "ALIASED_LINE_WIDTH_RANGE": [1, 1],
+            "ALIASED_POINT_SIZE_RANGE": [1, 1024]
+        }
     },
     "nvidia_gtx_1650": {
         "vendor": "NVIDIA Corporation",
@@ -72,7 +101,21 @@ GPU_PROFILES = {
             "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info",
             "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers",
             "WEBGL_lose_context", "WEBGL_multi_draw"
-        ]
+        ],
+        "params": {
+            "MAX_TEXTURE_SIZE": 32768,
+            "MAX_RENDERBUFFER_SIZE": 32768,
+            "MAX_VIEWPORT_DIMS": [32768, 32768],
+            "MAX_VERTEX_ATTRIBS": 16,
+            "MAX_VERTEX_UNIFORM_VECTORS": 4096,
+            "MAX_FRAGMENT_UNIFORM_VECTORS": 4096,
+            "MAX_VARYING_VECTORS": 31,
+            "MAX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_VERTEX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_COMBINED_TEXTURE_IMAGE_UNITS": 64,
+            "ALIASED_LINE_WIDTH_RANGE": [1, 1],
+            "ALIASED_POINT_SIZE_RANGE": [1, 2048]
+        }
     },
     "nvidia_rtx_3060": {
         "vendor": "NVIDIA Corporation",
@@ -90,7 +133,21 @@ GPU_PROFILES = {
             "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info",
             "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers",
             "WEBGL_lose_context", "WEBGL_multi_draw", "WEBGL_provoking_vertex"
-        ]
+        ],
+        "params": {
+            "MAX_TEXTURE_SIZE": 32768,
+            "MAX_RENDERBUFFER_SIZE": 32768,
+            "MAX_VIEWPORT_DIMS": [32768, 32768],
+            "MAX_VERTEX_ATTRIBS": 16,
+            "MAX_VERTEX_UNIFORM_VECTORS": 4096,
+            "MAX_FRAGMENT_UNIFORM_VECTORS": 4096,
+            "MAX_VARYING_VECTORS": 31,
+            "MAX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_VERTEX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_COMBINED_TEXTURE_IMAGE_UNITS": 64,
+            "ALIASED_LINE_WIDTH_RANGE": [1, 1],
+            "ALIASED_POINT_SIZE_RANGE": [1, 2048]
+        }
     },
     "amd_rx_580": {
         "vendor": "AMD",
@@ -107,7 +164,21 @@ GPU_PROFILES = {
             "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info",
             "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers",
             "WEBGL_lose_context", "WEBGL_multi_draw"
-        ]
+        ],
+        "params": {
+            "MAX_TEXTURE_SIZE": 16384,
+            "MAX_RENDERBUFFER_SIZE": 16384,
+            "MAX_VIEWPORT_DIMS": [16384, 16384],
+            "MAX_VERTEX_ATTRIBS": 16,
+            "MAX_VERTEX_UNIFORM_VECTORS": 4096,
+            "MAX_FRAGMENT_UNIFORM_VECTORS": 4096,
+            "MAX_VARYING_VECTORS": 32,
+            "MAX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_VERTEX_TEXTURE_IMAGE_UNITS": 32,
+            "MAX_COMBINED_TEXTURE_IMAGE_UNITS": 64,
+            "ALIASED_LINE_WIDTH_RANGE": [1, 1],
+            "ALIASED_POINT_SIZE_RANGE": [1, 8192]
+        }
     },
 }
 
@@ -139,10 +210,10 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
                    canvas_noise: float = CANVAS_NOISE_ALPHA,
                    seed: int = None) -> str:
     """
-    Генерирует JavaScript payload для инъекции в браузер v2.0
+    Генерирует JavaScript payload для инъекции в браузер v3.2
     
     Args:
-        gpu_profile: Профиль GPU (vendor, renderer, extensions)
+        gpu_profile: Профиль GPU (vendor, renderer, extensions, params)
         screen_config: Конфигурация экрана
         canvas_noise: Уровень шума для Canvas
         seed: Seed для генератора случайных чисел
@@ -166,6 +237,10 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     # Конвертируем extensions в JS массив
     extensions_js = str(gpu_profile.get("extensions", [])).replace("'", '"')
     
+    # Конвертируем WebGL params в JS объект
+    import json
+    params_js = json.dumps(gpu_profile.get("params", {}))
+    
     return f'''
 (() => {{
     // ========================================================================
@@ -178,7 +253,8 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
         webgl: {{
             vendor: "{gpu_profile['vendor']}",
             renderer: "{gpu_profile['renderer']}",
-            extensions: {extensions_js}
+            extensions: {extensions_js},
+            params: {params_js}
         }},
         canvas: {{
             noiseAlpha: {canvas_noise},
@@ -191,6 +267,9 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
             availHeight: {screen_config['availHeight']},
             colorDepth: 24,
             pixelDepth: 24
+        }},
+        navigator: {{
+            platform: 'Win32'  // Синхронизировано с типичным Windows UA
         }},
         debug: false
     }};
@@ -290,6 +369,28 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     const UNMASKED_VENDOR_WEBGL = 37445;
     const UNMASKED_RENDERER_WEBGL = 37446;
     
+    // WebGL numeric parameter constants
+    const GL_PARAMS = {{
+        MAX_TEXTURE_SIZE: 0x0D33,
+        MAX_RENDERBUFFER_SIZE: 0x84E8,
+        MAX_VIEWPORT_DIMS: 0x0D3A,
+        MAX_VERTEX_ATTRIBS: 0x8869,
+        MAX_VERTEX_UNIFORM_VECTORS: 0x8DFB,
+        MAX_FRAGMENT_UNIFORM_VECTORS: 0x8DFD,
+        MAX_VARYING_VECTORS: 0x8DFC,
+        MAX_TEXTURE_IMAGE_UNITS: 0x8872,
+        MAX_VERTEX_TEXTURE_IMAGE_UNITS: 0x8B4C,
+        MAX_COMBINED_TEXTURE_IMAGE_UNITS: 0x8B4D,
+        ALIASED_LINE_WIDTH_RANGE: 0x846E,
+        ALIASED_POINT_SIZE_RANGE: 0x846D
+    }};
+    
+    // Reverse lookup: GL constant -> param name
+    const GL_PARAM_NAMES = {{}};
+    for (const [name, val] of Object.entries(GL_PARAMS)) {{
+        GL_PARAM_NAMES[val] = name;
+    }}
+    
     const originalGetParameter = WebGLRenderingContext.prototype.getParameter;
     const originalGetParameter2 = WebGL2RenderingContext.prototype.getParameter;
     const originalGetSupportedExtensions = WebGLRenderingContext.prototype.getSupportedExtensions;
@@ -307,6 +408,19 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
                     log('WebGL renderer requested');
                     return SPOOF_CONFIG.webgl.renderer;
                 }}
+                
+                // Numeric params spoofing - критично для согласованности с GPU
+                const paramName = GL_PARAM_NAMES[param];
+                if (paramName && SPOOF_CONFIG.webgl.params[paramName] !== undefined) {{
+                    const spoofedValue = SPOOF_CONFIG.webgl.params[paramName];
+                    log('WebGL param', paramName, ':', spoofedValue);
+                    // Для массивов возвращаем Float32Array или Int32Array
+                    if (Array.isArray(spoofedValue)) {{
+                        return new Float32Array(spoofedValue);
+                    }}
+                    return spoofedValue;
+                }}
+                
                 return Reflect.apply(target, thisArg, args);
             }}
         }});
@@ -625,6 +739,8 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     safeDefineProperty(navigator, 'hardwareConcurrency', {{ get: () => 8, configurable: true }});
     safeDefineProperty(navigator, 'deviceMemory', {{ get: () => 8, configurable: true }});
     safeDefineProperty(navigator, 'maxTouchPoints', {{ get: () => 0, configurable: true }});
+    // Platform должен соответствовать User-Agent (Win32 для Windows)
+    safeDefineProperty(navigator, 'platform', {{ get: () => SPOOF_CONFIG.navigator.platform, configurable: true }});
     
     // Notification
     if (typeof Notification !== 'undefined') {{
@@ -723,30 +839,11 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // ========================================================================
     
     // ========================================================================
-    // 16. CLIENT RECTS NOISE
+    // 16. CLIENT RECTS - ОТКЛЮЧЕНО
     // ========================================================================
-    // getBoundingClientRect используется для геометрического fingerprinting
+    // getBoundingClientRect шум УДАЛЁН - может ломать клики и взаимодействие
+    // AWS FWCIM не использует это как основной вектор детекта
     // ========================================================================
-    
-    const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
-    const spoofedGetBoundingClientRect = new Proxy(originalGetBoundingClientRect, {{
-        apply(target, thisArg, args) {{
-            const rect = Reflect.apply(target, thisArg, args);
-            const noise = () => seededRandom() * 0.00001;
-            return new DOMRect(
-                rect.x + noise(),
-                rect.y + noise(),
-                rect.width + noise(),
-                rect.height + noise()
-            );
-        }}
-    }});
-    Object.defineProperty(Element.prototype, 'getBoundingClientRect', {{
-        value: spoofedGetBoundingClientRect,
-        writable: false,
-        configurable: false
-    }});
-    spoofedFunctions.set(spoofedGetBoundingClientRect, 'getBoundingClientRect');
     
     // ========================================================================
     // 17. TIMEZONE SPOOFING
@@ -853,21 +950,77 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     document.querySelectorAll('iframe').forEach(injectIntoFrame);
     
     // ========================================================================
-    // 20. WEB WORKER HOOK
+    // 20. WEB WORKER HOOK + BLOB URL INJECTION
     // ========================================================================
     // Web Workers работают в отдельном потоке без доступа к DOM.
-    // Наши хуки там не работают. Перехватываем конструктор.
+    // AWS FWCIM активно использует Workers для fingerprinting.
+    // Перехватываем URL.createObjectURL чтобы инжектить код в Blob Workers.
     // ========================================================================
+    
+    // Код для инъекции в Worker - минимальный набор спуфинга
+    const WORKER_SPOOF_CODE = `
+        // Worker Fingerprint Spoofing
+        const _origNav = self.navigator;
+        const _navProxy = new Proxy(_origNav, {{
+            get(target, prop) {{
+                if (prop === 'hardwareConcurrency') return 8;
+                if (prop === 'deviceMemory') return 8;
+                if (prop === 'platform') return '${{SPOOF_CONFIG.navigator.platform}}';
+                if (prop === 'userAgent') return target.userAgent;
+                if (prop === 'language') return 'en-US';
+                if (prop === 'languages') return ['en-US', 'en'];
+                return target[prop];
+            }}
+        }});
+        try {{ Object.defineProperty(self, 'navigator', {{ get: () => _navProxy, configurable: true }}); }} catch(e) {{}}
+        
+        // Performance timing noise
+        if (self.performance && self.performance.now) {{
+            const _origNow = self.performance.now.bind(self.performance);
+            self.performance.now = () => _origNow() + (Math.random() * 0.001);
+        }}
+    `;
+    
+    // Перехватываем URL.createObjectURL для инъекции в Blob Workers
+    const originalCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = function(obj) {{
+        if (obj instanceof Blob && obj.type && obj.type.includes('javascript')) {{
+            log('Intercepted Blob URL creation for Worker');
+            // Читаем оригинальный код и добавляем наш спуфинг в начало
+            return new Promise((resolve) => {{
+                const reader = new FileReader();
+                reader.onload = () => {{
+                    const originalCode = reader.result;
+                    const modifiedCode = WORKER_SPOOF_CODE + '\\n' + originalCode;
+                    const newBlob = new Blob([modifiedCode], {{ type: obj.type }});
+                    resolve(originalCreateObjectURL.call(URL, newBlob));
+                }};
+                reader.readAsText(obj);
+            }}).catch(() => originalCreateObjectURL.call(URL, obj));
+        }}
+        return originalCreateObjectURL.call(URL, obj);
+    }};
+    spoofedFunctions.set(URL.createObjectURL, 'createObjectURL');
+    
+    // Синхронная версия для случаев когда Promise не подходит
+    const originalCreateObjectURLSync = URL.createObjectURL;
     
     const OriginalWorker = window.Worker;
     if (OriginalWorker) {{
         window.Worker = function(scriptURL, options) {{
             log('Worker created:', scriptURL);
             
-            // Для Blob URL мы не можем модифицировать код
-            // Но можем логировать факт создания для анализа
-            if (scriptURL instanceof Blob || (typeof scriptURL === 'string' && scriptURL.startsWith('blob:'))) {{
-                log('Worker uses Blob URL - cannot inject');
+            // Для Blob объектов - создаём модифицированный Blob
+            if (scriptURL instanceof Blob) {{
+                log('Worker uses Blob - injecting spoof code');
+                // Синхронно модифицируем Blob (не идеально, но работает)
+                try {{
+                    const modifiedBlob = new Blob([WORKER_SPOOF_CODE, scriptURL], {{ type: scriptURL.type || 'application/javascript' }});
+                    const blobUrl = originalCreateObjectURLSync.call(URL, modifiedBlob);
+                    return new OriginalWorker(blobUrl, options);
+                }} catch(e) {{
+                    log('Blob injection failed:', e.message);
+                }}
             }}
             
             return new OriginalWorker(scriptURL, options);
@@ -879,14 +1032,16 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     }}
     
     // ========================================================================
-    // ГОТОВО v3.1
+    // ГОТОВО v3.2
     // ========================================================================
     
-    log('Fingerprint spoofing v3.1 initialized');
+    log('Fingerprint spoofing v3.2 initialized');
     log('GPU:', SPOOF_CONFIG.webgl.vendor, '/', SPOOF_CONFIG.webgl.renderer);
     log('Screen:', SPOOF_CONFIG.screen.width, 'x', SPOOF_CONFIG.screen.height);
     log('Extensions:', SPOOF_CONFIG.webgl.extensions.length);
-    log('Modules: Canvas, WebGL, Audio, Screen, Navigator, WebRTC, Battery, ClientRects, Timezone, MediaDevices, IFrame, Worker');
+    log('WebGL Params:', Object.keys(SPOOF_CONFIG.webgl.params).length);
+    log('Platform:', SPOOF_CONFIG.navigator.platform);
+    log('Modules: Canvas, WebGL+Params, Audio, Screen, Navigator+Platform, WebRTC, Battery, Timezone, MediaDevices, IFrame, Worker+BlobInjection');
     
     window.__FP_SPOOF_CONFIG__ = SPOOF_CONFIG;
 }})();
@@ -983,11 +1138,12 @@ class FingerprintSpoofer:
                     self.page.run_js(js_payload)
             
             self._injected = True
-            print(f"🛡️ Fingerprint spoofing v3.0 injected")
+            print(f"🛡️ Fingerprint spoofing v3.2 injected")
             print(f"   GPU: {self.gpu_profile['vendor']} / {self.gpu_profile['renderer']}")
             print(f"   Screen: {self.screen_config['width']}x{self.screen_config['height']}")
             print(f"   Extensions: {len(self.gpu_profile.get('extensions', []))}")
-            print(f"   Modules: 18 (Canvas, WebGL, Audio, Screen, Navigator, WebRTC, Battery, Fonts, etc.)")
+            print(f"   WebGL Params: {len(self.gpu_profile.get('params', {}))}")
+            print(f"   Modules: Canvas, WebGL+Params, Audio, Navigator+Platform, Worker+BlobInjection")
             return True
             
         except Exception as e:
