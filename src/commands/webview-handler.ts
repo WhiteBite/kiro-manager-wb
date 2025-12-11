@@ -16,7 +16,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'refresh':
-      await refreshAccountToken(msg.account);
+      // General refresh - reload account list
       provider.refresh();
       break;
 
