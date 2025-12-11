@@ -203,8 +203,19 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     // УТИЛИТЫ
     // ========================================================================
     
-    // PRNG для воспроизводимого шума
-    let noiseSeed = SPOOF_CONFIG.canvas.noiseSeed;
+    // Детерминированный хеш от строки (для стабильного шума по домену)
+    const hashCode = (str) => {{
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {{
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash = hash & hash;
+        }}
+        return Math.abs(hash);
+    }};
+    
+    // PRNG с seed от домена - шум стабилен для одного сайта
+    const domainSeed = hashCode(window.location.hostname + navigator.userAgent);
+    let noiseSeed = domainSeed || SPOOF_CONFIG.canvas.noiseSeed;
     const seededRandom = () => {{
         noiseSeed = (noiseSeed * 9301 + 49297) % 233280;
         return noiseSeed / 233280;
@@ -705,37 +716,11 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     }}
     
     // ========================================================================
-    // 15. FONTS FINGERPRINTING (offsetWidth/Height noise)
+    // 15. FONTS FINGERPRINTING - УДАЛЕНО
     // ========================================================================
-    // AWS модуль 60 замеряет размеры текста для определения шрифтов
+    // offsetWidth/offsetHeight шум вызывает "дребезг" - это 100% детект бота
+    // Реальные шрифты рендерятся ОС и не меняют размер случайно
     // ========================================================================
-    
-    const originalOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
-    const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
-    
-    if (originalOffsetWidth) {{
-        Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {{
-            get() {{
-                const width = originalOffsetWidth.get.call(this);
-                if (this.style && this.style.fontFamily && width > 0) {{
-                    return width + (seededRandom() > 0.95 ? (seededRandom() > 0.5 ? 1 : -1) : 0);
-                }}
-                return width;
-            }}
-        }});
-    }}
-    
-    if (originalOffsetHeight) {{
-        Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {{
-            get() {{
-                const height = originalOffsetHeight.get.call(this);
-                if (this.style && this.style.fontFamily && height > 0) {{
-                    return height + (seededRandom() > 0.95 ? (seededRandom() > 0.5 ? 1 : -1) : 0);
-                }}
-                return height;
-            }}
-        }});
-    }}
     
     // ========================================================================
     // 16. CLIENT RECTS NOISE
@@ -804,14 +789,104 @@ def get_stealth_js(gpu_profile: dict = None, screen_config: dict = None,
     }}
     
     // ========================================================================
-    // ГОТОВО v3.0
+    // 19. IFRAME INJECTION (MutationObserver - не onload!)
+    // ========================================================================
+    // Критично: onload срабатывает ПОСЛЕ того как скрипт внутри iframe
+    // уже получил доступ к чистым объектам. MutationObserver реагирует
+    // мгновенно при вставке узла в DOM.
     // ========================================================================
     
-    log('Fingerprint spoofing v3.0 initialized');
+    const injectIntoFrame = (iframe) => {{
+        try {{
+            const win = iframe.contentWindow;
+            if (!win || win.__FP_SPOOF_INJECTED__) return;
+            
+            // Пытаемся инжектить до загрузки контента
+            win.__FP_SPOOF_INJECTED__ = true;
+            
+            // Копируем критичные подмены в iframe
+            const iframeDoc = win.document;
+            if (iframeDoc) {{
+                // Navigator
+                try {{ Object.defineProperty(win.navigator, 'webdriver', {{ get: () => undefined, configurable: true }}); }} catch(e) {{}}
+                
+                // Canvas - самое важное
+                try {{
+                    const iframeToDataURL = win.HTMLCanvasElement.prototype.toDataURL;
+                    win.HTMLCanvasElement.prototype.toDataURL = function(...args) {{
+                        // Добавляем тот же детерминированный шум
+                        return spoofedToDataURL.apply(this, args);
+                    }};
+                }} catch(e) {{}}
+                
+                log('Injected spoofing into iframe');
+            }}
+        }} catch(e) {{
+            // Cross-origin iframe - не можем инжектить
+            log('Cannot inject into cross-origin iframe');
+        }}
+    }};
+    
+    // MutationObserver для мгновенной реакции на создание iframe
+    const iframeObserver = new MutationObserver((mutations) => {{
+        for (const mutation of mutations) {{
+            for (const node of mutation.addedNodes) {{
+                if (node.tagName === 'IFRAME') {{
+                    injectIntoFrame(node);
+                    // Также на load для about:blank фреймов
+                    node.addEventListener('load', () => injectIntoFrame(node));
+                }}
+                // Проверяем вложенные iframe
+                if (node.querySelectorAll) {{
+                    node.querySelectorAll('iframe').forEach(injectIntoFrame);
+                }}
+            }}
+        }}
+    }});
+    
+    // Запускаем наблюдатель
+    if (document.documentElement) {{
+        iframeObserver.observe(document.documentElement, {{ childList: true, subtree: true }});
+    }}
+    
+    // Инжектим в существующие iframe
+    document.querySelectorAll('iframe').forEach(injectIntoFrame);
+    
+    // ========================================================================
+    // 20. WEB WORKER HOOK
+    // ========================================================================
+    // Web Workers работают в отдельном потоке без доступа к DOM.
+    // Наши хуки там не работают. Перехватываем конструктор.
+    // ========================================================================
+    
+    const OriginalWorker = window.Worker;
+    if (OriginalWorker) {{
+        window.Worker = function(scriptURL, options) {{
+            log('Worker created:', scriptURL);
+            
+            // Для Blob URL мы не можем модифицировать код
+            // Но можем логировать факт создания для анализа
+            if (scriptURL instanceof Blob || (typeof scriptURL === 'string' && scriptURL.startsWith('blob:'))) {{
+                log('Worker uses Blob URL - cannot inject');
+            }}
+            
+            return new OriginalWorker(scriptURL, options);
+        }};
+        
+        // Копируем статические свойства
+        window.Worker.prototype = OriginalWorker.prototype;
+        spoofedFunctions.set(window.Worker, 'Worker');
+    }}
+    
+    // ========================================================================
+    // ГОТОВО v3.1
+    // ========================================================================
+    
+    log('Fingerprint spoofing v3.1 initialized');
     log('GPU:', SPOOF_CONFIG.webgl.vendor, '/', SPOOF_CONFIG.webgl.renderer);
     log('Screen:', SPOOF_CONFIG.screen.width, 'x', SPOOF_CONFIG.screen.height);
     log('Extensions:', SPOOF_CONFIG.webgl.extensions.length);
-    log('Modules: Canvas, WebGL, Audio, Screen, Navigator, WebRTC, Battery, Fonts, ClientRects, Timezone, MediaDevices');
+    log('Modules: Canvas, WebGL, Audio, Screen, Navigator, WebRTC, Battery, ClientRects, Timezone, MediaDevices, IFrame, Worker');
     
     window.__FP_SPOOF_CONFIG__ = SPOOF_CONFIG;
 }})();
