@@ -47,6 +47,8 @@ export const en: Translations = {
   settingsTitle: 'Settings',
   autoSwitch: 'Auto-switch on expiry',
   autoSwitchDesc: 'Automatically switch to next valid account',
+  hideExpired: 'Hide expired',
+  hideExpiredDesc: 'Hide expired accounts from list',
   headless: 'Headless mode',
   headlessDesc: 'Run browser in background',
   verbose: 'Verbose logging',

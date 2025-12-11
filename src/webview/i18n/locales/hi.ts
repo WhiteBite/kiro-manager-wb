@@ -47,6 +47,8 @@ export const hi: Translations = {
   settingsTitle: 'सेटिंग्स',
   autoSwitch: 'समाप्ति पर ऑटो-स्विच',
   autoSwitchDesc: 'स्वचालित रूप से अगले वैध खाते पर स्विच करें',
+  hideExpired: 'समाप्त छुपाएं',
+  hideExpiredDesc: 'सूची से समाप्त खातों को छुपाएं',
   headless: 'हेडलेस मोड',
   headlessDesc: 'पृष्ठभूमि में ब्राउज़र चलाएं',
   verbose: 'विस्तृत लॉगिंग',

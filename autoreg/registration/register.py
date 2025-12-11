@@ -150,7 +150,7 @@ class AWSRegistration:
             progress(3, 8, "Browser", "Opening page...")
             if self.browser:
                 self.browser.close()
-            self.browser = BrowserAutomation(headless=self.headless)
+            self.browser = BrowserAutomation(headless=self.headless, spoof_fingerprint=True)
             
             # 3. Открываем страницу
             self.browser.navigate(auth_url)

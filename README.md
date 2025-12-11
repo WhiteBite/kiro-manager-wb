@@ -1,4 +1,4 @@
-# ⚡ Kiro Account Switcher
+я # ⚡ Kiro Account Switcher
 
 [![Build](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml)
 [![Version](https://img.shields.io/github/v/release/WhiteBite/Kiro-auto-reg-extension?label=version)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)

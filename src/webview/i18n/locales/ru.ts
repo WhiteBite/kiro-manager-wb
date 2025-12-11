@@ -47,6 +47,8 @@ export const ru: Translations = {
   settingsTitle: 'Настройки',
   autoSwitch: 'Авто-переключение',
   autoSwitchDesc: 'Переключаться на следующий аккаунт',
+  hideExpired: 'Скрыть истёкшие',
+  hideExpiredDesc: 'Скрыть истёкшие аккаунты из списка',
   headless: 'Скрытый режим',
   headlessDesc: 'Запускать браузер в фоне',
   verbose: 'Подробные логи',

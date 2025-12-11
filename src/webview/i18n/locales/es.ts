@@ -47,6 +47,8 @@ export const es: Translations = {
   settingsTitle: 'Configuración',
   autoSwitch: 'Cambio automático al expirar',
   autoSwitchDesc: 'Cambiar automáticamente a la siguiente cuenta válida',
+  hideExpired: 'Ocultar expiradas',
+  hideExpiredDesc: 'Ocultar cuentas expiradas de la lista',
   headless: 'Modo headless',
   headlessDesc: 'Ejecutar navegador en segundo plano',
   verbose: 'Registro detallado',

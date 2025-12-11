@@ -47,6 +47,8 @@ export const de: Translations = {
   settingsTitle: 'Einstellungen',
   autoSwitch: 'Auto-Wechsel bei Ablauf',
   autoSwitchDesc: 'Automatisch zum nächsten gültigen Konto wechseln',
+  hideExpired: 'Abgelaufene ausblenden',
+  hideExpiredDesc: 'Abgelaufene Konten aus der Liste ausblenden',
   headless: 'Headless-Modus',
   headlessDesc: 'Browser im Hintergrund ausführen',
   verbose: 'Ausführliche Protokollierung',

@@ -51,6 +51,11 @@ export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, langua
       control: renderToggle('autoSwitch', autoSwitchEnabled, "toggleAutoSwitch(this.checked)"),
     },
     {
+      label: t.hideExpired,
+      desc: t.hideExpiredDesc,
+      control: renderToggle('hideExpired', false, "toggleHideExpired(this.checked)"),
+    },
+    {
       label: t.headless,
       desc: t.headlessDesc,
       control: renderToggle('headless', autoRegSettings?.headless ?? false, "updateSetting('headless', this.checked)"),
