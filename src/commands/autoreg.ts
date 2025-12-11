@@ -180,6 +180,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.addLog(`Starting autoreg...`);
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
+  provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
   const isWindows = process.platform === 'win32';

@@ -53,7 +53,7 @@ export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, langua
     {
       label: t.headless,
       desc: t.headlessDesc,
-      control: renderToggle('headless', autoRegSettings?.headless !== false, "updateSetting('headless', this.checked)"),
+      control: renderToggle('headless', autoRegSettings?.headless ?? false, "updateSetting('headless', this.checked)"),
     },
     {
       label: t.verbose,
