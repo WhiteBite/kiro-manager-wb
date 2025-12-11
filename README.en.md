@@ -232,7 +232,7 @@ kiro-extension/
 │   ├── webview.ts        # HTML generation for panel
 │   ├── types.ts          # TypeScript types
 │   └── webview/          # UI components
-├── autoreg-bundled/      # Python autoreg scripts
+├── autoreg/              # Python autoreg scripts
 ├── dist/                 # Compiled JS (gitignore)
 ├── package.json
 ├── tsconfig.json

@@ -47,8 +47,10 @@ desktop.ini
 *.log
 npm-debug.log*
 
-# Runtime autoreg folder (extracted from bundled at runtime)
-# autoreg-bundled/ is committed and contains the source
+# Runtime files
+autoreg/.env
+autoreg/*.png
+autoreg/*.log
 
 # Test artifacts
 coverage/

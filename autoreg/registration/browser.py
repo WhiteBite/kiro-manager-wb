@@ -31,9 +31,7 @@ SELECTORS = {
 
 BROWSER_ARGS = [
     '--disable-blink-features=AutomationControlled',
-    '--no-sandbox',
     '--disable-dev-shm-usage',
-    '--disable-gpu',
 ]
 
 PASSWORD_LENGTH = 16
@@ -56,7 +54,7 @@ BASE_DIR = get_paths().autoreg_dir
 class BrowserAutomation:
     """Автоматизация браузера для регистрации с обходом fingerprinting"""
     
-    def __init__(self, headless: bool = None, spoof_fingerprint: bool = True):
+    def __init__(self, headless: bool = None, spoof_fingerprint: bool = False):
         """
         Args:
             headless: Запуск без GUI (по умолчанию из настроек)
@@ -80,6 +78,12 @@ class BrowserAutomation:
         
         if headless:
             co.headless()
+        
+        # Реалистичный user-agent
+        co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Размер окна
+        co.set_argument('--window-size=1280,900')
         
         if browser_settings.get('incognito', True):
             co.set_argument('--incognito')
@@ -229,36 +233,43 @@ class BrowserAutomation:
         return ''.join(password)
     
     def close_cookie_dialog(self, force: bool = False):
-        """Закрывает диалог cookie если он появился (только один раз)"""
+        """Закрывает диалог cookie если он появился"""
         if self._cookie_closed and not force:
             return False
             
         self._log("Checking for cookie dialog...")
         
-        # Расширенный список селекторов для cookie диалога
+        # Расширенный список селекторов для cookie диалога (RU + EN)
         cookie_selectors = [
+            # Русский интерфейс
             'text=Отклонить',
-            'text=Reject', 
-            'text=Decline',
-            'text=Продолжить, не принимая',
-            'text=Continue without accepting',
-            '@data-id=awsccc-cb-btn-decline',
             'xpath://button[contains(text(), "Отклонить")]',
+            'xpath://button[text()="Отклонить"]',
+            # Английский интерфейс
+            'text=Reject',
+            'text=Decline', 
+            'text=Reject all',
             'xpath://button[contains(text(), "Reject")]',
             'xpath://button[contains(text(), "Decline")]',
+            # AWS specific
+            '@data-id=awsccc-cb-btn-decline',
+            '#awsccc-cb-btn-decline',
         ]
         
         for selector in cookie_selectors:
             try:
-                btn = self.page.ele(selector, timeout=0.5)
+                btn = self.page.ele(selector, timeout=0.3)
                 if btn:
                     print(f"   🍪 Found cookie button: {selector}")
                     try:
                         # Пробуем JS клик (обходит перекрытие)
                         self.page.run_js('arguments[0].click()', btn)
                     except:
-                        btn.click()
-                    time.sleep(0.3)
+                        try:
+                            btn.click()
+                        except:
+                            pass
+                    time.sleep(0.5)
                     self._cookie_closed = True
                     return True
             except Exception:
@@ -417,8 +428,9 @@ class BrowserAutomation:
         """Вводит код верификации"""
         print(f"🔐 Entering code: {code}")
         
-        # Закрываем cookie если появился
-        self.close_cookie_dialog()
+        # Закрываем cookie ПРИНУДИТЕЛЬНО перед вводом кода
+        self.close_cookie_dialog(force=True)
+        time.sleep(0.3)
         
         code_input = self._find_element(SELECTORS['code_input'], timeout=30)
         if not code_input:
@@ -427,7 +439,19 @@ class BrowserAutomation:
         # Код вводим тоже с задержками
         self.human_type(code_input, code)
         
-        self._click_if_exists(SELECTORS['continue_btn'], timeout=3)
+        # Ещё раз закрываем cookie перед кликом Continue (может появиться снова)
+        time.sleep(0.3)
+        self.close_cookie_dialog(force=True)
+        time.sleep(0.3)
+        
+        # Кликаем Continue через JS чтобы обойти перекрытие
+        continue_btn = self._find_element(SELECTORS['continue_btn'], timeout=3)
+        if continue_btn:
+            try:
+                self.page.run_js('arguments[0].click()', continue_btn)
+            except:
+                continue_btn.click()
+        
         time.sleep(random.uniform(0.5, 1.5))
         
         return True
@@ -574,10 +598,24 @@ class BrowserAutomation:
         self.page.get(url)
         
         print("⏳ Waiting for page load...")
-        for i in range(10):
+        # Ждём полной загрузки страницы
+        try:
+            self.page.wait.doc_loaded(timeout=15)
+        except:
+            pass
+        
+        for i in range(20):
             time.sleep(0.5)
             current = self.page.url
             self._log(f"URL", current[:60] + "..." if len(current) > 60 else current)
+            
+            # Проверяем что страница загрузилась (есть input или кнопка)
+            try:
+                if self.page.ele('tag:input', timeout=0.5) or self.page.ele('tag:button', timeout=0.5):
+                    print("   ✓ Page elements loaded")
+                    break
+            except:
+                pass
             
             if 'signin.aws' in current or 'view.awsapps.com' in current:
                 break

@@ -523,7 +523,7 @@ function getAutoregDir(context: vscode.ExtensionContext): string {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   const workspacePath = path.join(workspaceFolder, 'kiro-batch-login', 'autoreg');
   const homePath = path.join(os.homedir(), '.kiro-autoreg');
-  const bundledPath = path.join(context.extensionPath, 'autoreg-bundled');
+  const bundledPath = path.join(context.extensionPath, 'autoreg');
   
   // Check workspace first
   if (fs.existsSync(path.join(workspacePath, 'registration', 'register_auto.py'))) {
