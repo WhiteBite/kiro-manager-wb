@@ -184,6 +184,28 @@ export function generateWebviewHtml(
       <button class="btn btn-secondary btn-icon tooltip" data-tip="${t.exportTip}" onclick="exportAccounts()">${ICONS.export}</button>
     </div>
     
+    <!-- SSO Import -->
+    <div class="sso-import-row">
+      <button class="btn btn-secondary btn-full tooltip" data-tip="${lang === 'ru' ? 'Импорт из cookie браузера (x-amz-sso_authn)' : lang === 'zh' ? '从浏览器cookie导入' : 'Import from browser cookie (x-amz-sso_authn)'}" onclick="showSsoImport()">
+        🌐 ${lang === 'ru' ? 'Импорт из браузера' : lang === 'zh' ? '从浏览器导入' : 'Import from Browser'}
+      </button>
+    </div>
+    
+    <!-- SSO Import Dialog (hidden by default) -->
+    <div class="sso-import-panel" id="ssoImportPanel">
+      <div class="sso-import-header">
+        <span>${lang === 'ru' ? 'Импорт из SSO Cookie' : lang === 'zh' ? 'SSO Cookie导入' : 'SSO Cookie Import'}</span>
+        <button class="icon-btn" onclick="hideSsoImport()">✕</button>
+      </div>
+      <div class="sso-import-body">
+        <p class="sso-import-hint">${lang === 'ru' ? '1. Откройте view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Скопируйте x-amz-sso_authn' : lang === 'zh' ? '1. 打开 view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. 复制 x-amz-sso_authn' : '1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn'}</p>
+        <textarea id="ssoTokenInput" class="sso-input" placeholder="Paste x-amz-sso_authn cookie value here..."></textarea>
+        <button class="btn btn-primary btn-full" onclick="importSsoToken()">
+          ${lang === 'ru' ? 'Импортировать' : lang === 'zh' ? '导入' : 'Import'}
+        </button>
+      </div>
+    </div>
+    
     ${progressHtml}
     
     <!-- Filter Bar -->
@@ -297,6 +319,14 @@ function getStyles(): string {
     .btn-secondary { background: var(--bg-elevated); color: var(--vscode-foreground); border: 1px solid var(--border-medium); }
     .btn-secondary:hover:not(:disabled) { background: rgba(128,128,128,0.1); }
     .btn-icon { padding: 9px 12px; } .btn svg { pointer-events: none; }
+    .btn-full { width: 100%; }
+    .sso-import-row { padding: 0 14px 10px; }
+    .sso-import-panel { display: none; margin: 0 14px 12px; padding: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+    .sso-import-panel.visible { display: block; }
+    .sso-import-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 11px; font-weight: 600; }
+    .sso-import-hint { font-size: 10px; color: var(--muted); margin-bottom: 10px; white-space: pre-line; line-height: 1.6; }
+    .sso-input { width: 100%; height: 60px; padding: 8px; font-size: 10px; font-family: monospace; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--border-medium); border-radius: var(--radius-sm); resize: none; margin-bottom: 10px; }
+    .sso-input:focus { outline: none; border-color: var(--accent); }
     .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .filter-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--border-subtle); gap: 8px; }
