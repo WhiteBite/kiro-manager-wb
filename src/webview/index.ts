@@ -122,6 +122,18 @@ export function generateWebviewHtml(
   const accountsHtml = renderAccountList(accounts, lang);
   const consoleHtml = renderConsolePanel({ logs: props.consoleLogs, language: lang });
   const script = generateWebviewScript(accounts.length);
+  
+  // Update banner
+  const updateBannerHtml = props.availableUpdate ? `
+    <div class="update-banner" onclick="openUpdateUrl('${props.availableUpdate.url}')">
+      <div class="update-banner-icon">🚀</div>
+      <div class="update-banner-content">
+        <div class="update-banner-title">${lang === 'ru' ? 'Доступна новая версия!' : lang === 'zh' ? '新版本可用！' : 'New version available!'}</div>
+        <div class="update-banner-version">v${props.availableUpdate.version}</div>
+      </div>
+      <div class="update-banner-action">${lang === 'ru' ? 'Скачать' : lang === 'zh' ? '下载' : 'Download'} →</div>
+    </div>
+  ` : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -143,6 +155,8 @@ export function generateWebviewHtml(
         <button class="icon-btn tooltip tooltip-left" data-tip="${t.settingsTip}" onclick="openSettings()">${ICONS.settings}</button>
       </div>
     </div>
+    
+    ${updateBannerHtml}
     
     ${settingsHtml}
     
@@ -241,6 +255,16 @@ function getStyles(): string {
     .icon-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: all var(--transition-fast); }
     .icon-btn:hover { background: var(--bg-elevated); border-color: var(--border-subtle); color: var(--vscode-foreground); }
     .icon-btn svg { pointer-events: none; }
+    .update-banner { display: flex; align-items: center; gap: 12px; margin: 8px 14px; padding: 12px 16px; background: linear-gradient(135deg, rgba(217, 163, 52, 0.15) 0%, rgba(229, 83, 83, 0.1) 100%); border: 1px solid rgba(217, 163, 52, 0.4); border-radius: var(--radius-lg); cursor: pointer; transition: all var(--transition-normal); animation: updatePulse 2s ease-in-out infinite; }
+    .update-banner:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(217, 163, 52, 0.3); border-color: var(--warning); }
+    .update-banner-icon { font-size: 24px; animation: rocketBounce 1s ease-in-out infinite; }
+    .update-banner-content { flex: 1; }
+    .update-banner-title { font-size: 11px; font-weight: 700; color: var(--warning); }
+    .update-banner-version { font-size: 13px; font-weight: 800; margin-top: 2px; }
+    .update-banner-action { font-size: 11px; font-weight: 600; color: var(--warning); padding: 6px 12px; background: rgba(217, 163, 52, 0.2); border-radius: var(--radius-sm); transition: all var(--transition-fast); }
+    .update-banner:hover .update-banner-action { background: var(--warning); color: #000; }
+    @keyframes updatePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217, 163, 52, 0.4); } 50% { box-shadow: 0 0 0 4px rgba(217, 163, 52, 0.1); } }
+    @keyframes rocketBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
     .tooltip { position: relative; }
     .tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); padding: 5px 10px; background: var(--vscode-editorWidget-background, #252526); color: var(--vscode-editorWidget-foreground, #ccc); font-size: 11px; font-weight: 500; border-radius: var(--radius-sm); white-space: nowrap; box-shadow: var(--shadow-md); border: 1px solid var(--border-medium); opacity: 0; pointer-events: none; transition: opacity var(--transition-fast); z-index: 1000; }
     .tooltip:hover::after { opacity: 1; }
