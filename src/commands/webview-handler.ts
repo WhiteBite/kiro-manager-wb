@@ -59,6 +59,10 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await provider.toggleSetting(msg.setting);
       break;
 
+    case 'updateSetting':
+      await provider.updateSetting(msg.key, msg.value);
+      break;
+
     case 'clearConsole':
       provider.clearLogs();
       break;
