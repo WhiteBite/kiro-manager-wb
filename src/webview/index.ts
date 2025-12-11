@@ -331,9 +331,16 @@ function getStyles(): string {
     .card:nth-child(1) { animation-delay: 0.02s; } .card:nth-child(2) { animation-delay: 0.04s; } .card:nth-child(3) { animation-delay: 0.06s; }
     .progress-panel { margin: 12px 14px; padding: 14px 16px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
     .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .progress-title { font-size: 11px; font-weight: 600; } .progress-step { font-size: 10px; color: var(--muted); }
+    .progress-title { font-size: 11px; font-weight: 600; flex: 1; } .progress-step { font-size: 10px; color: var(--muted); }
+    .progress-actions { display: flex; gap: 6px; }
+    .progress-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-medium); border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; color: var(--muted); transition: all var(--transition-fast); }
+    .progress-btn:hover { background: rgba(128,128,128,0.2); color: var(--vscode-foreground); transform: scale(1.1); }
+    .progress-btn.danger:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+    .progress-btn.paused { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
     .progress-bar { height: 4px; background: rgba(128,128,128,0.15); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); border-radius: 2px; transition: width 0.3s ease; }
+    .progress-fill.paused { background: linear-gradient(90deg, var(--warning), #e5b84a); animation: none; }
+    .progress-footer { display: flex; justify-content: space-between; align-items: center; }
     .progress-detail { font-size: 10px; color: var(--muted); }
     .settings-panel { display: none; padding: 14px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); } .settings-panel.visible { display: block; }
     .settings-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; color: var(--muted); }

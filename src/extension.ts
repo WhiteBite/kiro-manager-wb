@@ -123,6 +123,7 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
   }
   
   private _autoRegProcess: any = null;
+  private _autoRegPaused: boolean = false;
   
   stopAutoReg() {
     if (this._autoRegProcess) {
@@ -134,11 +135,58 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         this.addLog('⚠️ Failed to stop process');
       }
       this._autoRegProcess = null;
+      this._autoRegPaused = false;
+    }
+  }
+  
+  togglePauseAutoReg() {
+    if (this._autoRegProcess) {
+      this._autoRegPaused = !this._autoRegPaused;
+      try {
+        if (this._autoRegPaused) {
+          // Send SIGSTOP on Unix, or use stdin for Windows
+          if (process.platform === 'win32') {
+            // Windows doesn't support SIGSTOP, we'll signal via stdin
+            this._autoRegProcess.stdin?.write('PAUSE\n');
+          } else {
+            this._autoRegProcess.kill('SIGSTOP');
+          }
+          this.addLog('⏸ Auto-reg paused');
+          this.updateProgressPaused(true);
+        } else {
+          if (process.platform === 'win32') {
+            this._autoRegProcess.stdin?.write('RESUME\n');
+          } else {
+            this._autoRegProcess.kill('SIGCONT');
+          }
+          this.addLog('▶ Auto-reg resumed');
+          this.updateProgressPaused(false);
+        }
+      } catch (e) {
+        this.addLog('⚠️ Failed to pause/resume process');
+      }
+      this.refresh();
+    }
+  }
+  
+  private updateProgressPaused(paused: boolean) {
+    const status = this._context.globalState.get<string>('autoRegStatus', '');
+    if (status?.startsWith('{')) {
+      try {
+        const progress = JSON.parse(status);
+        if (paused) {
+          progress.detail = '⏸ Paused - ' + progress.detail;
+        } else {
+          progress.detail = progress.detail.replace(/^⏸ Paused - /, '');
+        }
+        this._context.globalState.update('autoRegStatus', JSON.stringify(progress));
+      } catch {}
     }
   }
   
   setAutoRegProcess(proc: any) {
     this._autoRegProcess = proc;
+    this._autoRegPaused = false;
   }
   
   async exportAccounts() {
@@ -247,6 +295,9 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
           break;
         case 'stopAutoReg':
           this.stopAutoReg();
+          break;
+        case 'togglePauseAutoReg':
+          this.togglePauseAutoReg();
           break;
         case 'openLog':
           await this.openLogFile();

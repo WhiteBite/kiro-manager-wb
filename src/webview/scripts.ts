@@ -67,6 +67,14 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'checkForUpdates' });
     }
     
+    function stopAutoReg() {
+      vscode.postMessage({ command: 'stopAutoReg' });
+    }
+    
+    function togglePauseAutoReg() {
+      vscode.postMessage({ command: 'togglePauseAutoReg' });
+    }
+    
     function copyToken(filename) {
       vscode.postMessage({ command: 'copyToken', email: filename });
     }
