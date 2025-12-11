@@ -10,7 +10,7 @@ import * as os from 'os';
 import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, refreshAllAccounts, getCurrentToken, deleteAccount } from './accounts';
 import { getTokensDir, getKiroUsageFromDB, KiroUsageData } from './utils';
 import { generateWebviewHtml } from './webview';
-import { checkForUpdates, getAvailableUpdate } from './update-checker';
+import { checkForUpdates, getAvailableUpdate, forceCheckForUpdates } from './update-checker';
 
 let statusBarItem: vscode.StatusBarItem;
 let accountsProvider: KiroAccountsProvider;
@@ -280,6 +280,18 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
           break;
         case 'openUrl':
           vscode.env.openExternal(vscode.Uri.parse(msg.url));
+          break;
+        case 'checkForUpdates':
+          const update = await forceCheckForUpdates(this._context);
+          this._availableUpdate = update;
+          if (update) {
+            vscode.window.showInformationMessage(`New version ${update.version} available!`, 'Download').then(sel => {
+              if (sel === 'Download') vscode.env.openExternal(vscode.Uri.parse(update.url));
+            });
+          } else {
+            vscode.window.showInformationMessage('You have the latest version!');
+          }
+          this.refresh();
           break;
       }
     });

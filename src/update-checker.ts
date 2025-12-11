@@ -16,13 +16,21 @@ interface GitHubRelease {
   published_at: string;
 }
 
-export async function checkForUpdates(context: vscode.ExtensionContext): Promise<void> {
+export async function checkForUpdates(context: vscode.ExtensionContext, force: boolean = false): Promise<void> {
   const currentVersion = context.extension.packageJSON.version;
   const lastCheck = context.globalState.get<number>('lastUpdateCheck', 0);
+  const lastVersion = context.globalState.get<string>('lastCheckedVersion', '');
   const now = Date.now();
   
-  // Check at most once per day
-  if (now - lastCheck < 24 * 60 * 60 * 1000) {
+  // Force check if version changed (extension was updated)
+  const versionChanged = lastVersion !== currentVersion;
+  if (versionChanged) {
+    await context.globalState.update('lastCheckedVersion', currentVersion);
+    await context.globalState.update('availableUpdate', null);
+  }
+  
+  // Check at most once per hour (reduced from 24h for better UX)
+  if (!force && !versionChanged && now - lastCheck < 60 * 60 * 1000) {
     return;
   }
   
@@ -48,6 +56,13 @@ export async function checkForUpdates(context: vscode.ExtensionContext): Promise
   } catch (error) {
     console.error('Failed to check for updates:', error);
   }
+}
+
+// Force check for updates (bypasses cache)
+export async function forceCheckForUpdates(context: vscode.ExtensionContext): Promise<{ version: string; url: string } | null> {
+  await context.globalState.update('lastUpdateCheck', 0);
+  await checkForUpdates(context, true);
+  return getAvailableUpdate(context);
 }
 
 export function getAvailableUpdate(context: vscode.ExtensionContext): { version: string; url: string; name: string } | null {

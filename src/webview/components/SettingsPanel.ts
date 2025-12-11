@@ -72,10 +72,15 @@ export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, langua
     },
   ];
 
+  const checkUpdateLabel = language === 'ru' ? 'Проверить обновления' : language === 'zh' ? '检查更新' : 'Check for updates';
+
   return `
     <div class="settings-panel" id="settingsPanel">
       <div class="settings-title">${t.settingsTitle}</div>
       ${settings.map(s => renderSettingRow(s.label, s.desc, s.control)).join('')}
+      <div class="settings-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+        <button class="btn btn-secondary" onclick="checkForUpdates()" style="width: 100%;">🔄 ${checkUpdateLabel}</button>
+      </div>
     </div>
   `;
 }
