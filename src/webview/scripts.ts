@@ -30,6 +30,13 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'toggleAutoSwitch', enabled });
     }
     
+    function toggleHideExpired(hide) {
+      setState({ hideExpired: hide });
+      document.querySelectorAll('.card.expired').forEach(card => {
+        card.style.display = hide ? 'none' : '';
+      });
+    }
+    
     function updateSetting(key, value) {
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
@@ -192,6 +199,10 @@ export function generateWebviewScript(totalAccounts: number): string {
       if (state.compact) document.body.classList.add('compact');
       if (state.settingsOpen) document.getElementById('settingsPanel')?.classList.add('visible');
       if (state.filter !== 'all') filterAccounts(state.filter);
+      if (state.hideExpired) {
+        toggleHideExpired(true);
+        document.getElementById('hideExpired')?.setAttribute('checked', 'checked');
+      }
       
       // Auto-scroll console
       const consoleBody = document.getElementById('consoleBody');

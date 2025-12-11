@@ -152,8 +152,8 @@ export function generateWebviewHtml(
         <span class="header-badge">${accounts.length}</span>
       </div>
       <div class="header-actions">
-        <button class="icon-btn tooltip tooltip-left" data-tip="${t.compactViewTip}" onclick="toggleCompact()">${ICONS.menu}</button>
-        <button class="icon-btn tooltip tooltip-left" data-tip="${t.settingsTip}" onclick="openSettings()">${ICONS.settings}</button>
+        <button class="icon-btn" onclick="toggleCompact()" title="${t.compactViewTip}">${ICONS.menu}</button>
+        <button class="icon-btn" onclick="openSettings()" title="${t.settingsTip}">${ICONS.settings}</button>
       </div>
     </div>
     
@@ -176,33 +176,27 @@ export function generateWebviewHtml(
     
     <!-- Action Buttons -->
     <div class="actions">
-      <button class="btn btn-primary tooltip" data-tip="${t.autoRegTip}" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
+      <button class="btn btn-primary" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
         ${isRunning ? '<span class="spinner"></span>' : ICONS.bolt}
         ${isRunning ? t.running : t.autoReg}
       </button>
-      <button class="btn btn-secondary tooltip" data-tip="${t.importTip}" onclick="importToken()">${ICONS.import} ${t.import}</button>
-      <button class="btn btn-secondary btn-icon tooltip" data-tip="${t.refreshTip}" onclick="refresh()">${ICONS.refresh}</button>
-      <button class="btn btn-secondary btn-icon tooltip" data-tip="${t.exportTip}" onclick="exportAccounts()">${ICONS.export}</button>
-    </div>
-    
-    <!-- SSO Import -->
-    <div class="sso-import-row">
-      <button class="btn btn-secondary btn-full tooltip" data-tip="${lang === 'ru' ? 'Импорт из cookie браузера (x-amz-sso_authn)' : lang === 'zh' ? '从浏览器cookie导入' : 'Import from browser cookie (x-amz-sso_authn)'}" onclick="showSsoImport()">
-        🌐 ${lang === 'ru' ? 'Импорт из браузера' : lang === 'zh' ? '从浏览器导入' : 'Import from Browser'}
+      <button class="btn btn-secondary" onclick="showSsoImport()" title="${lang === 'ru' ? 'Импорт из браузера' : 'Import from browser'}">
+        🌐 ${lang === 'ru' ? 'SSO' : 'SSO'}
       </button>
+      <button class="btn btn-secondary btn-icon" onclick="refresh()" title="${t.refreshTip}">${ICONS.refresh}</button>
     </div>
     
-    <!-- SSO Import Dialog (hidden by default) -->
+    <!-- SSO Import Panel -->
     <div class="sso-import-panel" id="ssoImportPanel">
       <div class="sso-import-header">
-        <span>${lang === 'ru' ? 'Импорт из SSO Cookie' : lang === 'zh' ? 'SSO Cookie导入' : 'SSO Cookie Import'}</span>
+        <span>${lang === 'ru' ? 'Импорт из SSO Cookie' : 'SSO Cookie Import'}</span>
         <button class="icon-btn" onclick="hideSsoImport()">✕</button>
       </div>
       <div class="sso-import-body">
-        <p class="sso-import-hint">${lang === 'ru' ? '1. Откройте view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Скопируйте x-amz-sso_authn' : lang === 'zh' ? '1. 打开 view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. 复制 x-amz-sso_authn' : '1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn'}</p>
-        <textarea id="ssoTokenInput" class="sso-input" placeholder="Paste x-amz-sso_authn cookie value here..."></textarea>
+        <p class="sso-import-hint">${lang === 'ru' ? '1. Откройте view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Скопируйте x-amz-sso_authn' : '1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn'}</p>
+        <textarea id="ssoTokenInput" class="sso-input" placeholder="${lang === 'ru' ? 'Вставьте cookie...' : 'Paste cookie...'}"></textarea>
         <button class="btn btn-primary btn-full" onclick="importSsoToken()">
-          ${lang === 'ru' ? 'Импортировать' : lang === 'zh' ? '导入' : 'Import'}
+          ${lang === 'ru' ? 'Импортировать' : 'Import'}
         </button>
       </div>
     </div>

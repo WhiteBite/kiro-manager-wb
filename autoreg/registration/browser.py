@@ -54,7 +54,7 @@ BASE_DIR = get_paths().autoreg_dir
 class BrowserAutomation:
     """Автоматизация браузера для регистрации с обходом fingerprinting"""
     
-    def __init__(self, headless: bool = None, spoof_fingerprint: bool = False):
+    def __init__(self, headless: bool = None, spoof_fingerprint: bool = True):
         """
         Args:
             headless: Запуск без GUI (по умолчанию из настроек)

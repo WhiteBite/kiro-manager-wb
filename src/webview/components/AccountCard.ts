@@ -38,10 +38,9 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
         ${account.isActive ? `<span class="card-status active">${t.active}</span>` : ''}
         ${account.isExpired ? `<span class="card-status expired">${t.expired}</span>` : ''}
         <div class="card-actions">
-          <button class="card-btn tooltip" data-tip="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
-          <button class="card-btn tooltip ${account.isExpired ? 'highlight' : ''}" data-tip="${t.refreshTokenTip}" onclick="event.stopPropagation(); refreshToken('${escapeHtml(account.filename)}')">${ICONS.refresh}</button>
-          <button class="card-btn tooltip" data-tip="${t.viewQuotaTip}" onclick="event.stopPropagation(); viewQuota('${escapeHtml(account.filename)}')">${ICONS.chart}</button>
-          <button class="card-btn danger tooltip" data-tip="${t.deleteTip}" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(account.filename)}')">${ICONS.trash}</button>
+          <button class="card-btn" title="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
+          <button class="card-btn ${account.isExpired ? 'highlight' : ''}" title="${t.refreshTokenTip}" onclick="event.stopPropagation(); refreshToken('${escapeHtml(account.filename)}')">${ICONS.refresh}</button>
+          <button class="card-btn danger" title="${t.deleteTip}" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(account.filename)}')">${ICONS.trash}</button>
         </div>
       </div>
     </div>

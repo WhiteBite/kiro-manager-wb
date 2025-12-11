@@ -47,6 +47,8 @@ export const zh: Translations = {
   settingsTitle: '设置',
   autoSwitch: '到期自动切换',
   autoSwitchDesc: '自动切换到下一个有效账户',
+  hideExpired: '隐藏过期',
+  hideExpiredDesc: '从列表中隐藏过期账户',
   headless: '无头模式',
   headlessDesc: '在后台运行浏览器',
   verbose: '详细日志',
