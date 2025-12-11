@@ -292,14 +292,23 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
   }
   
   async viewQuota(filename: string) {
-    const accounts = loadAccounts();
-    const account = accounts.find(a => a.filename === filename || a.filename.includes(filename));
+    // Use cached accounts with usage data
+    const account = this._accounts.find(a => a.filename === filename || a.filename.includes(filename));
     if (account?.usage) {
       vscode.window.showInformationMessage(
         `${account.tokenData.accountName || filename}: ${account.usage.currentUsage}/${account.usage.usageLimit} (${account.usage.percentageUsed.toFixed(1)}%)`
       );
     } else {
-      vscode.window.showWarningMessage('No usage data available for this account');
+      // Try to load from cache file
+      const accountName = account?.tokenData.accountName || filename;
+      const cachedUsage = await loadSingleAccountUsage(accountName);
+      if (cachedUsage) {
+        vscode.window.showInformationMessage(
+          `${accountName}: ${cachedUsage.currentUsage}/${cachedUsage.usageLimit} (${cachedUsage.percentageUsed.toFixed(1)}%)`
+        );
+      } else {
+        vscode.window.showWarningMessage('No usage data available. Switch to this account and refresh to load usage.');
+      }
     }
   }
   
