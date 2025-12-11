@@ -10,31 +10,32 @@ const AUTOREG_DIR = path.join(__dirname, '..', 'autoreg');
 
 describe('Extension Path Configuration', () => {
   
-  describe('extension.ts references', () => {
-    let extensionContent: string;
+  describe('autoreg module references', () => {
+    let autoregContent: string;
     
     beforeAll(() => {
-      extensionContent = fs.readFileSync(path.join(SRC_DIR, 'extension.ts'), 'utf8');
+      // After refactoring, autoreg code is in src/commands/autoreg.ts
+      autoregContent = fs.readFileSync(path.join(SRC_DIR, 'commands', 'autoreg.ts'), 'utf8');
     });
 
     it('should reference autoreg folder (not autoreg-bundled)', () => {
-      expect(extensionContent).toContain("'autoreg'");
-      expect(extensionContent).not.toContain('autoreg-bundled');
+      expect(autoregContent).toContain("'autoreg'");
+      expect(autoregContent).not.toContain('autoreg-bundled');
     });
 
     it('should reference register_auto.py', () => {
-      expect(extensionContent).toContain('register_auto.py');
+      expect(autoregContent).toContain('register_auto.py');
       // Verify the file actually exists
       expect(fs.existsSync(path.join(AUTOREG_DIR, 'registration', 'register_auto.py'))).toBe(true);
     });
 
     it('should reference requirements.txt', () => {
-      expect(extensionContent).toContain('requirements.txt');
+      expect(autoregContent).toContain('requirements.txt');
       expect(fs.existsSync(path.join(AUTOREG_DIR, 'requirements.txt'))).toBe(true);
     });
 
     it('should use -m registration.register_auto for module execution', () => {
-      expect(extensionContent).toContain("'-m', 'registration.register_auto'");
+      expect(autoregContent).toContain("'-m', 'registration.register_auto'");
     });
   });
 
