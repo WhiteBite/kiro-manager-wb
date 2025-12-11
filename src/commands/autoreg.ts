@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
+import { autoregProcess } from '../process-manager';
 
 // Get autoreg directory
 export function getAutoregDir(context: vscode.ExtensionContext): string {
@@ -183,26 +184,19 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
-  const isWindows = process.platform === 'win32';
-  const proc = spawn(pythonCmd, args, {
-    cwd: autoregDir,
-    env,
-    shell: isWindows,
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  // Use ProcessManager for better control
+  autoregProcess.removeAllListeners();
 
-  provider.setAutoRegProcess(proc);
-
-  proc.stdout.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n').filter((l: string) => l.trim());
+  autoregProcess.on('stdout', (data: string) => {
+    const lines = data.split('\n').filter((l: string) => l.trim());
     for (const line of lines) {
       provider.addLog(line);
       parseProgressLine(line, provider);
     }
   });
 
-  proc.stderr.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n').filter((l: string) => l.trim());
+  autoregProcess.on('stderr', (data: string) => {
+    const lines = data.split('\n').filter((l: string) => l.trim());
     for (const line of lines) {
       if (!line.includes('DevTools') && !line.includes('GPU process')) {
         provider.addLog(`⚠️ ${line}`);
@@ -210,25 +204,40 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     }
   });
 
-  proc.on('close', (code: number) => {
-    provider.setAutoRegProcess(null);
+  autoregProcess.on('close', (code: number) => {
     if (code === 0) {
       provider.addLog('✓ Registration complete');
-      provider.setStatus('');
       vscode.window.showInformationMessage('Account registered successfully!');
-    } else {
+    } else if (code !== null) {
       provider.addLog(`✗ Process exited with code ${code}`);
-      provider.setStatus('');
     }
+    provider.setStatus('');
     provider.refresh();
     provider.addLog('🔄 Refreshed account list');
   });
 
-  proc.on('error', (err: Error) => {
-    provider.setAutoRegProcess(null);
+  autoregProcess.on('stopped', () => {
+    provider.addLog('⏹ Auto-reg stopped by user');
+    provider.setStatus('');
+    provider.refresh();
+  });
+
+  autoregProcess.on('error', (err: Error) => {
     provider.addLog(`✗ Error: ${err.message}`);
     provider.setStatus('');
   });
+
+  autoregProcess.on('paused', () => {
+    provider.addLog('⏸ Auto-reg paused');
+    provider.refresh();
+  });
+
+  autoregProcess.on('resumed', () => {
+    provider.addLog('▶ Auto-reg resumed');
+    provider.refresh();
+  });
+
+  autoregProcess.start(pythonCmd, args, { cwd: autoregDir, env });
 }
 
 function parseProgressLine(line: string, provider: KiroAccountsProvider) {

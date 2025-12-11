@@ -13,6 +13,7 @@ import { generateWebviewHtml } from '../webview';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo } from '../types';
 import { Language } from '../webview/i18n';
+import { autoregProcess } from '../process-manager';
 
 export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
@@ -23,8 +24,6 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _version: string;
   private _language: Language = 'en';
   private _availableUpdate: { version: string; url: string } | null = null;
-  private _autoRegProcess: any = null;
-  private _autoRegPaused: boolean = false;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -89,44 +88,21 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   // Auto-reg process management
   stopAutoReg() {
-    if (this._autoRegProcess) {
-      try {
-        this._autoRegProcess.kill();
-        this.addLog('⏹ Auto-reg stopped by user');
-        this.setStatus('⏹ Stopped');
-      } catch (e) {
-        this.addLog('⚠️ Failed to stop process');
-      }
-      this._autoRegProcess = null;
-      this._autoRegPaused = false;
+    if (autoregProcess.isRunning) {
+      this.addLog('🛑 Stopping auto-reg...');
+      autoregProcess.stop();
+    } else {
+      this.addLog('⚠️ No process running');
     }
   }
 
   togglePauseAutoReg() {
-    if (this._autoRegProcess) {
-      this._autoRegPaused = !this._autoRegPaused;
-      try {
-        if (this._autoRegPaused) {
-          if (process.platform === 'win32') {
-            this._autoRegProcess.stdin?.write('PAUSE\n');
-          } else {
-            this._autoRegProcess.kill('SIGSTOP');
-          }
-          this.addLog('⏸ Auto-reg paused');
-          this.updateProgressPaused(true);
-        } else {
-          if (process.platform === 'win32') {
-            this._autoRegProcess.stdin?.write('RESUME\n');
-          } else {
-            this._autoRegProcess.kill('SIGCONT');
-          }
-          this.addLog('▶ Auto-reg resumed');
-          this.updateProgressPaused(false);
-        }
-      } catch (e) {
-        this.addLog('⚠️ Failed to pause/resume process');
-      }
-      this.refresh();
+    if (autoregProcess.isRunning) {
+      const wasPaused = autoregProcess.state === 'paused';
+      autoregProcess.togglePause();
+      this.updateProgressPaused(!wasPaused);
+    } else {
+      this.addLog('⚠️ No process running');
     }
   }
 
@@ -144,12 +120,6 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       } catch {}
     }
   }
-
-  setAutoRegProcess(proc: any) {
-    this._autoRegProcess = proc;
-    this._autoRegPaused = false;
-  }
-
 
   // Export accounts
   async exportAccounts() {
