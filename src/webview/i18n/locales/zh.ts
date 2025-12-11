@@ -29,6 +29,7 @@ export const zh: Translations = {
   byExpiry: '按到期时间',
   active: '活动',
   copyTokenTip: '复制访问令牌到剪贴板',
+  refreshTokenTip: '刷新过期令牌',
   viewQuotaTip: '显示此账户的使用统计',
   deleteTip: '删除账户和令牌文件',
   noAccounts: '暂无账户',

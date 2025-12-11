@@ -29,6 +29,7 @@ export const hi: Translations = {
   byExpiry: 'समाप्ति द्वारा',
   active: 'सक्रिय',
   copyTokenTip: 'एक्सेस टोकन क्लिपबोर्ड पर कॉपी करें',
+  refreshTokenTip: 'समाप्त टोकन रीफ्रेश करें',
   viewQuotaTip: 'इस खाते के उपयोग आंकड़े दिखाएं',
   deleteTip: 'खाता और टोकन फ़ाइल हटाएं',
   noAccounts: 'अभी तक कोई खाता नहीं',

@@ -299,6 +299,9 @@ function getStyles(): string {
     .card-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: all var(--transition-fast); }
     .card-btn:hover { background: rgba(128,128,128,0.2); border-color: var(--border-medium); color: var(--vscode-foreground); transform: scale(1.1); }
     .card-btn.danger:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+    .card-btn.highlight { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); animation: pulse 2s infinite; }
+    .card-btn.highlight:hover { background: var(--accent); color: var(--bg-primary); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     .card-btn svg { width: 16px; height: 16px; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .card:nth-child(1) { animation-delay: 0.02s; } .card:nth-child(2) { animation-delay: 0.04s; } .card:nth-child(3) { animation-delay: 0.06s; }

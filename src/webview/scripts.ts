@@ -39,6 +39,7 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function startAutoReg() {
+      console.log('startAutoReg clicked');
       vscode.postMessage({ command: 'startAutoReg' });
     }
     
@@ -68,6 +69,10 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function viewQuota(filename) {
       vscode.postMessage({ command: 'viewQuota', email: filename });
+    }
+    
+    function refreshToken(filename) {
+      vscode.postMessage({ command: 'refreshToken', email: filename });
     }
     
     function clearConsole() {

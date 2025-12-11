@@ -39,6 +39,7 @@ export interface Translations {
   // Account card
   active: string;
   copyTokenTip: string;
+  refreshTokenTip: string;
   viewQuotaTip: string;
   deleteTip: string;
   noAccounts: string;

@@ -29,6 +29,7 @@ export const fr: Translations = {
   byExpiry: 'Par Expiration',
   active: 'Actif',
   copyTokenTip: "Copier le token d'accès dans le presse-papiers",
+  refreshTokenTip: 'Actualiser le token expiré',
   viewQuotaTip: "Afficher les statistiques d'utilisation de ce compte",
   deleteTip: 'Supprimer le compte et le fichier token',
   noAccounts: 'Pas encore de comptes',

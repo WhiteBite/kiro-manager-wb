@@ -29,6 +29,7 @@ export const es: Translations = {
   byExpiry: 'Por Expiración',
   active: 'Activa',
   copyTokenTip: 'Copiar token de acceso al portapapeles',
+  refreshTokenTip: 'Actualizar token expirado',
   viewQuotaTip: 'Mostrar estadísticas de uso de esta cuenta',
   deleteTip: 'Eliminar cuenta y archivo de token',
   noAccounts: 'Sin cuentas aún',

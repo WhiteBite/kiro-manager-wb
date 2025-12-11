@@ -29,6 +29,7 @@ export const en: Translations = {
   byExpiry: 'By Expiry',
   active: 'Active',
   copyTokenTip: 'Copy access token to clipboard',
+  refreshTokenTip: 'Refresh expired token',
   viewQuotaTip: 'Show usage statistics for this account',
   deleteTip: 'Remove account and token file',
   noAccounts: 'No accounts yet',

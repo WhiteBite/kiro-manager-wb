@@ -29,6 +29,7 @@ export const ru: Translations = {
   byExpiry: 'По сроку',
   active: 'Активен',
   copyTokenTip: 'Скопировать access token в буфер обмена',
+  refreshTokenTip: 'Обновить истекший токен',
   viewQuotaTip: 'Показать статистику использования аккаунта',
   deleteTip: 'Удалить аккаунт и файл токена',
   noAccounts: 'Нет аккаунтов',

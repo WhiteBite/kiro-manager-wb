@@ -255,11 +255,15 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         case 'viewQuota':
           await this.viewQuota(msg.email);
           break;
+        case 'refreshToken':
+          await this.refreshSingleToken(msg.email);
+          break;
         case 'deleteAccount':
           await deleteAccount(msg.email);
           this.refresh();
           break;
         case 'startAutoReg':
+          console.log('startAutoReg message received');
           await runAutoReg(this._context, this);
           break;
         case 'importToken':
@@ -297,6 +301,23 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
     } else {
       vscode.window.showWarningMessage('No usage data available for this account');
     }
+  }
+  
+  async refreshSingleToken(filename: string) {
+    const accountName = filename.replace(/^token-BuilderId-IdC-/, '').replace(/-\d+\.json$/, '').replace(/_/g, ' ');
+    vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Refreshing token for ${accountName}...`,
+      cancellable: false
+    }, async () => {
+      const success = await refreshAccountToken(filename);
+      if (success) {
+        vscode.window.showInformationMessage(`Token refreshed: ${accountName}`);
+        this.refresh();
+      } else {
+        vscode.window.showErrorMessage(`Failed to refresh token: ${accountName}`);
+      }
+    });
   }
   
   async toggleSetting(setting: string) {
@@ -710,8 +731,8 @@ async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccoun
 
   const { spawn } = require('child_process');
   
-  // Build args based on settings
-  const args = [finalPath];
+  // Build args - use python -m to properly handle package imports
+  const args = ['-m', 'registration.register_auto'];
   if (headless) {
     args.push('--headless');
   } else {
@@ -734,7 +755,7 @@ async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccoun
   provider.addLog(`Starting autoreg...`);
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
-  provider.addLog(`Args: ${args.join(' ')}`);
+  provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
   
   // On Windows, use shell: true for proper command execution
   const isWindows = process.platform === 'win32';

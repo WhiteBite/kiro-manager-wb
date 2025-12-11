@@ -29,6 +29,7 @@ export const de: Translations = {
   byExpiry: 'Nach Ablauf',
   active: 'Aktiv',
   copyTokenTip: 'Zugriffstoken in Zwischenablage kopieren',
+  refreshTokenTip: 'Abgelaufenes Token aktualisieren',
   viewQuotaTip: 'Nutzungsstatistiken für dieses Konto anzeigen',
   deleteTip: 'Konto und Token-Datei entfernen',
   noAccounts: 'Noch keine Konten',
