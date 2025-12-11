@@ -7,6 +7,8 @@
 
 [Русский](README.md) | [English](README.en.md) | 中文
 
+![Screenshot](images/screenshot.png)
+
 专为那些厌倦了 Kiro 限制的人准备的扩展。
 
 > ⚠️ **免责声明**

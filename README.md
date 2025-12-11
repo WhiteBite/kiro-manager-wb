@@ -7,6 +7,8 @@
 
 Русский | [English](README.en.md) | [中文](README.zh.md)
 
+![Screenshot](images/screenshot.png)
+
 Расширение для тех, кто устал ебаться с лимитами Kiro.
 
 > ⚠️ **ДИСКЛЕЙМЕР**
