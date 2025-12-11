@@ -66,6 +66,7 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _consoleLogs: string[] = [];
   private _version: string;
   private _language: import('./webview/i18n').Language = 'en';
+  private _availableUpdate: { version: string; url: string; name: string } | null = null;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -73,6 +74,8 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this._version = context.extension.packageJSON.version || 'unknown';
     // Load saved language preference
     this._language = context.globalState.get<import('./webview/i18n').Language>('language', 'en');
+    // Load available update from cache
+    this._availableUpdate = getAvailableUpdate(context);
   }
   
   addLog(message: string) {
@@ -383,15 +386,11 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         this._kiroUsage = null;
       }
       
-      // Get autoreg settings
-      const autoRegSettings = {
-        headless: config.get<boolean>('autoreg.headless', false),
-        verbose: config.get<boolean>('debug.verbose', false),
-        screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
-      };
+      // Check for available update
+      this._availableUpdate = getAvailableUpdate(this._context);
       
-      // Render immediately with basic data
-      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
+      // Render webview
+      this.renderWebview();
       
       // Then load usage for all accounts in background
       this.loadAllUsage();
@@ -399,22 +398,37 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
     updateStatusBar();
   }
   
+  private renderWebview() {
+    if (!this._view) return;
+    
+    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+    const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);
+    const autoRegStatus = this._context.globalState.get<string>('autoRegStatus', '');
+    const autoRegSettings = {
+      headless: config.get<boolean>('autoreg.headless', false),
+      verbose: config.get<boolean>('debug.verbose', false),
+      screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
+    };
+    
+    this._view.webview.html = generateWebviewHtml({
+      accounts: this._accounts,
+      autoSwitchEnabled,
+      autoRegStatus,
+      kiroUsage: this._kiroUsage,
+      autoRegSettings,
+      consoleLogs: this._consoleLogs,
+      version: this._version,
+      language: this._language,
+      availableUpdate: this._availableUpdate
+    });
+  }
+  
   async loadAllUsage() {
     if (!this._view) return;
     
     try {
       this._accounts = await loadAccountsWithUsage();
-      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-      const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);
-      const autoRegStatus = this._context.globalState.get<string>('autoRegStatus', '');
-      
-      const autoRegSettings = {
-        headless: config.get<boolean>('autoreg.headless', false),
-        verbose: config.get<boolean>('debug.verbose', false),
-        screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
-      };
-      
-      this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
+      this.renderWebview();
     } catch (err) {
       console.error('Failed to load all usage:', err);
     }
@@ -426,25 +440,13 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
     try {
       const usage = await loadSingleAccountUsage(accountName);
       if (usage) {
-        // Update account in list
         const acc = this._accounts.find(a => 
           a.tokenData.accountName === accountName || 
           a.filename.includes(accountName)
         );
         if (acc) {
           acc.usage = usage;
-          
-          const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-          const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);
-          const autoRegStatus = this._context.globalState.get<string>('autoRegStatus', '');
-          
-          const autoRegSettings = {
-            headless: config.get<boolean>('autoreg.headless', false),
-            verbose: config.get<boolean>('debug.verbose', false),
-            screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
-          };
-          
-          this._view.webview.html = generateWebviewHtml(this._accounts, autoSwitchEnabled, autoRegStatus, undefined, this._kiroUsage, autoRegSettings, this._consoleLogs, this._version, this._language);
+          this.renderWebview();
         }
       }
     } catch (err) {
