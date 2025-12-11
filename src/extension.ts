@@ -233,6 +233,9 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         case 'toggleSetting':
           await this.toggleSetting(msg.setting);
           break;
+        case 'updateSetting':
+          await this.updateSetting(msg.key, msg.value);
+          break;
         case 'clearConsole':
           this.clearLogs();
           break;
@@ -367,7 +370,23 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
     }
     
     this.refresh();
-
+  }
+  
+  async updateSetting(key: string, value: boolean) {
+    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+    
+    switch (key) {
+      case 'headless':
+        await config.update('autoreg.headless', value, vscode.ConfigurationTarget.Global);
+        break;
+      case 'verbose':
+        await config.update('debug.verbose', value, vscode.ConfigurationTarget.Global);
+        break;
+      case 'screenshotsOnError':
+        await config.update('debug.screenshotsOnError', value, vscode.ConfigurationTarget.Global);
+        break;
+    }
+    
     this.refresh();
   }
 
