@@ -333,6 +333,9 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
           await importToken();
           this.refresh();
           break;
+        case 'importSsoToken':
+          await importSsoToken(this._context, this, msg.token);
+          break;
         case 'setLanguage':
           this._language = msg.language;
           this._context.globalState.update('language', msg.language);
@@ -595,6 +598,64 @@ async function importToken() {
   } catch (error) {
     console.error('Import failed:', error);
   }
+}
+
+async function importSsoToken(context: vscode.ExtensionContext, provider: KiroAccountsProvider, bearerToken: string) {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    vscode.window.showErrorMessage('Autoreg not found');
+    return;
+  }
+  
+  provider.addLog('🌐 Starting SSO import...');
+  provider.setStatus('{"step":1,"totalSteps":3,"stepName":"SSO Import","detail":"Connecting to AWS..."}');
+  
+  const pythonCmd = getPythonCommand();
+  const { spawn } = require('child_process');
+  
+  // Run SSO import via CLI
+  const args = ['-m', 'cli', 'sso', '-t', bearerToken, '-a'];
+  
+  const proc = spawn(pythonCmd, args, {
+    cwd: autoregDir,
+    env: { ...process.env, PYTHONPATH: autoregDir }
+  });
+  
+  let output = '';
+  let errorOutput = '';
+  
+  proc.stdout.on('data', (data: Buffer) => {
+    const line = data.toString().trim();
+    output += line + '\n';
+    provider.addLog(line);
+  });
+  
+  proc.stderr.on('data', (data: Buffer) => {
+    const line = data.toString().trim();
+    errorOutput += line + '\n';
+    if (line && !line.includes('InsecureRequestWarning')) {
+      provider.addLog(`⚠️ ${line}`);
+    }
+  });
+  
+  proc.on('close', (code: number) => {
+    if (code === 0) {
+      provider.addLog('✅ SSO import successful!');
+      provider.setStatus('');
+      vscode.window.showInformationMessage('Account imported successfully!');
+      provider.refresh();
+    } else {
+      provider.addLog(`❌ SSO import failed (code ${code})`);
+      provider.setStatus('');
+      vscode.window.showErrorMessage('SSO import failed. Check console for details.');
+    }
+  });
+  
+  proc.on('error', (err: Error) => {
+    provider.addLog(`❌ Error: ${err.message}`);
+    provider.setStatus('');
+    vscode.window.showErrorMessage(`SSO import error: ${err.message}`);
+  });
 }
 
 function showCurrentAccount() {

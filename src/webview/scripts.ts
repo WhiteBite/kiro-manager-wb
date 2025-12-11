@@ -47,6 +47,24 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'importToken' });
     }
     
+    function showSsoImport() {
+      document.getElementById('ssoImportPanel')?.classList.add('visible');
+    }
+    
+    function hideSsoImport() {
+      document.getElementById('ssoImportPanel')?.classList.remove('visible');
+      document.getElementById('ssoTokenInput').value = '';
+    }
+    
+    function importSsoToken() {
+      const input = document.getElementById('ssoTokenInput');
+      const token = input?.value?.trim();
+      if (token) {
+        vscode.postMessage({ command: 'importSsoToken', token: token });
+        hideSsoImport();
+      }
+    }
+    
     function refresh() {
       vscode.postMessage({ command: 'refresh' });
     }
