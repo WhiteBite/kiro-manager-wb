@@ -7,6 +7,8 @@
 
 [Русский](README.md) | English | [中文](README.zh.md)
 
+![Screenshot](images/screenshot.png)
+
 Extension for those who are tired of dealing with Kiro limits.
 
 > ⚠️ **DISCLAIMER**
