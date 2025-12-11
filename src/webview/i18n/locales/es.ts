@@ -37,6 +37,7 @@ export const es: Translations = {
   console: 'Consola',
   clearTip: 'Limpiar salida de consola',
   openLogTip: 'Abrir archivo de log completo en editor',
+  copyLogsTip: 'Copiar registros',
   step: 'Paso',
   connected: 'Conectado',
   confirm: 'Confirmar',

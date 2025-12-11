@@ -91,6 +91,16 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'clearConsole' });
     }
     
+    function copyLogs() {
+      const consoleBody = document.getElementById('consoleBody');
+      if (consoleBody) {
+        const logs = Array.from(consoleBody.querySelectorAll('.console-line'))
+          .map(el => el.textContent)
+          .join('\\n');
+        vscode.postMessage({ command: 'copyLogs', logs: logs });
+      }
+    }
+    
     // Dialog
     function confirmDelete(filename) {
       pendingAction = { type: 'delete', filename };

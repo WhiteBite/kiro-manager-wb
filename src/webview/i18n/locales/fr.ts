@@ -37,6 +37,7 @@ export const fr: Translations = {
   console: 'Console',
   clearTip: 'Effacer la sortie console',
   openLogTip: "Ouvrir le fichier journal complet dans l'éditeur",
+  copyLogsTip: 'Copier les journaux',
   step: 'Étape',
   connected: 'Connecté',
   confirm: 'Confirmer',

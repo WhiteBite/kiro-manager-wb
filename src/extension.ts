@@ -287,6 +287,12 @@ class KiroAccountsProvider implements vscode.WebviewViewProvider {
         case 'clearConsole':
           this.clearLogs();
           break;
+        case 'copyLogs':
+          if (msg.logs) {
+            await vscode.env.clipboard.writeText(msg.logs);
+            vscode.window.showInformationMessage('Logs copied to clipboard');
+          }
+          break;
         case 'export':
           await this.exportAccounts();
           break;
