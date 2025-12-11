@@ -1,196 +1,327 @@
 """
-OAuth клиент - обёртка для Node.js части
+OAuth клиент - чистый Python без Node.js
+Использует device authorization flow как в sso_import_service
 """
 
-import subprocess
+import http.server
+import json
 import os
 import re
+import requests
+import secrets
+import socketserver
+import threading
+import hashlib
+import webbrowser
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple, Dict
+from urllib.parse import urlencode, parse_qs, urlparse
 
 import sys
-from pathlib import Path as SysPath
-sys.path.insert(0, str(SysPath(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 
 _paths = get_paths()
-PROJECT_DIR = _paths.project_dir
-BASE_DIR = _paths.autoreg_dir
+TOKENS_DIR = _paths.tokens_dir
+
+# AWS OIDC Configuration
+OIDC_REGION = "us-east-1"
+OIDC_BASE = f"https://oidc.{OIDC_REGION}.amazonaws.com"
+START_URL = "https://view.awsapps.com/start"
+KIRO_SCOPES = [
+    "sso:account:access",
+    "codewhisperer:analysis",
+    "codewhisperer:completions", 
+    "codewhisperer:conversations",
+    "codewhisperer:taskassist",
+    "codewhisperer:transformations",
+    "codewhisperer:security_scans"
+]
 
 
 class OAuthClient:
-    """Обёртка для запуска Node.js OAuth сервера"""
+    """OAuth клиент с PKCE flow через локальный HTTP сервер"""
     
     def __init__(self, project_dir: Path = None):
-        # Try to find the correct directory with src/index.js
-        # Debug: print paths being checked
-        print(f"[OAuth] BASE_DIR: {BASE_DIR}")
-        print(f"[OAuth] PROJECT_DIR: {PROJECT_DIR}")
-        print(f"[OAuth] Checking: {BASE_DIR / 'src' / 'index.js'} exists: {(BASE_DIR / 'src' / 'index.js').exists()}")
-        
-        if project_dir and (project_dir / 'src' / 'index.js').exists():
-            self.project_dir = project_dir
-        elif (BASE_DIR / 'src' / 'index.js').exists():
-            # Node files bundled with autoreg (e.g., ~/.kiro-autoreg/src/index.js)
-            self.project_dir = BASE_DIR
-        elif (PROJECT_DIR / 'src' / 'index.js').exists():
-            # Original project structure
-            self.project_dir = PROJECT_DIR
-        else:
-            # Fallback to BASE_DIR anyway
-            self.project_dir = BASE_DIR
-            print(f"[OAuth] WARNING: index.js not found, using BASE_DIR: {BASE_DIR}")
-        
-        self.process = None
+        self.tokens_dir = TOKENS_DIR
         self.auth_url = None
         self.output_lines = []
-    
-    def _ensure_node_modules(self):
-        """Проверяет и устанавливает node_modules если нужно"""
-        node_modules = self.project_dir / 'node_modules'
-        package_json = self.project_dir / 'package.json'
+        self.token_filename = None
+        self.server = None
+        self.server_thread = None
+        self.auth_code = None
+        self.auth_complete = threading.Event()
+        self.auth_error = None
         
-        if not node_modules.exists() and package_json.exists():
-            print(f"[OAuth] Installing Node.js dependencies...")
-            try:
-                result = subprocess.run(
-                    ['npm', 'install', '--silent'],
-                    cwd=self.project_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=180
-                )
-                if result.returncode == 0:
-                    print(f"[OAuth] ✓ Node.js dependencies installed")
+        # PKCE values
+        self.code_verifier = None
+        self.code_challenge = None
+        self.state = None
+        
+        # Client registration
+        self.client_id = None
+        self.client_secret = None
+    
+    def _generate_pkce(self) -> Tuple[str, str]:
+        """Generate PKCE code verifier and challenge"""
+        import base64
+        verifier = secrets.token_urlsafe(32)
+        challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(verifier.encode()).digest()
+        ).decode().rstrip('=')
+        return verifier, challenge
+    
+    def _register_client(self) -> Tuple[str, str]:
+        """Register OIDC client dynamically"""
+        print("[OAuth] Registering OIDC client...")
+        
+        resp = requests.post(
+            f"{OIDC_BASE}/client/register",
+            json={
+                "clientName": "Kiro Account Switcher",
+                "clientType": "public",
+                "scopes": KIRO_SCOPES,
+                "grantTypes": ["authorization_code", "refresh_token"],
+                "redirectUris": ["http://127.0.0.1:8765/callback"],
+                "issuerUrl": START_URL
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        if resp.status_code != 200:
+            raise Exception(f"Client registration failed: {resp.text}")
+        
+        data = resp.json()
+        print(f"[OAuth] ✓ Client registered: {data['clientId'][:20]}...")
+        return data["clientId"], data["clientSecret"]
+    
+    def _exchange_code_for_token(self, code: str) -> Dict:
+        """Exchange authorization code for tokens"""
+        print("[OAuth] Exchanging code for token...")
+        
+        resp = requests.post(
+            f"{OIDC_BASE}/token",
+            json={
+                "clientId": self.client_id,
+                "clientSecret": self.client_secret,
+                "grantType": "authorization_code",
+                "code": code,
+                "redirectUri": "http://127.0.0.1:8765/callback",
+                "codeVerifier": self.code_verifier
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        if resp.status_code != 200:
+            raise Exception(f"Token exchange failed: {resp.text}")
+        
+        return resp.json()
+    
+    def _save_token(self, token_data: Dict, account_name: str) -> str:
+        """Save token to file"""
+        timestamp = int(datetime.now().timestamp() * 1000)
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', account_name)
+        filename = f"token-BuilderId-IdC-{safe_name}-{timestamp}.json"
+        filepath = self.tokens_dir / filename
+        
+        # Calculate expiry
+        expires_in = token_data.get('expiresIn', 3600)
+        expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat() + 'Z'
+        
+        # Calculate clientIdHash
+        client_id_hash = hashlib.sha256(START_URL.encode()).hexdigest()
+        
+        token_file = {
+            "accessToken": token_data.get('accessToken'),
+            "refreshToken": token_data.get('refreshToken'),
+            "expiresAt": expires_at,
+            "tokenType": token_data.get('tokenType', 'Bearer'),
+            "clientIdHash": client_id_hash,
+            "accountName": account_name,
+            "provider": "BuilderId",
+            "authMethod": "IdC",
+            "region": OIDC_REGION,
+            "createdAt": datetime.now().isoformat(),
+            "_clientId": self.client_id,
+            "_clientSecret": self.client_secret
+        }
+        
+        filepath.write_text(json.dumps(token_file, indent=2))
+        print(f"[OAuth] Token saved to: {filepath}")
+        self.output_lines.append(f"Token saved to: {filepath}")
+        
+        return filename
+    
+    def _create_callback_handler(self):
+        """Create HTTP request handler for OAuth callback"""
+        oauth_client = self
+        
+        class CallbackHandler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, format, *args):
+                pass  # Suppress default logging
+            
+            def do_GET(self):
+                parsed = urlparse(self.path)
+                
+                if parsed.path == '/callback':
+                    params = parse_qs(parsed.query)
+                    
+                    error = params.get('error', [None])[0]
+                    if error:
+                        oauth_client.auth_error = error
+                        self.send_response(400)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
+                        self.wfile.write(f'<html><body><h1>Error: {error}</h1></body></html>'.encode())
+                        oauth_client.auth_complete.set()
+                        return
+                    
+                    code = params.get('code', [None])[0]
+                    state = params.get('state', [None])[0]
+                    
+                    if state != oauth_client.state:
+                        oauth_client.auth_error = "State mismatch"
+                        self.send_response(400)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
+                        self.wfile.write(b'<html><body><h1>State mismatch</h1></body></html>')
+                        oauth_client.auth_complete.set()
+                        return
+                    
+                    if code:
+                        oauth_client.auth_code = code
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
+                        self.wfile.write(b'''
+                            <html>
+                            <head><style>
+                                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                                       display: flex; justify-content: center; align-items: center; 
+                                       height: 100vh; margin: 0; background: #1e1e1e; color: #fff; }
+                                .container { text-align: center; }
+                                h1 { color: #3fb68b; }
+                            </style></head>
+                            <body>
+                                <div class="container">
+                                    <h1>Authentication Successful!</h1>
+                                    <p>You can close this window and return to Kiro.</p>
+                                </div>
+                            </body>
+                            </html>
+                        ''')
+                        oauth_client.auth_complete.set()
                 else:
-                    print(f"[OAuth] ⚠️ npm install warning: {result.stderr}")
-            except Exception as e:
-                print(f"[OAuth] ⚠️ Failed to install deps: {e}")
+                    self.send_response(404)
+                    self.end_headers()
+        
+        return CallbackHandler
     
     def start(self, provider: str = 'BuilderId', account_name: str = 'auto') -> Optional[str]:
         """
-        Запускает OAuth сервер и возвращает URL авторизации
+        Start OAuth flow and return authorization URL
         
         Args:
-            provider: Тип провайдера (BuilderId, Enterprise, Google, Github)
-            account_name: Имя аккаунта для идентификации
+            provider: Provider type (BuilderId)
+            account_name: Account name for identification
         
         Returns:
-            URL авторизации или None
+            Authorization URL or None
         """
-        index_path = self.project_dir / 'src' / 'index.js'
-        if not index_path.exists():
-            raise Exception(f"OAuth script not found: {index_path}")
-        
-        # Ensure node_modules are installed
-        self._ensure_node_modules()
-        
-        cmd = ['node', str(index_path), 'login', '--provider', provider, '--account', account_name]
-        
-        env = os.environ.copy()
-        env['NO_BROWSER'] = 'true'
-        
-        self.process = subprocess.Popen(
-            cmd,
-            cwd=self.project_dir,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            env=env
-        )
-        
-        url_pattern = re.compile(r'https://oidc\..*?authorize\?.*?code_challenge_method=S256')
-        
-        for line in iter(self.process.stdout.readline, ''):
-            self.output_lines.append(line)
-            print(f"[NODE] {line.rstrip()}")
+        try:
+            # 1. Register client
+            self.client_id, self.client_secret = self._register_client()
             
-            match = url_pattern.search(line)
-            if match:
-                self.auth_url = match.group(0)
-                return self.auth_url
+            # 2. Generate PKCE
+            self.code_verifier, self.code_challenge = self._generate_pkce()
+            self.state = secrets.token_urlsafe(16)
             
-            if 'Error' in line or 'failed' in line.lower():
-                raise Exception(f"OAuth error: {line.strip()}")
-        
-        return None
+            # 3. Start callback server
+            handler = self._create_callback_handler()
+            self.server = socketserver.TCPServer(('127.0.0.1', 8765), handler)
+            self.server.timeout = 1
+            self.server_thread = threading.Thread(target=self._run_server, daemon=True)
+            self.server_thread.start()
+            print("[OAuth] Callback server listening on http://127.0.0.1:8765")
+            
+            # 4. Build authorization URL
+            params = {
+                "response_type": "code",
+                "client_id": self.client_id,
+                "redirect_uri": "http://127.0.0.1:8765/callback",
+                "scope": " ".join(KIRO_SCOPES),
+                "state": self.state,
+                "code_challenge": self.code_challenge,
+                "code_challenge_method": "S256"
+            }
+            
+            self.auth_url = f"{OIDC_BASE}/authorize?{urlencode(params)}"
+            self.account_name = account_name
+            
+            print(f"[OAuth] Authorization URL generated")
+            self.output_lines.append(f"Authorization URL:\n{self.auth_url}")
+            
+            return self.auth_url
+            
+        except Exception as e:
+            print(f"[OAuth] Error: {e}")
+            self.output_lines.append(f"Error: {e}")
+            return None
+    
+    def _run_server(self):
+        """Run callback server in background"""
+        while not self.auth_complete.is_set():
+            self.server.handle_request()
     
     def wait_for_callback(self, timeout: int = 300) -> bool:
         """
-        Ждёт завершения OAuth callback и сохранения токена
+        Wait for OAuth callback and save token
         
         Returns:
-            True если успешно, False если ошибка или таймаут
+            True if successful, False on error or timeout
         """
-        if not self.process:
+        print("[OAuth] Waiting for callback...")
+        
+        # Wait for auth to complete
+        if not self.auth_complete.wait(timeout=timeout):
+            print("[OAuth] Timeout waiting for callback")
             return False
         
-        auth_successful = False
-        token_saved = False
+        if self.auth_error:
+            print(f"[OAuth] Auth error: {self.auth_error}")
+            return False
+        
+        if not self.auth_code:
+            print("[OAuth] No auth code received")
+            return False
         
         try:
-            for line in iter(self.process.stdout.readline, ''):
-                self.output_lines.append(line)
-                print(f"[NODE] {line.rstrip()}")
-                
-                # Check for authentication success
-                if 'Authentication successful' in line:
-                    auth_successful = True
-                    # Don't return yet - wait for token to be saved!
-                    continue
-                
-                # Check for token saved - THIS is when we're done
-                if 'Token saved to:' in line:
-                    token_saved = True
-                    return True
-                
-                # Check for errors
-                if 'failed' in line.lower() or 'error' in line.lower():
-                    if not auth_successful:  # Only fail if auth hasn't succeeded
-                        return False
+            # Exchange code for token
+            token_data = self._exchange_code_for_token(self.auth_code)
+            print("[OAuth] Authentication successful!")
+            self.output_lines.append("Authentication successful!")
             
-            # If we got here, process ended
-            self.process.wait(timeout=timeout)
-            # Return true if auth was successful (even if token save message was missed)
-            return auth_successful
+            # Save token
+            self.token_filename = self._save_token(token_data, self.account_name)
+            return True
             
-        except subprocess.TimeoutExpired:
-            self.process.kill()
+        except Exception as e:
+            print(f"[OAuth] Token exchange error: {e}")
+            self.output_lines.append(f"Error: {e}")
             return False
     
     def get_token_filename(self) -> Optional[str]:
-        """Извлекает имя файла токена из вывода"""
-        print(f"[OAuth] Searching for token filename in {len(self.output_lines)} lines...")
-        
-        for line in reversed(self.output_lines):
-            if 'Token saved to:' in line:
-                # Extract full path or just filename
-                # Format: "Token saved to: /path/to/token-xxx.json"
-                print(f"[OAuth] Found 'Token saved to:' line: {line.strip()}")
-                match = re.search(r'Token saved to:\s*(.+\.json)', line)
-                if match:
-                    filepath = match.group(1).strip()
-                    filename = Path(filepath).name
-                    print(f"[OAuth] Extracted token filename: {filename}")
-                    return filename
-            elif 'token-' in line and '.json' in line:
-                match = re.search(r'(token-[^\s]+\.json)', line)
-                if match:
-                    print(f"[OAuth] Found token pattern in line: {match.group(1)}")
-                    return match.group(1)
-        
-        print(f"[OAuth] WARNING: Token filename not found in output!")
-        print(f"[OAuth] Last 5 lines: {self.output_lines[-5:] if len(self.output_lines) >= 5 else self.output_lines}")
-        return None
+        """Get saved token filename"""
+        return self.token_filename
     
     def close(self):
-        """Завершает процесс"""
-        if self.process:
+        """Shutdown server"""
+        if self.server:
             try:
-                self.process.terminate()
-                self.process.wait(timeout=5)
+                self.server.shutdown()
             except Exception:
-                self.process.kill()
+                pass
