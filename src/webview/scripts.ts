@@ -32,7 +32,8 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function toggleHideExpired(hide) {
       setState({ hideExpired: hide });
-      document.querySelectorAll('.card.expired').forEach(card => {
+      // Hide exhausted accounts (usage >= 100%), not just expired tokens
+      document.querySelectorAll('.card.exhausted').forEach(card => {
         card.style.display = hide ? 'none' : '';
       });
     }
@@ -201,7 +202,8 @@ export function generateWebviewScript(totalAccounts: number): string {
       if (state.filter !== 'all') filterAccounts(state.filter);
       if (state.hideExpired) {
         toggleHideExpired(true);
-        document.getElementById('hideExpired')?.setAttribute('checked', 'checked');
+        const checkbox = document.getElementById('hideExhausted');
+        if (checkbox) checkbox.checked = true;
       }
       
       // Auto-scroll console

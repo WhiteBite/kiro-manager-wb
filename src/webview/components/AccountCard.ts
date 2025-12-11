@@ -18,10 +18,14 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
   const email = getAccountEmail(account);
   const avatar = email.charAt(0).toUpperCase();
   
+  // Check if usage limit is exhausted (>= 100%)
+  const isExhausted = account.usage && account.usage.percentageUsed >= 100;
+  
   const classes = [
     'card',
     account.isActive ? 'active' : '',
     account.isExpired ? 'expired' : '',
+    isExhausted ? 'exhausted' : '',
   ].filter(Boolean).join(' ');
 
   return `
@@ -36,7 +40,8 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
           </div>
         </div>
         ${account.isActive ? `<span class="card-status active">${t.active}</span>` : ''}
-        ${account.isExpired ? `<span class="card-status expired">${t.expired}</span>` : ''}
+        ${isExhausted ? `<span class="card-status exhausted">${language === 'ru' ? 'ЛИМИТ' : 'LIMIT'}</span>` : ''}
+        ${account.isExpired && !isExhausted ? `<span class="card-status expired">${t.expired}</span>` : ''}
         <div class="card-actions">
           <button class="card-btn" title="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
           <button class="card-btn ${account.isExpired ? 'highlight' : ''}" title="${t.refreshTokenTip}" onclick="event.stopPropagation(); refreshToken('${escapeHtml(account.filename)}')">${ICONS.refresh}</button>
