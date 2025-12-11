@@ -15,15 +15,23 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.config import get_config
 
-# Для обратной совместимости
+import os
+
+# Для обратной совместимости - приоритет env переменным
 def _get_imap_config():
     config = get_config()
-    domain = config.registration.email_domain
+    domain = os.environ.get('EMAIL_DOMAIN', config.registration.email_domain)
+    
+    # Приоритет env переменным (от VS Code extension)
+    host = os.environ.get('IMAP_SERVER', config.imap.host)
+    email = os.environ.get('IMAP_USER', config.imap.email)
+    password = os.environ.get('IMAP_PASSWORD', config.imap.password)
+    
     return {
         domain: {
-            'host': config.imap.host,
-            'email': config.imap.email,
-            'password': config.imap.password,
+            'host': host,
+            'email': email,
+            'password': password,
         }
     }
 

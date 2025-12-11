@@ -232,7 +232,7 @@ kiro-extension/
 │   ├── webview.ts        # 面板 HTML 生成
 │   ├── types.ts          # TypeScript 类型
 │   └── webview/          # UI 组件
-├── autoreg-bundled/      # Python 自动注册脚本
+├── autoreg/              # Python 自动注册脚本
 ├── dist/                 # 编译后的 JS（gitignore）
 ├── package.json
 ├── tsconfig.json

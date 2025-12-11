@@ -9,4 +9,4 @@ tsconfig.json
 *.vsix
 
 # Include bundled autoreg files
-!autoreg-bundled/**
+!autoreg/**

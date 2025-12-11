@@ -7,9 +7,10 @@ import time
 import json
 import argparse
 import random
-import sys as _sys
-from pathlib import Path as _Path
-_sys.path.insert(0, str(_Path(__file__).parent.parent))
+from pathlib import Path
+
+# Add parent directory to path for imports when running as script
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from .register import AWSRegistration, generate_emails
 from core.config import get_config, save_config
