@@ -29,6 +29,7 @@ export const ko: Translations = {
   byExpiry: '만료일순',
   active: '활성',
   copyTokenTip: '액세스 토큰을 클립보드에 복사',
+  refreshTokenTip: '만료된 토큰 새로고침',
   viewQuotaTip: '이 계정의 사용 통계 표시',
   deleteTip: '계정 및 토큰 파일 삭제',
   noAccounts: '계정이 없습니다',

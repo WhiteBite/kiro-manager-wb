@@ -29,6 +29,7 @@ export const pt: Translations = {
   byExpiry: 'Por Expiração',
   active: 'Ativa',
   copyTokenTip: 'Copiar token de acesso para área de transferência',
+  refreshTokenTip: 'Atualizar token expirado',
   viewQuotaTip: 'Mostrar estatísticas de uso desta conta',
   deleteTip: 'Remover conta e arquivo de token',
   noAccounts: 'Sem contas ainda',

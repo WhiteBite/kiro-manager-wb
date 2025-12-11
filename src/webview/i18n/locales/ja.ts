@@ -29,6 +29,7 @@ export const ja: Translations = {
   byExpiry: '有効期限順',
   active: 'アクティブ',
   copyTokenTip: 'アクセストークンをクリップボードにコピー',
+  refreshTokenTip: '期限切れトークンを更新',
   viewQuotaTip: 'このアカウントの使用統計を表示',
   deleteTip: 'アカウントとトークンファイルを削除',
   noAccounts: 'アカウントがありません',
