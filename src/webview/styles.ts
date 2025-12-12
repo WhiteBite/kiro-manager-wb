@@ -214,5 +214,21 @@ export function getStyles(): string {
     
     /* Compact Mode */
     body.compact .card-main { padding: 6px 10px; } body.compact .card-avatar { width: 24px; height: 24px; font-size: 10px; } body.compact .card-meta { display: none; }
+    
+    /* Unknown Usage State */
+    .card.unknown-usage .card-usage { color: var(--muted); }
+    .usage-unknown { color: var(--muted); font-style: italic; cursor: help; }
+    .usage-loading { color: var(--muted); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    /* Stale Usage Indicator */
+    .usage-card.stale { border-color: rgba(217, 163, 52, 0.4); background: linear-gradient(135deg, rgba(217, 163, 52, 0.1) 0%, rgba(217, 163, 52, 0.02) 100%); }
+    .usage-card.stale .usage-title { color: var(--warning); }
+    .stale-indicator { color: var(--warning); margin-left: 4px; cursor: help; animation: spin 2s linear infinite; display: inline-block; }
+    
+    /* Empty Usage Card */
+    .usage-card.empty { background: var(--bg-elevated); border-color: var(--border-subtle); cursor: default; }
+    .usage-card.empty .usage-title { color: var(--muted); }
+    .usage-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
   `;
 }

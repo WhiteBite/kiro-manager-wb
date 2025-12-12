@@ -102,11 +102,17 @@ export function generateWebviewHtml(
   // Get translations from centralized i18n
   const t = getTranslations(lang);
   
-  // Calculate stats
+  // Calculate stats (exclude unknown usage from total)
   const validCount = accounts.filter(a => !a.isExpired).length;
   const expiredCount = accounts.filter(a => a.isExpired).length;
   const activeAccount = accounts.find(a => a.isActive);
-  const totalUsage = accounts.reduce((sum, acc) => sum + (acc.usage?.currentUsage || 0), 0);
+  const totalUsage = accounts.reduce((sum, acc) => {
+    const usage = acc.usage?.currentUsage;
+    return sum + (usage && usage !== -1 ? usage : 0);
+  }, 0);
+  
+  // Get active account name for usage card
+  const activeAccountName = activeAccount?.tokenData?.accountName || activeAccount?.filename || '';
   
   // Parse status
   const { progress, statusText, isRunning } = parseAutoRegStatus(props.autoRegStatus);
@@ -118,7 +124,12 @@ export function generateWebviewHtml(
     language: lang,
   });
   
-  const usageHtml = renderUsageCard({ usage: props.kiroUsage, language: lang });
+  const usageHtml = renderUsageCard({ 
+    usage: props.kiroUsage, 
+    language: lang,
+    accountName: activeAccountName,
+    isStale: false // Will be set to true if data is outdated
+  });
   const progressHtml = renderProgressPanel({ progress, statusText, language: lang });
   const accountsHtml = renderAccountList(accounts, lang);
   const consoleHtml = renderConsolePanel({ logs: props.consoleLogs, language: lang });
