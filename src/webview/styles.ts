@@ -90,6 +90,9 @@ export function getStyles(): string {
     .stat-dot.valid { background: #666; } .stat-dot.expired { background: var(--danger); } .stat-dot.exhausted { background: var(--warning); }
     .stat-exhausted { cursor: pointer; padding: 2px 6px; border-radius: 4px; background: rgba(217, 163, 52, 0.1); transition: all var(--transition-fast); }
     .stat-exhausted:hover { background: rgba(217, 163, 52, 0.25); }
+    .stat-exhausted.confirm-pending { background: var(--danger); color: #fff; animation: pulse-danger 0.5s ease-in-out infinite; }
+    .stat-exhausted.confirm-pending .stat-dot { background: #fff; }
+    @keyframes pulse-danger { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .stat-delete { margin-left: 2px; opacity: 0.6; font-size: 9px; } .stat-exhausted:hover .stat-delete { opacity: 1; }
     @keyframes glow { 0%, 100% { box-shadow: 0 0 6px var(--accent-glow); } 50% { box-shadow: 0 0 12px var(--accent-glow); } }
     .stat-total { margin-left: auto; color: var(--muted); font-weight: 500; }
