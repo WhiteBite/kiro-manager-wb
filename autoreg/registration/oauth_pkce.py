@@ -170,25 +170,44 @@ class OAuthPKCE:
         """
         print("[OAuth] Registering OIDC client...")
         
-        resp = requests.post(
-            f"{OIDC_BASE}/client/register",
-            json={
-                "clientName": "Kiro IDE",
-                "clientType": "public",
-                "scopes": KIRO_SCOPES,
-                "grantTypes": ["authorization_code", "refresh_token"],
-                "redirectUris": [self.redirect_uri],
-                "issuerUrl": START_URL
-            },
-            headers={"Content-Type": "application/json"},
-            timeout=30
-        )
+        # Retry logic for connection issues
+        max_retries = 3
+        last_error = None
         
-        if resp.status_code != 200:
-            raise Exception(f"Client registration failed: {resp.status_code} - {resp.text}")
+        for attempt in range(max_retries):
+            try:
+                resp = requests.post(
+                    f"{OIDC_BASE}/client/register",
+                    json={
+                        "clientName": "Kiro IDE",
+                        "clientType": "public",
+                        "scopes": KIRO_SCOPES,
+                        "grantTypes": ["authorization_code", "refresh_token"],
+                        "redirectUris": [self.redirect_uri],
+                        "issuerUrl": START_URL
+                    },
+                    headers={"Content-Type": "application/json"},
+                    timeout=30
+                )
+                
+                if resp.status_code != 200:
+                    raise Exception(f"Client registration failed: {resp.status_code} - {resp.text}")
+                
+                data = resp.json()
+                print(f"[OAuth] [OK] Client registered: {data['clientId'][:20]}...")
+                return data["clientId"], data.get("clientSecret", "")
+                
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2  # 2, 4, 6 seconds
+                    print(f"[OAuth] Connection error, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                else:
+                    raise Exception(f"Client registration failed after {max_retries} attempts: {last_error}")
         
-        data = resp.json()
-        print(f"[OAuth] [OK] Client registered: {data['clientId'][:20]}...")
+        # Should not reach here, but just in case
+        raise Exception(f"Client registration failed: {last_error}")
         return data["clientId"], data.get("clientSecret", "")
     
     def _start_callback_server(self):
