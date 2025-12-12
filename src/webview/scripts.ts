@@ -205,15 +205,33 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function appendLogLine(logLine) {
       const consoleBody = document.getElementById('consoleBody');
-      if (!consoleBody) return;
+      if (!consoleBody) {
+        console.warn('consoleBody not found');
+        return;
+      }
+      
+      // Make sure console panel is visible
+      const consolePanel = consoleBody.closest('.console-panel');
+      if (consolePanel) {
+        consolePanel.style.display = '';
+      }
       
       const line = document.createElement('div');
       line.className = 'console-line';
-      if (logLine.includes('✓') || logLine.includes('[OK]')) line.classList.add('success');
-      else if (logLine.includes('✗') || logLine.includes('Error') || logLine.includes('❌')) line.classList.add('error');
-      else if (logLine.includes('⚠️') || logLine.includes('[!]')) line.classList.add('warning');
+      if (logLine.includes('✓') || logLine.includes('[OK]') || logLine.includes('✅')) line.classList.add('success');
+      else if (logLine.includes('✗') || logLine.includes('Error') || logLine.includes('❌') || logLine.includes('FAIL')) line.classList.add('error');
+      else if (logLine.includes('⚠️') || logLine.includes('[!]') || logLine.includes('WARN')) line.classList.add('warning');
       line.textContent = logLine;
       consoleBody.appendChild(line);
+      
+      // Update console title with count
+      const consoleTitle = document.querySelector('.console-title');
+      if (consoleTitle) {
+        const count = consoleBody.children.length;
+        const lang = document.body.dataset.lang || 'en';
+        const consoleText = { en: 'Console', ru: 'Консоль', zh: '控制台' };
+        consoleTitle.textContent = (consoleText[lang] || consoleText.en) + ' (' + count + ')';
+      }
       
       // Keep max 200 lines
       while (consoleBody.children.length > 200) {
@@ -225,18 +243,64 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function updateAutoRegStatus(status) {
+      const autoRegBtn = document.querySelector('.btn-primary');
+      const lang = document.body.dataset.lang || 'en';
+      const runningText = { en: 'Running...', ru: 'Запуск...', zh: '运行中...' };
+      const autoRegText = { en: 'Auto-Reg', ru: 'Авто-рег', zh: '自动注册' };
+      
       if (!status) {
         // Hide progress panel when status is empty
         const panel = document.querySelector('.progress-panel');
         if (panel) panel.style.display = 'none';
+        
+        // Enable button and restore text
+        if (autoRegBtn) {
+          autoRegBtn.disabled = false;
+          autoRegBtn.innerHTML = '⚡ ' + (autoRegText[lang] || autoRegText.en);
+        }
         return;
+      }
+      
+      // Disable button and show running state
+      if (autoRegBtn) {
+        autoRegBtn.disabled = true;
+        autoRegBtn.innerHTML = '<span class="spinner"></span> ' + (runningText[lang] || runningText.en);
+      }
+      
+      // Helper to create progress panel if it doesn't exist
+      function ensureProgressPanel() {
+        let panel = document.querySelector('.progress-panel');
+        if (!panel) {
+          const actions = document.querySelector('.actions');
+          if (actions) {
+            const newPanel = document.createElement('div');
+            newPanel.className = 'progress-panel';
+            newPanel.innerHTML = \`
+              <div class="progress-header">
+                <div class="progress-title"></div>
+                <div class="progress-actions">
+                  <button class="progress-btn" onclick="togglePauseAutoReg()" title="Pause">⏸</button>
+                  <button class="progress-btn danger" onclick="stopAutoReg()" title="Cancel">✕</button>
+                </div>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+              <div class="progress-footer">
+                <div class="progress-detail"></div>
+                <div class="progress-step"></div>
+              </div>
+            \`;
+            actions.insertAdjacentElement('afterend', newPanel);
+            panel = newPanel;
+          }
+        }
+        return panel;
       }
       
       // Try to parse as JSON progress
       try {
         const progress = JSON.parse(status);
         if (progress && progress.step !== undefined) {
-          const panel = document.querySelector('.progress-panel');
+          const panel = ensureProgressPanel();
           if (panel) {
             panel.style.display = '';
             const percentage = (progress.step / progress.totalSteps) * 100;
@@ -252,10 +316,13 @@ export function generateWebviewScript(totalAccounts: number): string {
           }
         }
       } catch (e) {
-        // Plain text status
-        const panel = document.querySelector('.progress-panel');
-        const title = panel?.querySelector('.progress-title');
-        if (title) title.textContent = status;
+        // Plain text status - show progress panel with text
+        const panel = ensureProgressPanel();
+        if (panel) {
+          panel.style.display = '';
+          const title = panel.querySelector('.progress-title');
+          if (title) title.textContent = status;
+        }
       }
     }
 
