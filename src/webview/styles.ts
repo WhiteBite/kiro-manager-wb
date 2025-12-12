@@ -8,6 +8,7 @@ export function getStyles(): string {
     :root {
       --accent: #3fb68b; --accent-hover: #4ec9a0; --accent-dim: rgba(63, 182, 139, 0.12); --accent-glow: rgba(63, 182, 139, 0.4);
       --danger: #e55353; --danger-dim: rgba(229, 83, 83, 0.12); --warning: #d9a334;
+      --expired: #8a8a8a; --expired-dim: rgba(138, 138, 138, 0.15);
       --muted: var(--vscode-descriptionForeground, #888); --bg-elevated: rgba(255,255,255,0.03);
       --border-subtle: rgba(128,128,128,0.12); --border-medium: rgba(128,128,128,0.2);
       --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px;
@@ -141,18 +142,18 @@ export function getStyles(): string {
     .card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 6px; transition: all var(--transition-normal); animation: fadeIn 0.3s ease forwards; position: relative; }
     .card:hover { border-color: var(--border-medium); box-shadow: var(--shadow-sm); }
     .card.active { border-color: var(--accent); background: var(--accent-dim); }
-    .card.expired { opacity: 0.7; border-color: var(--danger); background: var(--danger-dim); } .card.expired:hover { opacity: 0.85; }
-    .card.exhausted { opacity: 0.6; border-color: var(--warning); background: rgba(217, 163, 52, 0.1); } .card.exhausted:hover { opacity: 0.8; }
+    .card.expired { opacity: 0.75; border-color: var(--expired); background: var(--expired-dim); } .card.expired:hover { opacity: 0.9; }
+    .card.exhausted { opacity: 0.6; border-color: var(--danger); background: var(--danger-dim); } .card.exhausted:hover { opacity: 0.8; }
     .card-main { display: flex; align-items: center; padding: 8px 10px; gap: 8px; cursor: pointer; }
     .card-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: #fff; }
-    .card.expired .card-avatar { background: linear-gradient(135deg, var(--danger) 0%, #f06b6b 100%); }
-    .card.exhausted .card-avatar { background: linear-gradient(135deg, var(--warning) 0%, #e5b84a 100%); }
+    .card.expired .card-avatar { background: linear-gradient(135deg, #777 0%, #999 100%); }
+    .card.exhausted .card-avatar { background: linear-gradient(135deg, var(--danger) 0%, #f06b6b 100%); }
     .card-info { flex: 1; min-width: 0; }
     .card-email { font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 9px; color: var(--muted); }
     .card-meta-item { display: flex; align-items: center; gap: 3px; }
     .card-status { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--danger-dim); color: var(--danger); } .card-status.exhausted { background: rgba(217, 163, 52, 0.2); color: var(--warning); }
+    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); }
     .card-actions { display: flex; gap: 6px; opacity: 0.4; transition: opacity var(--transition-fast); } .card:hover .card-actions { opacity: 1; }
     .card-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: all var(--transition-fast); }
     .card-btn:hover { background: rgba(128,128,128,0.2); border-color: var(--border-medium); color: var(--vscode-foreground); transform: scale(1.1); }
