@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import { TokenData, AccountInfo, AccountUsage } from './types';
-import { getKiroAuthTokenPath, getTokensDir, loadUsageStats, saveUsageStats, getCachedAccountUsage, saveAccountUsage, KiroUsageData } from './utils';
+import { getKiroAuthTokenPath, getTokensDir, loadUsageStats, saveUsageStats, getCachedAccountUsage, saveAccountUsage, KiroUsageData, getAllCachedUsage, isUsageStale, invalidateAccountUsage } from './utils';
 
 export function incrementUsage(accountName: string): void {
   const stats = loadUsageStats();
@@ -25,6 +25,7 @@ export function loadAccounts(): AccountInfo[] {
   const accounts: AccountInfo[] = [];
   const currentToken = getCurrentToken();
   const usageStats = loadUsageStats();
+  const allUsage = getAllCachedUsage(); // Load all cached usage at once
 
   if (!fs.existsSync(tokensDir)) {
     return accounts;
@@ -43,6 +44,30 @@ export function loadAccounts(): AccountInfo[] {
       const accountName = tokenData.accountName || file;
       const usageCount = usageStats[accountName]?.count || 0;
       const tokenLimit = usageStats[accountName]?.limit || 500;
+      
+      // Load cached usage or create default for new accounts
+      const cached = allUsage[accountName];
+      let usage: AccountUsage | undefined;
+      
+      if (cached && !cached.stale) {
+        usage = {
+          currentUsage: cached.currentUsage,
+          usageLimit: cached.usageLimit,
+          percentageUsed: cached.percentageUsed,
+          daysRemaining: cached.daysRemaining,
+          loading: false
+        };
+      } else {
+        // For accounts without cached data, show as "unknown" (not loading)
+        // This indicates data needs to be fetched when account becomes active
+        usage = {
+          currentUsage: -1, // -1 indicates unknown
+          usageLimit: 500,
+          percentageUsed: 0,
+          daysRemaining: -1,
+          loading: false
+        };
+      }
 
       accounts.push({
         filename: file,
@@ -53,7 +78,7 @@ export function loadAccounts(): AccountInfo[] {
         expiresIn: getExpiresInText(tokenData),
         usageCount,
         tokenLimit,
-        usage: undefined // Will be loaded async
+        usage
       });
     } catch (error) {
       console.error(`Failed to load ${file}:`, error);
@@ -69,39 +94,37 @@ export function loadAccounts(): AccountInfo[] {
   return accounts;
 }
 
-// Load usage for all accounts from cache
+// Load usage for all accounts from cache (now integrated into loadAccounts)
 export async function loadAccountsWithUsage(): Promise<AccountInfo[]> {
-  const accounts = loadAccounts();
-  
-  // Load cached usage for all accounts
-  for (const acc of accounts) {
-    const accountName = acc.tokenData.accountName || acc.filename;
-    const cached = getCachedAccountUsage(accountName);
-    if (cached) {
-      acc.usage = {
-        currentUsage: cached.currentUsage,
-        usageLimit: cached.usageLimit,
-        percentageUsed: cached.percentageUsed,
-        daysRemaining: cached.daysRemaining
-      };
-    }
-  }
-  
-  return accounts;
+  // loadAccounts now includes usage data by default
+  return loadAccounts();
 }
 
 // Load usage for a single account from cache
 export async function loadSingleAccountUsage(accountName: string): Promise<AccountUsage | null> {
   const cached = getCachedAccountUsage(accountName);
-  if (cached) {
+  if (cached && !cached.stale) {
     return {
       currentUsage: cached.currentUsage,
       usageLimit: cached.usageLimit,
       percentageUsed: cached.percentageUsed,
-      daysRemaining: cached.daysRemaining
+      daysRemaining: cached.daysRemaining,
+      loading: false
     };
   }
-  return null;
+  // Return unknown state instead of null
+  return {
+    currentUsage: -1,
+    usageLimit: 500,
+    percentageUsed: 0,
+    daysRemaining: -1,
+    loading: false
+  };
+}
+
+// Invalidate usage for an account (call before switching)
+export function markUsageStale(accountName: string): void {
+  invalidateAccountUsage(accountName);
 }
 
 // Update usage cache for active account from Kiro DB

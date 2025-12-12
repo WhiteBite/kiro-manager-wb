@@ -207,11 +207,114 @@ export function generateWebviewScript(totalAccounts: number): string {
           updateUsageCard(msg.usage);
           break;
         case 'updateAccounts':
-          // For now, trigger full refresh - can be optimized later
-          refresh();
+          updateAccountCards(msg.accounts);
           break;
       }
     });
+    
+    // Incremental account cards update
+    function updateAccountCards(accounts) {
+      if (!accounts || !accounts.length) return;
+      
+      const list = document.getElementById('accountList');
+      if (!list) return;
+      
+      accounts.forEach(acc => {
+        const email = acc.tokenData?.email || acc.tokenData?.accountName || acc.filename;
+        const card = list.querySelector('[data-email="' + email + '"]');
+        if (!card) return;
+        
+        // Update active state
+        card.classList.toggle('active', acc.isActive);
+        card.classList.toggle('expired', acc.isExpired);
+        
+        // Update usage display
+        const usageEl = card.querySelector('.card-usage');
+        if (usageEl && acc.usage) {
+          const usage = acc.usage;
+          const isUnknown = usage.currentUsage === -1;
+          const isExhausted = !isUnknown && usage.percentageUsed >= 100;
+          
+          card.classList.toggle('exhausted', isExhausted);
+          card.classList.toggle('unknown-usage', isUnknown);
+          
+          // Update usage text
+          const usageText = isUnknown ? '?' : usage.currentUsage.toLocaleString();
+          usageEl.innerHTML = usageEl.innerHTML.replace(/>[^<]*<\\/span>|>\\d+|>\\?|>—/, '>' + usageText);
+        }
+        
+        // Update status badges
+        const statusBadges = card.querySelectorAll('.card-status');
+        statusBadges.forEach(badge => badge.remove());
+        
+        const cardMain = card.querySelector('.card-main');
+        const actionsDiv = card.querySelector('.card-actions');
+        if (cardMain && actionsDiv) {
+          const lang = document.body.dataset.lang || 'en';
+          if (acc.isActive) {
+            const badge = document.createElement('span');
+            badge.className = 'card-status active';
+            badge.textContent = lang === 'ru' ? 'АКТИВЕН' : 'ACTIVE';
+            cardMain.insertBefore(badge, actionsDiv);
+          }
+          if (acc.usage && acc.usage.percentageUsed >= 100) {
+            const badge = document.createElement('span');
+            badge.className = 'card-status exhausted';
+            badge.textContent = lang === 'ru' ? 'ЛИМИТ' : 'LIMIT';
+            cardMain.insertBefore(badge, actionsDiv);
+          }
+          if (acc.isExpired && (!acc.usage || acc.usage.percentageUsed < 100)) {
+            const badge = document.createElement('span');
+            badge.className = 'card-status expired';
+            badge.textContent = lang === 'ru' ? 'ИСТЁК' : 'EXPIRED';
+            cardMain.insertBefore(badge, actionsDiv);
+          }
+        }
+      });
+      
+      // Update stats bar
+      updateStatsBar(accounts);
+    }
+    
+    // Update stats bar with new account data
+    function updateStatsBar(accounts) {
+      const validCount = accounts.filter(a => !a.isExpired).length;
+      const expiredCount = accounts.filter(a => a.isExpired).length;
+      const activeAccount = accounts.find(a => a.isActive);
+      const totalUsage = accounts.reduce((sum, acc) => {
+        const usage = acc.usage?.currentUsage;
+        return sum + (usage && usage !== -1 ? usage : 0);
+      }, 0);
+      
+      const statsBar = document.querySelector('.stats-bar');
+      if (!statsBar) return;
+      
+      const statItems = statsBar.querySelectorAll('.stat-item');
+      const lang = document.body.dataset.lang || 'en';
+      
+      // Update active account
+      if (statItems[0]) {
+        const dot = statItems[0].querySelector('.stat-dot');
+        const text = statItems[0].querySelector('span:last-child');
+        if (dot) dot.className = 'stat-dot ' + (activeAccount ? 'active' : 'valid');
+        if (text) {
+          const email = activeAccount?.tokenData?.email || activeAccount?.tokenData?.accountName || '';
+          text.textContent = activeAccount ? email.split('@')[0] : (lang === 'ru' ? 'Нет активного' : 'No active');
+        }
+      }
+      
+      // Update valid count
+      if (statItems[1]) {
+        const text = statItems[1].querySelector('span:last-child');
+        if (text) text.textContent = validCount + ' ' + (lang === 'ru' ? 'активных' : 'valid');
+      }
+      
+      // Update total usage
+      const totalEl = statsBar.querySelector('.stat-total');
+      if (totalEl) {
+        totalEl.innerHTML = totalEl.innerHTML.replace(/\\d[\\d,]*/, totalUsage.toLocaleString());
+      }
+    }
     
     // Incremental usage card update
     function updateUsageCard(usage) {

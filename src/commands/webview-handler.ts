@@ -142,5 +142,15 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
     case 'importSsoToken':
       await importSsoToken(provider.context, provider, msg.token);
       break;
+
+    case 'refreshUsage':
+      // Manual refresh of usage data
+      await provider.refreshUsageAfterSwitch();
+      break;
+
+    case 'showUsageDetails':
+      // Show detailed usage info
+      await provider.viewQuota('');
+      break;
   }
 }

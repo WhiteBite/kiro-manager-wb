@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, deleteAccount } from '../accounts';
-import { getTokensDir, getKiroUsageFromDB, KiroUsageData } from '../utils';
+import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, deleteAccount, markUsageStale } from '../accounts';
+import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage } from '../utils';
 import { generateWebviewHtml } from '../webview';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo } from '../types';
@@ -379,35 +379,73 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  // Refresh usage data after account switch - clears cache and reloads
-  async refreshUsageAfterSwitch() {
-    if (this._view) {
-      // Clear cached usage to force fresh data
-      const { clearUsageCache } = await import('../utils');
-      clearUsageCache();
-      
-      // Reset current usage
-      this._kiroUsage = null;
-      this._stateManager.updateUsage(null);
-      
-      // Reload accounts
-      await this.refreshAccounts();
-      
-      // Small delay to allow Kiro to update its DB after switch
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Reload usage from Kiro DB
-      await this.refreshUsage();
-      
-      this._availableUpdate = getAvailableUpdate(this._context);
-      
-      // Only re-render if needed (StateManager handles incremental updates)
-      this._stateManager.updateFull({
-        accounts: this._accounts,
-        kiroUsage: this._kiroUsage,
-        activeAccount: this._accounts.find(a => a.isActive) || null
-      });
+  // Refresh usage data after account switch - clears cache and reloads with retry
+  async refreshUsageAfterSwitch(retryCount: number = 0) {
+    if (!this._view) return;
+    
+    const maxRetries = 3;
+    const retryDelays = [500, 1000, 2000]; // Increasing delays
+    
+    // Clear in-memory cache
+    const { clearUsageCache } = await import('../utils');
+    clearUsageCache();
+    
+    // Mark old account's usage as stale
+    const oldActiveAccount = this._accounts.find(a => a.isActive);
+    if (oldActiveAccount) {
+      const oldAccountName = oldActiveAccount.tokenData.accountName || oldActiveAccount.filename;
+      invalidateAccountUsage(oldAccountName);
     }
+    
+    // Reset current usage display
+    this._kiroUsage = null;
+    this._stateManager.updateUsage(null);
+    
+    // Reload accounts to get new active state
+    await this.refreshAccounts();
+    
+    // Wait for Kiro to update its DB
+    const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Try to load usage from Kiro DB
+    const usage = await getKiroUsageFromDB();
+    
+    if (usage) {
+      this._kiroUsage = usage;
+      
+      // Save usage for the new active account
+      const newActiveAccount = this._accounts.find(a => a.isActive);
+      if (newActiveAccount) {
+        const accountName = newActiveAccount.tokenData.accountName || newActiveAccount.filename;
+        updateActiveAccountUsage(accountName, usage);
+        
+        // Update the account's usage in memory
+        newActiveAccount.usage = {
+          currentUsage: usage.currentUsage,
+          usageLimit: usage.usageLimit,
+          percentageUsed: usage.percentageUsed,
+          daysRemaining: usage.daysRemaining,
+          loading: false
+        };
+      }
+      
+      this._stateManager.updateUsage(this._kiroUsage);
+    } else if (retryCount < maxRetries) {
+      // Retry if no data yet (Kiro might still be updating)
+      console.log(`Usage not ready, retrying (${retryCount + 1}/${maxRetries})...`);
+      await this.refreshUsageAfterSwitch(retryCount + 1);
+      return;
+    }
+    
+    this._availableUpdate = getAvailableUpdate(this._context);
+    
+    // Full re-render with updated data
+    this._stateManager.updateFull({
+      accounts: this._accounts,
+      kiroUsage: this._kiroUsage,
+      activeAccount: this._accounts.find(a => a.isActive) || null
+    });
   }
 
   private _sendUsageUpdate() {

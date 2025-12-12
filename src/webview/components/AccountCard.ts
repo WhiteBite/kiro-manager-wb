@@ -18,21 +18,30 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
   const email = getAccountEmail(account);
   const avatar = email.charAt(0).toUpperCase();
   
-  // Check if usage limit is exhausted (>= 100%)
-  const isExhausted = account.usage && account.usage.percentageUsed >= 100;
+  // Check usage state
   const hasUsage = account.usage !== undefined;
+  const isUnknownUsage = hasUsage && account.usage!.currentUsage === -1;
+  const isExhausted = hasUsage && !isUnknownUsage && account.usage!.percentageUsed >= 100;
+  const isLoading = hasUsage && account.usage!.loading;
   
   const classes = [
     'card',
     account.isActive ? 'active' : '',
     account.isExpired ? 'expired' : '',
     isExhausted ? 'exhausted' : '',
+    isUnknownUsage ? 'unknown-usage' : '',
   ].filter(Boolean).join(' ');
 
-  // Usage display - show skeleton if not loaded
-  const usageDisplay = hasUsage 
-    ? account.usage!.currentUsage.toLocaleString()
-    : '<span class="usage-placeholder" data-account="' + escapeHtml(email) + '">—</span>';
+  // Usage display logic:
+  // -1 = unknown (show "?"), loading = show spinner, otherwise show value
+  let usageDisplay: string;
+  if (!hasUsage || isUnknownUsage) {
+    usageDisplay = '<span class="usage-unknown" title="' + (language === 'ru' ? 'Переключитесь на аккаунт для загрузки' : 'Switch to account to load') + '">?</span>';
+  } else if (isLoading) {
+    usageDisplay = '<span class="usage-loading">...</span>';
+  } else {
+    usageDisplay = account.usage!.currentUsage.toLocaleString();
+  }
 
   return `
     <div class="${classes}" data-email="${escapeHtml(email)}" data-index="${index}" data-usage-loaded="${hasUsage}">
