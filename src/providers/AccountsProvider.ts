@@ -16,6 +16,27 @@ import { Language } from '../webview/i18n';
 import { autoregProcess } from '../process-manager';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 
+// Simple performance measurement
+function perf<T>(name: string, fn: () => T): T {
+  const start = performance.now();
+  const result = fn();
+  const duration = performance.now() - start;
+  if (duration > 50) { // Only log slow operations (>50ms)
+    console.log(`[PERF] ${name}: ${duration.toFixed(1)}ms`);
+  }
+  return result;
+}
+
+async function perfAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  const start = performance.now();
+  const result = await fn();
+  const duration = performance.now() - start;
+  if (duration > 50) {
+    console.log(`[PERF] ${name}: ${duration.toFixed(1)}ms`);
+  }
+  return result;
+}
+
 export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _context: vscode.ExtensionContext;
@@ -383,24 +404,29 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   // Full refresh - reloads everything
   async refresh() {
     if (this._view) {
+      const start = performance.now();
       await this.refreshAccounts();
       await this.refreshUsage();
       this._availableUpdate = getAvailableUpdate(this._context);
       this.renderWebview();
       this.loadAllUsage();
+      const duration = performance.now() - start;
+      if (duration > 100) {
+        console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
+      }
     }
   }
 
   // Partial refresh - accounts only (fast)
   async refreshAccounts() {
-    this._accounts = loadAccounts();
+    this._accounts = perf('loadAccounts', () => loadAccounts());
     this._stateManager.updateAccounts(this._accounts);
   }
 
   // Partial refresh - usage only
   async refreshUsage() {
     try {
-      this._kiroUsage = await getKiroUsageFromDB();
+      this._kiroUsage = await perfAsync('getKiroUsageFromDB', () => getKiroUsageFromDB());
       if (this._kiroUsage) {
         const activeAccount = this._accounts.find(a => a.isActive);
         if (activeAccount) {
@@ -508,6 +534,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   private _doRenderWebview() {
     if (!this._view) return;
+    const start = performance.now();
 
     const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
     const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);
@@ -518,7 +545,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
     };
 
-    this._view.webview.html = generateWebviewHtml({
+    const html = perf('generateWebviewHtml', () => generateWebviewHtml({
       accounts: this._accounts,
       autoSwitchEnabled,
       autoRegStatus,
@@ -528,7 +555,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       version: this._version,
       language: this._language,
       availableUpdate: this._availableUpdate
-    });
+    }));
+    
+    this._view.webview.html = html;
+    
+    const duration = performance.now() - start;
+    if (duration > 50) {
+      console.log(`[PERF] renderWebview total: ${duration.toFixed(1)}ms (${this._accounts.length} accounts)`);
+    }
   }
 
   async loadAllUsage() {
