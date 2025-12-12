@@ -55,6 +55,8 @@ export const ko: Translations = {
   verboseDesc: '상세 로그 표시',
   screenshots: '오류 시 스크린샷',
   screenshotsDesc: '오류 발생 시 스크린샷 저장',
+  spoofFingerprint: '브라우저 스푸핑',
+  spoofFingerprintDesc: 'Canvas/WebGL/Audio 지문 위조',
   language: '언어',
   languageDesc: '인터페이스 언어',
 };

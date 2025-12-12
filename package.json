@@ -159,6 +159,11 @@
           "type": "boolean",
           "default": true,
           "description": "Save screenshots when errors occur during registration"
+        },
+        "kiroAccountSwitcher.autoreg.spoofFingerprint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable browser fingerprint spoofing (Canvas/WebGL/Audio) during registration"
         }
       }
     }

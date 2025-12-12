@@ -71,6 +71,11 @@ export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, langua
       control: renderToggle('screenshots', autoRegSettings?.screenshotsOnError ?? true, "updateSetting('screenshotsOnError', this.checked)"),
     },
     {
+      label: t.spoofFingerprint,
+      desc: t.spoofFingerprintDesc,
+      control: renderToggle('spoofFingerprint', autoRegSettings?.spoofFingerprint ?? true, "updateSetting('spoofFingerprint', this.checked)"),
+    },
+    {
       label: t.language,
       desc: t.languageDesc,
       control: renderLanguageSelect(language),
