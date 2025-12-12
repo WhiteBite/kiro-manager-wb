@@ -150,24 +150,42 @@ export function generateWebviewScript(totalAccounts: number): string {
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
+    // Double-click confirmation for delete exhausted
+    let deleteExhaustedPending = false;
+    let deleteExhaustedTimeout = null;
+    
     function confirmDeleteExhausted() {
       const exhaustedCards = document.querySelectorAll('.card.exhausted, .card.suspended');
       const count = exhaustedCards.length;
       if (count === 0) return;
       
-      pendingAction = { type: 'deleteExhausted' };
+      const btn = document.querySelector('.stat-exhausted');
       const lang = document.body.dataset.lang || 'en';
-      const titles = { 
-        en: 'Delete Bad Accounts', 
-        ru: 'Удалить плохие аккаунты'
-      };
-      const texts = { 
-        en: 'Delete ' + count + ' account(s) with exhausted limits or banned? This cannot be undone.', 
-        ru: 'Удалить ' + count + ' аккаунт(ов) с исчерпанным лимитом или забаненных? Это действие нельзя отменить.'
-      };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
-      document.getElementById('dialogOverlay').classList.add('visible');
+      
+      if (deleteExhaustedPending) {
+        // Second click - actually delete
+        deleteExhaustedPending = false;
+        if (deleteExhaustedTimeout) clearTimeout(deleteExhaustedTimeout);
+        if (btn) btn.classList.remove('confirm-pending');
+        vscode.postMessage({ command: 'deleteExhaustedAccounts' });
+      } else {
+        // First click - show confirmation state
+        deleteExhaustedPending = true;
+        if (btn) {
+          btn.classList.add('confirm-pending');
+          const originalText = btn.querySelector('span:nth-child(2)').textContent;
+          btn.querySelector('span:nth-child(2)').textContent = lang === 'ru' ? 'Удалить?' : 'Delete?';
+          btn.querySelector('.stat-delete').textContent = '⚠️';
+          
+          // Reset after 3 seconds
+          deleteExhaustedTimeout = setTimeout(() => {
+            deleteExhaustedPending = false;
+            btn.classList.remove('confirm-pending');
+            btn.querySelector('span:nth-child(2)').textContent = originalText;
+            btn.querySelector('.stat-delete').textContent = '🗑';
+          }, 3000);
+        }
+      }
     }
     
     function closeDialog() {
@@ -178,8 +196,6 @@ export function generateWebviewScript(totalAccounts: number): string {
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
         vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
-      } else if (pendingAction?.type === 'deleteExhausted') {
-        vscode.postMessage({ command: 'deleteExhaustedAccounts' });
       }
       closeDialog();
     }
