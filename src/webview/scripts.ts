@@ -196,12 +196,60 @@ export function generateWebviewScript(totalAccounts: number): string {
     // Handle messages from extension
     window.addEventListener('message', (event) => {
       const msg = event.data;
-      if (msg.type === 'appendLog') {
-        appendLogLine(msg.log);
-      } else if (msg.type === 'updateStatus') {
-        updateAutoRegStatus(msg.status);
+      switch (msg.type) {
+        case 'appendLog':
+          appendLogLine(msg.log);
+          break;
+        case 'updateStatus':
+          updateAutoRegStatus(msg.status);
+          break;
+        case 'updateUsage':
+          updateUsageCard(msg.usage);
+          break;
+        case 'updateAccounts':
+          // For now, trigger full refresh - can be optimized later
+          refresh();
+          break;
       }
     });
+    
+    // Incremental usage card update
+    function updateUsageCard(usage) {
+      if (!usage) return;
+      
+      const usageCard = document.querySelector('.usage-card');
+      if (!usageCard) return;
+      
+      const percentage = usage.percentageUsed;
+      const fillClass = percentage < 50 ? 'low' : percentage < 80 ? 'medium' : 'high';
+      
+      // Update values without full re-render
+      const valueEl = usageCard.querySelector('.usage-value');
+      if (valueEl) {
+        valueEl.textContent = usage.currentUsage.toLocaleString() + ' / ' + usage.usageLimit.toLocaleString();
+      }
+      
+      const fillEl = usageCard.querySelector('.usage-fill');
+      if (fillEl) {
+        fillEl.style.width = Math.min(percentage, 100) + '%';
+        fillEl.className = 'usage-fill ' + fillClass;
+      }
+      
+      const footerSpans = usageCard.querySelectorAll('.usage-footer span');
+      if (footerSpans[0]) {
+        footerSpans[0].textContent = percentage.toFixed(1) + '% used';
+      }
+      if (footerSpans[1] && usage.daysRemaining !== undefined) {
+        const lang = document.body.dataset.lang || 'en';
+        const daysText = { en: 'days left', ru: 'дней осталось', zh: '天剩余' };
+        footerSpans[1].textContent = usage.daysRemaining + ' ' + (daysText[lang] || daysText.en);
+      }
+      
+      // Remove stale indicator if present
+      usageCard.classList.remove('stale');
+      const staleIndicator = usageCard.querySelector('.stale-indicator');
+      if (staleIndicator) staleIndicator.remove();
+    }
     
     function appendLogLine(logLine) {
       const consoleBody = document.getElementById('consoleBody');

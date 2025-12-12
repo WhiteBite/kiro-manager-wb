@@ -165,9 +165,9 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.setStatus('{"step":1,"totalSteps":8,"stepName":"Starting","detail":"Initializing..."}');
 
   // -u flag disables Python output buffering for real-time logs
-  const args = ['-u', '-m', 'registration.register'];
+  // Use register_auto for non-interactive mode with JSON progress output
+  const args = ['-u', '-m', 'registration.register_auto'];
   if (headless) args.push('--headless');
-  args.push('--count', '1');
 
   const env = {
     ...process.env,
@@ -192,6 +192,12 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     for (const line of lines) {
       provider.addLog(line);
       parseProgressLine(line, provider);
+      
+      // Auto-confirm prompts (y/n, да/нет)
+      if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
+        provider.addLog('→ Auto-confirming: y');
+        autoregProcess.write('y\n');
+      }
     }
   });
 
@@ -241,6 +247,17 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 }
 
 function parseProgressLine(line: string, provider: KiroAccountsProvider) {
+  // Format 1: PROGRESS:{"step":1,"totalSteps":8,"stepName":"...","detail":"..."}
+  if (line.startsWith('PROGRESS:')) {
+    try {
+      const json = line.substring(9); // Remove "PROGRESS:" prefix
+      const data = JSON.parse(json);
+      provider.setStatus(JSON.stringify(data));
+      return;
+    } catch {}
+  }
+  
+  // Format 2: [1/8] StepName: detail
   const match = line.match(/\[(\d+)\/(\d+)\]\s*([^:]+):\s*(.+)/);
   if (match) {
     const [, step, total, stepName, detail] = match;

@@ -39,14 +39,17 @@ class RegistrationConfig:
 
 @dataclass
 class TimeoutsConfig:
-    """Таймауты"""
-    page_load: int = 3
-    element_wait: int = 2
-    verification_code: int = 90
-    oauth_callback: int = 30
-    between_accounts: int = 2
-    imap_poll_interval: int = 2
-    api_request: int = 30
+    """Таймауты (оптимизированы для скорости)"""
+    page_load: int = 2  # Уменьшено с 3
+    element_wait: int = 1  # Уменьшено с 2
+    verification_code: int = 60  # Уменьшено с 90
+    oauth_callback: int = 20  # Уменьшено с 30
+    between_accounts: int = 1  # Уменьшено с 2
+    imap_poll_interval: int = 1  # Уменьшено с 2
+    api_request: int = 20  # Уменьшено с 30
+    # Новые таймауты для умных ожиданий
+    element_poll_interval: float = 0.1  # Интервал проверки элементов
+    page_transition: int = 3  # Ожидание перехода между страницами
 
 
 @dataclass

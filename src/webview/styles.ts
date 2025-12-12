@@ -138,32 +138,34 @@ export function getStyles(): string {
     .list { padding: 6px 10px 60px; } .list-empty { text-align: center; padding: 30px 20px; color: var(--muted); }
     .list-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; } .list-empty-text { font-size: 12px; margin-bottom: 16px; }
     
-    /* Account Card */
-    .card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 6px; transition: all var(--transition-normal); animation: fadeIn 0.3s ease forwards; position: relative; }
+    /* Account Card - Optimized for performance */
+    .card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 6px; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); position: relative; will-change: transform; contain: layout style paint; }
     .card:hover { border-color: var(--border-medium); box-shadow: var(--shadow-sm); }
     .card.active { border-color: var(--accent); background: var(--accent-dim); }
     .card.expired { opacity: 0.75; border-color: var(--expired); background: var(--expired-dim); } .card.expired:hover { opacity: 0.9; }
     .card.exhausted { opacity: 0.6; border-color: var(--danger); background: var(--danger-dim); } .card.exhausted:hover { opacity: 0.8; }
     .card-main { display: flex; align-items: center; padding: 8px 10px; gap: 8px; cursor: pointer; }
-    .card-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: #fff; }
-    .card.expired .card-avatar { background: linear-gradient(135deg, #777 0%, #999 100%); }
-    .card.exhausted .card-avatar { background: linear-gradient(135deg, var(--danger) 0%, #f06b6b 100%); }
+    .card-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; background: var(--accent); color: #fff; }
+    .card.expired .card-avatar { background: #888; }
+    .card.exhausted .card-avatar { background: var(--danger); }
     .card-info { flex: 1; min-width: 0; }
     .card-email { font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 9px; color: var(--muted); }
     .card-meta-item { display: flex; align-items: center; gap: 3px; }
     .card-status { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
     .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); }
-    .card-actions { display: flex; gap: 6px; opacity: 0.4; transition: opacity var(--transition-fast); } .card:hover .card-actions { opacity: 1; }
-    .card-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: all var(--transition-fast); }
-    .card-btn:hover { background: rgba(128,128,128,0.2); border-color: var(--border-medium); color: var(--vscode-foreground); transform: scale(1.1); }
+    .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity var(--transition-fast); } .card:hover .card-actions { opacity: 1; }
+    .card-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: background var(--transition-fast), color var(--transition-fast); }
+    .card-btn:hover { background: rgba(128,128,128,0.2); border-color: var(--border-medium); color: var(--vscode-foreground); }
     .card-btn.danger:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
-    .card-btn.highlight { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); animation: pulse 2s infinite; }
-    .card-btn.highlight:hover { background: var(--accent); color: var(--bg-primary); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .card-btn.highlight { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .card-btn.highlight:hover { background: var(--accent); color: #fff; }
     .card-btn svg { width: 16px; height: 16px; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .card:nth-child(1) { animation-delay: 0.02s; } .card:nth-child(2) { animation-delay: 0.04s; } .card:nth-child(3) { animation-delay: 0.06s; }
+    
+    /* Virtual List */
+    .virtual-list-viewport { overflow-y: auto; overflow-x: hidden; }
+    .virtual-list-content { will-change: transform; }
+    .virtual-list-spacer { pointer-events: none; }
     
     /* Progress Panel */
     .progress-panel { margin: 8px 12px; padding: 10px 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }

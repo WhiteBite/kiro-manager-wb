@@ -20,6 +20,7 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
   
   // Check if usage limit is exhausted (>= 100%)
   const isExhausted = account.usage && account.usage.percentageUsed >= 100;
+  const hasUsage = account.usage !== undefined;
   
   const classes = [
     'card',
@@ -28,14 +29,19 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
     isExhausted ? 'exhausted' : '',
   ].filter(Boolean).join(' ');
 
+  // Usage display - show skeleton if not loaded
+  const usageDisplay = hasUsage 
+    ? account.usage!.currentUsage.toLocaleString()
+    : '<span class="usage-placeholder" data-account="' + escapeHtml(email) + '">—</span>';
+
   return `
-    <div class="${classes}" data-email="${escapeHtml(email)}" data-index="${index}">
+    <div class="${classes}" data-email="${escapeHtml(email)}" data-index="${index}" data-usage-loaded="${hasUsage}">
       <div class="card-main" onclick="switchAccount('${escapeHtml(account.filename)}')">
         <div class="card-avatar">${avatar}</div>
         <div class="card-info">
           <div class="card-email">${escapeHtml(email)}</div>
           <div class="card-meta">
-            <span class="card-meta-item">${ICONS.chart} ${account.usage ? account.usage.currentUsage.toLocaleString() : '—'}</span>
+            <span class="card-meta-item card-usage">${ICONS.chart} ${usageDisplay}</span>
             <span class="card-meta-item">${ICONS.clock} ${account.expiresIn ? formatExpiry(account.expiresIn) : '—'}</span>
           </div>
         </div>

@@ -207,7 +207,7 @@ function parseKiroUsageData(jsonValue: string): KiroUsageData | null {
 
 
 // Get cached usage for account from local storage
-export function getCachedAccountUsage(accountName: string): KiroUsageData | null {
+export function getCachedAccountUsage(accountName: string): (KiroUsageData & { lastUpdated?: string; stale?: boolean }) | null {
   const usageFile = path.join(getTokensDir(), '..', 'account-usage.json');
   try {
     if (fs.existsSync(usageFile)) {
@@ -216,6 +216,17 @@ export function getCachedAccountUsage(accountName: string): KiroUsageData | null
     }
   } catch {}
   return null;
+}
+
+// Get all cached usage data
+export function getAllCachedUsage(): Record<string, KiroUsageData & { lastUpdated?: string; stale?: boolean }> {
+  const usageFile = path.join(getTokensDir(), '..', 'account-usage.json');
+  try {
+    if (fs.existsSync(usageFile)) {
+      return JSON.parse(fs.readFileSync(usageFile, 'utf8'));
+    }
+  } catch {}
+  return {};
 }
 
 // Save usage for account to local storage
@@ -253,4 +264,51 @@ export async function getAccountUsageCached(accountName: string, accessToken: st
     usageCache.set(accountName, { data: usage, timestamp: Date.now() });
   }
   return usage;
+}
+
+// Clear usage cache for a specific account or all accounts
+export function clearUsageCache(accountName?: string): void {
+  if (accountName) {
+    usageCache.delete(accountName);
+  } else {
+    usageCache.clear();
+  }
+}
+
+// Invalidate cached usage data for account (marks as stale)
+export function invalidateAccountUsage(accountName: string): void {
+  usageCache.delete(accountName);
+  
+  // Also clear from file cache
+  const usageFile = path.join(getTokensDir(), '..', 'account-usage.json');
+  try {
+    if (fs.existsSync(usageFile)) {
+      const data = JSON.parse(fs.readFileSync(usageFile, 'utf8'));
+      if (data[accountName]) {
+        data[accountName].stale = true;
+        fs.writeFileSync(usageFile, JSON.stringify(data, null, 2));
+      }
+    }
+  } catch {}
+}
+
+// Check if cached usage is stale
+export function isUsageStale(accountName: string): boolean {
+  const usageFile = path.join(getTokensDir(), '..', 'account-usage.json');
+  try {
+    if (fs.existsSync(usageFile)) {
+      const data = JSON.parse(fs.readFileSync(usageFile, 'utf8'));
+      const cached = data[accountName];
+      if (cached) {
+        // Check if marked as stale
+        if (cached.stale) return true;
+        // Check if older than 5 minutes
+        if (cached.lastUpdated) {
+          const age = Date.now() - new Date(cached.lastUpdated).getTime();
+          return age > CACHE_TTL;
+        }
+      }
+    }
+  } catch {}
+  return true;
 }

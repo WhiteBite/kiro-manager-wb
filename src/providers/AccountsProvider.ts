@@ -14,6 +14,7 @@ import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo } from '../types';
 import { Language } from '../webview/i18n';
 import { autoregProcess } from '../process-manager';
+import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 
 export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
@@ -24,12 +25,40 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _version: string;
   private _language: Language = 'en';
   private _availableUpdate: { version: string; url: string } | null = null;
+  private _stateManager: StateManager;
+  private _unsubscribe?: () => void;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
     this._version = context.extension.packageJSON.version || 'unknown';
     this._language = context.globalState.get<Language>('language', 'en');
     this._availableUpdate = getAvailableUpdate(context);
+    this._stateManager = getStateManager();
+    
+    // Subscribe to state changes for incremental updates
+    this._unsubscribe = this._stateManager.subscribe((update) => {
+      this._handleStateUpdate(update);
+    });
+  }
+
+  // Handle state updates - send incremental updates to webview
+  private _handleStateUpdate(update: StateUpdate): void {
+    if (!this._view) return;
+
+    switch (update.type) {
+      case 'usage':
+        this._view.webview.postMessage({ type: 'updateUsage', usage: update.data.kiroUsage });
+        break;
+      case 'accounts':
+        this._view.webview.postMessage({ type: 'updateAccounts', accounts: update.data.accounts });
+        break;
+      case 'status':
+        this._view.webview.postMessage({ type: 'updateStatus', status: update.data.autoRegStatus });
+        break;
+      case 'full':
+        this.renderWebview();
+        break;
+    }
   }
 
   get context(): vscode.ExtensionContext {
@@ -315,33 +344,95 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this.refresh();
   }
 
+  // Full refresh - reloads everything
   async refresh() {
     if (this._view) {
-      this._accounts = loadAccounts();
-      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-      const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);
-      const autoRegStatus = this._context.globalState.get<string>('autoRegStatus', '');
-
-      try {
-        this._kiroUsage = await getKiroUsageFromDB();
-        if (this._kiroUsage) {
-          const activeAccount = this._accounts.find(a => a.isActive);
-          if (activeAccount) {
-            const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
-            updateActiveAccountUsage(accountName, this._kiroUsage);
-          }
-        }
-      } catch (err) {
-        this._kiroUsage = null;
-      }
-
+      await this.refreshAccounts();
+      await this.refreshUsage();
       this._availableUpdate = getAvailableUpdate(this._context);
       this.renderWebview();
       this.loadAllUsage();
     }
   }
 
+  // Partial refresh - accounts only (fast)
+  async refreshAccounts() {
+    this._accounts = loadAccounts();
+    this._stateManager.updateAccounts(this._accounts);
+  }
+
+  // Partial refresh - usage only
+  async refreshUsage() {
+    try {
+      this._kiroUsage = await getKiroUsageFromDB();
+      if (this._kiroUsage) {
+        const activeAccount = this._accounts.find(a => a.isActive);
+        if (activeAccount) {
+          const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
+          updateActiveAccountUsage(accountName, this._kiroUsage);
+        }
+      }
+      this._stateManager.updateUsage(this._kiroUsage);
+    } catch (err) {
+      this._kiroUsage = null;
+      this._stateManager.updateUsage(null);
+    }
+  }
+
+  // Refresh usage data after account switch - clears cache and reloads
+  async refreshUsageAfterSwitch() {
+    if (this._view) {
+      // Clear cached usage to force fresh data
+      const { clearUsageCache } = await import('../utils');
+      clearUsageCache();
+      
+      // Reset current usage
+      this._kiroUsage = null;
+      this._stateManager.updateUsage(null);
+      
+      // Reload accounts
+      await this.refreshAccounts();
+      
+      // Small delay to allow Kiro to update its DB after switch
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reload usage from Kiro DB
+      await this.refreshUsage();
+      
+      this._availableUpdate = getAvailableUpdate(this._context);
+      
+      // Only re-render if needed (StateManager handles incremental updates)
+      this._stateManager.updateFull({
+        accounts: this._accounts,
+        kiroUsage: this._kiroUsage,
+        activeAccount: this._accounts.find(a => a.isActive) || null
+      });
+    }
+  }
+
+  private _sendUsageUpdate() {
+    if (this._view && this._kiroUsage) {
+      this._stateManager.updateUsage(this._kiroUsage);
+    }
+  }
+
+  private _renderDebounceTimer: NodeJS.Timeout | null = null;
+  private _renderDebounceMs: number = 50;
+
   private renderWebview() {
+    if (!this._view) return;
+
+    // Debounce renders to avoid flickering
+    if (this._renderDebounceTimer) {
+      clearTimeout(this._renderDebounceTimer);
+    }
+
+    this._renderDebounceTimer = setTimeout(() => {
+      this._doRenderWebview();
+    }, this._renderDebounceMs);
+  }
+
+  private _doRenderWebview() {
     if (!this._view) return;
 
     const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
