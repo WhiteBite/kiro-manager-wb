@@ -48,7 +48,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       this._consoleLogs = this._consoleLogs.slice(-200);
     }
     this._writeToLogFile(logLine);
-    this.refresh();
+    // Send incremental update instead of full refresh to avoid flickering
+    this._sendLogUpdate(logLine);
+  }
+
+  private _sendLogUpdate(logLine: string) {
+    if (this._view) {
+      this._view.webview.postMessage({ type: 'appendLog', log: logLine });
+    }
   }
 
   private _writeToLogFile(line: string) {
@@ -83,7 +90,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   setStatus(status: string) {
     this._context.globalState.update('autoRegStatus', status);
-    this.refresh();
+    // Send incremental update instead of full refresh to avoid flickering
+    this._sendStatusUpdate(status);
+  }
+
+  private _sendStatusUpdate(status: string) {
+    if (this._view) {
+      this._view.webview.postMessage({ type: 'updateStatus', status });
+    }
   }
 
   // Auto-reg process management
