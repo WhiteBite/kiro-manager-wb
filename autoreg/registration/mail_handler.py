@@ -7,11 +7,28 @@ import imaplib
 import email
 import re
 import time
-from typing import Optional
-
 import sys
+from typing import Optional
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+def safe_print(msg: str):
+    """Print that works on Windows with cp1251 encoding"""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        # Replace unicode symbols with ASCII equivalents
+        replacements = {
+            '✓': '[OK]', '✗': '[X]', '✅': '[OK]', '❌': '[X]',
+            '⚠️': '[!]', '🔧': '[*]', '📧': '[M]', '📦': '[P]',
+            '🔄': '[R]', '📌': '[V]', '🔐': '[K]', '👤': '[U]',
+            '📝': '[N]', '🔍': '[S]', '🎫': '[T]', '🖥️': '[C]',
+        }
+        for old, new in replacements.items():
+            msg = msg.replace(old, new)
+        print(msg.encode('ascii', 'replace').decode('ascii'))
 
 from core.config import get_config
 
@@ -58,10 +75,10 @@ class IMAPMailHandler:
         try:
             self.imap = imaplib.IMAP4_SSL(self.imap_host)
             self.imap.login(self.imap_email, self.imap_password)
-            print(f"✓ Подключено к {self.imap_host}")
+            print(f"[OK] Connected to {self.imap_host}")
             return True
         except Exception as e:
-            print(f"✗ Ошибка подключения: {e}")
+            print(f"[ERROR] IMAP connection failed: {e}")
             return False
     
     def disconnect(self):
@@ -90,7 +107,7 @@ class IMAPMailHandler:
         checked_ids = set()  # Уже проверенные письма
         poll_count = 0
         
-        print(f"📧 Жду письмо для {target_email}...")
+        safe_print(f"[MAIL] Waiting for email to {target_email}...")
         
         while time.time() - start_time < timeout:
             try:
@@ -110,7 +127,7 @@ class IMAPMailHandler:
                     poll_count += 1
                     wait_time = random.uniform(2.5, 4.5)  # Случайная задержка
                     if poll_count % 5 == 0:
-                        print(f"   ⏳ Ожидание... ({int(time.time() - start_time)}s)")
+                        safe_print(f"   Waiting... ({int(time.time() - start_time)}s)")
                     time.sleep(wait_time)
                     continue
                 
@@ -142,7 +159,7 @@ class IMAPMailHandler:
                         continue
                     
                     subject = header_msg.get('Subject', '')
-                    print(f"   📩 Найдено письмо: {subject[:50]}...")
+                    safe_print(f"   Found email: {subject[:50]}...")
                     
                     # Теперь получаем полное письмо для извлечения кода
                     status, msg_data = self.imap.fetch(email_id, '(RFC822)')
@@ -155,25 +172,25 @@ class IMAPMailHandler:
                     code = self._extract_code(msg)
                     
                     if code:
-                        print(f"✓ Найден код верификации: {code}")
+                        safe_print(f"[OK] Verification code found: {code}")
                         return code
                 
                 # Человекоподобная задержка между проверками
                 poll_count += 1
                 wait_time = random.uniform(2.0, 5.0)
                 if poll_count % 3 == 0:
-                    print(f"   ⏳ Проверка почты... ({int(time.time() - start_time)}s)")
+                    safe_print(f"   Checking mail... ({int(time.time() - start_time)}s)")
                 time.sleep(wait_time)
                 
             except imaplib.IMAP4.abort as e:
-                print(f"⚠ IMAP соединение прервано, переподключаюсь...")
+                safe_print(f"[!] IMAP connection lost, reconnecting...")
                 self.connect()
                 time.sleep(2)
             except Exception as e:
-                print(f"⚠ Ошибка при чтении писем: {e}")
+                safe_print(f"[!] Error reading emails: {e}")
                 time.sleep(3)
         
-        print(f"✗ Код верификации не найден за {timeout} секунд")
+        safe_print(f"[X] Verification code not found in {timeout} seconds")
         return None
     
     def _extract_code(self, msg) -> Optional[str]:
@@ -245,7 +262,7 @@ def get_mail_handler(email_domain: str) -> Optional[IMAPMailHandler]:
     config = IMAP_CONFIG.get(email_domain)
     
     if not config:
-        print(f"⚠️ Нет конфига для домена: {email_domain}")
+        safe_print(f"[!] No config for domain: {email_domain}")
         return None
     
     handler = IMAPMailHandler(
