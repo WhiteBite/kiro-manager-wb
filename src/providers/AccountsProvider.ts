@@ -219,6 +219,36 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     return homePath;
   }
 
+  // Delete all accounts with exhausted usage limits
+  async deleteExhaustedAccounts() {
+    const exhaustedAccounts = this._accounts.filter(
+      a => a.usage && a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100
+    );
+
+    if (exhaustedAccounts.length === 0) {
+      vscode.window.showInformationMessage('No exhausted accounts to delete');
+      return;
+    }
+
+    let deleted = 0;
+    for (const acc of exhaustedAccounts) {
+      const accountName = acc.tokenData.accountName || acc.filename;
+      try {
+        // Delete token file directly (skip confirmation since we already confirmed)
+        if (fs.existsSync(acc.path)) {
+          fs.unlinkSync(acc.path);
+          deleted++;
+          this.addLog(`🗑 Deleted: ${accountName}`);
+        }
+      } catch (err) {
+        this.addLog(`✗ Failed to delete ${accountName}: ${err}`);
+      }
+    }
+
+    vscode.window.showInformationMessage(`Deleted ${deleted} exhausted account(s)`);
+    this.refresh();
+  }
+
   // Webview provider implementation
   resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
