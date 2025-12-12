@@ -1192,7 +1192,7 @@ class FingerprintSpoofer:
                     self.page.run_js(js_payload)
             
             self._injected = True
-            print(f"🛡️ Fingerprint spoofing v3.3 injected")
+            print(f"[S]️ Fingerprint spoofing v3.3 injected")
             print(f"   GPU: {self.gpu_profile['vendor']} / {self.gpu_profile['renderer']}")
             print(f"   Screen: {self.screen_config['width']}x{self.screen_config['height']}")
             print(f"   Timezone: {self.timezone_config['id']} (offset {self.timezone_config['offset']})")
@@ -1256,7 +1256,7 @@ def test_fingerprint_spoof():
     for key, value in config.items():
         print(f"  {key}: {value}")
     
-    print("\n📍 Opening browserleaks.com/canvas...")
+    print("\n[>] Opening browserleaks.com/canvas...")
     page.get('https://browserleaks.com/canvas')
     
     print("\n[OK] Проверьте Canvas Signature")

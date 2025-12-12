@@ -108,7 +108,7 @@ class SsoImportService:
             
             # Step 6: Approve authorization
             if device_context:
-                print("🔓 Step 6: Approving authorization...")
+                print("[UNLOCK] Step 6: Approving authorization...")
                 self._approve_authorization(
                     oidc_base, device_context, client_id, device_session_token
                 )
@@ -373,7 +373,7 @@ class SsoImportService:
         }
         
         saved_path = token_service.save_token(token_data, result.email.split("@")[0])
-        print(f"💾 Token saved to: {saved_path}")
+        print(f"[SAVE] Token saved to: {saved_path}")
         
         return result
     

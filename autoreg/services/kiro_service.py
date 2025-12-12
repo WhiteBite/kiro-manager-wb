@@ -206,7 +206,7 @@ class KiroService:
             print(f"[R] Running: {'[OK]' if status.running else '[X]'}")
             if status.version:
                 print(f"[V] Version: {status.version}")
-            print(f"📁 Data dir: {status.data_dir}")
+            print(f"[F] Data dir: {status.data_dir}")
             
             if status.current_account:
                 token_status = '[OK] valid' if status.token_valid else '[X] expired'
