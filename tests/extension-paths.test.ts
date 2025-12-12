@@ -34,8 +34,8 @@ describe('Extension Path Configuration', () => {
       expect(fs.existsSync(path.join(AUTOREG_DIR, 'requirements.txt'))).toBe(true);
     });
 
-    it('should use -m registration.register for module execution', () => {
-      expect(autoregContent).toContain("'-m', 'registration.register'");
+    it('should use -m registration.register_auto for module execution', () => {
+      expect(autoregContent).toContain("'-m', 'registration.register_auto'");
     });
   });
 
