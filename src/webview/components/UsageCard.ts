@@ -9,9 +9,11 @@ import { Language, getTranslations } from '../i18n';
 export interface UsageCardProps {
   usage: KiroUsageData | null | undefined;
   language?: Language;
+  isStale?: boolean;  // Flag for stale/outdated data
+  accountName?: string;  // Current account name for display
 }
 
-export function renderUsageCard({ usage, language = 'en' }: UsageCardProps): string {
+export function renderUsageCard({ usage, language = 'en', isStale = false, accountName }: UsageCardProps): string {
   if (!usage) return '';
 
   const t = getTranslations(language);
@@ -20,11 +22,15 @@ export function renderUsageCard({ usage, language = 'en' }: UsageCardProps): str
   const resetText = usage.daysRemaining > 0 
     ? `${usage.daysRemaining} ${t.daysLeft}` 
     : t.resetsAtMidnight;
+  
+  // Add stale indicator if data might be outdated
+  const staleClass = isStale ? 'stale' : '';
+  const staleIndicator = isStale ? '<span class="stale-indicator" title="Data may be outdated">⟳</span>' : '';
 
   return `
-    <div class="usage-card" onclick="vscode.postMessage({command:'showUsageDetails'})">
+    <div class="usage-card ${staleClass}" onclick="vscode.postMessage({command:'showUsageDetails'})" data-account="${accountName || ''}">
       <div class="usage-header">
-        <div class="usage-title">${ICONS.bolt} ${t.todaysUsage}</div>
+        <div class="usage-title">${ICONS.bolt} ${t.todaysUsage} ${staleIndicator}</div>
         <div class="usage-value">${usage.currentUsage.toLocaleString()} / ${usage.usageLimit.toLocaleString()}</div>
       </div>
       <div class="usage-bar">

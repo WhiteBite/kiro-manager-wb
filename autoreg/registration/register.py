@@ -170,10 +170,6 @@ class AWSRegistration:
             self.browser.close_cookie_dialog()
             time.sleep(1)
             
-            # Смотрим где мы оказались (должен быть редирект на signin.aws или profile.aws)
-            current_url = self.browser.current_url
-            print(f"   Current URL: {current_url[:60]}...")
-            
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
             self.browser.enter_email(email)
@@ -199,37 +195,32 @@ class AWSRegistration:
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
             print(f"[7/8] Waiting for Allow access page...")
-            time.sleep(2)
             
-            # Ждём появления страницы Allow access (до 30 секунд)
+            # Оптимизированное ожидание Allow access (до 15 секунд)
+            start_time = time.time()
             allow_access_found = False
-            for i in range(60):  # 60 * 0.5 = 30 секунд
+            
+            while time.time() - start_time < 15:
                 current_url = self.browser.current_url
                 
-                # Проверяем что мы на view.awsapps.com
                 if 'view.awsapps.com' in current_url:
-                    print(f"   [OK] Redirected to view.awsapps.com (after {(i+1)*0.5:.1f}s)")
+                    elapsed = time.time() - start_time
+                    print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
                     allow_access_found = True
                     break
                 
-                # Проверяем на callback (если Allow access уже был нажат автоматически)
                 if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
                     print(f"   [OK] Already redirected to callback!")
                     allow_access_found = True
                     break
                 
-                time.sleep(0.5)
+                time.sleep(0.1)
             
-            if not allow_access_found:
-                print(f"   [!] Did not reach view.awsapps.com, current URL: {current_url[:60]}")
-                # Продолжаем всё равно - может быть другой flow
-            
-            # Кликаем "Allow access" если мы на этой странице
+            # Кликаем "Allow access" если нужно
             current_url = self.browser.current_url
             if 'view.awsapps.com' in current_url and '127.0.0.1' not in current_url:
                 print(f"   Clicking Allow access button...")
                 self.browser.close_cookie_dialog(force=True)
-                time.sleep(0.5)
                 
                 if not self.browser.click_allow_access():
                     print(f"   [!] Failed to click Allow access")
@@ -374,6 +365,7 @@ def main():
     parser.add_argument('--email', '-e', help='Email для регистрации')
     parser.add_argument('--count', '-c', type=int, help='Количество аккаунтов')
     parser.add_argument('--headless', action='store_true', help='Без GUI')
+    parser.add_argument('--yes', '-y', action='store_true', help='Автоматическое подтверждение (без prompt)')
     
     args = parser.parse_args()
     
@@ -388,9 +380,11 @@ def main():
         names = [n for _, n in generated]
         print(f"Generated {len(emails)} accounts")
     else:
-        email = input("Email: ").strip()
-        if email:
-            emails = [email]
+        # Если запущено без --yes, спрашиваем email
+        if not args.yes:
+            email = input("Email: ").strip()
+            if email:
+                emails = [email]
     
     if not emails:
         print("No emails")

@@ -12,7 +12,8 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
   switch (msg.command) {
     case 'switch':
       await switchToAccount(msg.account);
-      provider.refresh();
+      // Force refresh usage after account switch
+      await provider.refreshUsageAfterSwitch();
       break;
 
     case 'refresh':
@@ -89,7 +90,8 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
 
     case 'switchAccount':
       await switchToAccount(msg.email);
-      provider.refresh();
+      // Force refresh usage after account switch
+      await provider.refreshUsageAfterSwitch();
       break;
 
     case 'copyToken':

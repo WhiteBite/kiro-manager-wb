@@ -125,11 +125,12 @@ PASSWORD_CHARS = {
     'special': '!@#$%^&*',  # Расширен набор спецсимволов
 }
 
-# Таймауты по умолчанию
+# Таймауты по умолчанию (оптимизированы)
 DEFAULT_TIMEOUTS = {
-    'page_load': 10,
-    'element_wait': 3,
-    'page_transition': 5,
+    'page_load': 5,  # Уменьшено с 10
+    'element_wait': 1,  # Уменьшено с 3
+    'page_transition': 3,  # Уменьшено с 5
+    'poll_interval': 0.1,  # Интервал проверки элементов
 }
 
 def load_settings():
@@ -332,7 +333,7 @@ class BrowserAutomation:
     def wait_for_page_context(self, context_key: str, timeout: int = None) -> bool:
         """
         Ждёт появления контекста страницы (заголовка).
-        Это гарантирует что мы на правильной странице перед поиском элементов.
+        Оптимизировано: использует быстрый polling вместо медленных циклов.
         
         Args:
             context_key: Ключ из PAGE_CONTEXTS ('email', 'name', 'verification', 'password')
@@ -342,23 +343,28 @@ class BrowserAutomation:
             True если контекст найден
         """
         timeout = timeout or DEFAULT_TIMEOUTS['page_transition']
+        poll_interval = DEFAULT_TIMEOUTS['poll_interval']
         contexts = PAGE_CONTEXTS.get(context_key, [])
         
         if not contexts:
-            return True  # Нет контекста для проверки
+            return True
         
         print(f"   [...] Waiting for page: {context_key}...")
         
-        for _ in range(timeout * 2):
-            for ctx in contexts:
+        # Строим комбинированный селектор для всех контекстов
+        combined_selectors = [f'text={ctx}' for ctx in contexts]
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            for selector in combined_selectors:
                 try:
-                    if self.page.ele(f'text={ctx}', timeout=0.3):
-                        print(f"   [OK] Page context found: '{ctx}'")
-                        time.sleep(0.3)  # Даём React отрендерить остальные элементы
+                    if self.page.ele(selector, timeout=poll_interval):
+                        elapsed = time.time() - start_time
+                        print(f"   [OK] Page context found in {elapsed:.2f}s")
+                        time.sleep(0.1)  # Минимальная пауза для React
                         return True
                 except:
                     pass
-            time.sleep(0.5)
         
         print(f"   [!] Page context not found: {context_key}")
         return False
@@ -366,6 +372,7 @@ class BrowserAutomation:
     def wait_for_url_change(self, old_url: str, timeout: int = None) -> bool:
         """
         Ждёт изменения URL после действия.
+        Оптимизировано: быстрый polling с минимальными задержками.
         
         Args:
             old_url: Предыдущий URL
@@ -375,85 +382,90 @@ class BrowserAutomation:
             True если URL изменился
         """
         timeout = timeout or DEFAULT_TIMEOUTS['page_transition']
+        poll_interval = DEFAULT_TIMEOUTS['poll_interval']
         
-        for _ in range(timeout * 2):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
             if self.page.url != old_url:
-                time.sleep(0.5)  # Даём странице загрузиться
+                time.sleep(0.15)  # Минимальная пауза для загрузки
                 return True
-            time.sleep(0.5)
+            time.sleep(poll_interval)
         
         return False
+    
+    def wait_for_element(self, selectors: list, timeout: int = None) -> Optional[object]:
+        """
+        Умное ожидание элемента с быстрым polling.
+        
+        Args:
+            selectors: Список селекторов для поиска
+            timeout: Таймаут в секундах
+        
+        Returns:
+            Найденный элемент или None
+        """
+        timeout = timeout or DEFAULT_TIMEOUTS['element_wait']
+        poll_interval = DEFAULT_TIMEOUTS['poll_interval']
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            for selector in selectors:
+                try:
+                    elem = self.page.ele(selector, timeout=poll_interval)
+                    if elem:
+                        return elem
+                except:
+                    pass
+        return None
     
     # ========================================================================
     # HUMAN-LIKE INPUT (Обход поведенческого анализа AWS FWCIM)
     # ========================================================================
     
-    def human_type(self, element, text: str, click_first: bool = True, fast: bool = False):
+    def human_type(self, element, text: str, click_first: bool = True, fast: bool = True):
         """
         Вводит текст используя execCommand для совместимости с Cloudscape/React.
+        Оптимизировано: минимальные задержки.
         
         Args:
             element: Элемент для ввода
             text: Текст для ввода
             click_first: Кликнуть на элемент перед вводом
-            fast: Быстрый режим (не используется, оставлен для совместимости)
+            fast: Быстрый режим (по умолчанию True)
         """
         if click_first:
             element.click()
-            time.sleep(random.uniform(0.05, 0.15))
+            time.sleep(0.03)  # Минимальная задержка
         
-        # Очищаем поле и вводим текст
+        # Очищаем поле и вводим текст одной операцией
         self.page.run_js('''
             const input = arguments[0];
             const text = arguments[1];
-            
-            // Фокусируемся
             input.focus();
-            
-            // Очищаем поле полностью
             input.value = '';
-            
-            // Выделяем всё (на случай если value = '' не сработало)
             input.select();
-            
-            // Вставляем текст через execCommand
             document.execCommand('insertText', false, text);
         ''', element, text)
         
-        time.sleep(0.1)
+        time.sleep(0.05)  # Минимальная пауза для React
     
     def human_click(self, element):
         """
-        Кликает по элементу с предварительным движением мыши.
-        AWS FWCIM модуль 61 анализирует mouseClickPositions и mouseCycles.
+        Кликает по элементу. Оптимизировано для скорости.
         
         Args:
             element: Элемент для клика
         """
         try:
-            # Получаем координаты элемента
-            rect = element.rect
-            
-            # Добавляем небольшой случайный сдвиг от центра
-            offset_x = random.randint(-5, 5)
-            offset_y = random.randint(-3, 3)
-            
-            # Используем actions для более реалистичного клика
-            # DrissionPage >= 4.0 поддерживает duration для плавного движения
+            # Быстрый клик через JS (самый надёжный и быстрый)
+            self.page.run_js('arguments[0].click()', element)
+            time.sleep(0.05)  # Минимальная пауза
+        except:
             try:
-                self.page.actions.move_to(element, duration=random.uniform(0.3, 0.7))
-                time.sleep(random.uniform(0.05, 0.15))
-                self.page.actions.click()
-            except:
-                # Fallback на обычный клик
                 element.click()
-            
-            time.sleep(random.uniform(0.1, 0.3))
-            
-        except Exception as e:
-            # Fallback на обычный клик
-            element.click()
-            time.sleep(random.uniform(0.1, 0.2))
+                time.sleep(0.05)
+            except:
+                pass
     
     @staticmethod
     def generate_password(length: int = PASSWORD_LENGTH) -> str:
@@ -483,60 +495,32 @@ class BrowserAutomation:
         return ''.join(password)
     
     def close_cookie_dialog(self, force: bool = False):
-        """Закрывает диалог cookie если он появился"""
+        """Закрывает диалог cookie через CSS (самый быстрый и надёжный способ)."""
         if self._cookie_closed and not force:
             return False
-            
-        self._log("Checking for cookie dialog...")
         
-        # Расширенный список селекторов для cookie диалога (RU + EN)
-        cookie_selectors = [
-            # AWS specific - наиболее надёжные
-            '#awsccc-cb-btn-decline',
-            '@data-id=awsccc-cb-btn-decline',
-            # Русский интерфейс
-            'text=Отклонить',
-            # Английский интерфейс
-            'text=Decline', 
-        ]
+        # Проверяем есть ли cookie banner
+        try:
+            if not self.page.ele('@data-id=awsccc-cb-btn-decline', timeout=0.1):
+                return False
+        except:
+            return False
         
-        for selector in cookie_selectors:
-            try:
-                btn = self.page.ele(selector, timeout=0.5)
-                if btn:
-                    print(f"   [COOKIE] Found cookie button: {selector}")
-                    
-                    # Пробуем кликнуть разными способами
-                    try:
-                        # Способ 1: Обычный клик DrissionPage
-                        btn.click()
-                        print(f"   [COOKIE] Cookie dialog closed (click)")
-                        time.sleep(0.5)
-                        self._cookie_closed = True
-                        return True
-                    except Exception as e1:
-                        print(f"   [!] Click failed: {e1}")
-                        try:
-                            # Способ 2: JS клик
-                            self.page.run_js('arguments[0].click()', btn)
-                            print(f"   [COOKIE] Cookie dialog closed (JS)")
-                            time.sleep(0.5)
-                            self._cookie_closed = True
-                            return True
-                        except Exception as e2:
-                            print(f"   [!] JS click failed: {e2}")
-                            try:
-                                # Способ 3: Клик через actions
-                                self.page.actions.click(btn)
-                                print(f"   [COOKIE] Cookie dialog closed (actions)")
-                                time.sleep(0.5)
-                                self._cookie_closed = True
-                                return True
-                            except Exception as e3:
-                                print(f"   [!] Actions click failed: {e3}")
-                    
-            except Exception:
-                pass
+        # Скрываем через CSS - мгновенно и надёжно
+        try:
+            self.page.run_js('''
+                const banner = document.querySelector('#awsccc-cb-content');
+                if (banner) banner.style.display = 'none';
+                const overlay = document.querySelector('.awsccc-cs-overlay');
+                if (overlay) overlay.style.display = 'none';
+                // Также скрываем родительский контейнер
+                const container = document.querySelector('#awsccc-cb');
+                if (container) container.style.display = 'none';
+            ''')
+            self._cookie_closed = True
+            return True
+        except:
+            pass
         
         return False
     
@@ -752,38 +736,27 @@ class BrowserAutomation:
         return False
     
     def enter_email(self, email: str) -> bool:
-        """Вводит email"""
+        """Вводит email. Оптимизировано для скорости."""
         print(f"[M] Entering email: {email}")
         
-        # СНАЧАЛА закрываем cookie диалог - он может перекрывать всё
+        # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
-        time.sleep(0.5)
         
-        # Ждём появления страницы email (Get started / Sign in)
-        if not self.wait_for_page_context('email', timeout=5):
-            # Возможно cookie диалог ещё раз появился
-            self.close_cookie_dialog(force=True)
-            time.sleep(0.5)
-        
+        # Быстрые селекторы в порядке приоритета
         selectors = [
             '@placeholder=username@example.com',
-            'aria:Email',
             '@type=email',
-            '@name=email',
-            'tag:input@@type=text',
-            'xpath://input[@type="text"]',
-            'xpath://input[contains(@placeholder, "example.com")]',
             'xpath://input[@data-testid="test-input"]',
         ]
         
         email_input = None
         for selector in selectors:
             try:
-                email_input = self.page.ele(selector, timeout=1)
+                email_input = self.page.ele(selector, timeout=0.5)
                 if email_input:
                     self._log(f"Found email field", selector)
                     break
-            except Exception:
+            except:
                 pass
         
         if not email_input:
@@ -791,8 +764,7 @@ class BrowserAutomation:
             self.screenshot("error_no_email")
             raise Exception("Email field not found")
         
-        email_input.clear()
-        # Используем человеческий ввод для обхода поведенческого анализа
+        # Быстрый ввод email
         self.human_type(email_input, email)
         return True
     
@@ -810,245 +782,95 @@ class BrowserAutomation:
         """Нажимает кнопку Continue после email и ждёт страницу имени"""
         print("[->] Clicking Continue...")
         
-        # Закрываем cookie если ещё не закрыли
-        self.close_cookie_dialog()
-        
-        # Пробуем кликнуть Continue
-        clicked = False
-        for attempt in range(3):
-            if self._click_if_exists(SELECTORS['continue_btn'], timeout=2):
-                clicked = True
-                break
-            time.sleep(0.3)
-        
-        if not clicked:
+        # Быстрый клик Continue
+        if not self._click_if_exists(SELECTORS['continue_btn'], timeout=1):
             raise Exception("Continue button not found")
         
-        # КРИТИЧНО: Ждём появления страницы ввода имени (до 15 секунд)
-        print("   [...] Waiting for name page (up to 15s)...")
-        name_page_found = False
-        for i in range(30):  # 30 * 0.5 = 15 секунд
-            time.sleep(0.5)
-            try:
-                if self.page.ele('text=Enter your name', timeout=0.3):
-                    print(f"   [OK] Name page loaded (after {(i+1)*0.5:.1f}s)")
-                    name_page_found = True
-                    break
-                # Альтернативный вариант - поле имени
-                if self.page.ele('@placeholder=Maria José Silva', timeout=0.2):
-                    print(f"   [OK] Name page loaded (after {(i+1)*0.5:.1f}s)")
-                    name_page_found = True
-                    break
-            except:
-                pass
+        # Ожидание страницы имени (AWS проверяет email - это занимает 2-4 сек)
+        print("   [...] Waiting for name page...")
+        name_selectors = ['@placeholder=Maria José Silva', 'text=Enter your name']
         
-        if not name_page_found:
-            print("   [X] FAILED: Name page did not load!")
-            self.screenshot("error_no_name_page")
-            raise Exception("Name page did not load after email")
+        start_time = time.time()
+        timeout = 10
         
-        return True
+        while time.time() - start_time < timeout:
+            for selector in name_selectors:
+                try:
+                    if self.page.ele(selector, timeout=0.15):
+                        elapsed = time.time() - start_time
+                        print(f"   [OK] Name page loaded in {elapsed:.2f}s")
+                        return True
+                except:
+                    pass
+        
+        print("   [X] FAILED: Name page did not load!")
+        self.screenshot("error_no_name_page")
+        raise Exception("Name page did not load after email")
     
     def enter_name(self, name: str) -> bool:
-        """Вводит имя"""
+        """Вводит имя. Оптимизировано для скорости."""
         print(f"[N] Entering name: {name}")
         
-        # Ждём появления страницы ввода имени
-        if not self.wait_for_page_context('name', timeout=10):
-            print("   [!] Name page context not found, trying anyway...")
-        
-        # Закрываем cookie диалог ПЕРЕД вводом (он перекрывает кнопку Continue)
+        # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
-        time.sleep(0.3)
         
-        # Проверяем на ошибку AWS и закрываем модалку
-        if self._check_aws_error():
-            print("   [!] AWS error detected, closing modal...")
-            self._close_error_modal()
-            time.sleep(1)
-        
-        # Расширенный список селекторов для поля имени
+        # Быстрые селекторы
         name_selectors = [
             '@placeholder=Maria José Silva',
-            '@placeholder=Your name',
-            '@placeholder=Full name',
-            '@placeholder=Name',
-            'aria:Name',
-            'aria:Your name',
-            '@name=name',
-            '@id=name',
             '@data-testid=name-input',
-            'xpath://input[contains(@placeholder, "name")]',
-            'xpath://input[contains(@placeholder, "Name")]',
-            'xpath://input[@type="text"]',
         ]
         
-        name_input = None
-        for selector in name_selectors:
-            try:
-                elem = self.page.ele(selector, timeout=2)
-                if elem:
-                    name_input = elem
-                    print(f"   Found name field: {selector}")
-                    break
-            except:
-                pass
+        name_input = self.wait_for_element(name_selectors, timeout=2)
         
         if not name_input:
-            # Fallback - ищем первый текстовый input
-            print("   [!] Name field not found by selectors, trying fallback...")
+            # Fallback
             try:
                 inputs = self.page.eles('tag:input@@type=text')
                 if inputs:
                     name_input = inputs[0]
-                    print(f"   Found fallback input")
             except:
                 pass
         
         if not name_input:
             print("   [X] Name field not found!")
-            self._debug_inputs()
             return False
         
-        # Ввод имени через полную симуляцию клавиатуры
-        print(f"   Typing name...")
-        name_input.clear()
-        time.sleep(0.2)
-        
-        # Кликаем и фокусируемся
-        name_input.click()
-        time.sleep(0.1)
-        self.page.run_js('arguments[0].focus()', name_input)
-        time.sleep(0.1)
-        
-        # Вводим через human_type
-        self.human_type(name_input, name, click_first=False)
-        
-        # ВАЖНО: даём React обработать события
-        time.sleep(0.5)
-        
-        # Проверяем что ввелось
-        val = name_input.attr('value') or ''
-        print(f"   Name field value: '{val}'")
-        
-        # Очищаем поле и вводим заново через select + execCommand
-        # Это более надёжный способ для React/Cloudscape
+        # Быстрый ввод имени
         self.page.run_js('''
             const input = arguments[0];
             const name = arguments[1];
-            
-            // Фокусируемся
             input.focus();
-            
-            // Выделяем всё содержимое
+            input.value = '';
             input.select();
-            
-            // Удаляем выделенное и вставляем новый текст через execCommand
-            // execCommand триггерит все нужные события автоматически
             document.execCommand('insertText', false, name);
-            
-            console.log('Used execCommand, input.value =', input.value);
+            input.dispatchEvent(new Event('blur', { bubbles: true }));
         ''', name_input, name)
         
-        time.sleep(0.5)
+        time.sleep(0.2)  # Минимальная пауза для React
         
-        # Финальная проверка значения
-        final_val = name_input.attr('value') or ''
-        print(f"   Final name value: '{final_val}'")
+        # Кликаем Continue
+        print("   [->] Clicking Continue...")
+        self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
         
-        # Blur для финализации
-        self.page.run_js('arguments[0].dispatchEvent(new Event("blur", { bubbles: true }))', name_input)
-        time.sleep(0.3)
+        # Оптимизированное ожидание страницы верификации
+        print("   [...] Waiting for verification page...")
+        verification_selectors = ['text=Verify your email', 'text=Verification code']
         
-        # Пауза перед Continue
-        print("   [...] Waiting before Continue (1.5s)...")
-        time.sleep(1.5)
-        
-        # Кликаем Continue - используем несколько методов
-        print("   [->] Clicking Continue after name...")
-        
-        # Ищем кнопку Continue
-        continue_btn = None
-        btn_selectors = [
-            '@data-testid=signup-next-button',
-            'text=Continue',
-            'xpath://button[contains(text(), "Continue")]',
-            'tag:button@@type=submit',
-        ]
-        
-        for selector in btn_selectors:
-            try:
-                btn = self.page.ele(selector, timeout=1)
-                if btn:
-                    continue_btn = btn
-                    print(f"   Found button: {selector}")
-                    break
-            except:
-                pass
-        
-        if continue_btn:
-            # Пробуем несколько способов клика
-            try:
-                # Способ 1: JS click (самый надёжный)
-                self.page.run_js('arguments[0].click()', continue_btn)
-                print("   [OK] Clicked via JS")
-            except Exception as e1:
-                print(f"   [!] JS click failed: {e1}")
-                try:
-                    # Способ 2: human_click
-                    self.human_click(continue_btn)
-                    print("   [OK] Clicked via human_click")
-                except Exception as e2:
-                    print(f"   [!] human_click failed: {e2}")
-                    try:
-                        # Способ 3: direct click
-                        continue_btn.click()
-                        print("   [OK] Clicked directly")
-                    except Exception as e3:
-                        print(f"   [!] All click methods failed")
-        else:
-            print("   [!] Continue button not found!")
-        
-        # КРИТИЧНО: Ждём появления страницы верификации (до 20 секунд)
-        print("   [...] Waiting for verification page (up to 20s)...")
-        verification_found = False
+        start_time = time.time()
+        timeout = 12  # Уменьшено с 20
         retry_count = 0
-        max_retries = 3
+        max_retries = 2
         
-        for i in range(40):  # 40 * 0.5 = 20 секунд
-            time.sleep(0.5)
-            
-            # Проверяем на ошибку AWS и закрываем модалку
+        while time.time() - start_time < timeout:
+            # Проверяем на ошибку AWS
             if self._check_aws_error():
-                print(f"   [!] AWS error detected on iteration {i+1}...")
-                
-                # Закрываем модалку
-                modal_closed = self._close_error_modal()
-                time.sleep(0.5)
-                
-                # Retry - заново вводим имя и кликаем Continue
+                self._close_error_modal()
                 if retry_count < max_retries:
                     retry_count += 1
-                    print(f"   [R] Retry {retry_count}/{max_retries}: re-entering name and clicking Continue...")
-                    
-                    # Находим поле имени заново
-                    name_input = self._find_element([
-                        '@placeholder=Maria José Silva',
-                        'xpath://input[@type="text"]',
-                    ], timeout=2)
-                    
+                    print(f"   [R] Retry {retry_count}/{max_retries}")
+                    # Быстрый retry
+                    name_input = self._find_element(name_selectors[:2], timeout=1)
                     if name_input:
-                        # Проверяем текущее значение
-                        current_val = name_input.attr('value') or ''
-                        print(f"   Current name value: '{current_val}'")
-                        
-                        # Вводим заново через React-compatible метод
-                        name_input.click()
-                        time.sleep(0.1)
-                        self.page.run_js('arguments[0].focus()', name_input)
-                        time.sleep(0.1)
-                        
-                        # Используем execCommand для ввода (работает с Cloudscape/React)
                         self.page.run_js('''
                             const input = arguments[0];
                             const name = arguments[1];
@@ -1056,287 +878,168 @@ class BrowserAutomation:
                             input.select();
                             document.execCommand('insertText', false, name);
                         ''', name_input, name)
-                        time.sleep(0.3)
-                    
-                    # Кликаем Continue
-                    self._click_if_exists(SELECTORS['continue_btn'], timeout=2)
+                    self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
                     continue
             
-            try:
-                if self.page.ele('text=Verify your email', timeout=0.3):
-                    print(f"   [OK] Verification page loaded (after {(i+1)*0.5:.1f}s)")
-                    verification_found = True
-                    break
-                if self.page.ele('text=Verification code', timeout=0.2):
-                    print(f"   [OK] Verification page loaded (after {(i+1)*0.5:.1f}s)")
-                    verification_found = True
-                    break
-            except:
-                pass
+            for selector in verification_selectors:
+                try:
+                    if self.page.ele(selector, timeout=0.1):
+                        elapsed = time.time() - start_time
+                        print(f"   [OK] Verification page loaded in {elapsed:.2f}s")
+                        return True
+                except:
+                    pass
         
-        if not verification_found:
-            print("   [X] FAILED: Verification page did not load!")
-            self.screenshot("error_no_verification_page")
-            raise Exception("Verification page did not load after entering name")
-        
-        return True
+        print("   [X] FAILED: Verification page did not load!")
+        self.screenshot("error_no_verification_page")
+        raise Exception("Verification page did not load after entering name")
     
     def enter_verification_code(self, code: str) -> bool:
-        """Вводит код верификации"""
+        """Вводит код верификации. Оптимизировано для скорости."""
         print(f"[K] Entering code: {code}")
         
-        # Ждём появления страницы верификации
-        if not self.wait_for_page_context('verification', timeout=10):
-            print("   [!] Verification page context not found, trying anyway...")
-        
-        # Закрываем cookie ПРИНУДИТЕЛЬНО перед вводом кода
+        # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
-        time.sleep(0.3)
         
-        code_input = self._find_element(SELECTORS['code_input'], timeout=30)
+        code_input = self._find_element(SELECTORS['code_input'], timeout=10)
         if not code_input:
             raise Exception("Verification code field not found")
         
-        # Очищаем поле перед вводом
-        code_input.clear()
-        time.sleep(0.1)
+        # Быстрый ввод кода
+        self.page.run_js('''
+            const input = arguments[0];
+            const code = arguments[1];
+            input.focus();
+            input.value = '';
+            document.execCommand('insertText', false, code);
+        ''', code_input, code)
         
-        # Код вводим через human_type
-        self.human_type(code_input, code)
+        time.sleep(0.15)  # Минимальная пауза для React
+        print(f"   Entered code: '{code_input.attr('value') or ''}'")
         
-        # Важно: подождать чтобы React обработал ввод
-        time.sleep(1)
-        
-        # Проверяем что код введён
-        entered_code = code_input.attr('value') or ''
-        print(f"   Entered code: '{entered_code}'")
-        
-        # Ещё раз закрываем cookie перед кликом Continue (может появиться снова)
-        self.close_cookie_dialog(force=True)
-        time.sleep(0.5)
-        
-        # Кликаем Continue - пробуем несколько раз разными способами
-        print("   [S] Looking for Continue/Verify button...")
-        clicked = False
-        
-        # Специфичный селектор для страницы верификации
+        # Кликаем Continue/Verify с retry
         verify_selectors = [
             '@data-testid=email-verification-verify-button',
             'text=Verify',
             'text=Continue',
             '@data-testid=test-primary-button',
-            'xpath://button[contains(text(), "Verify")]',
-            'xpath://button[contains(text(), "Continue")]',
         ]
         
-        for selector in verify_selectors:
-            try:
-                btn = self.page.ele(selector, timeout=1)
-                if btn:
-                    print(f"   [OK] Found button: {selector}")
-                    # Пробуем кликнуть разными способами
-                    try:
-                        # Сначала пробуем human_click (более надёжный)
-                        self.human_click(btn)
-                        print("   [OK] Clicked via human_click")
+        print("   [->] Clicking Verify/Continue...")
+        clicked = False
+        for attempt in range(3):
+            for selector in verify_selectors:
+                try:
+                    btn = self.page.ele(selector, timeout=0.5)
+                    if btn:
+                        self.page.run_js('arguments[0].click()', btn)
                         clicked = True
+                        print(f"   [OK] Clicked: {selector}")
                         break
-                    except Exception as e1:
-                        print(f"   [!] human_click failed: {e1}")
-                        try:
-                            self.page.run_js('arguments[0].click()', btn)
-                            print("   [OK] Clicked via JS")
-                            clicked = True
-                            break
-                        except Exception as e2:
-                            try:
-                                btn.click()
-                                print("   [OK] Clicked directly")
-                                clicked = True
-                                break
-                            except Exception as e3:
-                                print(f"   [!] All click methods failed")
-            except:
-                pass
+                except:
+                    pass
+            if clicked:
+                break
+            time.sleep(0.2)
         
         if not clicked:
-            print("   [!] Could not find/click Continue button!")
-            self._debug_inputs()
-        
-        # КРИТИЧНО: Ждём появления страницы пароля (до 20 секунд)
-        print("   [...] Waiting for password page (up to 20s)...")
-        password_found = False
-        for i in range(40):  # 40 * 0.5 = 20 секунд
-            time.sleep(0.5)
+            print("   [!] Verify button not found, trying Enter key...")
             try:
-                # Проверяем появление заголовка страницы пароля
-                if self.page.ele('text=Create your password', timeout=0.3):
-                    print(f"   [OK] Password page loaded (after {(i+1)*0.5:.1f}s)")
-                    password_found = True
-                    break
-                # Альтернативный текст
-                if self.page.ele('text=Set your password', timeout=0.2):
-                    print(f"   [OK] Password page loaded (after {(i+1)*0.5:.1f}s)")
-                    password_found = True
-                    break
+                self.page.run_cdp('Input.dispatchKeyEvent', type='keyDown', key='Enter', code='Enter', windowsVirtualKeyCode=13)
+                self.page.run_cdp('Input.dispatchKeyEvent', type='keyUp', key='Enter', code='Enter', windowsVirtualKeyCode=13)
             except:
                 pass
+        
+        # Оптимизированное ожидание страницы пароля
+        print("   [...] Waiting for password page...")
+        password_selectors = ['text=Create your password', 'text=Set your password', '@placeholder=Enter password']
+        
+        start_time = time.time()
+        timeout = 15  # Увеличено для надёжности
+        
+        while time.time() - start_time < timeout:
+            for selector in password_selectors:
+                try:
+                    if self.page.ele(selector, timeout=0.1):
+                        elapsed = time.time() - start_time
+                        print(f"   [OK] Password page loaded in {elapsed:.2f}s")
+                        return True
+                except:
+                    pass
             
-            # Логируем прогресс каждые 5 секунд
-            if (i + 1) % 10 == 0:
-                print(f"   ... still waiting ({(i+1)*0.5:.0f}s), URL: {self.page.url[:50]}...")
+            # Проверяем на ошибку AWS
+            if self._check_aws_error():
+                print("   [!] AWS error detected, closing modal...")
+                self._close_error_modal()
+                time.sleep(0.3)
         
-        if not password_found:
-            print("   [X] FAILED: Password page did not load in 20 seconds!")
-            self.screenshot("error_no_password_page")
-            raise Exception("Password page did not load after verification code")
-        
-        return True
+        print("   [X] FAILED: Password page did not load!")
+        self.screenshot("error_no_password_page")
+        raise Exception("Password page did not load after verification code")
     
     def enter_password(self, password: str) -> bool:
         """Вводит и подтверждает пароль"""
         print("[KEY] Entering password...")
         
-        # ВАЖНО: Ждём появления контекста страницы пароля
-        # Это решает проблему когда поля ещё не отрендерились
-        if not self.wait_for_page_context('password', timeout=10):
-            print("   [!] Password page context not found, trying anyway...")
+        # Быстрое ожидание контекста
+        self.wait_for_page_context('password', timeout=5)
+        time.sleep(0.15)  # Минимальная пауза для React
         
-        time.sleep(0.5)  # Даём React отрендерить поля
-        
-        # Ищем все password поля
-        pwd_fields = self.page.eles('tag:input@@type=password', timeout=5)
+        # Ищем password поля
+        pwd_fields = self.page.eles('tag:input@@type=password', timeout=3)
         print(f"   Found {len(pwd_fields)} password fields")
         
-        # Debug: показываем placeholder'ы
-        for i, field in enumerate(pwd_fields[:3]):
-            ph = field.attr('placeholder') or 'None'
-            print(f"   Field {i}: placeholder='{ph}'")
+        pwd1, pwd2 = None, None
         
-        pwd1 = None
-        pwd2 = None
-        
-        # Стратегия 1: по placeholder
+        # Быстрая стратегия определения полей
         for field in pwd_fields:
             ph = (field.attr('placeholder') or '').lower()
-            if 're-enter' in ph or 'confirm' in ph or 'repeat' in ph:
+            if 're-enter' in ph or 'confirm' in ph:
                 pwd2 = field
-            elif 'password' in ph or 'enter' in ph:
+            elif not pwd1:
                 pwd1 = field
         
-        # Стратегия 2: если не нашли по placeholder, берём по порядку
-        if not pwd1 and len(pwd_fields) >= 1:
-            # Первое поле без "re-enter" - это основной пароль
-            for field in pwd_fields:
-                ph = (field.attr('placeholder') or '').lower()
-                if 're-enter' not in ph and 'confirm' not in ph:
-                    pwd1 = field
-                    break
-            # Если всё ещё не нашли - берём первое
-            if not pwd1:
-                pwd1 = pwd_fields[0]
-        
+        if not pwd1 and pwd_fields:
+            pwd1 = pwd_fields[0]
         if not pwd2 and len(pwd_fields) >= 2:
-            pwd2 = pwd_fields[1] if pwd_fields[1] != pwd1 else (pwd_fields[0] if pwd_fields[0] != pwd1 else None)
+            pwd2 = pwd_fields[1]
         
         if not pwd1:
             print("   [!] No password fields found!")
-            self._debug_inputs()
             self.screenshot("error_no_password")
             return False
         
-        print(f"   pwd1: {pwd1.attr('placeholder')}")
+        # Быстрый ввод пароля через JS
+        def fast_input(element, text):
+            self.page.run_js('''
+                const input = arguments[0];
+                const text = arguments[1];
+                input.focus();
+                input.value = '';
+                document.execCommand('insertText', false, text);
+            ''', element, text)
+        
+        print("   Entering password...")
+        fast_input(pwd1, password)
+        
         if pwd2:
-            print(f"   pwd2: {pwd2.attr('placeholder')}")
-        
-        # Если нашли только одно поле - подождём и попробуем ещё раз
-        if not pwd2 and len(pwd_fields) == 1:
-            print("   [!] Only 1 password field found, waiting for second...")
-            time.sleep(2)
-            pwd_fields = self.page.eles('tag:input@@type=password', timeout=5)
-            if len(pwd_fields) >= 2:
-                pwd2 = pwd_fields[1]
-                print(f"   [OK] Found second field: {pwd2.attr('placeholder')}")
-        
-        def input_via_cdp(element, text, field_name):
-            """Ввод через CDP - работает с React полями"""
-            print(f"   Clicking {field_name}...")
-            element.click()
-            time.sleep(0.2)
-            
-            # Фокусируемся через JS
-            self.page.run_js('arguments[0].focus()', element)
             time.sleep(0.1)
-            
-            # Вводим посимвольно через CDP
-            print(f"   Typing into {field_name}...")
-            for char in text:
-                self.page.run_cdp('Input.insertText', text=char)
-                time.sleep(random.uniform(0.03, 0.08))
-            
-            # Проверяем что ввелось
-            time.sleep(0.1)
-            val = element.attr('value') or ''
-            print(f"   {field_name} value length: {len(val)}")
-            return len(val) > 0
+            print("   Confirming password...")
+            fast_input(pwd2, password)
         
-        # Вводим в ПЕРВОЕ поле (Password)
-        print(f"   === Field 1: Password ===")
-        success1 = False
-        try:
-            success1 = input_via_cdp(pwd1, password, "Password")
-            if success1:
-                print(f"   [OK] Field 1 done")
-        except Exception as e:
-            print(f"   [!] CDP failed: {e}")
-        
-        if not success1:
-            print(f"   Trying fallback for field 1...")
-            try:
-                pwd1.click()
-                time.sleep(0.1)
-                pwd1.clear()
-                self.human_type(pwd1, password, click_first=False)
-                success1 = True
-            except Exception as e:
-                print(f"   [!] Fallback also failed: {e}")
-        
-        # Вводим во ВТОРОЕ поле (Re-enter password)
-        if pwd2:
-            time.sleep(0.3)
-            print(f"   === Field 2: Confirm password ===")
-            success2 = False
-            try:
-                success2 = input_via_cdp(pwd2, password, "Confirm")
-                if success2:
-                    print(f"   [OK] Field 2 done")
-            except Exception as e:
-                print(f"   [!] CDP failed: {e}")
-            
-            if not success2:
-                print(f"   Trying fallback for field 2...")
-                pwd2.click()
-                time.sleep(0.1)
-                pwd2.clear()
-                self.human_type(pwd2, password, click_first=False)
-        
-        time.sleep(0.3)
-        print("[->] Clicking Continue after password...")
+        time.sleep(0.15)
+        print("[->] Clicking Continue...")
         old_url = self.page.url
-        self._click_if_exists(SELECTORS['continue_btn'], timeout=2)
-        time.sleep(1)
+        self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
         
         # Проверяем на ошибку "leaked password"
+        time.sleep(0.3)
         if self._check_password_error():
-            print("   [!] Password rejected (possibly leaked), generating new one...")
-            new_password = self.generate_password(18)  # Длиннее для большей энтропии
-            return self.enter_password(new_password)
+            print("   [!] Password rejected, generating new one...")
+            return self.enter_password(self.generate_password(18))
         
-        # Проверяем что страница изменилась (успешный переход)
-        if self.page.url == old_url:
-            # Возможно нужно подождать
-            time.sleep(1)
-        
+        # Быстрая проверка перехода
+        self.wait_for_url_change(old_url, timeout=3)
         self._log(f"URL after password", self.page.url[:60])
         
         return True
@@ -1469,36 +1172,108 @@ class BrowserAutomation:
         return False
     
     def click_allow_access(self) -> bool:
-        """Нажимает Allow access"""
+        """Нажимает Allow access. Оптимизировано для скорости."""
         print("[OK] Looking for Allow access button...")
         
-        for attempt in range(10):
-            selectors = [
-                'text=Allow access',
-                '@data-testid=allow-access-button',
-                'xpath://button[contains(text(), "Allow")]',
-                'tag:button@@text()=Allow access',
-            ]
-            
+        # СНАЧАЛА закрываем cookie - он часто перекрывает кнопку
+        self.close_cookie_dialog(force=True)
+        
+        # Ждём загрузки страницы Allow access
+        print("   [...] Waiting for Allow access page to load...")
+        allow_page_loaded = False
+        for _ in range(10):
+            try:
+                if self.page.ele('text=Allow access', timeout=0.3):
+                    allow_page_loaded = True
+                    break
+                if self.page.ele('text=Authorization', timeout=0.1):
+                    allow_page_loaded = True
+                    break
+            except:
+                pass
+            time.sleep(0.2)
+        
+        if not allow_page_loaded:
+            print("   [!] Allow access page not loaded")
+            self.screenshot("error_no_allow_page")
+        
+        # Ещё раз закрываем cookie после загрузки
+        self.close_cookie_dialog(force=True)
+        time.sleep(0.5)  # Увеличена пауза для стабилизации DOM
+        
+
+        
+        # Селекторы для кнопки Allow access (приоритет по надёжности)
+        selectors = [
+            '@data-testid=allow-access-button',  # Самый надёжный - точный data-testid
+            'xpath://button[@data-testid="allow-access-button"]',
+            'text=Allow access',
+            'xpath://button[contains(text(), "Allow access")]',
+        ]
+        
+        for attempt in range(8):
+            # Каждую итерацию ищем элемент заново (избегаем stale element)
             for selector in selectors:
                 try:
-                    btn = self.page.ele(selector, timeout=1)
+                    btn = self.page.ele(selector, timeout=0.5)
                     if btn:
-                        print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1})...")
+                        # Проверяем disabled
+                        is_disabled = btn.attr('disabled')
+                        if is_disabled:
+                            print(f"   [!] Button is disabled, waiting...")
+                            time.sleep(0.5)
+                            continue
                         
+                        print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1}, selector={selector[:20]})...")
+                        
+                        # Пробуем разные методы клика
+                        click_success = False
+                        
+                        # Метод 1: Scroll into view + JS click
                         try:
-                            btn.click()
-                        except:
-                            self.page.run_js('arguments[0].click()', btn)
+                            self.page.run_js('''
+                                arguments[0].scrollIntoView({block: "center"});
+                                arguments[0].click();
+                            ''', btn)
+                            click_success = True
+                        except Exception as e:
+                            print(f"      [!] JS click failed: {str(e)[:50]}")
                         
-                        time.sleep(1)
+                        # Метод 2: Native click
+                        if not click_success:
+                            try:
+                                btn.click()
+                                click_success = True
+                            except Exception as e:
+                                print(f"      [!] Native click failed: {str(e)[:50]}")
                         
+                        # Метод 3: CDP click
+                        if not click_success:
+                            try:
+                                # Получаем координаты кнопки
+                                rect = self.page.run_js('return arguments[0].getBoundingClientRect()', btn)
+                                if rect:
+                                    x = rect['x'] + rect['width'] / 2
+                                    y = rect['y'] + rect['height'] / 2
+                                    self.page.run_cdp('Input.dispatchMouseEvent', type='mousePressed', x=x, y=y, button='left', clickCount=1)
+                                    self.page.run_cdp('Input.dispatchMouseEvent', type='mouseReleased', x=x, y=y, button='left', clickCount=1)
+                                    click_success = True
+                            except Exception as e:
+                                print(f"      [!] CDP click failed: {str(e)[:50]}")
+                        
+                        time.sleep(0.5)
+                        
+                        # Проверяем успех
                         if '127.0.0.1' in self.page.url:
+                            print("   [OK] Redirected to callback!")
                             return True
-                except Exception:
+                        
+                        # Если URL не изменился, пробуем следующий селектор
+                        break
+                except:
                     pass
             
-            time.sleep(0.5)
+            time.sleep(0.3)
         
         print("   [!] Allow access button didn't work")
         self.screenshot("error_allow_access")
@@ -1522,53 +1297,36 @@ class BrowserAutomation:
         return self.page.url
     
     def navigate(self, url: str):
-        """Переход по URL"""
+        """Переход по URL. Оптимизировано для скорости."""
         print(f"[>] Opening page...")
         self.page.get(url)
         
-        print("[...] Waiting for page load...")
-        # Ждём загрузки страницы
+        # Быстрое ожидание загрузки (уменьшено с 8 до 5)
         try:
-            self.page.wait.doc_loaded(timeout=15)
+            self.page.wait.doc_loaded(timeout=5)
         except:
             pass
         
         self._log(f"URL", self.page.url[:60] + "..." if len(self.page.url) > 60 else self.page.url)
         
-        # Ждём появления основных элементов страницы
-        for i in range(20):
-            time.sleep(0.3)
-            
-            # Проверяем что страница загрузилась
-            try:
-                # Login/Register page
-                if self.page.ele('@placeholder=username@example.com', timeout=0.3):
-                    print("   [OK] Email field found")
-                    break
-                if self.page.ele('text=Get started', timeout=0.3):
-                    print("   [OK] Page loaded (Get started)")
-                    break
-                if self.page.ele('text=Sign in', timeout=0.3):
-                    print("   [OK] Page loaded (Sign in)")
-                    break
-                # Device authorization page
-                if self.page.ele('text=Authorization requested', timeout=0.3):
-                    print("   [OK] Page loaded (Authorization requested)")
-                    break
-                if self.page.ele('text=Confirm and continue', timeout=0.3):
-                    print("   [OK] Page loaded (Confirm and continue)")
-                    break
-                # Allow access page
-                if self.page.ele('text=Allow access', timeout=0.3):
-                    print("   [OK] Page loaded (Allow access)")
-                    break
-                if self.page.ele('text=Allow Kiro', timeout=0.3):
-                    print("   [OK] Page loaded (Allow Kiro)")
-                    break
-            except:
-                pass
+        # Быстрая проверка - только 2 секунды максимум
+        page_indicators = [
+            '@placeholder=username@example.com',
+            'text=Get started',
+            'text=Sign in',
+        ]
         
-        # Закрываем cookie диалог сразу после загрузки
+        start_time = time.time()
+        while time.time() - start_time < 2:
+            for selector in page_indicators:
+                try:
+                    if self.page.ele(selector, timeout=0.05):
+                        print(f"   [OK] Page loaded")
+                        self.close_cookie_dialog()
+                        return
+                except:
+                    pass
+        
         self.close_cookie_dialog()
     
     def check_aws_error(self) -> bool:
