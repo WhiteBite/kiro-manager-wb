@@ -283,7 +283,8 @@ export async function importSsoToken(context: vscode.ExtensionContext, provider:
   const pythonCmd = getPythonCommand();
   const { spawn } = require('child_process');
 
-  const args = ['cli.py', 'sso-import', bearerToken, '-a'];
+  // Don't use -a flag to avoid overwriting current active token
+  const args = ['cli.py', 'sso-import', bearerToken];
 
   const proc = spawn(pythonCmd, args, {
     cwd: autoregDir,
