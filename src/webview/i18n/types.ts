@@ -70,8 +70,6 @@ export interface Translations {
   verboseDesc: string;
   screenshots: string;
   screenshotsDesc: string;
-  spoofFingerprint: string;
-  spoofFingerprintDesc: string;
   language: string;
   languageDesc: string;
 }

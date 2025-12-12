@@ -119,7 +119,6 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
-  const spoofFingerprint = config.get<boolean>('autoreg.spoofFingerprint', false);
   const imapServer = config.get<string>('imap.server', '');
   const imapUser = config.get<string>('imap.user', '');
   const imapPassword = config.get<string>('imap.password', '');
@@ -168,7 +167,6 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   // -u flag disables Python output buffering for real-time logs
   const args = ['-u', '-m', 'registration.register'];
   if (headless) args.push('--headless');
-  if (spoofFingerprint) args.push('--spoof');
   args.push('--count', '1');
 
   const env = {
@@ -184,7 +182,6 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
-  provider.addLog(`Fingerprint spoofing: ${spoofFingerprint ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
   // Use ProcessManager for better control

@@ -55,8 +55,6 @@ export const hi: Translations = {
   verboseDesc: 'विस्तृत लॉग दिखाएं',
   screenshots: 'त्रुटि पर स्क्रीनशॉट',
   screenshotsDesc: 'त्रुटियों पर स्क्रीनशॉट सहेजें',
-  spoofFingerprint: 'ब्राउज़र स्पूफिंग',
-  spoofFingerprintDesc: 'Canvas/WebGL/Audio फिंगरप्रिंट को नकली बनाएं',
   language: 'भाषा',
   languageDesc: 'इंटरफ़ेस भाषा',
 };
