@@ -193,6 +193,72 @@ export function generateWebviewScript(totalAccounts: number): string {
       }
     });
     
+    // Handle messages from extension
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type === 'appendLog') {
+        appendLogLine(msg.log);
+      } else if (msg.type === 'updateStatus') {
+        updateAutoRegStatus(msg.status);
+      }
+    });
+    
+    function appendLogLine(logLine) {
+      const consoleBody = document.getElementById('consoleBody');
+      if (!consoleBody) return;
+      
+      const line = document.createElement('div');
+      line.className = 'console-line';
+      if (logLine.includes('✓') || logLine.includes('[OK]')) line.classList.add('success');
+      else if (logLine.includes('✗') || logLine.includes('Error') || logLine.includes('❌')) line.classList.add('error');
+      else if (logLine.includes('⚠️') || logLine.includes('[!]')) line.classList.add('warning');
+      line.textContent = logLine;
+      consoleBody.appendChild(line);
+      
+      // Keep max 200 lines
+      while (consoleBody.children.length > 200) {
+        consoleBody.removeChild(consoleBody.firstChild);
+      }
+      
+      // Auto-scroll to bottom
+      consoleBody.scrollTop = consoleBody.scrollHeight;
+    }
+    
+    function updateAutoRegStatus(status) {
+      if (!status) {
+        // Hide progress panel when status is empty
+        const panel = document.querySelector('.progress-panel');
+        if (panel) panel.style.display = 'none';
+        return;
+      }
+      
+      // Try to parse as JSON progress
+      try {
+        const progress = JSON.parse(status);
+        if (progress && progress.step !== undefined) {
+          const panel = document.querySelector('.progress-panel');
+          if (panel) {
+            panel.style.display = '';
+            const percentage = (progress.step / progress.totalSteps) * 100;
+            const fill = panel.querySelector('.progress-fill');
+            const title = panel.querySelector('.progress-title');
+            const detail = panel.querySelector('.progress-detail');
+            const step = panel.querySelector('.progress-step');
+            
+            if (fill) fill.style.width = percentage + '%';
+            if (title) title.textContent = progress.stepName || '';
+            if (detail) detail.textContent = progress.detail || '';
+            if (step) step.textContent = 'Step ' + progress.step + '/' + progress.totalSteps;
+          }
+        }
+      } catch (e) {
+        // Plain text status
+        const panel = document.querySelector('.progress-panel');
+        const title = panel?.querySelector('.progress-title');
+        if (title) title.textContent = status;
+      }
+    }
+
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       // Restore state
