@@ -147,7 +147,7 @@ class AWSRegistration:
             if not auth_url:
                 return {'email': email, 'success': False, 'error': 'Failed to start OAuth flow'}
             
-            print(f"   ✓ OAuth started, callback server on port {self.oauth.port}")
+            print(f"   [OK] OAuth started, callback server on port {self.oauth.port}")
             print(f"   Auth URL: {auth_url[:80]}...")
             
             # ШАГ 2: Открываем браузер с auth_url
@@ -208,20 +208,20 @@ class AWSRegistration:
                 
                 # Проверяем что мы на view.awsapps.com
                 if 'view.awsapps.com' in current_url:
-                    print(f"   ✓ Redirected to view.awsapps.com (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Redirected to view.awsapps.com (after {(i+1)*0.5:.1f}s)")
                     allow_access_found = True
                     break
                 
                 # Проверяем на callback (если Allow access уже был нажат автоматически)
                 if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
-                    print(f"   ✓ Already redirected to callback!")
+                    print(f"   [OK] Already redirected to callback!")
                     allow_access_found = True
                     break
                 
                 time.sleep(0.5)
             
             if not allow_access_found:
-                print(f"   ⚠️ Did not reach view.awsapps.com, current URL: {current_url[:60]}")
+                print(f"   [!] Did not reach view.awsapps.com, current URL: {current_url[:60]}")
                 # Продолжаем всё равно - может быть другой flow
             
             # Кликаем "Allow access" если мы на этой странице
@@ -232,7 +232,7 @@ class AWSRegistration:
                 time.sleep(0.5)
                 
                 if not self.browser.click_allow_access():
-                    print(f"   ⚠️ Failed to click Allow access")
+                    print(f"   [!] Failed to click Allow access")
                     self.browser.screenshot("error_allow_access_click")
             
             # ШАГ 8: Ждём callback и обмениваем code на токены
@@ -247,7 +247,7 @@ class AWSRegistration:
                 # Сохраняем аккаунт С токеном
                 self.storage.save(email, password, name, token_file)
                 
-                print(f"\n✅ SUCCESS: {email}")
+                print(f"\n[OK] SUCCESS: {email}")
                 print(f"   Password: {password}")
                 print(f"   Token: {token_file}")
                 
@@ -260,7 +260,7 @@ class AWSRegistration:
                 }
             else:
                 # OAuth callback не получен, но регистрация могла пройти
-                print(f"   ⚠️ OAuth callback not received")
+                print(f"   [!] OAuth callback not received")
                 
                 # Проверяем текущий URL
                 current_url = self.browser.current_url
@@ -303,7 +303,7 @@ class AWSRegistration:
             results.append(result)
             
             if i < len(emails) - 1:
-                print(f"\n⏳ Pause {TIMEOUTS['between_accounts']}s...")
+                print(f"\n[...] Pause {TIMEOUTS['between_accounts']}s...")
                 time.sleep(TIMEOUTS['between_accounts'])
         
         return results
@@ -311,14 +311,14 @@ class AWSRegistration:
     def print_summary(self, results: List[dict]):
         """Итоги регистрации"""
         print("\n" + "="*60)
-        print("📊 SUMMARY")
+        print("[STATS] SUMMARY")
         print("="*60)
         
         success = [r for r in results if r.get('success')]
         failed = [r for r in results if not r.get('success')]
         
-        print(f"✅ Success: {len(success)}")
-        print(f"❌ Failed: {len(failed)}")
+        print(f"[OK] Success: {len(success)}")
+        print(f"[X] Failed: {len(failed)}")
         
         if success:
             print("\nSuccessful:")

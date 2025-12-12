@@ -40,17 +40,17 @@ def cmd_status(args):
     kiro_service = KiroService()
     
     print("\n" + "="*60)
-    print("📊 Kiro Batch Login Status")
+    print("[STATS] Kiro Batch Login Status")
     print("="*60)
     
     # Kiro IDE
     kiro_status = kiro_service.get_status()
-    print(f"\n🖥️  Kiro IDE:")
-    print(f"   Installed: {'✅' if kiro_status.installed else '❌'}")
+    print(f"\n[C]  Kiro IDE:")
+    print(f"   Installed: {'[OK]' if kiro_status.installed else '[X]'}")
     if kiro_status.installed:
-        print(f"   Running: {'✅' if kiro_status.running else '❌'}")
+        print(f"   Running: {'[OK]' if kiro_status.running else '[X]'}")
         if kiro_status.current_account:
-            token_icon = '✅' if kiro_status.token_valid else '❌'
+            token_icon = '[OK]' if kiro_status.token_valid else '[X]'
             print(f"   Account: {kiro_status.current_account} ({token_icon})")
     
     # Tokens
@@ -95,7 +95,7 @@ def cmd_tokens_list(args):
                      token.raw_data.get('refreshToken') == current_refresh)
         
         marker = "→ " if is_current else "  "
-        status = "❌" if token.is_expired else "✅"
+        status = "[X]" if token.is_expired else "[OK]"
         current_label = " [ACTIVE]" if is_current else ""
         
         print(f"{marker}{token.account_name}{current_label} {status}")
@@ -112,23 +112,23 @@ def cmd_tokens_switch(args):
     
     token = service.get_token(args.name)
     if not token:
-        print(f"❌ Token '{args.name}' not found")
+        print(f"[X] Token '{args.name}' not found")
         print("\nAvailable tokens:")
         for t in service.list_tokens():
             print(f"  - {t.account_name}")
         return
     
-    print(f"\n🔄 Switching to: {token.account_name}")
+    print(f"\n[R] Switching to: {token.account_name}")
     print(f"   Provider: {token.provider}")
     print(f"   Auth: {token.auth_method}")
     
     success = service.activate_token(token, force_refresh=args.refresh)
     
     if success:
-        print(f"\n✅ Switched to {token.account_name}")
+        print(f"\n[OK] Switched to {token.account_name}")
         print("   Restart Kiro to apply changes")
     else:
-        print("\n❌ Failed to switch")
+        print("\n[X] Failed to switch")
 
 
 def cmd_tokens_refresh(args):
@@ -141,21 +141,21 @@ def cmd_tokens_refresh(args):
         token = service.get_best_token()
     
     if not token:
-        print("❌ No token found")
+        print("[X] No token found")
         return
     
-    print(f"🔄 Refreshing: {token.account_name}")
+    print(f"[R] Refreshing: {token.account_name}")
     
     try:
         updated = service.refresh_and_save(token)
-        print(f"✅ Token refreshed!")
+        print(f"[OK] Token refreshed!")
         print(f"   Expires: {updated.expires_at.strftime('%Y-%m-%d %H:%M')}")
         
         if args.activate:
             service.activate_token(updated)
             print("   Activated in Kiro")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"[X] Failed: {e}")
 
 
 # =============================================================================
@@ -172,31 +172,31 @@ def cmd_quota(args):
         tokens = token_service.list_tokens()
         
         if not tokens:
-            print("❌ No tokens found")
+            print("[X] No tokens found")
             return
         
-        print(f"\n📊 Checking quotas for {len(tokens)} accounts...\n")
+        print(f"\n[STATS] Checking quotas for {len(tokens)} accounts...\n")
         
         for token in tokens:
             print(f"\n{'='*60}")
-            print(f"📧 {token.account_name} ({token.provider})")
+            print(f"[M] {token.account_name} ({token.provider})")
             
             access_token = token.raw_data.get('accessToken')
             
             # Обновляем если нужно
             if token.is_expired or args.refresh:
-                print("🔄 Refreshing token...")
+                print("[R] Refreshing token...")
                 try:
                     new_data = token_service.refresh_token(token)
                     access_token = new_data['accessToken']
                 except Exception as e:
-                    print(f"❌ Failed to refresh: {e}")
+                    print(f"[X] Failed to refresh: {e}")
                     continue
             
             info = service.get_quota(access_token, token.auth_method)
             
             if info.error:
-                print(f"   ❌ {info.error}")
+                print(f"   [X] {info.error}")
             elif info.usage:
                 u = info.usage
                 print(f"   📈 {u.used}/{u.limit} ({u.percent_used:.1f}%)")
@@ -206,7 +206,7 @@ def cmd_quota(args):
         return
     
     # Квоты текущего аккаунта
-    print("\n🔍 Getting quota for current account...")
+    print("\n[S] Getting quota for current account...")
     
     info = service.get_current_quota()
     
@@ -216,7 +216,7 @@ def cmd_quota(args):
         else:
             service.print_quota(info)
     else:
-        print("❌ Failed to get quota")
+        print("[X] Failed to get quota")
 
 
 # =============================================================================
@@ -228,7 +228,7 @@ def cmd_machine_status(args):
     service = MachineIdService()
     
     print("\n" + "="*60)
-    print("🔧 Machine ID Status")
+    print("[*] Machine ID Status")
     print("="*60)
     
     # System MachineGuid
@@ -237,13 +237,13 @@ def cmd_machine_status(args):
         print(f"\n💻 System MachineGuid:")
         print(f"   {sys_info.machine_guid}")
         if sys_info.backup_exists:
-            print(f"   Backup: ✅ ({sys_info.backup_time})")
+            print(f"   Backup: [OK] ({sys_info.backup_time})")
     
     # Kiro telemetry
     tele_info = service.get_telemetry_info()
     
     if not tele_info.kiro_installed:
-        print("\n❌ Kiro not installed")
+        print("\n[X] Kiro not installed")
     else:
         print(f"\n🎯 Kiro Telemetry IDs:")
         print(f"   machineId:        {(tele_info.machine_id or 'N/A')[:40]}...")
@@ -254,9 +254,9 @@ def cmd_machine_status(args):
     # Backups
     paths = get_paths()
     backups = paths.list_backups('kiro-telemetry')
-    print(f"\n📦 Backups:")
+    print(f"\n[P] Backups:")
     print(f"   Kiro telemetry: {len(backups)} backup(s)")
-    print(f"   System GUID: {'✅' if sys_info.backup_exists else '❌'}")
+    print(f"   System GUID: {'[OK]' if sys_info.backup_exists else '[X]'}")
     
     print("\n" + "="*60)
 
@@ -265,25 +265,25 @@ def cmd_machine_backup(args):
     """Бэкап Machine ID"""
     service = MachineIdService()
     
-    print("📦 Creating backup...")
+    print("[P] Creating backup...")
     
     try:
         backup_file = service.backup_telemetry()
-        print(f"✅ Kiro telemetry saved: {backup_file}")
+        print(f"[OK] Kiro telemetry saved: {backup_file}")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"[X] Failed: {e}")
     
     if args.system:
         backup_file = service.backup_system_machine_guid()
         if backup_file:
-            print(f"✅ System MachineGuid saved: {backup_file}")
+            print(f"[OK] System MachineGuid saved: {backup_file}")
 
 
 def cmd_machine_reset(args):
     """Сброс Machine ID"""
     service = MachineIdService()
     
-    print("🔄 Resetting Machine IDs...")
+    print("[R] Resetting Machine IDs...")
     
     results = service.full_reset(
         reset_system=args.system,
@@ -291,16 +291,16 @@ def cmd_machine_reset(args):
     )
     
     if results['kiro_reset']:
-        print("✅ Kiro telemetry IDs reset!")
+        print("[OK] Kiro telemetry IDs reset!")
         tele = results['new_telemetry']
         print(f"   machineId: {tele.machine_id[:30]}...")
         print(f"   sqmId: {tele.sqm_id}")
     
     if results['system_reset']:
-        print(f"✅ System MachineGuid reset: {results['new_system_guid']}")
+        print(f"[OK] System MachineGuid reset: {results['new_system_guid']}")
     
     for error in results['errors']:
-        print(f"⚠️ {error}")
+        print(f"[!] {error}")
 
 
 def cmd_machine_restore(args):
@@ -311,9 +311,9 @@ def cmd_machine_restore(args):
     
     try:
         service.restore_telemetry()
-        print("✅ Kiro telemetry restored!")
+        print("[OK] Kiro telemetry restored!")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"[X] Failed: {e}")
 
 
 # =============================================================================
@@ -332,9 +332,9 @@ def cmd_kiro_start(args):
     
     try:
         service.start()
-        print("✅ Kiro started")
+        print("[OK] Kiro started")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"[X] Failed: {e}")
 
 
 def cmd_kiro_stop(args):
@@ -342,9 +342,9 @@ def cmd_kiro_stop(args):
     service = KiroService()
     
     if service.stop():
-        print("✅ Kiro stopped")
+        print("[OK] Kiro stopped")
     else:
-        print("❌ Failed to stop Kiro")
+        print("[X] Failed to stop Kiro")
 
 
 def cmd_kiro_restart(args):
@@ -353,9 +353,9 @@ def cmd_kiro_restart(args):
     
     try:
         service.restart()
-        print("✅ Kiro restarted")
+        print("[OK] Kiro restarted")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"[X] Failed: {e}")
 
 
 # =============================================================================
@@ -387,10 +387,10 @@ def cmd_sso_import(args):
         bearer_token = input("Вставьте значение cookie x-amz-sso_authn: ").strip()
     
     if not bearer_token:
-        print("❌ Token is required")
+        print("[X] Token is required")
         return
     
-    print(f"\n🔄 Importing account from SSO cookie...")
+    print(f"\n[R] Importing account from SSO cookie...")
     print(f"   Region: {args.region}")
     print()
     
@@ -400,13 +400,13 @@ def cmd_sso_import(args):
         result = service.import_and_save(bearer_token, args.region)
     
     if result.success:
-        print(f"\n✅ Import successful!")
+        print(f"\n[OK] Import successful!")
         print(f"   Email: {result.email}")
         print(f"   Client ID: {result.client_id[:30]}...")
         if args.activate:
             print(f"   Status: Activated in Kiro")
     else:
-        print(f"\n❌ Import failed: {result.error}")
+        print(f"\n[X] Import failed: {result.error}")
 
 
 # =============================================================================

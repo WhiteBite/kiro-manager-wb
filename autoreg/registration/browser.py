@@ -169,7 +169,7 @@ class BrowserAutomation:
             
             print("   🧹 Cleared browser cookies, cache and storage")
         except Exception as e:
-            print(f"   ⚠️ Failed to clear cookies: {e}")
+            print(f"   [!] Failed to clear cookies: {e}")
         
         # Включаем перехват сетевых запросов
         self._setup_network_logging()
@@ -217,7 +217,7 @@ class BrowserAutomation:
             print("   📡 Network logging enabled (will capture via Performance API)")
             
         except Exception as e:
-            print(f"   ⚠️ Network logging setup failed: {e}")
+            print(f"   [!] Network logging setup failed: {e}")
     
     def save_network_logs(self, filename: str = "network_logs.json"):
         """Сохраняет логи сетевых запросов в файл"""
@@ -259,13 +259,13 @@ class BrowserAutomation:
                 self._log("Fingerprint spoof config", 
                          f"WebGL: {config['gpu_vendor'][:20]}... / {config['gpu_renderer'][:30]}...")
         except Exception as e:
-            print(f"⚠️ Fingerprint spoof init failed: {e}")
+            print(f"[!] Fingerprint spoof init failed: {e}")
             self.fingerprint_spoofer = None
     
     def _log(self, message: str, detail: str = ""):
         """Логирование с учётом verbose режима"""
         if self.verbose or not detail:
-            print(f"🔧 {message}" + (f" ({detail})" if detail else ""))
+            print(f"[*] {message}" + (f" ({detail})" if detail else ""))
     
     def _find_element(self, selectors: list, timeout: int = None):
         """Ищет элемент по списку селекторов"""
@@ -306,20 +306,20 @@ class BrowserAutomation:
         if not contexts:
             return True  # Нет контекста для проверки
         
-        print(f"   ⏳ Waiting for page: {context_key}...")
+        print(f"   [...] Waiting for page: {context_key}...")
         
         for _ in range(timeout * 2):
             for ctx in contexts:
                 try:
                     if self.page.ele(f'text={ctx}', timeout=0.3):
-                        print(f"   ✓ Page context found: '{ctx}'")
+                        print(f"   [OK] Page context found: '{ctx}'")
                         time.sleep(0.3)  # Даём React отрендерить остальные элементы
                         return True
                 except:
                     pass
             time.sleep(0.5)
         
-        print(f"   ⚠️ Page context not found: {context_key}")
+        print(f"   [!] Page context not found: {context_key}")
         return False
     
     def wait_for_url_change(self, old_url: str, timeout: int = None) -> bool:
@@ -474,7 +474,7 @@ class BrowserAutomation:
                         self._cookie_closed = True
                         return True
                     except Exception as e1:
-                        print(f"   ⚠️ Click failed: {e1}")
+                        print(f"   [!] Click failed: {e1}")
                         try:
                             # Способ 2: JS клик
                             self.page.run_js('arguments[0].click()', btn)
@@ -483,7 +483,7 @@ class BrowserAutomation:
                             self._cookie_closed = True
                             return True
                         except Exception as e2:
-                            print(f"   ⚠️ JS click failed: {e2}")
+                            print(f"   [!] JS click failed: {e2}")
                             try:
                                 # Способ 3: Клик через actions
                                 self.page.actions.click(btn)
@@ -492,7 +492,7 @@ class BrowserAutomation:
                                 self._cookie_closed = True
                                 return True
                             except Exception as e3:
-                                print(f"   ⚠️ Actions click failed: {e3}")
+                                print(f"   [!] Actions click failed: {e3}")
                     
             except Exception:
                 pass
@@ -514,19 +514,19 @@ class BrowserAutomation:
         print(f"🔑 Entering device code: {user_code}")
         
         # Ждём загрузки страницы device authorization
-        print("   ⏳ Waiting for device authorization page...")
+        print("   [...] Waiting for device authorization page...")
         for _ in range(15):
             try:
                 # Проверяем что мы на странице device
                 if self.page.ele('text=Authorization requested', timeout=0.5):
-                    print("   ✓ Device authorization page loaded")
+                    print("   [OK] Device authorization page loaded")
                     break
                 if self.page.ele('text=Enter the code', timeout=0.5):
-                    print("   ✓ Device authorization page loaded")
+                    print("   [OK] Device authorization page loaded")
                     break
                 # Форма логина на странице device
                 if self.page.ele('text=Sign in', timeout=0.5):
-                    print("   ✓ Login form on device page")
+                    print("   [OK] Login form on device page")
                     break
             except:
                 pass
@@ -546,9 +546,9 @@ class BrowserAutomation:
         
         # Если есть password но нет text - это форма логина
         if has_password_field and not has_text_field and password:
-            print("   🔐 Login form detected, logging in first...")
+            print("   [K] Login form detected, logging in first...")
             if not self._login_on_device_page(email, password):
-                print("   ⚠️ Login failed")
+                print("   [!] Login failed")
                 return False
             time.sleep(2)
             # После логина перезагружаем inputs
@@ -562,7 +562,7 @@ class BrowserAutomation:
             try:
                 # Способ 1: Ищем все input'ы и фильтруем
                 all_inputs = self.page.eles('tag:input')
-                print(f"   🔍 Found {len(all_inputs)} inputs on attempt {attempt + 1}")
+                print(f"   [S] Found {len(all_inputs)} inputs on attempt {attempt + 1}")
                 
                 for inp in all_inputs:
                     inp_type = (inp.attr('type') or '').lower()
@@ -578,19 +578,19 @@ class BrowserAutomation:
                     
                     # Это наше поле!
                     code_input = inp
-                    print(f"   ✓ Found code input field")
+                    print(f"   [OK] Found code input field")
                     break
                 
                 if code_input:
                     break
                     
             except Exception as e:
-                print(f"   ⚠️ Error searching inputs: {e}")
+                print(f"   [!] Error searching inputs: {e}")
             
             time.sleep(0.5)
         
         if not code_input:
-            print("   ⚠️ Device code input not found")
+            print("   [!] Device code input not found")
             self._debug_inputs()
             self.screenshot("error_device_code")
             return False
@@ -613,7 +613,7 @@ class BrowserAutomation:
             time.sleep(2)
             return True
         
-        print("   ⚠️ Confirm button not found")
+        print("   [!] Confirm button not found")
         return False
     
     def _login_on_device_page(self, email: str, password: str) -> bool:
@@ -621,7 +621,7 @@ class BrowserAutomation:
         Логинится на странице device (когда показывается форма логина после регистрации).
         AWS показывает только поле пароля, т.к. email уже известен.
         """
-        print(f"   🔐 Logging in on device page...")
+        print(f"   [K] Logging in on device page...")
         
         # ВАЖНО: Сначала закрываем cookie диалог - он перекрывает кнопки!
         self.close_cookie_dialog(force=True)
@@ -638,7 +638,7 @@ class BrowserAutomation:
                 pass
         
         if not pwd_field:
-            print("   ⚠️ Password field not found on device page")
+            print("   [!] Password field not found on device page")
             return False
         
         # Вводим пароль
@@ -662,14 +662,14 @@ class BrowserAutomation:
         # Debug: показываем все кнопки на странице
         try:
             buttons = self.page.eles('tag:button')
-            print(f"   🔍 Found {len(buttons)} buttons:")
+            print(f"   [S] Found {len(buttons)} buttons:")
             for i, btn in enumerate(buttons[:5]):
                 btn_text = btn.text or ''
                 btn_type = btn.attr('type') or ''
                 btn_testid = btn.attr('data-testid') or ''
                 print(f"      Button {i}: text='{btn_text[:30]}', type='{btn_type}', testid='{btn_testid}'")
         except Exception as e:
-            print(f"   ⚠️ Error listing buttons: {e}")
+            print(f"   [!] Error listing buttons: {e}")
         
         # Кликаем Sign in / Continue - расширенный список селекторов
         sign_in_btn = self._find_element([
@@ -691,7 +691,7 @@ class BrowserAutomation:
             print(f"   ➡️ Clicking Sign in button...")
             self.human_click(sign_in_btn)
             time.sleep(3)
-            print("   ✓ Logged in")
+            print("   [OK] Logged in")
             return True
         
         # Fallback: кликаем первую кнопку submit
@@ -701,18 +701,18 @@ class BrowserAutomation:
                 print(f"   ➡️ Clicking submit button (fallback)...")
                 self.human_click(submit_btn)
                 time.sleep(3)
-                print("   ✓ Logged in (fallback)")
+                print("   [OK] Logged in (fallback)")
                 return True
         except:
             pass
         
-        print("   ⚠️ Sign in button not found")
+        print("   [!] Sign in button not found")
         self.screenshot("error_login_no_button")
         return False
     
     def enter_email(self, email: str) -> bool:
         """Вводит email"""
-        print(f"📧 Entering email: {email}")
+        print(f"[M] Entering email: {email}")
         
         # СНАЧАЛА закрываем cookie диалог - он может перекрывать всё
         self.close_cookie_dialog(force=True)
@@ -757,7 +757,7 @@ class BrowserAutomation:
     
     def _debug_inputs(self):
         """Выводит отладочную информацию о input элементах"""
-        print("   🔍 Debug: searching for input elements...")
+        print("   [S] Debug: searching for input elements...")
         try:
             inputs = self.page.eles('tag:input')
             for i, inp in enumerate(inputs[:5]):
@@ -784,25 +784,25 @@ class BrowserAutomation:
             raise Exception("Continue button not found")
         
         # КРИТИЧНО: Ждём появления страницы ввода имени (до 15 секунд)
-        print("   ⏳ Waiting for name page (up to 15s)...")
+        print("   [...] Waiting for name page (up to 15s)...")
         name_page_found = False
         for i in range(30):  # 30 * 0.5 = 15 секунд
             time.sleep(0.5)
             try:
                 if self.page.ele('text=Enter your name', timeout=0.3):
-                    print(f"   ✓ Name page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Name page loaded (after {(i+1)*0.5:.1f}s)")
                     name_page_found = True
                     break
                 # Альтернативный вариант - поле имени
                 if self.page.ele('@placeholder=Maria José Silva', timeout=0.2):
-                    print(f"   ✓ Name page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Name page loaded (after {(i+1)*0.5:.1f}s)")
                     name_page_found = True
                     break
             except:
                 pass
         
         if not name_page_found:
-            print("   ❌ FAILED: Name page did not load!")
+            print("   [X] FAILED: Name page did not load!")
             self.screenshot("error_no_name_page")
             raise Exception("Name page did not load after email")
         
@@ -810,11 +810,11 @@ class BrowserAutomation:
     
     def enter_name(self, name: str) -> bool:
         """Вводит имя"""
-        print(f"📝 Entering name: {name}")
+        print(f"[N] Entering name: {name}")
         
         # Ждём появления страницы ввода имени
         if not self.wait_for_page_context('name', timeout=10):
-            print("   ⚠️ Name page context not found, trying anyway...")
+            print("   [!] Name page context not found, trying anyway...")
         
         # Закрываем cookie диалог ПЕРЕД вводом (он перекрывает кнопку Continue)
         self.close_cookie_dialog(force=True)
@@ -822,7 +822,7 @@ class BrowserAutomation:
         
         # Проверяем на ошибку AWS и закрываем модалку
         if self._check_aws_error():
-            print("   ⚠️ AWS error detected, closing modal...")
+            print("   [!] AWS error detected, closing modal...")
             self._close_error_modal()
             time.sleep(1)
         
@@ -855,7 +855,7 @@ class BrowserAutomation:
         
         if not name_input:
             # Fallback - ищем первый текстовый input
-            print("   ⚠️ Name field not found by selectors, trying fallback...")
+            print("   [!] Name field not found by selectors, trying fallback...")
             try:
                 inputs = self.page.eles('tag:input@@type=text')
                 if inputs:
@@ -865,7 +865,7 @@ class BrowserAutomation:
                 pass
         
         if not name_input:
-            print("   ❌ Name field not found!")
+            print("   [X] Name field not found!")
             self._debug_inputs()
             return False
         
@@ -920,7 +920,7 @@ class BrowserAutomation:
         time.sleep(0.3)
         
         # Пауза перед Continue
-        print("   ⏳ Waiting before Continue (1.5s)...")
+        print("   [...] Waiting before Continue (1.5s)...")
         time.sleep(1.5)
         
         # Кликаем Continue - используем несколько методов
@@ -950,26 +950,26 @@ class BrowserAutomation:
             try:
                 # Способ 1: JS click (самый надёжный)
                 self.page.run_js('arguments[0].click()', continue_btn)
-                print("   ✓ Clicked via JS")
+                print("   [OK] Clicked via JS")
             except Exception as e1:
-                print(f"   ⚠️ JS click failed: {e1}")
+                print(f"   [!] JS click failed: {e1}")
                 try:
                     # Способ 2: human_click
                     self.human_click(continue_btn)
-                    print("   ✓ Clicked via human_click")
+                    print("   [OK] Clicked via human_click")
                 except Exception as e2:
-                    print(f"   ⚠️ human_click failed: {e2}")
+                    print(f"   [!] human_click failed: {e2}")
                     try:
                         # Способ 3: direct click
                         continue_btn.click()
-                        print("   ✓ Clicked directly")
+                        print("   [OK] Clicked directly")
                     except Exception as e3:
-                        print(f"   ⚠️ All click methods failed")
+                        print(f"   [!] All click methods failed")
         else:
-            print("   ⚠️ Continue button not found!")
+            print("   [!] Continue button not found!")
         
         # КРИТИЧНО: Ждём появления страницы верификации (до 20 секунд)
-        print("   ⏳ Waiting for verification page (up to 20s)...")
+        print("   [...] Waiting for verification page (up to 20s)...")
         verification_found = False
         retry_count = 0
         max_retries = 3
@@ -979,7 +979,7 @@ class BrowserAutomation:
             
             # Проверяем на ошибку AWS и закрываем модалку
             if self._check_aws_error():
-                print(f"   ⚠️ AWS error detected on iteration {i+1}...")
+                print(f"   [!] AWS error detected on iteration {i+1}...")
                 
                 # Закрываем модалку
                 modal_closed = self._close_error_modal()
@@ -988,7 +988,7 @@ class BrowserAutomation:
                 # Retry - заново вводим имя и кликаем Continue
                 if retry_count < max_retries:
                     retry_count += 1
-                    print(f"   🔄 Retry {retry_count}/{max_retries}: re-entering name and clicking Continue...")
+                    print(f"   [R] Retry {retry_count}/{max_retries}: re-entering name and clicking Continue...")
                     
                     # Находим поле имени заново
                     name_input = self._find_element([
@@ -1023,18 +1023,18 @@ class BrowserAutomation:
             
             try:
                 if self.page.ele('text=Verify your email', timeout=0.3):
-                    print(f"   ✓ Verification page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Verification page loaded (after {(i+1)*0.5:.1f}s)")
                     verification_found = True
                     break
                 if self.page.ele('text=Verification code', timeout=0.2):
-                    print(f"   ✓ Verification page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Verification page loaded (after {(i+1)*0.5:.1f}s)")
                     verification_found = True
                     break
             except:
                 pass
         
         if not verification_found:
-            print("   ❌ FAILED: Verification page did not load!")
+            print("   [X] FAILED: Verification page did not load!")
             self.screenshot("error_no_verification_page")
             raise Exception("Verification page did not load after entering name")
         
@@ -1042,11 +1042,11 @@ class BrowserAutomation:
     
     def enter_verification_code(self, code: str) -> bool:
         """Вводит код верификации"""
-        print(f"🔐 Entering code: {code}")
+        print(f"[K] Entering code: {code}")
         
         # Ждём появления страницы верификации
         if not self.wait_for_page_context('verification', timeout=10):
-            print("   ⚠️ Verification page context not found, trying anyway...")
+            print("   [!] Verification page context not found, trying anyway...")
         
         # Закрываем cookie ПРИНУДИТЕЛЬНО перед вводом кода
         self.close_cookie_dialog(force=True)
@@ -1075,7 +1075,7 @@ class BrowserAutomation:
         time.sleep(0.5)
         
         # Кликаем Continue - пробуем несколько раз разными способами
-        print("   🔍 Looking for Continue/Verify button...")
+        print("   [S] Looking for Continue/Verify button...")
         clicked = False
         
         # Специфичный селектор для страницы верификации
@@ -1092,50 +1092,50 @@ class BrowserAutomation:
             try:
                 btn = self.page.ele(selector, timeout=1)
                 if btn:
-                    print(f"   ✓ Found button: {selector}")
+                    print(f"   [OK] Found button: {selector}")
                     # Пробуем кликнуть разными способами
                     try:
                         # Сначала пробуем human_click (более надёжный)
                         self.human_click(btn)
-                        print("   ✓ Clicked via human_click")
+                        print("   [OK] Clicked via human_click")
                         clicked = True
                         break
                     except Exception as e1:
-                        print(f"   ⚠️ human_click failed: {e1}")
+                        print(f"   [!] human_click failed: {e1}")
                         try:
                             self.page.run_js('arguments[0].click()', btn)
-                            print("   ✓ Clicked via JS")
+                            print("   [OK] Clicked via JS")
                             clicked = True
                             break
                         except Exception as e2:
                             try:
                                 btn.click()
-                                print("   ✓ Clicked directly")
+                                print("   [OK] Clicked directly")
                                 clicked = True
                                 break
                             except Exception as e3:
-                                print(f"   ⚠️ All click methods failed")
+                                print(f"   [!] All click methods failed")
             except:
                 pass
         
         if not clicked:
-            print("   ⚠️ Could not find/click Continue button!")
+            print("   [!] Could not find/click Continue button!")
             self._debug_inputs()
         
         # КРИТИЧНО: Ждём появления страницы пароля (до 20 секунд)
-        print("   ⏳ Waiting for password page (up to 20s)...")
+        print("   [...] Waiting for password page (up to 20s)...")
         password_found = False
         for i in range(40):  # 40 * 0.5 = 20 секунд
             time.sleep(0.5)
             try:
                 # Проверяем появление заголовка страницы пароля
                 if self.page.ele('text=Create your password', timeout=0.3):
-                    print(f"   ✓ Password page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Password page loaded (after {(i+1)*0.5:.1f}s)")
                     password_found = True
                     break
                 # Альтернативный текст
                 if self.page.ele('text=Set your password', timeout=0.2):
-                    print(f"   ✓ Password page loaded (after {(i+1)*0.5:.1f}s)")
+                    print(f"   [OK] Password page loaded (after {(i+1)*0.5:.1f}s)")
                     password_found = True
                     break
             except:
@@ -1146,7 +1146,7 @@ class BrowserAutomation:
                 print(f"   ... still waiting ({(i+1)*0.5:.0f}s), URL: {self.page.url[:50]}...")
         
         if not password_found:
-            print("   ❌ FAILED: Password page did not load in 20 seconds!")
+            print("   [X] FAILED: Password page did not load in 20 seconds!")
             self.screenshot("error_no_password_page")
             raise Exception("Password page did not load after verification code")
         
@@ -1159,7 +1159,7 @@ class BrowserAutomation:
         # ВАЖНО: Ждём появления контекста страницы пароля
         # Это решает проблему когда поля ещё не отрендерились
         if not self.wait_for_page_context('password', timeout=10):
-            print("   ⚠️ Password page context not found, trying anyway...")
+            print("   [!] Password page context not found, trying anyway...")
         
         time.sleep(0.5)  # Даём React отрендерить поля
         
@@ -1199,7 +1199,7 @@ class BrowserAutomation:
             pwd2 = pwd_fields[1] if pwd_fields[1] != pwd1 else (pwd_fields[0] if pwd_fields[0] != pwd1 else None)
         
         if not pwd1:
-            print("   ⚠️ No password fields found!")
+            print("   [!] No password fields found!")
             self._debug_inputs()
             self.screenshot("error_no_password")
             return False
@@ -1210,12 +1210,12 @@ class BrowserAutomation:
         
         # Если нашли только одно поле - подождём и попробуем ещё раз
         if not pwd2 and len(pwd_fields) == 1:
-            print("   ⚠️ Only 1 password field found, waiting for second...")
+            print("   [!] Only 1 password field found, waiting for second...")
             time.sleep(2)
             pwd_fields = self.page.eles('tag:input@@type=password', timeout=5)
             if len(pwd_fields) >= 2:
                 pwd2 = pwd_fields[1]
-                print(f"   ✓ Found second field: {pwd2.attr('placeholder')}")
+                print(f"   [OK] Found second field: {pwd2.attr('placeholder')}")
         
         def input_via_cdp(element, text, field_name):
             """Ввод через CDP - работает с React полями"""
@@ -1245,9 +1245,9 @@ class BrowserAutomation:
         try:
             success1 = input_via_cdp(pwd1, password, "Password")
             if success1:
-                print(f"   ✓ Field 1 done")
+                print(f"   [OK] Field 1 done")
         except Exception as e:
-            print(f"   ⚠️ CDP failed: {e}")
+            print(f"   [!] CDP failed: {e}")
         
         if not success1:
             print(f"   Trying fallback for field 1...")
@@ -1258,7 +1258,7 @@ class BrowserAutomation:
                 self.human_type(pwd1, password, click_first=False)
                 success1 = True
             except Exception as e:
-                print(f"   ⚠️ Fallback also failed: {e}")
+                print(f"   [!] Fallback also failed: {e}")
         
         # Вводим во ВТОРОЕ поле (Re-enter password)
         if pwd2:
@@ -1268,9 +1268,9 @@ class BrowserAutomation:
             try:
                 success2 = input_via_cdp(pwd2, password, "Confirm")
                 if success2:
-                    print(f"   ✓ Field 2 done")
+                    print(f"   [OK] Field 2 done")
             except Exception as e:
-                print(f"   ⚠️ CDP failed: {e}")
+                print(f"   [!] CDP failed: {e}")
             
             if not success2:
                 print(f"   Trying fallback for field 2...")
@@ -1287,7 +1287,7 @@ class BrowserAutomation:
         
         # Проверяем на ошибку "leaked password"
         if self._check_password_error():
-            print("   ⚠️ Password rejected (possibly leaked), generating new one...")
+            print("   [!] Password rejected (possibly leaked), generating new one...")
             new_password = self.generate_password(18)  # Длиннее для большей энтропии
             return self.enter_password(new_password)
         
@@ -1338,7 +1338,7 @@ class BrowserAutomation:
     
     def login_with_credentials(self, email: str, password: str) -> bool:
         """Логинится с email и паролем"""
-        print(f"🔐 Logging in as {email}...")
+        print(f"[K] Logging in as {email}...")
         try:
             self.close_cookie_dialog()
             
@@ -1359,7 +1359,7 @@ class BrowserAutomation:
             if email_field:
                 email_field.click()
                 email_field.fill(email)
-                print(f"   ✓ Email entered")
+                print(f"   [OK] Email entered")
             
             # Нажимаем Continue если есть
             continue_btn = self.page.query_selector('button:has-text("Continue")')
@@ -1382,24 +1382,24 @@ class BrowserAutomation:
             if password_field:
                 password_field.click()
                 password_field.fill(password)
-                print(f"   ✓ Password entered")
+                print(f"   [OK] Password entered")
             
             # Нажимаем Sign in / Continue
             sign_in_btn = self.page.query_selector('button:has-text("Sign in"), button:has-text("Continue")')
             if sign_in_btn:
                 sign_in_btn.click()
                 time.sleep(3)
-                print(f"   ✓ Logged in")
+                print(f"   [OK] Logged in")
                 return True
             
             return False
         except Exception as e:
-            print(f"   ❌ Login error: {e}")
+            print(f"   [X] Login error: {e}")
             return False
     
     def click_confirm_and_continue(self) -> bool:
         """Нажимает Confirm and continue на странице device authorization"""
-        print("🔍 Looking for Confirm and continue button...")
+        print("[S] Looking for Confirm and continue button...")
         
         selectors = [
             'text=Confirm and continue',
@@ -1413,7 +1413,7 @@ class BrowserAutomation:
                 try:
                     btn = self.page.ele(selector, timeout=1)
                     if btn:
-                        print(f"   ✓ Found Confirm button (attempt {attempt + 1})")
+                        print(f"   [OK] Found Confirm button (attempt {attempt + 1})")
                         try:
                             btn.click()
                         except:
@@ -1424,12 +1424,12 @@ class BrowserAutomation:
                     pass
             time.sleep(0.5)
         
-        print("   ⚠️ Confirm and continue button not found")
+        print("   [!] Confirm and continue button not found")
         return False
     
     def click_allow_access(self) -> bool:
         """Нажимает Allow access"""
-        print("✅ Looking for Allow access button...")
+        print("[OK] Looking for Allow access button...")
         
         for attempt in range(10):
             selectors = [
@@ -1459,14 +1459,14 @@ class BrowserAutomation:
             
             time.sleep(0.5)
         
-        print("   ⚠️ Allow access button didn't work")
+        print("   [!] Allow access button didn't work")
         self.screenshot("error_allow_access")
         return False
     
     def wait_for_callback(self, timeout: int = None) -> bool:
         """Ждёт редиректа на callback"""
         timeout = timeout or self.settings.get('timeouts', {}).get('oauth_callback', 60)
-        print(f"⏳ Waiting for callback redirect ({timeout}s)...")
+        print(f"[...] Waiting for callback redirect ({timeout}s)...")
         
         for _ in range(timeout):
             current_url = self.page.url
@@ -1485,7 +1485,7 @@ class BrowserAutomation:
         print(f"📍 Opening page...")
         self.page.get(url)
         
-        print("⏳ Waiting for page load...")
+        print("[...] Waiting for page load...")
         # Ждём загрузки страницы
         try:
             self.page.wait.doc_loaded(timeout=15)
@@ -1502,27 +1502,27 @@ class BrowserAutomation:
             try:
                 # Login/Register page
                 if self.page.ele('@placeholder=username@example.com', timeout=0.3):
-                    print("   ✓ Email field found")
+                    print("   [OK] Email field found")
                     break
                 if self.page.ele('text=Get started', timeout=0.3):
-                    print("   ✓ Page loaded (Get started)")
+                    print("   [OK] Page loaded (Get started)")
                     break
                 if self.page.ele('text=Sign in', timeout=0.3):
-                    print("   ✓ Page loaded (Sign in)")
+                    print("   [OK] Page loaded (Sign in)")
                     break
                 # Device authorization page
                 if self.page.ele('text=Authorization requested', timeout=0.3):
-                    print("   ✓ Page loaded (Authorization requested)")
+                    print("   [OK] Page loaded (Authorization requested)")
                     break
                 if self.page.ele('text=Confirm and continue', timeout=0.3):
-                    print("   ✓ Page loaded (Confirm and continue)")
+                    print("   [OK] Page loaded (Confirm and continue)")
                     break
                 # Allow access page
                 if self.page.ele('text=Allow access', timeout=0.3):
-                    print("   ✓ Page loaded (Allow access)")
+                    print("   [OK] Page loaded (Allow access)")
                     break
                 if self.page.ele('text=Allow Kiro', timeout=0.3):
-                    print("   ✓ Page loaded (Allow Kiro)")
+                    print("   [OK] Page loaded (Allow Kiro)")
                     break
             except:
                 pass
@@ -1535,7 +1535,7 @@ class BrowserAutomation:
         try:
             error_text = self.page.ele("text=It's not you, it's us", timeout=1)
             if error_text:
-                print("⚠️ AWS temporary error, need to wait and retry")
+                print("[!] AWS temporary error, need to wait and retry")
                 return True
         except:
             pass
@@ -1596,7 +1596,7 @@ class BrowserAutomation:
                     
                     # Проверяем что модалка закрылась
                     if not self._check_aws_error():
-                        print("   ✓ Error modal closed")
+                        print("   [OK] Error modal closed")
                         return True
             except:
                 pass
@@ -1609,7 +1609,7 @@ class BrowserAutomation:
             time.sleep(0.5)
             
             if not self._check_aws_error():
-                print("   ✓ Error modal closed via Escape")
+                print("   [OK] Error modal closed via Escape")
                 return True
         except:
             pass
@@ -1635,7 +1635,7 @@ class BrowserAutomation:
             print(f"📸 Screenshot: {filename}")
             return filename
         except Exception as e:
-            print(f"⚠️ Screenshot failed: {e}")
+            print(f"[!] Screenshot failed: {e}")
             return None
     
     def pause_for_debug(self, message: str = "Paused for debugging"):

@@ -119,7 +119,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 </style></head>
                 <body>
                     <div class="container">
-                        <h1>✓ Authentication Successful!</h1>
+                        <h1>[OK] Authentication Successful!</h1>
                         <p>You can close this window.</p>
                     </div>
                 </body>
@@ -188,7 +188,7 @@ class OAuthPKCE:
             raise Exception(f"Client registration failed: {resp.status_code} - {resp.text}")
         
         data = resp.json()
-        print(f"[OAuth] ✓ Client registered: {data['clientId'][:20]}...")
+        print(f"[OAuth] [OK] Client registered: {data['clientId'][:20]}...")
         return data["clientId"], data.get("clientSecret", "")
     
     def _start_callback_server(self):
@@ -208,7 +208,7 @@ class OAuthPKCE:
         self.server_thread.daemon = True
         self.server_thread.start()
         
-        print(f"[OAuth] ✓ Callback server listening on {self.redirect_uri}")
+        print(f"[OAuth] [OK] Callback server listening on {self.redirect_uri}")
     
     def _build_auth_url(self) -> str:
         """
@@ -265,7 +265,7 @@ class OAuthPKCE:
             print(f"[OAuth] Response: {resp.text}")
             raise Exception(f"Token exchange failed: {resp.status_code} - {resp.text}")
         
-        print("[OAuth] ✓ Token obtained!")
+        print("[OAuth] [OK] Token obtained!")
         return resp.json()
     
     def _save_token(self, token_data: Dict, account_name: str) -> str:
@@ -300,7 +300,7 @@ class OAuthPKCE:
         }
         
         filepath.write_text(json.dumps(token_file, indent=2))
-        print(f"[OAuth] ✓ Token saved to: {filepath}")
+        print(f"[OAuth] [OK] Token saved to: {filepath}")
         self.output_lines.append(f"Token saved to: {filepath}")
         
         return filename
@@ -332,7 +332,7 @@ class OAuthPKCE:
         self.code_challenge = generate_code_challenge(self.code_verifier)
         self.state = generate_state()
         
-        print(f"[OAuth] ✓ Client registered, callback server ready: {self.redirect_uri}")
+        print(f"[OAuth] [OK] Client registered, callback server ready: {self.redirect_uri}")
     
     def start(self, account_name: str = 'auto') -> Optional[str]:
         """
@@ -398,7 +398,7 @@ class OAuthPKCE:
             
             # Verify state
             if self.server.callback_state != self.state:
-                print(f"[OAuth] ⚠️ State mismatch: expected {self.state}, got {self.server.callback_state}")
+                print(f"[OAuth] [!] State mismatch: expected {self.state}, got {self.server.callback_state}")
                 # Continue anyway - some flows don't return state correctly
             
             # Step 5: Exchange code for token

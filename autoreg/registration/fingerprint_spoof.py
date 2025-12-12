@@ -1202,7 +1202,7 @@ class FingerprintSpoofer:
             return True
             
         except Exception as e:
-            print(f"⚠️ Failed to inject fingerprint spoof: {e}")
+            print(f"[!] Failed to inject fingerprint spoof: {e}")
             return False
     
     def get_config(self) -> dict:
@@ -1259,15 +1259,15 @@ def test_fingerprint_spoof():
     print("\n📍 Opening browserleaks.com/canvas...")
     page.get('https://browserleaks.com/canvas')
     
-    print("\n✅ Проверьте Canvas Signature")
+    print("\n[OK] Проверьте Canvas Signature")
     input("\nНажмите Enter для проверки WebGL...")
     
     page.get('https://browserleaks.com/webgl')
-    print("\n✅ Проверьте WebGL Vendor, Renderer и Extensions")
+    print("\n[OK] Проверьте WebGL Vendor, Renderer и Extensions")
     
     input("\nНажмите Enter для закрытия...")
     page.quit()
-    print("\n✅ Тест завершён")
+    print("\n[OK] Тест завершён")
 
 
 if __name__ == '__main__':

@@ -297,15 +297,15 @@ class QuotaService:
     def print_quota(self, info: QuotaInfo):
         """Красиво выводит информацию о квотах"""
         if info.error:
-            print(f"❌ {info.error}")
+            print(f"[X] {info.error}")
             return
         
         print(f"\n{'='*60}")
-        print(f"📊 Kiro Quota Information")
+        print(f"[STATS] Kiro Quota Information")
         print(f"{'='*60}")
         
         if info.email:
-            print(f"\n👤 User: {info.email}")
+            print(f"\n[U] User: {info.email}")
         
         sub_icon = "💎" if info.is_pro else "🆓"
         print(f"{sub_icon} Subscription: {info.subscription_title or info.subscription_type}")
@@ -340,6 +340,6 @@ class QuotaService:
                     remaining = b['limit'] - b['usage']
                     print(f"   • {b['name']}: {remaining:.0f} remaining ({b['status']})")
             
-            print(f"\n📊 Total remaining: {u.total_remaining}")
+            print(f"\n[STATS] Total remaining: {u.total_remaining}")
         
         print(f"\n{'='*60}")
