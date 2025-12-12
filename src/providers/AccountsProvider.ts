@@ -291,9 +291,6 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       case 'screenshotsOnError':
         await config.update('debug.screenshotsOnError', value, vscode.ConfigurationTarget.Global);
         break;
-      case 'spoofFingerprint':
-        await config.update('autoreg.spoofFingerprint', value, vscode.ConfigurationTarget.Global);
-        break;
     }
 
     this.refresh();
@@ -353,8 +350,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     const autoRegSettings = {
       headless: config.get<boolean>('autoreg.headless', false),
       verbose: config.get<boolean>('debug.verbose', false),
-      screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true),
-      spoofFingerprint: config.get<boolean>('autoreg.spoofFingerprint', true)
+      screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
     };
 
     this._view.webview.html = generateWebviewHtml({

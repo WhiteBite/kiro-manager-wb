@@ -55,8 +55,6 @@ export const fr: Translations = {
   verboseDesc: 'Afficher les journaux détaillés',
   screenshots: "Captures d'écran en cas d'erreur",
   screenshotsDesc: "Sauvegarder les captures d'écran lors d'erreurs",
-  spoofFingerprint: 'Spoofing navigateur',
-  spoofFingerprintDesc: 'Falsifier les empreintes Canvas/WebGL/Audio',
   language: 'Langue',
   languageDesc: "Langue de l'interface",
 };

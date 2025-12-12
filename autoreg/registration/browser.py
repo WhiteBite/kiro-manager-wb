@@ -1,6 +1,5 @@
 """
 Браузерная автоматизация для регистрации AWS Builder ID
-С интегрированным обходом fingerprinting (Canvas, WebGL)
 """
 
 import os
@@ -58,7 +57,6 @@ def find_chrome_path() -> Optional[str]:
 
 from core.config import get_config
 from core.paths import get_paths
-from .fingerprint_spoof import FingerprintSpoofer
 
 # Селекторы на основе анализа Playwright (декабрь 2025)
 # AWS использует data-testid для стабильных селекторов
@@ -144,13 +142,12 @@ BASE_DIR = get_paths().autoreg_dir
 
 
 class BrowserAutomation:
-    """Автоматизация браузера для регистрации с обходом fingerprinting"""
+    """Автоматизация браузера для регистрации"""
     
-    def __init__(self, headless: bool = None, spoof_fingerprint: bool = False):
+    def __init__(self, headless: bool = None):
         """
         Args:
             headless: Запуск без GUI (по умолчанию из настроек)
-            spoof_fingerprint: Включить обход fingerprinting (по умолчанию True)
         """
         settings = load_settings()
         browser_settings = settings.get('browser', {})
@@ -163,7 +160,6 @@ class BrowserAutomation:
         self.headless = headless
         self.verbose = settings.get('debug', {}).get('verbose', False)
         self.screenshots_on_error = browser_settings.get('screenshots_on_error', True)
-        self.spoof_fingerprint = spoof_fingerprint
         
         # Настройка браузера
         co = ChromiumOptions()
@@ -209,7 +205,6 @@ class BrowserAutomation:
             error_msg = str(e).encode('ascii', 'replace').decode('ascii')
             print(f"[Browser] ERROR: Failed to initialize browser: {error_msg}")
             raise
-        self.fingerprint_spoofer = None
         self._cookie_closed = False  # Флаг чтобы не закрывать cookie много раз
         self._network_logs = []  # Логи сетевых запросов
         
@@ -240,11 +235,7 @@ class BrowserAutomation:
         # Включаем перехват сетевых запросов
         self._setup_network_logging()
         
-        # Инъекция fingerprint spoofing
-        if spoof_fingerprint:
-            self._init_fingerprint_spoof()
-        
-        self._log("Browser initialized", f"headless={headless}, spoof={spoof_fingerprint}")
+        self._log("Browser initialized", f"headless={headless}")
     
     def _setup_network_logging(self):
         """Настройка перехвата сетевых запросов через CDP"""
@@ -312,22 +303,6 @@ class BrowserAutomation:
         
         print(f"   [F] Network logs saved: {filepath}")
         return filepath
-    
-    def _init_fingerprint_spoof(self):
-        """Инициализация и инъекция fingerprint spoofing"""
-        try:
-            # Создаём spoofer со случайной конфигурацией для каждой сессии
-            self.fingerprint_spoofer = FingerprintSpoofer(self.page)
-            self.fingerprint_spoofer.inject()
-            
-            if self.verbose:
-                config = self.fingerprint_spoofer.get_config()
-                self._log("Fingerprint spoof config", 
-                         f"WebGL: {config['gpu_vendor'][:20]}... / {config['gpu_renderer'][:30]}...")
-        except Exception as e:
-            print(f"[!] Fingerprint spoof init failed: {e}")
-            self.fingerprint_spoofer = None
-    
     def _log(self, message: str, detail: str = ""):
         """Логирование с учётом verbose режима"""
         if self.verbose or not detail:
@@ -1710,12 +1685,6 @@ class BrowserAutomation:
             print(f"\n⏸️ {message}")
             print("   Press Enter to continue...")
             input()
-    
-    def get_fingerprint_config(self) -> Optional[dict]:
-        """Возвращает конфигурацию fingerprint spoofing"""
-        if self.fingerprint_spoofer:
-            return self.fingerprint_spoofer.get_config()
-        return None
     
     def close(self):
         """Закрытие браузера"""

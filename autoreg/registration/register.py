@@ -91,10 +91,9 @@ class AccountStorage:
 class AWSRegistration:
     """Регистрация AWS Builder ID через OAuth PKCE Flow (как в Kiro IDE)"""
     
-    def __init__(self, headless: bool = False, spoof_fingerprint: bool = False):
+    def __init__(self, headless: bool = False):
         self.storage = AccountStorage()
         self.headless = headless
-        self.spoof_fingerprint = spoof_fingerprint
         self.browser = None
         self.mail_handler = None
         self.oauth = None
@@ -158,10 +157,7 @@ class AWSRegistration:
             print(f"\n[2/8] Opening browser with OAuth authorize URL...")
             if self.browser:
                 self.browser.close()
-            self.browser = BrowserAutomation(
-                headless=self.headless, 
-                spoof_fingerprint=self.spoof_fingerprint
-            )
+            self.browser = BrowserAutomation(headless=self.headless)
             
             # Открываем OAuth authorize URL (НЕ profile.aws напрямую!)
             print(f"   Opening: {auth_url[:60]}...")
@@ -378,7 +374,6 @@ def main():
     parser.add_argument('--email', '-e', help='Email для регистрации')
     parser.add_argument('--count', '-c', type=int, help='Количество аккаунтов')
     parser.add_argument('--headless', action='store_true', help='Без GUI')
-    parser.add_argument('--spoof', action='store_true', help='Включить fingerprint spoofing (по умолчанию выключен)')
     
     args = parser.parse_args()
     
@@ -403,8 +398,7 @@ def main():
     
     print(f"\nWill register: {len(emails)} accounts")
     
-    # Спуфинг по умолчанию ВЫКЛЮЧЕН (вызывает ошибки AWS)
-    reg = AWSRegistration(headless=args.headless, spoof_fingerprint=args.spoof)
+    reg = AWSRegistration(headless=args.headless)
     
     try:
         results = reg.register_batch(emails, names)

@@ -55,8 +55,6 @@ export const ru: Translations = {
   verboseDesc: 'Показывать детальные логи',
   screenshots: 'Скриншоты при ошибках',
   screenshotsDesc: 'Сохранять скриншоты при ошибках',
-  spoofFingerprint: 'Спуфинг браузера',
-  spoofFingerprintDesc: 'Подмена отпечатков Canvas/WebGL/Audio',
   language: 'Язык',
   languageDesc: 'Язык интерфейса',
 };
