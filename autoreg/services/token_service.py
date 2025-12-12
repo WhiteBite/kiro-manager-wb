@@ -67,7 +67,7 @@ class TokenService:
                 if info:
                     tokens.append(info)
             except Exception as e:
-                print(f"⚠️ Error reading {token_file.name}: {e}")
+                print(f"[!] Error reading {token_file.name}: {e}")
         
         return tokens
     
@@ -274,7 +274,7 @@ class TokenService:
                 # Сохраняем обновлённый токен
                 token.path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
             except TokenRefreshError as e:
-                print(f"❌ Failed to refresh token: {e}")
+                print(f"[X] Failed to refresh token: {e}")
                 return False
         
         # Генерируем clientIdHash

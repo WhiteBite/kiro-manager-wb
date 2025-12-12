@@ -197,20 +197,20 @@ class KiroService:
         status = self.get_status()
         
         print(f"\n{'='*50}")
-        print("🖥️  Kiro IDE Status")
+        print("[C]  Kiro IDE Status")
         print(f"{'='*50}")
         
-        print(f"\n📦 Installed: {'✅' if status.installed else '❌'}")
+        print(f"\n[P] Installed: {'[OK]' if status.installed else '[X]'}")
         
         if status.installed:
-            print(f"🔄 Running: {'✅' if status.running else '❌'}")
+            print(f"[R] Running: {'[OK]' if status.running else '[X]'}")
             if status.version:
-                print(f"📌 Version: {status.version}")
+                print(f"[V] Version: {status.version}")
             print(f"📁 Data dir: {status.data_dir}")
             
             if status.current_account:
-                token_status = '✅ valid' if status.token_valid else '❌ expired'
-                print(f"\n🔐 Current account: {status.current_account}")
+                token_status = '[OK] valid' if status.token_valid else '[X] expired'
+                print(f"\n[K] Current account: {status.current_account}")
                 print(f"   Token: {token_status}")
         
         print(f"\n{'='*50}")

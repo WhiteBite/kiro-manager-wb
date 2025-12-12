@@ -80,31 +80,31 @@ class SsoImportService:
         
         try:
             # Step 1: Регистрация OIDC клиента
-            print("📝 Step 1: Registering OIDC client...")
+            print("[N] Step 1: Registering OIDC client...")
             client_id, client_secret = self._register_client(oidc_base)
-            print(f"   ✅ Client registered: {client_id[:20]}...")
+            print(f"   [OK] Client registered: {client_id[:20]}...")
             
             # Step 2: Инициация device authorization
-            print("🔐 Step 2: Starting device authorization...")
+            print("[K] Step 2: Starting device authorization...")
             device_code, user_code, interval = self._start_device_auth(
                 oidc_base, client_id, client_secret
             )
-            print(f"   ✅ Device code obtained, user_code: {user_code}")
+            print(f"   [OK] Device code obtained, user_code: {user_code}")
             
             # Step 3: Проверка bearer token
-            print("🔍 Step 3: Validating bearer token...")
+            print("[S] Step 3: Validating bearer token...")
             self._validate_token(bearer_token)
-            print("   ✅ Token is valid")
+            print("   [OK] Token is valid")
             
             # Step 4: Получение device session token
-            print("🎫 Step 4: Getting device session token...")
+            print("[T] Step 4: Getting device session token...")
             device_session_token = self._get_device_session(bearer_token)
-            print("   ✅ Device session obtained")
+            print("   [OK] Device session obtained")
             
             # Step 5: Accept user code
-            print("✅ Step 5: Accepting user code...")
+            print("[OK] Step 5: Accepting user code...")
             device_context = self._accept_user_code(oidc_base, user_code, device_session_token)
-            print("   ✅ User code accepted")
+            print("   [OK] User code accepted")
             
             # Step 6: Approve authorization
             if device_context:
@@ -112,19 +112,19 @@ class SsoImportService:
                 self._approve_authorization(
                     oidc_base, device_context, client_id, device_session_token
                 )
-                print("   ✅ Authorization approved")
+                print("   [OK] Authorization approved")
             
             # Step 7: Poll for token
-            print("⏳ Step 7: Polling for token...")
+            print("[...] Step 7: Polling for token...")
             access_token, refresh_token = self._poll_for_token(
                 oidc_base, client_id, client_secret, device_code, interval
             )
-            print("   ✅ Token obtained!")
+            print("   [OK] Token obtained!")
             
             # Step 8: Get user info
-            print("👤 Step 8: Getting user info...")
+            print("[U] Step 8: Getting user info...")
             email, user_id = self._get_user_info(access_token)
-            print(f"   ✅ User: {email}")
+            print(f"   [OK] User: {email}")
             
             # Calculate clientIdHash
             client_id_hash = hashlib.sha256(START_URL.encode()).hexdigest()
@@ -401,8 +401,8 @@ class SsoImportService:
         token = token_service.get_token(result.email.split("@")[0])
         if token:
             if token_service.activate_token(token):
-                print(f"✅ Account activated in Kiro: {result.email}")
+                print(f"[OK] Account activated in Kiro: {result.email}")
             else:
-                print(f"⚠️ Failed to activate in Kiro")
+                print(f"[!] Failed to activate in Kiro")
         
         return result
