@@ -56,13 +56,13 @@ def cmd_status(args):
     # Tokens
     tokens = token_service.list_tokens()
     valid_tokens = [t for t in tokens if not t.is_expired]
-    print(f"\n🔑 Tokens:")
+    print(f"\n[KEY] Tokens:")
     print(f"   Total: {len(tokens)}")
     print(f"   Valid: {len(valid_tokens)}")
     print(f"   Expired: {len(tokens) - len(valid_tokens)}")
     
     # Paths
-    print(f"\n📁 Paths:")
+    print(f"\n[F] Paths:")
     print(f"   Tokens: {paths.tokens_dir}")
     print(f"   Backups: {paths.backups_dir}")
     
@@ -79,7 +79,7 @@ def cmd_tokens_list(args):
     tokens = service.list_tokens()
     
     if not tokens:
-        print("📭 No tokens found")
+        print("[MAIL] No tokens found")
         print(f"   Directory: {service.paths.tokens_dir}")
         return
     
@@ -87,7 +87,7 @@ def cmd_tokens_list(args):
     current = service.get_current_token()
     current_refresh = current.raw_data.get('refreshToken') if current else None
     
-    print(f"\n🔑 Tokens ({len(tokens)}):")
+    print(f"\n[KEY] Tokens ({len(tokens)}):")
     print("-" * 60)
     
     for token in tokens:
@@ -199,10 +199,10 @@ def cmd_quota(args):
                 print(f"   [X] {info.error}")
             elif info.usage:
                 u = info.usage
-                print(f"   📈 {u.used}/{u.limit} ({u.percent_used:.1f}%)")
-                print(f"   📅 Reset in {info.days_until_reset} days")
+                print(f"   [+] {u.used}/{u.limit} ({u.percent_used:.1f}%)")
+                print(f"   [D] Reset in {info.days_until_reset} days")
                 if u.trial_limit > 0:
-                    print(f"   🎁 Trial: {u.trial_used}/{u.trial_limit}")
+                    print(f"   [GIFT] Trial: {u.trial_used}/{u.trial_limit}")
         return
     
     # Квоты текущего аккаунта
@@ -234,7 +234,7 @@ def cmd_machine_status(args):
     # System MachineGuid
     sys_info = service.get_system_machine_info()
     if sys_info.machine_guid:
-        print(f"\n💻 System MachineGuid:")
+        print(f"\n[PC] System MachineGuid:")
         print(f"   {sys_info.machine_guid}")
         if sys_info.backup_exists:
             print(f"   Backup: [OK] ({sys_info.backup_time})")
@@ -245,7 +245,7 @@ def cmd_machine_status(args):
     if not tele_info.kiro_installed:
         print("\n[X] Kiro not installed")
     else:
-        print(f"\n🎯 Kiro Telemetry IDs:")
+        print(f"\n[TARGET] Kiro Telemetry IDs:")
         print(f"   machineId:        {(tele_info.machine_id or 'N/A')[:40]}...")
         print(f"   sqmId:            {tele_info.sqm_id or 'N/A'}")
         print(f"   devDeviceId:      {tele_info.dev_device_id or 'N/A'}")
@@ -307,7 +307,7 @@ def cmd_machine_restore(args):
     """Восстановить Machine ID"""
     service = MachineIdService()
     
-    print("📥 Restoring from backup...")
+    print("[IN] Restoring from backup...")
     
     try:
         service.restore_telemetry()
@@ -377,7 +377,7 @@ def cmd_sso_import(args):
     
     # Если токен не передан, запросить
     if not bearer_token:
-        print("\n📋 SSO Cookie Import")
+        print("\n[LIST] SSO Cookie Import")
         print("=" * 50)
         print("\nКак получить cookie:")
         print("1. Залогиниться в https://view.awsapps.com/start")

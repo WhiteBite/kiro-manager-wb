@@ -329,7 +329,10 @@ class AWSRegistration:
         if failed:
             print("\nFailed:")
             for r in failed:
-                print(f"  {r['email']} - {r.get('error')}")
+                error_msg = str(r.get('error', 'Unknown error'))
+                # Sanitize non-ASCII characters for Windows console
+                error_msg = error_msg.encode('ascii', 'replace').decode('ascii')
+                print(f"  {r['email']} - {error_msg}")
     
     def close(self):
         if self.mail_handler:

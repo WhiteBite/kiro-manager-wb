@@ -3,14 +3,54 @@
 С интегрированным обходом fingerprinting (Canvas, WebGL)
 """
 
+import os
 import time
 import random
+import platform
 from typing import Optional, Callable
 from DrissionPage import ChromiumPage, ChromiumOptions
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+def find_chrome_path() -> Optional[str]:
+    """Find Chrome/Chromium executable path on different platforms"""
+    system = platform.system()
+    
+    if system == 'Windows':
+        # Common Chrome paths on Windows
+        possible_paths = [
+            os.path.expandvars(r'%ProgramFiles%\Google\Chrome\Application\chrome.exe'),
+            os.path.expandvars(r'%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe'),
+            os.path.expandvars(r'%LocalAppData%\Google\Chrome\Application\chrome.exe'),
+            os.path.expandvars(r'%ProgramFiles%\Chromium\Application\chrome.exe'),
+            os.path.expandvars(r'%LocalAppData%\Chromium\Application\chrome.exe'),
+            # Edge as fallback
+            os.path.expandvars(r'%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe'),
+            os.path.expandvars(r'%ProgramFiles%\Microsoft\Edge\Application\msedge.exe'),
+        ]
+    elif system == 'Darwin':  # macOS
+        possible_paths = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            os.path.expanduser('~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+        ]
+    else:  # Linux
+        possible_paths = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/snap/bin/chromium',
+        ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    
+    return None
 
 from core.config import get_config
 from core.paths import get_paths
@@ -124,6 +164,14 @@ class BrowserAutomation:
         # Настройка браузера
         co = ChromiumOptions()
         
+        # Найти и установить путь к Chrome (критично для Windows)
+        chrome_path = find_chrome_path()
+        if chrome_path:
+            co.set_browser_path(chrome_path)
+            print(f"[Browser] Using: {chrome_path}")
+        else:
+            print("[Browser] Warning: Chrome not found, using system default")
+        
         if headless:
             co.headless()
         
@@ -167,7 +215,7 @@ class BrowserAutomation:
                 except:
                     pass
             
-            print("   🧹 Cleared browser cookies, cache and storage")
+            print("   [C] Cleared browser cookies, cache and storage")
         except Exception as e:
             print(f"   [!] Failed to clear cookies: {e}")
         
@@ -198,7 +246,7 @@ class BrowserAutomation:
                         'postData': params.get('request', {}).get('postData'),
                         'requestId': params.get('requestId'),
                     })
-                    print(f"   🌐 API Request: {params.get('request', {}).get('method')} {url}")
+                    print(f"   [W] API Request: {params.get('request', {}).get('method')} {url}")
             
             def on_response(params):
                 url = params.get('response', {}).get('url', '')
@@ -211,10 +259,10 @@ class BrowserAutomation:
                         'headers': params.get('response', {}).get('headers'),
                         'requestId': params.get('requestId'),
                     })
-                    print(f"   🌐 API Response: {status} {url}")
+                    print(f"   [W] API Response: {status} {url}")
             
             # DrissionPage не поддерживает CDP events напрямую, используем альтернативу
-            print("   📡 Network logging enabled (will capture via Performance API)")
+            print("   [N] Network logging enabled (will capture via Performance API)")
             
         except Exception as e:
             print(f"   [!] Network logging setup failed: {e}")
@@ -244,7 +292,7 @@ class BrowserAutomation:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(self._network_logs, f, indent=2, ensure_ascii=False)
         
-        print(f"   📁 Network logs saved: {filepath}")
+        print(f"   [F] Network logs saved: {filepath}")
         return filepath
     
     def _init_fingerprint_spoof(self):
@@ -463,13 +511,13 @@ class BrowserAutomation:
             try:
                 btn = self.page.ele(selector, timeout=0.5)
                 if btn:
-                    print(f"   🍪 Found cookie button: {selector}")
+                    print(f"   [COOKIE] Found cookie button: {selector}")
                     
                     # Пробуем кликнуть разными способами
                     try:
                         # Способ 1: Обычный клик DrissionPage
                         btn.click()
-                        print(f"   🍪 Cookie dialog closed (click)")
+                        print(f"   [COOKIE] Cookie dialog closed (click)")
                         time.sleep(0.5)
                         self._cookie_closed = True
                         return True
@@ -478,7 +526,7 @@ class BrowserAutomation:
                         try:
                             # Способ 2: JS клик
                             self.page.run_js('arguments[0].click()', btn)
-                            print(f"   🍪 Cookie dialog closed (JS)")
+                            print(f"   [COOKIE] Cookie dialog closed (JS)")
                             time.sleep(0.5)
                             self._cookie_closed = True
                             return True
@@ -487,7 +535,7 @@ class BrowserAutomation:
                             try:
                                 # Способ 3: Клик через actions
                                 self.page.actions.click(btn)
-                                print(f"   🍪 Cookie dialog closed (actions)")
+                                print(f"   [COOKIE] Cookie dialog closed (actions)")
                                 time.sleep(0.5)
                                 self._cookie_closed = True
                                 return True
@@ -511,7 +559,7 @@ class BrowserAutomation:
             email: Email для логина (если нужен)
             password: Пароль для логина (если нужен)
         """
-        print(f"🔑 Entering device code: {user_code}")
+        print(f"[KEY] Entering device code: {user_code}")
         
         # Ждём загрузки страницы device authorization
         print("   [...] Waiting for device authorization page...")
@@ -608,7 +656,7 @@ class BrowserAutomation:
         ], timeout=3)
         
         if confirm_btn:
-            print("   ➡️ Clicking Confirm and continue...")
+            print("   [->] Clicking Confirm and continue...")
             self.human_click(confirm_btn)
             time.sleep(2)
             return True
@@ -688,7 +736,7 @@ class BrowserAutomation:
         ], timeout=3)
         
         if sign_in_btn:
-            print(f"   ➡️ Clicking Sign in button...")
+            print(f"   [->] Clicking Sign in button...")
             self.human_click(sign_in_btn)
             time.sleep(3)
             print("   [OK] Logged in")
@@ -698,7 +746,7 @@ class BrowserAutomation:
         try:
             submit_btn = self.page.ele('tag:button@@type=submit', timeout=2)
             if submit_btn:
-                print(f"   ➡️ Clicking submit button (fallback)...")
+                print(f"   [->] Clicking submit button (fallback)...")
                 self.human_click(submit_btn)
                 time.sleep(3)
                 print("   [OK] Logged in (fallback)")
@@ -767,7 +815,7 @@ class BrowserAutomation:
     
     def click_continue(self) -> bool:
         """Нажимает кнопку Continue после email и ждёт страницу имени"""
-        print("➡️ Clicking Continue...")
+        print("[->] Clicking Continue...")
         
         # Закрываем cookie если ещё не закрыли
         self.close_cookie_dialog()
@@ -924,7 +972,7 @@ class BrowserAutomation:
         time.sleep(1.5)
         
         # Кликаем Continue - используем несколько методов
-        print("   ➡️ Clicking Continue after name...")
+        print("   [->] Clicking Continue after name...")
         
         # Ищем кнопку Continue
         continue_btn = None
@@ -1154,7 +1202,7 @@ class BrowserAutomation:
     
     def enter_password(self, password: str) -> bool:
         """Вводит и подтверждает пароль"""
-        print("🔑 Entering password...")
+        print("[KEY] Entering password...")
         
         # ВАЖНО: Ждём появления контекста страницы пароля
         # Это решает проблему когда поля ещё не отрендерились
@@ -1280,7 +1328,7 @@ class BrowserAutomation:
                 self.human_type(pwd2, password, click_first=False)
         
         time.sleep(0.3)
-        print("➡️ Clicking Continue after password...")
+        print("[->] Clicking Continue after password...")
         old_url = self.page.url
         self._click_if_exists(SELECTORS['continue_btn'], timeout=2)
         time.sleep(1)
@@ -1443,7 +1491,7 @@ class BrowserAutomation:
                 try:
                     btn = self.page.ele(selector, timeout=1)
                     if btn:
-                        print(f"🔓 Clicking Allow access (attempt {attempt + 1})...")
+                        print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1})...")
                         
                         try:
                             btn.click()
@@ -1482,7 +1530,7 @@ class BrowserAutomation:
     
     def navigate(self, url: str):
         """Переход по URL"""
-        print(f"📍 Opening page...")
+        print(f"[>] Opening page...")
         self.page.get(url)
         
         print("[...] Waiting for page load...")
@@ -1561,7 +1609,7 @@ class BrowserAutomation:
     
     def _close_error_modal(self) -> bool:
         """Закрывает модальное окно с ошибкой AWS"""
-        print("   🔴 Attempting to close error modal...")
+        print("   [!] Attempting to close error modal...")
         
         # AWS Cloudscape UI - специфичные селекторы из HTML
         close_selectors = [
@@ -1584,7 +1632,7 @@ class BrowserAutomation:
             try:
                 btn = self.page.ele(selector, timeout=0.3)
                 if btn:
-                    print(f"   🔴 Found close button: {selector}")
+                    print(f"   [!] Found close button: {selector}")
                     try:
                         self.human_click(btn)
                     except:
@@ -1603,7 +1651,7 @@ class BrowserAutomation:
         
         # Fallback: нажимаем Escape
         try:
-            print("   🔴 Trying Escape key...")
+            print("   [!] Trying Escape key...")
             self.page.run_cdp('Input.dispatchKeyEvent', type='keyDown', key='Escape', code='Escape', windowsVirtualKeyCode=27)
             self.page.run_cdp('Input.dispatchKeyEvent', type='keyUp', key='Escape', code='Escape', windowsVirtualKeyCode=27)
             time.sleep(0.5)
@@ -1616,7 +1664,7 @@ class BrowserAutomation:
         
         # Последний fallback: кликаем вне модалки
         try:
-            print("   🔴 Trying click outside modal...")
+            print("   [!] Trying click outside modal...")
             self.page.run_js('document.body.click()')
             time.sleep(0.3)
         except:
@@ -1632,7 +1680,7 @@ class BrowserAutomation:
         try:
             filename = str(BASE_DIR / f"{name}_{int(time.time())}.png")
             self.page.get_screenshot(path=filename)
-            print(f"📸 Screenshot: {filename}")
+            print(f"[SCREENSHOT] Screenshot: {filename}")
             return filename
         except Exception as e:
             print(f"[!] Screenshot failed: {e}")

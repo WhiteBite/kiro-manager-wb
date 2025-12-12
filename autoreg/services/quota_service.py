@@ -307,13 +307,13 @@ class QuotaService:
         if info.email:
             print(f"\n[U] User: {info.email}")
         
-        sub_icon = "💎" if info.is_pro else "🆓"
+        sub_icon = "[*]" if info.is_pro else "🆓"
         print(f"{sub_icon} Subscription: {info.subscription_title or info.subscription_type}")
-        print(f"📅 Days until reset: {info.days_until_reset}")
+        print(f"[D] Days until reset: {info.days_until_reset}")
         
         if info.usage:
             u = info.usage
-            print(f"\n📈 {u.display_name or 'Usage'}:")
+            print(f"\n[+] {u.display_name or 'Usage'}:")
             
             # Progress bar
             bar_width = 30
@@ -328,14 +328,14 @@ class QuotaService:
                 print(f"   Next reset: {u.next_reset.strftime('%Y-%m-%d %H:%M')}")
             
             if u.trial_limit > 0:
-                print(f"\n🎁 Trial:")
+                print(f"\n[GIFT] Trial:")
                 print(f"   Used: {u.trial_used} / {u.trial_limit}")
                 print(f"   Status: {u.trial_status}")
                 if u.trial_expiry:
                     print(f"   Expires: {u.trial_expiry.strftime('%Y-%m-%d')}")
             
             if u.bonuses:
-                print(f"\n🎉 Bonuses:")
+                print(f"\n[!] Bonuses:")
                 for b in u.bonuses:
                     remaining = b['limit'] - b['usage']
                     print(f"   • {b['name']}: {remaining:.0f} remaining ({b['status']})")
