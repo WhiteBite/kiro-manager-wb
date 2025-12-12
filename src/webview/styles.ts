@@ -87,7 +87,10 @@ export function getStyles(): string {
     .stat-item { display: flex; align-items: center; gap: 6px; }
     .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .stat-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); animation: glow 2s ease-in-out infinite; }
-    .stat-dot.valid { background: #666; } .stat-dot.expired { background: var(--danger); }
+    .stat-dot.valid { background: #666; } .stat-dot.expired { background: var(--danger); } .stat-dot.exhausted { background: var(--warning); }
+    .stat-exhausted { cursor: pointer; padding: 2px 6px; border-radius: 4px; background: rgba(217, 163, 52, 0.1); transition: all var(--transition-fast); }
+    .stat-exhausted:hover { background: rgba(217, 163, 52, 0.25); }
+    .stat-delete { margin-left: 2px; opacity: 0.6; font-size: 9px; } .stat-exhausted:hover .stat-delete { opacity: 1; }
     @keyframes glow { 0%, 100% { box-shadow: 0 0 6px var(--accent-glow); } 50% { box-shadow: 0 0 12px var(--accent-glow); } }
     .stat-total { margin-left: auto; color: var(--muted); font-weight: 500; }
     

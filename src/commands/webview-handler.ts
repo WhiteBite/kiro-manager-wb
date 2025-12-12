@@ -152,5 +152,9 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       // Show detailed usage info
       await provider.viewQuota('');
       break;
+
+    case 'deleteExhaustedAccounts':
+      await provider.deleteExhaustedAccounts();
+      break;
   }
 }

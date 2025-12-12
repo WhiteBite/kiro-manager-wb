@@ -150,6 +150,26 @@ export function generateWebviewScript(totalAccounts: number): string {
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
+    function confirmDeleteExhausted() {
+      const exhaustedCards = document.querySelectorAll('.card.exhausted');
+      const count = exhaustedCards.length;
+      if (count === 0) return;
+      
+      pendingAction = { type: 'deleteExhausted' };
+      const lang = document.body.dataset.lang || 'en';
+      const titles = { 
+        en: 'Delete Exhausted Accounts', 
+        ru: 'Удалить исчерпанные аккаунты'
+      };
+      const texts = { 
+        en: 'Delete ' + count + ' account(s) with exhausted limits? This cannot be undone.', 
+        ru: 'Удалить ' + count + ' аккаунт(ов) с исчерпанным лимитом? Это действие нельзя отменить.'
+      };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
     function closeDialog() {
       document.getElementById('dialogOverlay').classList.remove('visible');
       pendingAction = null;
@@ -158,6 +178,8 @@ export function generateWebviewScript(totalAccounts: number): string {
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
         vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
+      } else if (pendingAction?.type === 'deleteExhausted') {
+        vscode.postMessage({ command: 'deleteExhaustedAccounts' });
       }
       closeDialog();
     }
