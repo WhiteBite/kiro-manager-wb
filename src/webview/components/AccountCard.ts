@@ -21,7 +21,8 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
   // Check usage state
   const hasUsage = account.usage !== undefined;
   const isUnknownUsage = hasUsage && account.usage!.currentUsage === -1;
-  const isExhausted = hasUsage && !isUnknownUsage && account.usage!.percentageUsed >= 100;
+  const isSuspended = hasUsage && account.usage!.suspended === true;
+  const isExhausted = hasUsage && !isUnknownUsage && !isSuspended && account.usage!.percentageUsed >= 100;
   const isLoading = hasUsage && account.usage!.loading;
   
   const classes = [
@@ -29,6 +30,7 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
     account.isActive ? 'active' : '',
     account.isExpired ? 'expired' : '',
     isExhausted ? 'exhausted' : '',
+    isSuspended ? 'suspended' : '',
     isUnknownUsage ? 'unknown-usage' : '',
   ].filter(Boolean).join(' ');
 
@@ -55,8 +57,9 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
           </div>
         </div>
         ${account.isActive ? `<span class="card-status active">${t.active}</span>` : ''}
-        ${isExhausted ? `<span class="card-status exhausted">${language === 'ru' ? 'ЛИМИТ' : 'LIMIT'}</span>` : ''}
-        ${account.isExpired && !isExhausted ? `<span class="card-status expired">${t.expired}</span>` : ''}
+        ${isSuspended ? `<span class="card-status suspended">${language === 'ru' ? 'БАН' : 'BAN'}</span>` : ''}
+        ${isExhausted && !isSuspended ? `<span class="card-status exhausted">${language === 'ru' ? 'ЛИМИТ' : 'LIMIT'}</span>` : ''}
+        ${account.isExpired && !isExhausted && !isSuspended ? `<span class="card-status expired">${t.expired}</span>` : ''}
         <div class="card-actions">
           <button class="card-btn" title="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(account.filename)}')">${ICONS.copy}</button>
           <button class="card-btn ${account.isExpired ? 'highlight' : ''}" title="${t.refreshTokenTip}" onclick="event.stopPropagation(); refreshToken('${escapeHtml(account.filename)}')">${ICONS.refresh}</button>

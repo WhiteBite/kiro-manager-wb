@@ -55,6 +55,8 @@ export interface KiroUsageData {
   percentageUsed: number;
   daysRemaining: number;
   expiryDate?: string;
+  suspended?: boolean; // Account suspended by AWS
+  suspendedReason?: string;
 }
 
 export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
@@ -185,6 +187,24 @@ function parseKiroUsageData(jsonValue: string): KiroUsageData | null {
   try {
     const data = JSON.parse(jsonValue);
     const usageState = data['kiro.resourceNotifications.usageState'];
+    
+    // Check for suspended account error
+    const errorState = usageState?.error || data['kiro.resourceNotifications.error'];
+    if (errorState) {
+      const errorMsg = typeof errorState === 'string' ? errorState : JSON.stringify(errorState);
+      if (errorMsg.includes('suspended') || errorMsg.includes('locked')) {
+        console.log('Account is suspended:', errorMsg);
+        return {
+          currentUsage: 0,
+          usageLimit: 0,
+          percentageUsed: 100,
+          daysRemaining: 0,
+          suspended: true,
+          suspendedReason: errorMsg
+        };
+      }
+    }
+    
     if (!usageState?.usageBreakdowns?.[0]?.freeTrialUsage) {
       console.log('No freeTrialUsage found in data');
       return null;

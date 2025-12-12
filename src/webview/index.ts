@@ -105,7 +105,9 @@ export function generateWebviewHtml(
   // Calculate stats (exclude unknown usage from total)
   const validCount = accounts.filter(a => !a.isExpired).length;
   const expiredCount = accounts.filter(a => a.isExpired).length;
-  const exhaustedCount = accounts.filter(a => a.usage && a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100).length;
+  const suspendedCount = accounts.filter(a => a.usage?.suspended === true).length;
+  const exhaustedCount = accounts.filter(a => a.usage && !a.usage.suspended && a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100).length;
+  const badAccountsCount = exhaustedCount + suspendedCount; // Total accounts to delete
   const activeAccount = accounts.find(a => a.isActive);
   const totalUsage = accounts.reduce((sum, acc) => {
     const usage = acc.usage?.currentUsage;
@@ -181,7 +183,7 @@ export function generateWebviewHtml(
       </div>
       <div class="stat-item"><span class="stat-dot valid"></span><span>${validCount} ${t.valid}</span></div>
       ${expiredCount > 0 ? `<div class="stat-item"><span class="stat-dot expired"></span><span>${expiredCount} ${t.expired}</span></div>` : ''}
-      ${exhaustedCount > 0 ? `<div class="stat-item stat-exhausted" onclick="confirmDeleteExhausted()" title="${lang === 'ru' ? 'Удалить исчерпанные' : 'Delete exhausted'}"><span class="stat-dot exhausted"></span><span>${exhaustedCount} ${lang === 'ru' ? 'лимит' : 'limit'}</span><span class="stat-delete">🗑</span></div>` : ''}
+      ${badAccountsCount > 0 ? `<div class="stat-item stat-exhausted" onclick="confirmDeleteExhausted()" title="${lang === 'ru' ? 'Удалить исчерпанные/забаненные' : 'Delete exhausted/banned'}"><span class="stat-dot exhausted"></span><span>${badAccountsCount} ${lang === 'ru' ? (suspendedCount > 0 ? 'бан/лимит' : 'лимит') : (suspendedCount > 0 ? 'ban/limit' : 'limit')}</span><span class="stat-delete">🗑</span></div>` : ''}
       <div class="stat-total">${ICONS.chart} ${totalUsage.toLocaleString()} ${t.total}</div>
     </div>
     

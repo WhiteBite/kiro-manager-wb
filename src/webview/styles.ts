@@ -147,6 +147,8 @@ export function getStyles(): string {
     .card.active { border-color: var(--accent); background: var(--accent-dim); }
     .card.expired { opacity: 0.75; border-color: var(--expired); background: var(--expired-dim); } .card.expired:hover { opacity: 0.9; }
     .card.exhausted { opacity: 0.6; border-color: var(--danger); background: var(--danger-dim); } .card.exhausted:hover { opacity: 0.8; }
+    .card.suspended { opacity: 0.5; border-color: #8b0000; background: rgba(139, 0, 0, 0.15); text-decoration: line-through; } .card.suspended:hover { opacity: 0.7; }
+    .card.suspended .card-avatar { background: #8b0000; }
     .card-main { display: flex; align-items: center; padding: 8px 10px; gap: 8px; cursor: pointer; }
     .card-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; background: var(--accent); color: #fff; }
     .card.expired .card-avatar { background: #888; }
@@ -156,7 +158,7 @@ export function getStyles(): string {
     .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 9px; color: var(--muted); }
     .card-meta-item { display: flex; align-items: center; gap: 3px; }
     .card-status { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); }
+    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); } .card-status.suspended { background: rgba(139, 0, 0, 0.3); color: #ff4444; }
     .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity var(--transition-fast); } .card:hover .card-actions { opacity: 1; }
     .card-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; color: var(--muted); transition: background var(--transition-fast), color var(--transition-fast); }
     .card-btn:hover { background: rgba(128,128,128,0.2); border-color: var(--border-medium); color: var(--vscode-foreground); }

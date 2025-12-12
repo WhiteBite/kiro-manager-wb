@@ -151,19 +151,19 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function confirmDeleteExhausted() {
-      const exhaustedCards = document.querySelectorAll('.card.exhausted');
+      const exhaustedCards = document.querySelectorAll('.card.exhausted, .card.suspended');
       const count = exhaustedCards.length;
       if (count === 0) return;
       
       pendingAction = { type: 'deleteExhausted' };
       const lang = document.body.dataset.lang || 'en';
       const titles = { 
-        en: 'Delete Exhausted Accounts', 
-        ru: 'Удалить исчерпанные аккаунты'
+        en: 'Delete Bad Accounts', 
+        ru: 'Удалить плохие аккаунты'
       };
       const texts = { 
-        en: 'Delete ' + count + ' account(s) with exhausted limits? This cannot be undone.', 
-        ru: 'Удалить ' + count + ' аккаунт(ов) с исчерпанным лимитом? Это действие нельзя отменить.'
+        en: 'Delete ' + count + ' account(s) with exhausted limits or banned? This cannot be undone.', 
+        ru: 'Удалить ' + count + ' аккаунт(ов) с исчерпанным лимитом или забаненных? Это действие нельзя отменить.'
       };
       document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
       document.getElementById('dialogText').textContent = texts[lang] || texts.en;
