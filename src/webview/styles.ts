@@ -230,5 +230,24 @@ export function getStyles(): string {
     .usage-card.empty { background: var(--bg-elevated); border-color: var(--border-subtle); cursor: default; }
     .usage-card.empty .usage-title { color: var(--muted); }
     .usage-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    
+    /* Narrow sidebar adaptation */
+    @media (max-width: 280px) {
+      .header-title { font-size: 10px; }
+      .stats-bar { flex-direction: column; gap: 4px; }
+      .stat-total { margin-left: 0; }
+      .actions { flex-wrap: wrap; }
+      .btn { flex: 1; min-width: 60px; }
+      .card-actions { opacity: 1; } /* Always show on narrow */
+      .settings-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .settings-row .toggle { align-self: flex-end; }
+    }
+    
+    /* Very narrow */
+    @media (max-width: 220px) {
+      .card-avatar { display: none; }
+      .card-status { font-size: 8px; padding: 2px 4px; }
+      .usage-value { font-size: 12px; }
+    }
   `;
 }
