@@ -165,13 +165,15 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   provider.setStatus('{"step":1,"totalSteps":8,"stepName":"Starting","detail":"Initializing..."}');
 
-  const args = ['-m', 'registration.register'];
+  // -u flag disables Python output buffering for real-time logs
+  const args = ['-u', '-m', 'registration.register'];
   if (headless) args.push('--headless');
   if (spoofFingerprint) args.push('--spoof');
   args.push('--count', '1');
 
   const env = {
     ...process.env,
+    PYTHONUNBUFFERED: '1',  // Also set env var for unbuffered output
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
