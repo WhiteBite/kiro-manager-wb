@@ -20,15 +20,16 @@ function getLogClass(log: string): string {
 }
 
 export function renderConsolePanel({ logs, maxLines = 50, language = 'en' }: ConsolePanelProps): string {
-  if (!logs || logs.length === 0) return '';
-
   const t = getTranslations(language);
-  const visibleLogs = logs.slice(-maxLines);
+  const safeLogs = logs || [];
+  const visibleLogs = safeLogs.slice(-maxLines);
+  const isEmpty = safeLogs.length === 0;
 
+  // Render console panel (hidden if empty, will be shown when logs are added)
   return `
-    <div class="console-panel">
+    <div class="console-panel" style="${isEmpty ? 'display:none' : ''}">
       <div class="console-header">
-        <span class="console-title">${t.console} (${logs.length})</span>
+        <span class="console-title">${t.console} (${safeLogs.length})</span>
         <div style="display:flex;gap:4px;">
           <button class="icon-btn tooltip" data-tip="${t.copyLogsTip || 'Copy logs'}" onclick="copyLogs()">${ICONS.copy || '📋'}</button>
           <button class="icon-btn tooltip" data-tip="${t.openLogTip}" onclick="vscode.postMessage({command:'openLog'})">${ICONS.file}</button>
