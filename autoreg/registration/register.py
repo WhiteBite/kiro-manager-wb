@@ -21,11 +21,15 @@ import argparse
 import time
 import re
 import threading
+import functools
 from typing import List, Optional
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Force unbuffered output for real-time logging
+print = functools.partial(print, flush=True)
 
 from core.config import get_config
 from .browser import BrowserAutomation

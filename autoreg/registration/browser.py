@@ -7,12 +7,16 @@ import os
 import time
 import random
 import platform
+import functools
 from typing import Optional, Callable
 from DrissionPage import ChromiumPage, ChromiumOptions
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Force unbuffered output for real-time logging
+print = functools.partial(print, flush=True)
 
 
 def find_chrome_path() -> Optional[str]:
@@ -164,6 +168,9 @@ class BrowserAutomation:
         # Настройка браузера
         co = ChromiumOptions()
         
+        # Использовать свободный порт (избегаем конфликта с запущенным Chrome)
+        co.auto_port()
+        
         # Найти и установить путь к Chrome (критично для Windows)
         chrome_path = find_chrome_path()
         if chrome_path:
@@ -174,6 +181,10 @@ class BrowserAutomation:
         
         if headless:
             co.headless()
+            # Дополнительные аргументы для стабильного headless
+            co.set_argument('--disable-gpu')
+            co.set_argument('--no-sandbox')
+            co.set_argument('--disable-dev-shm-usage')
         
         # Реалистичный user-agent
         co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
@@ -190,7 +201,14 @@ class BrowserAutomation:
         for arg in BROWSER_ARGS:
             co.set_argument(arg)
         
-        self.page = ChromiumPage(co)
+        print(f"[Browser] Initializing ChromiumPage (headless={headless})...")
+        try:
+            self.page = ChromiumPage(co)
+            print("[Browser] ChromiumPage initialized successfully")
+        except Exception as e:
+            error_msg = str(e).encode('ascii', 'replace').decode('ascii')
+            print(f"[Browser] ERROR: Failed to initialize browser: {error_msg}")
+            raise
         self.fingerprint_spoofer = None
         self._cookie_closed = False  # Флаг чтобы не закрывать cookie много раз
         self._network_logs = []  # Логи сетевых запросов
