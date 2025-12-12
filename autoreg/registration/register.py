@@ -1,16 +1,26 @@
 """
-AWS Builder ID Auto-Registration
-Главный модуль для автоматической регистрации аккаунтов
+AWS Builder ID Auto-Registration with OAuth PKCE Flow
 
-Использование:
-    python register.py                    # Интерактивный режим
-    python register.py --email user@whitebite.ru
-    python register.py --file emails.txt
-    python register.py --count 5          # Сгенерировать 5 email и зарегистрировать
+Правильный flow (как в Kiro IDE):
+1. Register OIDC client + start callback server
+2. Generate PKCE (code_verifier, code_challenge)
+3. Build auth_url: /authorize?client_id=...&code_challenge=...
+4. Open auth_url in browser → AWS redirects to signin/signup
+5. Enter email → Continue → AWS redirects to profile.aws for registration
+6. Enter name → Continue
+7. Enter verification code → Continue
+8. Enter password → Continue
+9. AWS redirects to view.awsapps.com/start
+10. Click "Allow access" button (CRITICAL!)
+11. AWS redirects to 127.0.0.1:PORT/oauth/callback?code=...
+12. Exchange code for tokens via POST /token
+13. Save tokens
 """
 
 import argparse
 import time
+import re
+import threading
 from typing import List, Optional
 
 import sys
@@ -19,10 +29,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.config import get_config
 from .browser import BrowserAutomation
-from .oauth_client import OAuthClient
 from .mail_handler import get_mail_handler
+from .oauth_pkce import OAuthPKCE
 
-# Для обратной совместимости
 config = get_config()
 TIMEOUTS = {
     'page_load': config.timeouts.page_load,
@@ -30,12 +39,11 @@ TIMEOUTS = {
     'verification_code': config.timeouts.verification_code,
     'oauth_callback': config.timeouts.oauth_callback,
     'between_accounts': config.timeouts.between_accounts,
-    'imap_poll_interval': config.timeouts.imap_poll_interval,
 }
 
 
 class AccountStorage:
-    """Простое хранилище аккаунтов (для обратной совместимости)"""
+    """Простое хранилище аккаунтов"""
     def __init__(self):
         from core.paths import get_paths
         self.paths = get_paths()
@@ -55,7 +63,6 @@ class AccountStorage:
     
     def save(self, email: str, password: str, name: str, token_file=None) -> dict:
         import json
-        import time
         accounts = self.load_all()
         account = {
             'email': email,
@@ -74,133 +81,176 @@ class AccountStorage:
         return {
             'total': len(accounts),
             'active': len([a for a in accounts if a.get('status') == 'active']),
-            'failed': len([a for a in accounts if a.get('status') == 'failed']),
         }
 
 
 class AWSRegistration:
-    """Главный класс для регистрации AWS Builder ID"""
+    """Регистрация AWS Builder ID через OAuth PKCE Flow (как в Kiro IDE)"""
     
-    def __init__(self, headless: bool = False):
+    def __init__(self, headless: bool = False, spoof_fingerprint: bool = False):
         self.storage = AccountStorage()
         self.headless = headless
+        self.spoof_fingerprint = spoof_fingerprint
         self.browser = None
         self.mail_handler = None
+        self.oauth = None
     
     def _init_mail(self, email_domain: str):
-        """Инициализация обработчика почты"""
         if not self.mail_handler:
             self.mail_handler = get_mail_handler(email_domain)
         return self.mail_handler
     
     def register_single(self, email: str, name: Optional[str] = None, 
                        password: Optional[str] = None) -> dict:
-        """Регистрация одного аккаунта (без callback)"""
-        return self.register_single_with_progress(email, name, password, None)
-    
-    def register_single_with_progress(self, email: str, name: Optional[str] = None, 
-                                      password: Optional[str] = None,
-                                      progress_callback=None) -> dict:
         """
-        Регистрация одного аккаунта с callback для прогресса
+        Регистрация одного аккаунта через OAuth PKCE Flow
         
-        Args:
-            email: Email для регистрации
-            name: Имя пользователя (по умолчанию из email)
-            password: Пароль (по умолчанию генерируется)
-            progress_callback: функция(step, total, name, detail)
-        
-        Returns:
-            dict с результатом регистрации
+        Flow:
+        1. Start OAuth (callback server + PKCE + client registration)
+        2. Get auth_url from OAuth
+        3. Open auth_url in browser → AWS redirects to login/signup
+        4. Enter email → Continue → redirects to profile.aws for registration
+        5. Enter name → Continue
+        6. Enter verification code → Continue
+        7. Enter password → Continue
+        8. AWS redirects to view.awsapps.com/start
+        9. Click "Allow access" button (CRITICAL!)
+        10. AWS redirects to callback → OAuth exchanges code for tokens
         """
-        def progress(step, total, name, detail=""):
-            if progress_callback:
-                progress_callback(step, total, name, detail)
-            print(f"[{step}/{total}] {name}: {detail}")
-        
+        # Генерируем имя из email если не указано
         if name is None:
-            # Извлекаем имя из email: JohnSmith1234 -> John Smith
             username = email.split('@')[0]
-            # Убираем цифры в конце
-            import re
             name_part = re.sub(r'\d+$', '', username)
-            # Разделяем CamelCase: JohnSmith -> John Smith
             name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name_part)
         
+        # Генерируем пароль если не указан
         if password is None:
             password = BrowserAutomation.generate_password()
         
+        # Инициализируем почту
         email_domain = email.split('@')[1]
         mail_handler = self._init_mail(email_domain)
         
         if not mail_handler:
             return {'email': email, 'success': False, 'error': 'Mail handler not available'}
         
-        oauth = OAuthClient()
-        
         try:
-            # 1. Запускаем OAuth сервер
-            progress(2, 8, "OAuth", "Starting server...")
+            # ШАГ 1: Запускаем OAuth PKCE flow
+            print(f"\n[1/8] Starting OAuth PKCE flow...")
+            if self.oauth:
+                self.oauth.close()
+            self.oauth = OAuthPKCE()
             
-            auth_url = oauth.start(account_name=name)
+            # Получаем auth_url (это также запускает callback server и регистрирует client)
+            auth_url = self.oauth.start(account_name=email.split('@')[0])
+            
             if not auth_url:
-                return {'email': email, 'success': False, 'error': 'Failed to get auth URL'}
+                return {'email': email, 'success': False, 'error': 'Failed to start OAuth flow'}
             
-            # 2. Создаём новый браузер (чистый, без кэша)
-            progress(3, 8, "Browser", "Opening page...")
+            print(f"   ✓ OAuth started, callback server on port {self.oauth.port}")
+            print(f"   Auth URL: {auth_url[:80]}...")
+            
+            # ШАГ 2: Открываем браузер с auth_url
+            print(f"\n[2/8] Opening browser with OAuth authorize URL...")
             if self.browser:
                 self.browser.close()
-            self.browser = BrowserAutomation(headless=self.headless, spoof_fingerprint=True)
+            self.browser = BrowserAutomation(
+                headless=self.headless, 
+                spoof_fingerprint=self.spoof_fingerprint
+            )
             
-            # 3. Открываем страницу
+            # Открываем OAuth authorize URL (НЕ profile.aws напрямую!)
+            print(f"   Opening: {auth_url[:60]}...")
             self.browser.navigate(auth_url)
             
-            # 3. Проверяем на ошибку AWS
+            # Проверяем на ошибку AWS
             if self.browser.check_aws_error():
-                return {'email': email, 'success': False, 'error': 'AWS temporary error, try again later'}
+                return {'email': email, 'success': False, 'error': 'AWS temporary error'}
             
-            # 4. Закрываем cookie
             self.browser.close_cookie_dialog()
+            time.sleep(1)
             
-            # 5. Вводим email
-            progress(4, 8, "Email", f"Entering {email}")
+            # Смотрим где мы оказались (должен быть редирект на signin.aws или profile.aws)
+            current_url = self.browser.current_url
+            print(f"   Current URL: {current_url[:60]}...")
+            
+            # ШАГ 3: Вводим email
+            print(f"[3/8] Entering email: {email}")
             self.browser.enter_email(email)
             self.browser.click_continue()
             
-            # 5. Вводим имя
+            # ШАГ 4: Вводим имя
+            print(f"[4/8] Entering name: {name}")
             self.browser.enter_name(name)
             
-            # 6. Получаем и вводим код верификации
-            progress(5, 8, "Verification", "Waiting for email code...")
+            # ШАГ 5: Получаем и вводим код верификации
+            print(f"[5/8] Waiting for verification code...")
             code = mail_handler.get_verification_code(email, timeout=TIMEOUTS['verification_code'])
             
             if not code:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}
             
-            progress(5, 8, "Verification", f"Code: {code}")
+            print(f"[5/8] Entering code: {code}")
             self.browser.enter_verification_code(code)
             
-            # 7. Вводим пароль
-            progress(6, 8, "Password", "Setting password...")
+            # ШАГ 6: Вводим пароль
+            print(f"[6/8] Setting password...")
             self.browser.enter_password(password)
             
-            # 8. Allow access
-            progress(7, 8, "Authorization", "Allowing access...")
-            self.browser.click_allow_access()
+            # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
+            print(f"[7/8] Waiting for Allow access page...")
+            time.sleep(2)
             
-            # 9. Ждём callback
-            if self.browser.wait_for_callback():
-                # Ждём завершения OAuth
-                oauth.wait_for_callback(timeout=30)
-                token_file = oauth.get_token_filename()
+            # Ждём появления страницы Allow access (до 30 секунд)
+            allow_access_found = False
+            for i in range(60):  # 60 * 0.5 = 30 секунд
+                current_url = self.browser.current_url
                 
-                # Debug: log token file
-                print(f"[DEBUG] Token file from OAuth: {token_file}")
+                # Проверяем что мы на view.awsapps.com
+                if 'view.awsapps.com' in current_url:
+                    print(f"   ✓ Redirected to view.awsapps.com (after {(i+1)*0.5:.1f}s)")
+                    allow_access_found = True
+                    break
                 
-                # Сохраняем аккаунт
+                # Проверяем на callback (если Allow access уже был нажат автоматически)
+                if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
+                    print(f"   ✓ Already redirected to callback!")
+                    allow_access_found = True
+                    break
+                
+                time.sleep(0.5)
+            
+            if not allow_access_found:
+                print(f"   ⚠️ Did not reach view.awsapps.com, current URL: {current_url[:60]}")
+                # Продолжаем всё равно - может быть другой flow
+            
+            # Кликаем "Allow access" если мы на этой странице
+            current_url = self.browser.current_url
+            if 'view.awsapps.com' in current_url and '127.0.0.1' not in current_url:
+                print(f"   Clicking Allow access button...")
+                self.browser.close_cookie_dialog(force=True)
+                time.sleep(0.5)
+                
+                if not self.browser.click_allow_access():
+                    print(f"   ⚠️ Failed to click Allow access")
+                    self.browser.screenshot("error_allow_access_click")
+            
+            # ШАГ 8: Ждём callback и обмениваем code на токены
+            print(f"[8/8] Waiting for OAuth callback...")
+            
+            # Ждём callback (OAuth сервер обработает его автоматически)
+            success = self.oauth.wait_for_callback(timeout=TIMEOUTS['oauth_callback'])
+            
+            if success:
+                token_file = self.oauth.get_token_filename()
+                
+                # Сохраняем аккаунт С токеном
                 self.storage.save(email, password, name, token_file)
                 
-                progress(8, 8, "Complete", f"Account created: {email}, token: {token_file}")
+                print(f"\n✅ SUCCESS: {email}")
+                print(f"   Password: {password}")
+                print(f"   Token: {token_file}")
+                
                 return {
                     'email': email,
                     'password': password,
@@ -209,140 +259,109 @@ class AWSRegistration:
                     'success': True
                 }
             else:
-                return {'email': email, 'success': False, 'error': 'Callback timeout'}
+                # OAuth callback не получен, но регистрация могла пройти
+                print(f"   ⚠️ OAuth callback not received")
+                
+                # Проверяем текущий URL
+                current_url = self.browser.current_url
+                print(f"   Current URL: {current_url[:60]}...")
+                
+                # Если мы на callback URL, пробуем обработать вручную
+                if '127.0.0.1' in current_url and 'code=' in current_url:
+                    print(f"   Found code in URL, but callback wasn't processed")
+                
+                # Сохраняем аккаунт без токена
+                self.storage.save(email, password, name, None)
+                
+                return {
+                    'email': email,
+                    'password': password,
+                    'name': name,
+                    'token_file': None,
+                    'success': True,
+                    'warning': 'Registration complete but token not obtained. Use device code flow.'
+                }
                 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return {'email': email, 'success': False, 'error': str(e)}
-        
-        finally:
-            oauth.close()
     
     def register_batch(self, emails: List[str], names: List[str] = None) -> List[dict]:
-        """
-        Пакетная регистрация
-        
-        Args:
-            emails: Список email адресов
-            names: Список имён (опционально)
-        
-        Returns:
-            Список результатов
-        """
+        """Пакетная регистрация"""
         if names is None:
-            names = [e.split('@')[0] for e in emails]
+            names = [None] * len(emails)
         
         results = []
         
         for i, (email, name) in enumerate(zip(emails, names)):
             print(f"\n{'='*60}")
-            print(f"Аккаунт {i+1}/{len(emails)}")
+            print(f"Account {i+1}/{len(emails)}: {email}")
             print('='*60)
             
             result = self.register_single(email, name)
             results.append(result)
             
-            # Пауза между регистрациями
             if i < len(emails) - 1:
-                print(f"\n⏳ Пауза {TIMEOUTS['between_accounts']} секунд...")
+                print(f"\n⏳ Pause {TIMEOUTS['between_accounts']}s...")
                 time.sleep(TIMEOUTS['between_accounts'])
         
         return results
     
     def print_summary(self, results: List[dict]):
-        """Выводит итоги регистрации"""
+        """Итоги регистрации"""
         print("\n" + "="*60)
-        print("📊 ИТОГИ")
+        print("📊 SUMMARY")
         print("="*60)
         
         success = [r for r in results if r.get('success')]
         failed = [r for r in results if not r.get('success')]
         
-        print(f"✅ Успешно: {len(success)}")
-        print(f"❌ Ошибки: {len(failed)}")
+        print(f"✅ Success: {len(success)}")
+        print(f"❌ Failed: {len(failed)}")
         
         if success:
-            print("\nУспешные аккаунты:")
+            print("\nSuccessful:")
             for r in success:
-                print(f"  {r['email']} : {r['password']}")
+                token_info = f" (token: {r.get('token_file', 'none')})" if r.get('token_file') else " (no token)"
+                print(f"  {r['email']} : {r['password']}{token_info}")
         
         if failed:
-            print("\nОшибки:")
+            print("\nFailed:")
             for r in failed:
-                print(f"  {r['email']} - {r.get('error', 'Unknown')}")
-        
-        # Статистика хранилища
-        stats = self.storage.count()
-        print(f"\nВсего в базе: {stats['total']} аккаунтов")
+                print(f"  {r['email']} - {r.get('error')}")
     
     def close(self):
-        """Закрытие ресурсов"""
         if self.mail_handler:
             self.mail_handler.disconnect()
         if self.browser:
             self.browser.close()
+        if self.oauth:
+            self.oauth.close()
 
 
-def generate_realistic_name() -> tuple[str, str]:
-    """Генерация реалистичного имени и фамилии"""
+def generate_emails(count: int, domain: str = 'whitebite.ru') -> List[tuple]:
+    """Генерация email адресов"""
     import random
     
-    # Популярные английские имена
-    first_names = [
-        'James', 'John', 'Robert', 'Michael', 'David', 'William', 'Richard', 'Joseph',
-        'Thomas', 'Christopher', 'Charles', 'Daniel', 'Matthew', 'Anthony', 'Mark',
-        'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua', 'Kenneth', 'Kevin', 'Brian',
-        'George', 'Timothy', 'Ronald', 'Edward', 'Jason', 'Jeffrey', 'Ryan',
-        'Mary', 'Patricia', 'Jennifer', 'Linda', 'Barbara', 'Elizabeth', 'Susan',
-        'Jessica', 'Sarah', 'Karen', 'Lisa', 'Nancy', 'Betty', 'Margaret', 'Sandra',
-        'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle', 'Dorothy', 'Carol',
-        'Amanda', 'Melissa', 'Deborah', 'Stephanie', 'Rebecca', 'Sharon', 'Laura',
-        'Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn'
-    ]
-    
-    # Популярные английские фамилии
-    last_names = [
-        'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
-        'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson',
-        'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson',
-        'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson',
-        'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen',
-        'Hill', 'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera',
-        'Campbell', 'Mitchell', 'Carter', 'Roberts', 'Turner', 'Phillips', 'Evans',
-        'Parker', 'Edwards', 'Collins', 'Stewart', 'Morris', 'Murphy', 'Cook'
-    ]
-    
-    return random.choice(first_names), random.choice(last_names)
-
-
-def generate_emails(count: int, domain: str = 'whitebite.ru', prefix: str = 'kiro_auto') -> List[tuple[str, str]]:
-    """
-    Генерация списка email адресов с реалистичными именами
-    Формат: ИмяФамилия + случайные цифры (JohnSmith1234@domain)
-    
-    Returns:
-        List of tuples (email, full_name)
-    """
-    import random
+    first_names = ['James', 'John', 'Robert', 'Michael', 'David', 'Mary', 'Jennifer', 'Linda', 'Alex', 'Sam']
+    last_names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis']
     
     results = []
-    used_emails = set()
+    used = set()
     
     for _ in range(count):
-        first_name, last_name = generate_realistic_name()
+        first = random.choice(first_names)
+        last = random.choice(last_names)
         
-        # Генерируем уникальный email
-        attempts = 0
-        while attempts < 100:
-            number = random.randint(100, 9999)  # 3-4 цифры
-            username = f"{first_name}{last_name}{number}"  # JohnSmith1234
-            email = f"{username}@{domain}"
+        for _ in range(100):
+            num = random.randint(100, 9999)
+            email = f"{first}{last}{num}@{domain}"
             
-            if email.lower() not in used_emails:
-                used_emails.add(email.lower())
-                full_name = f"{first_name} {last_name}"
-                results.append((email, full_name))
+            if email.lower() not in used:
+                used.add(email.lower())
+                results.append((email, f"{first} {last}"))
                 break
-            attempts += 1
     
     return results
 
@@ -350,136 +369,35 @@ def generate_emails(count: int, domain: str = 'whitebite.ru', prefix: str = 'kir
 def main():
     parser = argparse.ArgumentParser(description='AWS Builder ID Auto-Registration')
     parser.add_argument('--email', '-e', help='Email для регистрации')
-    parser.add_argument('--file', '-f', help='Файл со списком email')
-    parser.add_argument('--count', '-c', type=int, help='Количество аккаунтов для генерации')
-    parser.add_argument('--headless', action='store_true', help='Запуск без GUI')
-    parser.add_argument('--export', action='store_true', help='Экспорт аккаунтов в файл')
-    parser.add_argument('--list', action='store_true', help='Показать все аккаунты')
-    parser.add_argument('--delete-all', action='store_true', help='Удалить все аккаунты')
-    parser.add_argument('--delete-failed', action='store_true', help='Удалить failed аккаунты')
-    parser.add_argument('--delete', type=str, help='Удалить аккаунт по email')
+    parser.add_argument('--count', '-c', type=int, help='Количество аккаунтов')
+    parser.add_argument('--headless', action='store_true', help='Без GUI')
+    parser.add_argument('--spoof', action='store_true', help='Включить fingerprint spoofing (по умолчанию выключен)')
     
     args = parser.parse_args()
     
-    storage = AccountStorage()
-    
-    # Управление аккаунтами
-    if args.list:
-        storage.list_all()
-        return
-    
-    if args.delete_all:
-        confirm = input("⚠️ Удалить ВСЕ аккаунты? (yes/no): ").strip().lower()
-        if confirm == 'yes':
-            storage.delete_all()
-        else:
-            print("Отменено")
-        return
-    
-    if args.delete_failed:
-        storage.delete_failed()
-        return
-    
-    if args.delete:
-        storage.delete_by_email(args.delete)
-        return
-    
-    # Экспорт
-    if args.export:
-        storage.export_credentials()
-        return
-    
-    # Определяем список email и имён
     emails = []
     names = None
     
     if args.email:
         emails = [args.email]
-    elif args.file:
-        with open(args.file) as f:
-            emails = [line.strip() for line in f if line.strip() and '@' in line]
     elif args.count:
         generated = generate_emails(args.count)
         emails = [e for e, _ in generated]
         names = [n for _, n in generated]
-        print(f"Сгенерировано {len(emails)} аккаунтов:")
-        for email, name in generated:
-            print(f"  {name} <{email}>")
+        print(f"Generated {len(emails)} accounts")
     else:
-        # Интерактивный режим
-        print("=" * 60)
-        print("AWS Builder ID Auto-Registration")
-        print("=" * 60)
-        print("\nРежимы:")
-        print("1. Один аккаунт")
-        print("2. Из файла")
-        print("3. Сгенерировать N аккаунтов")
-        print("4. Экспорт аккаунтов")
-        print("5. Показать все аккаунты")
-        print("6. Удалить все аккаунты")
-        print("7. Удалить failed аккаунты")
-        
-        mode = input("\nВыберите режим (1-7): ").strip()
-        
-        if mode == '1':
-            email = input("Email (@whitebite.ru): ").strip()
-            if not email.endswith('@whitebite.ru'):
-                print("❌ Поддерживается только @whitebite.ru")
-                return
+        email = input("Email: ").strip()
+        if email:
             emails = [email]
-        
-        elif mode == '2':
-            filepath = input("Путь к файлу: ").strip()
-            with open(filepath) as f:
-                emails = [line.strip() for line in f if line.strip() and '@' in line]
-        
-        elif mode == '3':
-            count = int(input("Количество: ").strip())
-            generated = generate_emails(count)
-            emails = [e for e, _ in generated]
-            names = [n for _, n in generated]
-            print(f"\nСгенерировано:")
-            for email, name in generated:
-                print(f"  {name} <{email}>")
-        
-        elif mode == '4':
-            storage.export_credentials()
-            return
-        
-        elif mode == '5':
-            storage.list_all()
-            return
-        
-        elif mode == '6':
-            confirm = input("⚠️ Удалить ВСЕ аккаунты? (yes/no): ").strip().lower()
-            if confirm == 'yes':
-                storage.delete_all()
-            else:
-                print("Отменено")
-            return
-        
-        elif mode == '7':
-            storage.delete_failed()
-            return
-        
-        else:
-            print("❌ Неверный режим")
-            return
     
     if not emails:
-        print("❌ Нет email для регистрации")
+        print("No emails")
         return
     
-    # Подтверждение
-    print(f"\nБудет зарегистрировано: {len(emails)} аккаунтов")
-    confirm = input("Начать? (y/n): ").strip().lower()
+    print(f"\nWill register: {len(emails)} accounts")
     
-    if confirm != 'y':
-        print("Отменено")
-        return
-    
-    # Регистрация
-    reg = AWSRegistration(headless=args.headless)
+    # Спуфинг по умолчанию ВЫКЛЮЧЕН (вызывает ошибки AWS)
+    reg = AWSRegistration(headless=args.headless, spoof_fingerprint=args.spoof)
     
     try:
         results = reg.register_batch(emails, names)

@@ -9,7 +9,13 @@ from typing import Any, Optional
 from dataclasses import dataclass, field, asdict
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from autoreg directory
+_autoreg_dir = Path(__file__).parent.parent
+_env_file = _autoreg_dir / '.env'
+if _env_file.exists():
+    load_dotenv(_env_file, override=True)
+else:
+    load_dotenv(override=True)  # Fallback to current directory
 
 
 @dataclass

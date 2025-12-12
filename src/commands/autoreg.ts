@@ -120,6 +120,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
   const verbose = config.get<boolean>('debug.verbose', false);
+  const spoofFingerprint = config.get<boolean>('autoreg.spoofFingerprint', true);
   const imapServer = config.get<string>('imap.server', '');
   const imapUser = config.get<string>('imap.user', '');
   const imapPassword = config.get<string>('imap.password', '');
@@ -168,6 +169,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const args = ['-m', 'registration.register_auto'];
   args.push(headless ? '--headless' : '--no-headless');
   if (verbose) args.push('--verbose');
+  if (!spoofFingerprint) args.push('--no-spoof');
   args.push('--domain', emailDomain);
 
   const env = {
@@ -182,6 +184,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
+  provider.addLog(`Fingerprint spoofing: ${spoofFingerprint ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
   // Use ProcessManager for better control
