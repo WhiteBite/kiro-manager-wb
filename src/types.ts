@@ -26,6 +26,7 @@ export interface AccountUsage {
   daysRemaining: number;
   loading?: boolean;
   error?: string;
+  suspended?: boolean; // Account is suspended by AWS
 }
 
 export interface AccountInfo {

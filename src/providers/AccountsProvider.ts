@@ -219,33 +219,39 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     return homePath;
   }
 
-  // Delete all accounts with exhausted usage limits
+  // Delete all accounts with exhausted usage limits or suspended
   async deleteExhaustedAccounts() {
-    const exhaustedAccounts = this._accounts.filter(
-      a => a.usage && a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100
+    const badAccounts = this._accounts.filter(
+      a => a.usage && (
+        // Exhausted (100% usage)
+        (a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100) ||
+        // Suspended by AWS
+        a.usage.suspended === true
+      )
     );
 
-    if (exhaustedAccounts.length === 0) {
-      vscode.window.showInformationMessage('No exhausted accounts to delete');
+    if (badAccounts.length === 0) {
+      vscode.window.showInformationMessage('No exhausted/suspended accounts to delete');
       return;
     }
 
     let deleted = 0;
-    for (const acc of exhaustedAccounts) {
+    for (const acc of badAccounts) {
       const accountName = acc.tokenData.accountName || acc.filename;
+      const reason = acc.usage?.suspended ? '🚫 suspended' : '📊 exhausted';
       try {
         // Delete token file directly (skip confirmation since we already confirmed)
         if (fs.existsSync(acc.path)) {
           fs.unlinkSync(acc.path);
           deleted++;
-          this.addLog(`🗑 Deleted: ${accountName}`);
+          this.addLog(`🗑 Deleted (${reason}): ${accountName}`);
         }
       } catch (err) {
         this.addLog(`✗ Failed to delete ${accountName}: ${err}`);
       }
     }
 
-    vscode.window.showInformationMessage(`Deleted ${deleted} exhausted account(s)`);
+    vscode.window.showInformationMessage(`Deleted ${deleted} exhausted/suspended account(s)`);
     this.refresh();
   }
 
