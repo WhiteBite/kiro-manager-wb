@@ -16,11 +16,10 @@ describe('Autoreg Python Integration', () => {
       'requirements.txt',
       '__init__.py',
       'registration/__init__.py',
-      'registration/register_auto.py',
       'registration/register.py',
       'registration/browser.py',
       'registration/mail_handler.py',
-      'registration/oauth_client.py',
+      'registration/oauth_pkce.py',
       'core/__init__.py',
       'core/config.py',
       'core/paths.py',
@@ -44,8 +43,8 @@ describe('Autoreg Python Integration', () => {
   describe('Python syntax check', () => {
     const pythonFiles = [
       'cli.py',
-      'registration/register_auto.py',
       'registration/register.py',
+      'registration/oauth_pkce.py',
       'core/config.py',
       'services/token_service.py',
     ];
@@ -79,9 +78,9 @@ describe('Autoreg Python Integration', () => {
   });
 
   describe('Module imports', () => {
-    it('should import registration.register_auto without errors', () => {
+    it('should import registration.register without errors', () => {
       const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-      const result = spawnSync(pythonCmd, ['-c', 'import registration.register_auto'], {
+      const result = spawnSync(pythonCmd, ['-c', 'import registration.register'], {
         cwd: AUTOREG_DIR,
         encoding: 'utf8',
         timeout: 10000,
@@ -118,8 +117,8 @@ describe('Autoreg Python Integration', () => {
       expect(result.stdout).toContain('Usage');
     });
 
-    it('should be found by oauth_client.py path resolution', () => {
-      // Simulate the path resolution logic from oauth_client.py
+    it('should be found by oauth_pkce.py path resolution', () => {
+      // Simulate the path resolution logic from oauth_pkce.py
       const srcIndexPath = path.join(AUTOREG_DIR, 'src', 'index.js');
       expect(fs.existsSync(srcIndexPath)).toBe(true);
     });

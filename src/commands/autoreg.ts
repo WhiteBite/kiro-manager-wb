@@ -17,11 +17,11 @@ export function getAutoregDir(context: vscode.ExtensionContext): string {
   const homePath = path.join(os.homedir(), '.kiro-autoreg');
   const bundledPath = path.join(context.extensionPath, 'autoreg');
 
-  if (fs.existsSync(path.join(workspacePath, 'registration', 'register_auto.py'))) {
+  if (fs.existsSync(path.join(workspacePath, 'registration', 'register.py'))) {
     return workspacePath;
   }
 
-  if (fs.existsSync(path.join(homePath, 'registration', 'register_auto.py'))) {
+  if (fs.existsSync(path.join(homePath, 'registration', 'register.py'))) {
     return homePath;
   }
 
@@ -110,7 +110,7 @@ async function installDependencies(autoregDir: string, provider: KiroAccountsPro
 
 export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
   const autoregDir = getAutoregDir(context);
-  const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register_auto.py') : '';
+  const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register.py') : '';
 
   if (!finalPath || !fs.existsSync(finalPath)) {
     vscode.window.showWarningMessage('Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-autoreg/');
@@ -119,8 +119,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
-  const verbose = config.get<boolean>('debug.verbose', false);
-  const spoofFingerprint = config.get<boolean>('autoreg.spoofFingerprint', true);
+  const spoofFingerprint = config.get<boolean>('autoreg.spoofFingerprint', false);
   const imapServer = config.get<string>('imap.server', '');
   const imapUser = config.get<string>('imap.user', '');
   const imapPassword = config.get<string>('imap.password', '');
@@ -166,11 +165,10 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   provider.setStatus('{"step":1,"totalSteps":8,"stepName":"Starting","detail":"Initializing..."}');
 
-  const args = ['-m', 'registration.register_auto'];
-  args.push(headless ? '--headless' : '--no-headless');
-  if (verbose) args.push('--verbose');
-  if (!spoofFingerprint) args.push('--no-spoof');
-  args.push('--domain', emailDomain);
+  const args = ['-m', 'registration.register'];
+  if (headless) args.push('--headless');
+  if (spoofFingerprint) args.push('--spoof');
+  args.push('--count', '1');
 
   const env = {
     ...process.env,

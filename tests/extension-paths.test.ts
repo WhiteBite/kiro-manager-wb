@@ -23,10 +23,10 @@ describe('Extension Path Configuration', () => {
       expect(autoregContent).not.toContain('autoreg-bundled');
     });
 
-    it('should reference register_auto.py', () => {
-      expect(autoregContent).toContain('register_auto.py');
+    it('should reference register.py', () => {
+      expect(autoregContent).toContain('register.py');
       // Verify the file actually exists
-      expect(fs.existsSync(path.join(AUTOREG_DIR, 'registration', 'register_auto.py'))).toBe(true);
+      expect(fs.existsSync(path.join(AUTOREG_DIR, 'registration', 'register.py'))).toBe(true);
     });
 
     it('should reference requirements.txt', () => {
@@ -34,8 +34,8 @@ describe('Extension Path Configuration', () => {
       expect(fs.existsSync(path.join(AUTOREG_DIR, 'requirements.txt'))).toBe(true);
     });
 
-    it('should use -m registration.register_auto for module execution', () => {
-      expect(autoregContent).toContain("'-m', 'registration.register_auto'");
+    it('should use -m registration.register for module execution', () => {
+      expect(autoregContent).toContain("'-m', 'registration.register'");
     });
   });
 
