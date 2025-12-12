@@ -494,6 +494,28 @@ class BrowserAutomation:
         
         return ''.join(password)
     
+    def _hide_cookie_banner(self):
+        """Мгновенно скрывает cookie banner через CSS (без проверок)."""
+        try:
+            self.page.run_js('''
+                // Скрываем все возможные cookie элементы
+                const selectors = [
+                    '#awsccc-cb-content',
+                    '#awsccc-cb', 
+                    '.awsccc-cs-overlay',
+                    '[data-id="awsccc-cb-btn-decline"]',
+                    '.awscc-cookie-banner'
+                ];
+                selectors.forEach(sel => {
+                    const el = document.querySelector(sel);
+                    if (el) el.style.display = 'none';
+                });
+                // Также удаляем overlay который блокирует клики
+                document.querySelectorAll('.awsccc-cs-overlay, .modal-backdrop').forEach(el => el.remove());
+            ''')
+        except:
+            pass
+    
     def close_cookie_dialog(self, force: bool = False):
         """Закрывает диалог cookie через CSS (самый быстрый и надёжный способ)."""
         if self._cookie_closed and not force:
@@ -507,22 +529,9 @@ class BrowserAutomation:
             return False
         
         # Скрываем через CSS - мгновенно и надёжно
-        try:
-            self.page.run_js('''
-                const banner = document.querySelector('#awsccc-cb-content');
-                if (banner) banner.style.display = 'none';
-                const overlay = document.querySelector('.awsccc-cs-overlay');
-                if (overlay) overlay.style.display = 'none';
-                // Также скрываем родительский контейнер
-                const container = document.querySelector('#awsccc-cb');
-                if (container) container.style.display = 'none';
-            ''')
-            self._cookie_closed = True
-            return True
-        except:
-            pass
-        
-        return False
+        self._hide_cookie_banner()
+        self._cookie_closed = True
+        return True
     
     def enter_device_code(self, user_code: str, email: str = None, password: str = None) -> bool:
         """
@@ -811,25 +820,54 @@ class BrowserAutomation:
         """Вводит имя. Оптимизировано для скорости."""
         print(f"[N] Entering name: {name}")
         
-        # Закрываем cookie один раз
-        self.close_cookie_dialog(force=True)
+        # КРИТИЧНО: Закрываем cookie диалог ПЕРЕД поиском поля
+        # Cookie диалог перекрывает страницу и замедляет поиск элементов
+        self._hide_cookie_banner()
         
-        # Быстрые селекторы
+        # Быстрые селекторы в порядке приоритета
         name_selectors = [
-            '@placeholder=Maria José Silva',
+            '@placeholder=Maria José Silva',  # Актуальный placeholder
+            '@placeholder=Maria Jose Silva',  # Без диакритики
             '@data-testid=name-input',
+            'xpath://input[contains(@placeholder, "Silva")]',  # Частичное совпадение
         ]
         
-        name_input = self.wait_for_element(name_selectors, timeout=2)
+        name_input = None
+        start_time = time.time()
         
-        if not name_input:
-            # Fallback
+        # Быстрый поиск по селекторам (макс 1.5 сек)
+        for selector in name_selectors:
             try:
-                inputs = self.page.eles('tag:input@@type=text')
-                if inputs:
-                    name_input = inputs[0]
+                name_input = self.page.ele(selector, timeout=0.3)
+                if name_input:
+                    print(f"   Found name field: {selector}")
+                    break
             except:
                 pass
+        
+        # Fallback: ищем единственный text input на странице (быстро)
+        if not name_input:
+            try:
+                # Ищем input внутри формы, исключая cookie banner
+                name_input = self.page.ele('xpath://form//input[@type="text" or not(@type)]', timeout=0.5)
+                if name_input:
+                    print(f"   Found name field via form xpath")
+            except:
+                pass
+        
+        # Последний fallback
+        if not name_input:
+            try:
+                inputs = self.page.eles('tag:input@@type=text', timeout=0.5)
+                if inputs:
+                    name_input = inputs[0]
+                    print(f"   Found name field via fallback")
+            except:
+                pass
+        
+        elapsed = time.time() - start_time
+        if elapsed > 1:
+            print(f"   [!] Name field search took {elapsed:.2f}s")
         
         if not name_input:
             print("   [X] Name field not found!")
