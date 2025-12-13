@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kiro Account Manager</title>
   <link rel="stylesheet" href="/static/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 </head>
+
 <body>
   <div id="app">
     <!-- Header -->
@@ -29,7 +32,9 @@
         <div class="hero-stats" id="heroStats"></div>
       </div>
       <div class="hero-progress" id="heroProgress" style="display: none;">
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
         <div class="progress-text" id="progressText"></div>
       </div>
     </div>
@@ -44,7 +49,8 @@
         <button class="btn btn-secondary btn-icon" onclick="refresh()" title="Refresh">🔄</button>
       </div>
       <div class="search-wrapper">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..." oninput="filterAccounts(this.value)">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..."
+          oninput="filterAccounts(this.value)">
       </div>
     </div>
 
@@ -139,6 +145,10 @@
                 <option value="single">Single Email</option>
               </select>
             </div>
+            <div class="imap-actions">
+              <button class="btn btn-primary" onclick="saveImapSettings()">💾 Save Settings</button>
+              <span class="imap-status" id="imapStatus"></span>
+            </div>
           </div>
 
           <!-- Patch Tab -->
@@ -155,7 +165,8 @@
             </div>
             <div class="patch-actions">
               <button class="btn btn-warning" id="patchApplyBtn" onclick="applyPatch()">🔧 Apply Patch</button>
-              <button class="btn btn-secondary" id="patchRemoveBtn" onclick="removePatch()" style="display:none">↩️ Remove</button>
+              <button class="btn btn-secondary" id="patchRemoveBtn" onclick="removePatch()" style="display:none">↩️
+                Remove</button>
               <button class="btn btn-secondary" onclick="generateMachineId()">🎲 New ID</button>
             </div>
             <div class="danger-zone">
@@ -235,4 +246,5 @@
 
   <script src="/static/app.js"></script>
 </body>
+
 </html>

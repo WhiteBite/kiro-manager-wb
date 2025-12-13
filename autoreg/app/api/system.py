@@ -6,10 +6,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 import platform
+import os
 
 from services.kiro_service import KiroService
 from core.kiro_config import get_kiro_info, get_kiro_version, get_machine_id
 from core.paths import get_paths
+from core.config import get_config
 
 router = APIRouter()
 kiro_service = KiroService()
@@ -138,3 +140,85 @@ async def health_check():
             "backupsExist": paths.backups_dir.exists()
         }
     }
+
+
+class ImapSettings(BaseModel):
+    server: str
+    user: str
+    password: str
+    domain: str
+    hasDefaults: bool
+
+
+@router.get("/imap-defaults", response_model=ImapSettings)
+async def get_imap_defaults():
+    """
+    Get default IMAP settings from .env file.
+    Used when user hasn't configured their own catch-all.
+    """
+    config = get_config()
+    
+    # Get from environment (loaded from .env)
+    server = os.environ.get('IMAP_SERVER', config.imap.host)
+    user = os.environ.get('IMAP_USER', config.imap.email)
+    password = os.environ.get('IMAP_PASSWORD', config.imap.password)
+    domain = os.environ.get('EMAIL_DOMAIN', config.registration.email_domain)
+    
+    has_defaults = bool(server and user and password and domain)
+    
+    return ImapSettings(
+        server=server or '',
+        user=user or '',
+        password=password or '',
+        domain=domain or '',
+        hasDefaults=has_defaults
+    )
+
+
+class ImapSettingsUpdate(BaseModel):
+    server: str
+    user: str
+    password: str
+    domain: str
+
+
+@router.post("/imap-settings")
+async def save_imap_settings(settings: ImapSettingsUpdate):
+    """
+    Save IMAP settings to .env file.
+    This allows web UI to persist settings.
+    """
+    from pathlib import Path
+    
+    # Get .env path
+    autoreg_dir = Path(__file__).parent.parent.parent
+    env_file = autoreg_dir / '.env'
+    
+    # Read existing .env or create new
+    env_content = {}
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_content[key.strip()] = value.strip()
+    
+    # Update with new settings
+    env_content['IMAP_SERVER'] = settings.server
+    env_content['IMAP_USER'] = settings.user
+    env_content['IMAP_PASSWORD'] = settings.password
+    env_content['EMAIL_DOMAIN'] = settings.domain
+    
+    # Write back
+    with open(env_file, 'w') as f:
+        for key, value in env_content.items():
+            f.write(f'{key}={value}\n')
+    
+    # Update environment variables for current session
+    os.environ['IMAP_SERVER'] = settings.server
+    os.environ['IMAP_USER'] = settings.user
+    os.environ['IMAP_PASSWORD'] = settings.password
+    os.environ['EMAIL_DOMAIN'] = settings.domain
+    
+    return {"success": True, "message": "Settings saved"}

@@ -123,7 +123,7 @@ function renderAccount(acc: AccountInfo, index: number, t: ReturnType<typeof get
   const isUnknown = hasUsage && usage!.currentUsage === -1;
   const isSuspended = hasUsage && usage!.suspended === true;
   const isExhausted = hasUsage && !isUnknown && !isSuspended && usage!.percentageUsed >= 100;
-  
+
   const classes = [
     'account',
     acc.isActive ? 'active' : '',
@@ -132,10 +132,10 @@ function renderAccount(acc: AccountInfo, index: number, t: ReturnType<typeof get
     isSuspended ? 'suspended' : '',
   ].filter(Boolean).join(' ');
 
-  const statusClass = acc.isActive ? 'active' : 
-    isSuspended ? 'suspended' : 
-    isExhausted ? 'exhausted' : 
-    acc.isExpired ? 'expired' : 'ready';
+  const statusClass = acc.isActive ? 'active' :
+    isSuspended ? 'suspended' :
+      isExhausted ? 'exhausted' :
+        acc.isExpired ? 'expired' : 'ready';
 
   const usageText = isUnknown ? '?' : hasUsage ? usage!.currentUsage.toLocaleString() : '—';
   const expiryText = acc.expiresIn || '—';
@@ -182,7 +182,7 @@ function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnTyp
     const usage = acc.usage;
     const isSuspended = usage?.suspended === true;
     const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
-    
+
     if (acc.isExpired || isExhausted || isSuspended) {
       bad.push(acc);
     } else if (acc.isActive) {
@@ -197,13 +197,13 @@ function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnTyp
 
   // Active accounts
   if (active.length > 0) {
-    html += `<div class="list-group"><span>Active</span><span class="list-group-count">${active.length}</span></div>`;
+    html += `<div class="list-group"><span>${t.activeGroup}</span><span class="list-group-count">${active.length}</span></div>`;
     active.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
   }
 
   // Ready accounts
   if (ready.length > 0) {
-    html += `<div class="list-group"><span>Ready</span><span class="list-group-count">${ready.length}</span></div>`;
+    html += `<div class="list-group"><span>${t.readyGroup}</span><span class="list-group-count">${ready.length}</span></div>`;
     ready.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
   }
 
@@ -211,7 +211,7 @@ function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnTyp
   if (bad.length > 0) {
     html += `
       <div class="list-group danger">
-        <span>Expired / Exhausted</span>
+        <span>${t.badGroup}</span>
         <button class="list-group-action" onclick="confirmDeleteExhausted()">${t.deleteAll}</button>
         <span class="list-group-count">${bad.length}</span>
       </div>
@@ -236,23 +236,23 @@ function renderSettings(
 
   // Strategy labels
   const strategyLabels: Record<string, { icon: string; name: string; desc: string }> = {
-    single: { 
-      icon: '📧', 
+    single: {
+      icon: '📧',
       name: t.strategySingleName,
       desc: t.strategySingleShort
     },
-    plus_alias: { 
-      icon: '➕', 
+    plus_alias: {
+      icon: '➕',
       name: t.strategyPlusAliasName,
       desc: t.strategyPlusAliasShort
     },
-    catch_all: { 
-      icon: '🌐', 
+    catch_all: {
+      icon: '🌐',
       name: t.strategyCatchAllName,
       desc: t.strategyCatchAllShort
     },
-    pool: { 
-      icon: '📋', 
+    pool: {
+      icon: '📋',
       name: t.strategyPoolName,
       desc: t.strategyPoolShort
     }
@@ -261,7 +261,7 @@ function renderSettings(
   return `
     <div class="overlay" id="settingsOverlay">
       <div class="overlay-header">
-        <button class="overlay-back" onclick="closeSettings()">← Back</button>
+        <button class="overlay-back" onclick="closeSettings()">← ${t.back}</button>
         <span class="overlay-title">${t.settingsTitle}</span>
       </div>
       <div class="overlay-content">
@@ -338,22 +338,22 @@ function renderSettings(
           <!-- Kiro Patching -->
           <div class="danger-zone-card patch-card">
             <div class="danger-zone-info">
-              <div class="danger-zone-label">${lang === 'ru' ? 'Патч Kiro' : 'Kiro Patch'}</div>
-              <div class="danger-zone-desc">${lang === 'ru' ? 'Патчит Kiro для использования кастомного Machine ID' : 'Patches Kiro to use custom Machine ID'}</div>
+              <div class="danger-zone-label">${t.kiroPatch}</div>
+              <div class="danger-zone-desc">${t.kiroPatchDesc}</div>
               <div class="patch-status-row">
-                <span id="patchStatusText" class="patch-status">${lang === 'ru' ? 'Загрузка...' : 'Loading...'}</span>
+                <span id="patchStatusText" class="patch-status">${t.patchStatusLoading}</span>
                 <span id="currentMachineId" class="machine-id-preview"></span>
               </div>
             </div>
             <div class="danger-zone-actions">
-              <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="${lang === 'ru' ? 'Пропатчить Kiro' : 'Patch Kiro'}">
-                🔧 ${lang === 'ru' ? 'Патч' : 'Patch'}
+              <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="${t.patchKiroTitle}">
+                🔧 ${t.patch}
               </button>
-              <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="${lang === 'ru' ? 'Удалить патч' : 'Remove patch'}">
-                ↩️ ${lang === 'ru' ? 'Убрать' : 'Remove'}
+              <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="${t.removePatchTitle}">
+                ↩️ ${t.removePatch}
               </button>
-              <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="${lang === 'ru' ? 'Новый Machine ID' : 'Generate new ID'}">
-                🎲 ${lang === 'ru' ? 'Новый ID' : 'New ID'}
+              <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="${t.newMachineId}">
+                🎲 ${t.newMachineId}
               </button>
             </div>
           </div>
@@ -384,7 +384,7 @@ function renderSettings(
 // Render Logs Drawer
 function renderLogs(logs: string[] | undefined, t: ReturnType<typeof getTranslations>): string {
   const hasErrors = logs?.some(l => l.includes('ERROR') || l.includes('FAIL') || l.includes('✗')) ?? false;
-  const logLines = (logs || []).slice(-100).map(log => 
+  const logLines = (logs || []).slice(-100).map(log =>
     `<div class="log-line ${getLogClass(log)}">${escapeHtml(log)}</div>`
   ).join('');
 
@@ -428,8 +428,8 @@ function renderSsoModal(t: ReturnType<typeof getTranslations>): string {
 // Main HTML generator
 export function generateWebviewHtml(props: WebviewProps): string;
 export function generateWebviewHtml(
-  accounts: AccountInfo[], 
-  autoSwitchEnabled: boolean, 
+  accounts: AccountInfo[],
+  autoSwitchEnabled: boolean,
   autoRegStatus: string,
   regProgress?: RegProgress,
   kiroUsage?: KiroUsageData | null,
@@ -440,8 +440,8 @@ export function generateWebviewHtml(
 ): string;
 
 export function generateWebviewHtml(
-  propsOrAccounts: WebviewProps | AccountInfo[], 
-  autoSwitchEnabled?: boolean, 
+  propsOrAccounts: WebviewProps | AccountInfo[],
+  autoSwitchEnabled?: boolean,
   autoRegStatus?: string,
   regProgress?: RegProgress,
   kiroUsage?: KiroUsageData | null,
@@ -450,7 +450,7 @@ export function generateWebviewHtml(
   version?: string,
   language?: Language
 ): string {
-  const props: WebviewProps = Array.isArray(propsOrAccounts) 
+  const props: WebviewProps = Array.isArray(propsOrAccounts)
     ? { accounts: propsOrAccounts, autoSwitchEnabled: autoSwitchEnabled ?? false, autoRegStatus: autoRegStatus ?? '', regProgress, kiroUsage, autoRegSettings, consoleLogs, version, language }
     : propsOrAccounts;
 
@@ -462,17 +462,17 @@ export function generateWebviewHtml(
   const { progress, isRunning } = parseStatus(props.autoRegStatus);
   const validCount = accounts.filter(a => !a.isExpired).length;
 
-  const script = generateWebviewScript(accounts.length);
+  const script = generateWebviewScript(accounts.length, t);
 
   // Update banner
   const updateBanner = props.availableUpdate ? `
     <div class="update-banner" onclick="openUpdateUrl('${props.availableUpdate.url}')">
       <span class="update-banner-icon">🚀</span>
       <div class="update-banner-content">
-        <div class="update-banner-title">${lang === 'ru' ? 'Новая версия!' : 'New version!'}</div>
+        <div class="update-banner-title">${t.newVersion}</div>
         <div class="update-banner-version">v${props.availableUpdate.version}</div>
       </div>
-      <span class="update-banner-action">${lang === 'ru' ? 'Скачать' : 'Download'} →</span>
+      <span class="update-banner-action">${t.download} →</span>
     </div>
   ` : '';
 
@@ -490,7 +490,7 @@ export function generateWebviewHtml(
       <div class="header-left">
         <span class="header-title">KIRO</span>
         <span class="header-badge">${validCount}/${accounts.length}</span>
-        <span class="patch-indicator" id="patchIndicator" title="${lang === 'ru' ? 'Статус патча' : 'Patch status'}"></span>
+        <span class="patch-indicator" id="patchIndicator" title="${t.kiroPatch}"></span>
       </div>
       <div class="header-actions">
         <button class="icon-btn" onclick="toggleLogs()" title="${t.console}">${ICONS.file}</button>
@@ -541,7 +541,7 @@ export function generateWebviewHtml(
         <div class="dialog-text" id="dialogText">${t.deleteConfirm}</div>
         <div class="dialog-actions">
           <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
-          <button class="btn btn-danger" onclick="dialogAction()">${lang === 'ru' ? 'Удалить' : 'Delete'}</button>
+          <button class="btn btn-danger" onclick="dialogAction()">${t.delete}</button>
         </div>
       </div>
     </div>
@@ -552,15 +552,15 @@ export function generateWebviewHtml(
     <!-- IMAP Profiles Panel -->
     <div class="profiles-panel" id="profilesPanel">
       <div class="profiles-panel-header">
-        <button class="overlay-back" onclick="closeProfilesPanel()">← Back</button>
-        <span class="profiles-panel-title">${lang === 'ru' ? 'Email Профили' : 'Email Profiles'}</span>
+        <button class="overlay-back" onclick="closeProfilesPanel()">← ${t.back}</button>
+        <span class="profiles-panel-title">${t.emailProfiles}</span>
       </div>
       <div class="profiles-panel-content" id="profilesContent">
         <div class="profiles-empty">
           <div class="empty-icon">📧</div>
-          <div class="empty-text">${lang === 'ru' ? 'Нет профилей' : 'No profiles configured'}</div>
+          <div class="empty-text">${t.noProfiles}</div>
           <button class="btn btn-primary" onclick="createProfile()">
-            ${ICONS.plus} ${lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}
+            ${ICONS.plus} ${t.addProfile}
           </button>
         </div>
       </div>
@@ -569,7 +569,7 @@ export function generateWebviewHtml(
     <!-- Profile Editor -->
     <div class="profile-editor" id="profileEditor">
       <div class="editor-header">
-        <button class="overlay-back" onclick="closeProfileEditor()">← Back</button>
+        <button class="overlay-back" onclick="closeProfileEditor()">← ${t.back}</button>
         <span class="editor-title">${t.newProfile}</span>
       </div>
       <div class="editor-content">

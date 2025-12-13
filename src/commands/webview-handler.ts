@@ -7,8 +7,9 @@ import * as vscode from 'vscode';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
 import { switchToAccount, refreshAccountToken, refreshAllAccounts, deleteAccount } from '../accounts';
 import { runAutoReg, importSsoToken, resetMachineId, patchKiro, unpatchKiro, generateMachineId, getPatchStatus } from '../commands/autoreg';
+import { WebviewCommand, isWebviewCommand } from '../webview/messages';
 
-export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: any) {
+export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: WebviewCommand | Record<string, unknown>) {
   switch (msg.command) {
     case 'switch':
       await switchToAccount(msg.account);
@@ -158,7 +159,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     // === IMAP Profiles ===
-    
+
     case 'loadProfiles':
       await provider.loadProfiles();
       break;

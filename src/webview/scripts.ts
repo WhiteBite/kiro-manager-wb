@@ -3,9 +3,15 @@
  */
 
 import { generateStateScript } from './state';
+import { Translations } from './i18n/types';
 
-export function generateWebviewScript(totalAccounts: number): string {
+export function generateWebviewScript(totalAccounts: number, t: Translations): string {
+  // Serialize translations for client-side use
+  const T = JSON.stringify(t);
+
   return `
+    const T = ${T};
+   
     const vscode = acquireVsCodeApi();
     let pendingAction = null;
     
@@ -30,21 +36,19 @@ export function generateWebviewScript(totalAccounts: number): string {
       const container = document.getElementById('activeProfileContent');
       if (!container) return;
       
-      const lang = document.body.dataset.lang || 'en';
-      
       const strategyLabels = {
-        single: { icon: '📧', name: lang === 'ru' ? 'Один Email' : 'Single Email', desc: lang === 'ru' ? 'один аккаунт' : 'one account' },
-        plus_alias: { icon: '➕', name: 'Plus Alias', desc: 'user+random@domain' },
-        catch_all: { icon: '🌐', name: 'Catch-All', desc: lang === 'ru' ? 'любой@домен' : 'any@domain' },
-        pool: { icon: '📋', name: lang === 'ru' ? 'Пул' : 'Pool', desc: lang === 'ru' ? 'список email' : 'email list' }
+        single: { icon: '📧', name: T.strategySingleName, desc: T.strategySingleShort },
+        plus_alias: { icon: '➕', name: T.strategyPlusAliasName, desc: T.strategyPlusAliasShort },
+        catch_all: { icon: '🌐', name: T.strategyCatchAllName, desc: T.strategyCatchAllShort },
+        pool: { icon: '📋', name: T.strategyPoolName, desc: T.strategyPoolShort }
       };
       
       if (!profile) {
         container.innerHTML = \`
           <div class="active-profile-empty">
             <span class="empty-icon">📧</span>
-            <span class="empty-text">\${lang === 'ru' ? 'Профиль не настроен' : 'No profile configured'}</span>
-            <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">\${lang === 'ru' ? 'Настроить' : 'Configure'}</button>
+            <span class="empty-text">\${T.noProfileConfigured}</span>
+            <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">\${T.configure}</button>
           </div>
         \`;
         return;
@@ -57,7 +61,7 @@ export function generateWebviewScript(totalAccounts: number): string {
         <div class="active-profile-info">
           <div class="active-profile-avatar">\${strategy.icon}</div>
           <div class="active-profile-details">
-            <div class="active-profile-name">\${profile.name || 'Unnamed'}</div>
+            <div class="active-profile-name">\${profile.name || T.unnamed}</div>
             <div class="active-profile-email">\${profile.imap?.user || ''}</div>
             <div class="active-profile-strategy">
               <span class="strategy-name">\${strategy.name}</span>
@@ -68,11 +72,11 @@ export function generateWebviewScript(totalAccounts: number): string {
         <div class="active-profile-stats">
           <div class="active-profile-stat">
             <span class="active-profile-stat-value success">\${stats.registered}</span>
-            <span class="active-profile-stat-label">\${lang === 'ru' ? 'Успешно' : 'Success'}</span>
+            <span class="active-profile-stat-label">\${T.success}</span>
           </div>
           <div class="active-profile-stat">
             <span class="active-profile-stat-value danger">\${stats.failed}</span>
-            <span class="active-profile-stat-label">\${lang === 'ru' ? 'Ошибок' : 'Failed'}</span>
+            <span class="active-profile-stat-label">\${T.failed}</span>
           </div>
         </div>
       \`;
@@ -96,11 +100,8 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function confirmResetMachineId() {
       pendingAction = { type: 'resetMachineId' };
-      const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Reset Machine ID', ru: 'Сброс Machine ID' };
-      const texts = { en: 'This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?', ru: 'Это сбросит telemetry ID Kiro. Потребуется перезапуск. Продолжить?' };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogTitle').textContent = T.resetMachineIdTitle;
+      document.getElementById('dialogText').textContent = T.resetMachineIdConfirm;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -112,21 +113,15 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function confirmPatchKiro() {
       pendingAction = { type: 'patchKiro' };
-      const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Patch Kiro', ru: 'Пропатчить Kiro' };
-      const texts = { en: 'This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?', ru: 'Это пропатчит Kiro для использования кастомного Machine ID. Сначала закройте Kiro! Продолжить?' };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogTitle').textContent = T.patchKiroTitle;
+      document.getElementById('dialogText').textContent = T.patchKiroConfirm;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
     function confirmUnpatchKiro() {
       pendingAction = { type: 'unpatchKiro' };
-      const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Remove Patch', ru: 'Удалить патч' };
-      const texts = { en: 'This will restore original Kiro files. Continue?', ru: 'Это восстановит оригинальные файлы Kiro. Продолжить?' };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogTitle').textContent = T.removePatchTitle;
+      document.getElementById('dialogText').textContent = T.removePatchConfirm;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -264,21 +259,15 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function confirmDelete(filename) {
       pendingAction = { type: 'delete', filename };
-      const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Delete Account', ru: 'Удалить аккаунт' };
-      const texts = { en: 'Are you sure?', ru: 'Вы уверены?' };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogTitle').textContent = T.deleteTitle;
+      document.getElementById('dialogText').textContent = T.areYouSure;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
     function confirmDeleteExhausted() {
       pendingAction = { type: 'deleteExhausted' };
-      const lang = document.body.dataset.lang || 'en';
-      const titles = { en: 'Delete All Bad Accounts', ru: 'Удалить все плохие' };
-      const texts = { en: 'Delete all expired/exhausted accounts?', ru: 'Удалить все истёкшие/исчерпанные?' };
-      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
-      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogTitle').textContent = T.deleteTitle;
+      document.getElementById('dialogText').textContent = T.deleteBadAccountsConfirm;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -290,19 +279,19 @@ export function generateWebviewScript(totalAccounts: number): string {
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
         vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
-        showToast('Account deleted', 'success');
+        showToast(T.accountDeleted, 'success');
       } else if (pendingAction?.type === 'deleteExhausted') {
         vscode.postMessage({ command: 'deleteExhaustedAccounts' });
-        showToast('Bad accounts deleted', 'success');
+        showToast(T.badAccountsDeleted, 'success');
       } else if (pendingAction?.type === 'resetMachineId') {
         vscode.postMessage({ command: 'resetMachineId' });
-        showToast('Resetting Machine ID...', 'success');
+        showToast(T.resettingMachineId, 'success');
       } else if (pendingAction?.type === 'patchKiro') {
         vscode.postMessage({ command: 'patchKiro' });
-        showToast('Patching Kiro...', 'success');
+        showToast(T.patchingKiro, 'success');
       } else if (pendingAction?.type === 'unpatchKiro') {
         vscode.postMessage({ command: 'unpatchKiro' });
-        showToast('Removing patch...', 'success');
+        showToast(T.removingPatch, 'success');
       }
       closeDialog();
     }
@@ -392,18 +381,16 @@ export function generateWebviewScript(totalAccounts: number): string {
       const machineIdEl = document.getElementById('currentMachineId');
       const indicator = document.getElementById('patchIndicator');
       
-      const lang = document.body.dataset.lang || 'en';
-      
       // Update settings panel status
       if (statusEl) {
         if (status.error) {
           statusEl.textContent = status.error;
           statusEl.className = 'patch-status error';
         } else if (status.isPatched) {
-          statusEl.textContent = lang === 'ru' ? 'Патч установлен ✓' : 'Patched ✓';
+          statusEl.textContent = T.patchStatusActive + ' ✓';
           statusEl.className = 'patch-status success';
         } else {
-          statusEl.textContent = lang === 'ru' ? 'Не пропатчен' : 'Not patched';
+          statusEl.textContent = T.patchStatusNotPatched;
           statusEl.className = 'patch-status warning';
         }
       }
@@ -419,14 +406,14 @@ export function generateWebviewScript(totalAccounts: number): string {
         indicator.className = 'patch-indicator visible';
         if (status.error) {
           indicator.classList.add('error');
-          indicator.title = lang === 'ru' ? 'Ошибка патча: ' + status.error : 'Patch error: ' + status.error;
+          indicator.title = status.error;
         } else if (status.isPatched) {
           indicator.classList.add('patched');
-          indicator.title = lang === 'ru' ? 'Патч активен (v' + status.patchVersion + ')' : 'Patch active (v' + status.patchVersion + ')';
+          indicator.title = T.patchStatusActive + ' (v' + status.patchVersion + ')';
         } else if (status.currentMachineId) {
           // Has custom ID but not patched - needs attention
           indicator.classList.add('not-patched');
-          indicator.title = lang === 'ru' ? 'Патч не применён! Нажмите чтобы открыть настройки' : 'Patch not applied! Click to open settings';
+          indicator.title = T.patchStatusNotPatched;
           indicator.onclick = openSettings;
         } else {
           // No custom ID, no patch - hide indicator
@@ -442,13 +429,12 @@ export function generateWebviewScript(totalAccounts: number): string {
     function updateStatus(status) {
       const btn = document.querySelector('.btn-primary');
       const hero = document.querySelector('.hero');
-      const lang = document.body.dataset.lang || 'en';
       
       if (!status) {
         // Registration finished
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '⚡ ' + (lang === 'ru' ? 'Авто-рег' : 'Auto-Reg');
+          btn.innerHTML = '⚡ ' + T.autoReg;
         }
         // Refresh to show new account
         vscode.postMessage({ command: 'refresh' });
@@ -458,7 +444,7 @@ export function generateWebviewScript(totalAccounts: number): string {
       // Show running state
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> ' + (lang === 'ru' ? 'Запуск...' : 'Running...');
+        btn.innerHTML = '<span class="spinner"></span> ' + T.running;
       }
       
       // Update hero with progress
@@ -540,7 +526,7 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function deleteProfile(profileId) {
-      if (confirm('Delete this profile?')) {
+      if (confirm(T.deleteProfileConfirm)) {
         vscode.postMessage({ command: 'deleteProfile', profileId });
       }
     }
@@ -615,12 +601,12 @@ export function generateWebviewScript(totalAccounts: number): string {
         });
         renderPoolList();
       }).catch(() => {
-        showToast('Failed to read clipboard', 'error');
+        showToast(T.clipboardError, 'error');
       });
     }
     
     function saveProfile() {
-      const name = document.getElementById('profileName')?.value?.trim() || 'Unnamed';
+      const name = document.getElementById('profileName')?.value?.trim() || T.unnamed;
       const server = document.getElementById('imapServer')?.value?.trim();
       const user = document.getElementById('imapUser')?.value?.trim();
       const password = document.getElementById('imapPassword')?.value;
@@ -637,7 +623,7 @@ export function generateWebviewScript(totalAccounts: number): string {
       }
       
       if (!server || !user || !password) {
-        showToast('Please fill all IMAP fields', 'error');
+        showToast(T.fillAllFields, 'error');
         return;
       }
       
@@ -664,18 +650,18 @@ export function generateWebviewScript(totalAccounts: number): string {
         container.innerHTML = \`
           <div class="profiles-empty">
             <div class="empty-icon">📧</div>
-            <div class="empty-text">\${document.body.dataset.lang === 'ru' ? 'Нет профилей' : 'No profiles configured'}</div>
-            <button class="btn btn-primary" onclick="createProfile()">+ \${document.body.dataset.lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}</button>
+            <div class="empty-text">\${T.noProfiles}</div>
+            <button class="btn btn-primary" onclick="createProfile()">+ \${T.addProfile}</button>
           </div>
         \`;
         return;
       }
       
       const strategyLabels = {
-        single: 'Single Email',
-        plus_alias: 'Plus Alias',
-        catch_all: 'Catch-All',
-        pool: 'Email Pool'
+        single: T.strategySingleName,
+        plus_alias: T.strategyPlusAliasName,
+        catch_all: T.strategyCatchAllName,
+        pool: T.strategyPoolName
       };
       
       const strategyIcons = {
@@ -699,12 +685,12 @@ export function generateWebviewScript(totalAccounts: number): string {
                 <span class="radio-dot \${isActive ? 'checked' : ''}"></span>
               </div>
               <div class="profile-card-info" onclick="editProfile('\${profile.id}')">
-                <div class="profile-card-name">\${profile.name || 'Unnamed'}</div>
+                <div class="profile-card-name">\${profile.name || T.unnamed}</div>
                 <div class="profile-card-email">\${profile.imap?.user || ''}</div>
               </div>
               <div class="profile-card-actions">
-                <button class="icon-btn" onclick="editProfile('\${profile.id}')" title="Edit">✏️</button>
-                <button class="icon-btn danger" onclick="deleteProfile('\${profile.id}')" title="Delete">🗑</button>
+                <button class="icon-btn" onclick="editProfile('\${profile.id}')" title="\${T.edit}">✏️</button>
+                <button class="icon-btn danger" onclick="deleteProfile('\${profile.id}')" title="\${T.delete}">🗑</button>
               </div>
             </div>
             <div class="profile-card-meta">
@@ -716,7 +702,7 @@ export function generateWebviewScript(totalAccounts: number): string {
       });
       
       html += '</div>';
-      html += \`<button class="btn btn-primary profiles-add-btn" onclick="createProfile()">+ \${document.body.dataset.lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}</button>\`;
+      html += \`<button class="btn btn-primary profiles-add-btn" onclick="createProfile()">+ \${T.addProfile}</button>\`;
       
       container.innerHTML = html;
     }
@@ -749,7 +735,7 @@ export function generateWebviewScript(totalAccounts: number): string {
       // Update editor title
       const title = document.querySelector('.editor-title');
       if (title) {
-        title.textContent = document.body.dataset.lang === 'ru' ? 'Редактировать профиль' : 'Edit Profile';
+        title.textContent = T.editProfile;
       }
     }
     
@@ -768,10 +754,9 @@ export function generateWebviewScript(totalAccounts: number): string {
       }
       
       if (hintEl) {
-        const lang = document.body.dataset.lang || 'en';
         const aliasSupport = hint.supportsAlias 
-          ? (lang === 'ru' ? '✓ Поддерживает +alias' : '✓ Supports +alias')
-          : (lang === 'ru' ? '✗ Не поддерживает +alias' : '✗ No +alias support');
+          ? '✓ ' + T.strategyPlusAliasName
+          : '✗ ' + hint.name + ' ' + T.providerNoAlias;
         hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\`;
         hintEl.style.display = 'block';
       }
@@ -793,7 +778,7 @@ export function generateWebviewScript(totalAccounts: number): string {
       });
       
       renderPoolList();
-      showToast(\`Imported \${emails.length} emails\`, 'success');
+      showToast(T.emailsImported.replace('{count}', emails.length), 'success');
     }
     
     // === Init ===

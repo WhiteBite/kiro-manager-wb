@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, deleteAccount, markUsageStale } from '../accounts';
-import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage } from '../utils';
+import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage, clearUsageCache } from '../utils';
 import { generateWebviewHtml } from '../webview';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
@@ -16,13 +16,16 @@ import { Language } from '../webview/i18n';
 import { autoregProcess } from '../process-manager';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 import { ImapProfileProvider } from './ImapProfileProvider';
+import { getLogService, LogService } from '../services/LogService';
+import { getUsageService, UsageService } from '../services/UsageService';
+import { CONFIG } from '../constants';
 
 // Simple performance measurement
 function perf<T>(name: string, fn: () => T): T {
   const start = performance.now();
   const result = fn();
   const duration = performance.now() - start;
-  if (duration > 50) { // Only log slow operations (>50ms)
+  if (duration > CONFIG.PERF_LOG_THRESHOLD_MS) {
     console.log(`[PERF] ${name}: ${duration.toFixed(1)}ms`);
   }
   return result;
@@ -32,7 +35,7 @@ async function perfAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
   const start = performance.now();
   const result = await fn();
   const duration = performance.now() - start;
-  if (duration > 50) {
+  if (duration > CONFIG.PERF_LOG_THRESHOLD_MS) {
     console.log(`[PERF] ${name}: ${duration.toFixed(1)}ms`);
   }
   return result;
@@ -43,12 +46,15 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _context: vscode.ExtensionContext;
   private _kiroUsage: KiroUsageData | null = null;
   private _accounts: AccountInfo[] = [];
-  private _consoleLogs: string[] = [];
   private _version: string;
   private _language: Language = 'en';
   private _availableUpdate: { version: string; url: string } | null = null;
   private _stateManager: StateManager;
   private _unsubscribe?: () => void;
+
+  // Services
+  private _logService: LogService;
+  private _usageService: UsageService;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -56,7 +62,11 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this._language = context.globalState.get<Language>('language', 'en');
     this._availableUpdate = getAvailableUpdate(context);
     this._stateManager = getStateManager();
-    
+
+    // Initialize services
+    this._logService = getLogService();
+    this._usageService = getUsageService();
+
     // Subscribe to state changes for incremental updates
     this._unsubscribe = this._stateManager.subscribe((update) => {
       this._handleStateUpdate(update);
@@ -91,16 +101,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     return this._accounts;
   }
 
-  addLog(message: string) {
-    const timestamp = new Date().toLocaleTimeString();
-    const logLine = `[${timestamp}] ${message}`;
-    this._consoleLogs.push(logLine);
-    if (this._consoleLogs.length > 200) {
-      this._consoleLogs = this._consoleLogs.slice(-200);
-    }
-    this._writeToLogFile(logLine);
-    // Send incremental update instead of full refresh to avoid flickering
+  addLog(message: string): string {
+    const logLine = this._logService.add(message);
     this._sendLogUpdate(logLine);
+    return logLine;
   }
 
   private _sendLogUpdate(logLine: string) {
@@ -109,29 +113,18 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private _writeToLogFile(line: string) {
-    try {
-      const logFile = path.join(os.homedir(), '.kiro-batch-login', 'autoreg.log');
-      const logDir = path.dirname(logFile);
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-      }
-      fs.appendFileSync(logFile, line + '\n');
-    } catch {}
-  }
-
   clearLogs() {
-    this._consoleLogs = [];
-    try {
-      const logFile = path.join(os.homedir(), '.kiro-batch-login', 'autoreg.log');
-      fs.writeFileSync(logFile, '');
-    } catch {}
+    this._logService.clear();
     this.refresh();
   }
 
+  get consoleLogs(): string[] {
+    return this._logService.getAll();
+  }
+
   async openLogFile() {
-    const logFile = path.join(os.homedir(), '.kiro-batch-login', 'autoreg.log');
-    if (fs.existsSync(logFile)) {
+    const logFile = this._logService.getLogFilePath();
+    if (this._logService.logFileExists()) {
       const doc = await vscode.workspace.openTextDocument(logFile);
       await vscode.window.showTextDocument(doc);
     } else {
@@ -185,7 +178,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
           progress.detail = progress.detail.replace(/^⏸ Paused - /, '');
         }
         this._context.globalState.update('autoRegStatus', JSON.stringify(progress));
-      } catch {}
+      } catch { }
     }
   }
 
@@ -231,7 +224,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
           vscode.window.showInformationMessage('Password copied to clipboard');
           return;
         }
-      } catch {}
+      } catch { }
     }
     vscode.window.showWarningMessage('Password not found for this account');
   }
@@ -409,12 +402,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   async refresh() {
     if (this._view) {
       const start = performance.now();
-      
+
       await this.refreshAccounts();
       await this.refreshUsage();
       this._availableUpdate = getAvailableUpdate(this._context);
       this.renderWebview();
-      
+
       const duration = performance.now() - start;
       if (duration > 100) {
         console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
@@ -428,85 +421,70 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this._stateManager.updateAccounts(this._accounts);
   }
 
-  // Partial refresh - usage only
+  // Partial refresh - usage only (uses UsageService)
   async refreshUsage() {
-    try {
-      this._kiroUsage = await perfAsync('getKiroUsageFromDB', () => getKiroUsageFromDB());
-      if (this._kiroUsage) {
-        const activeAccount = this._accounts.find(a => a.isActive);
-        if (activeAccount) {
-          const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
-          updateActiveAccountUsage(accountName, this._kiroUsage);
-        }
+    this._kiroUsage = await perfAsync('refreshUsage', () => this._usageService.refresh());
+
+    if (this._kiroUsage) {
+      const activeAccount = this._accounts.find(a => a.isActive);
+      if (activeAccount) {
+        const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
+        this._usageService.updateForAccount(accountName, this._kiroUsage);
       }
-      this._stateManager.updateUsage(this._kiroUsage);
-    } catch (err) {
-      this._kiroUsage = null;
-      this._stateManager.updateUsage(null);
     }
+
+    this._stateManager.updateUsage(this._kiroUsage);
   }
 
-  // Refresh usage data after account switch - clears cache and reloads with retry
-  async refreshUsageAfterSwitch(retryCount: number = 0) {
+  // Refresh usage data after account switch - uses UsageService with retry logic
+  async refreshUsageAfterSwitch() {
     if (!this._view) return;
-    
-    const maxRetries = 3;
-    const retryDelays = [500, 1000, 2000]; // Increasing delays
-    
-    // Clear in-memory cache
-    const { clearUsageCache } = await import('../utils');
-    clearUsageCache();
-    
-    // Mark old account's usage as stale
+
+    // Get old account name before refresh
     const oldActiveAccount = this._accounts.find(a => a.isActive);
-    if (oldActiveAccount) {
-      const oldAccountName = oldActiveAccount.tokenData.accountName || oldActiveAccount.filename;
-      invalidateAccountUsage(oldAccountName);
-    }
-    
+    const oldAccountName = oldActiveAccount
+      ? (oldActiveAccount.tokenData.accountName || oldActiveAccount.filename)
+      : null;
+
     // Reset current usage display
     this._kiroUsage = null;
     this._stateManager.updateUsage(null);
-    
+
     // Reload accounts to get new active state
     await this.refreshAccounts();
-    
-    // Wait for Kiro to update its DB
-    const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    // Try to load usage from Kiro DB
-    const usage = await getKiroUsageFromDB();
-    
+
+    // Get new account name
+    const newActiveAccount = this._accounts.find(a => a.isActive);
+    const newAccountName = newActiveAccount
+      ? (newActiveAccount.tokenData.accountName || newActiveAccount.filename)
+      : '';
+
+    // Use UsageService for refresh with retry
+    const usage = await this._usageService.refreshAfterSwitch(
+      oldAccountName,
+      newAccountName,
+      {
+        maxRetries: CONFIG.USAGE_REFRESH_MAX_RETRIES,
+        retryDelays: [...CONFIG.USAGE_REFRESH_DELAYS],
+        onRetry: (attempt, max) => {
+          console.log(`Usage not ready, retrying (${attempt}/${max})...`);
+        }
+      }
+    );
+
     if (usage) {
       this._kiroUsage = usage;
-      
-      // Save usage for the new active account
-      const newActiveAccount = this._accounts.find(a => a.isActive);
+
+      // Update the account's usage in memory
       if (newActiveAccount) {
-        const accountName = newActiveAccount.tokenData.accountName || newActiveAccount.filename;
-        updateActiveAccountUsage(accountName, usage);
-        
-        // Update the account's usage in memory
-        newActiveAccount.usage = {
-          currentUsage: usage.currentUsage,
-          usageLimit: usage.usageLimit,
-          percentageUsed: usage.percentageUsed,
-          daysRemaining: usage.daysRemaining,
-          loading: false
-        };
+        this._usageService.applyToAccount(newActiveAccount, usage);
       }
-      
+
       this._stateManager.updateUsage(this._kiroUsage);
-    } else if (retryCount < maxRetries) {
-      // Retry if no data yet (Kiro might still be updating)
-      console.log(`Usage not ready, retrying (${retryCount + 1}/${maxRetries})...`);
-      await this.refreshUsageAfterSwitch(retryCount + 1);
-      return;
     }
-    
+
     this._availableUpdate = getAvailableUpdate(this._context);
-    
+
     // Full re-render with updated data
     this._stateManager.updateFull({
       accounts: this._accounts,
@@ -515,14 +493,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  private _sendUsageUpdate() {
-    if (this._view && this._kiroUsage) {
-      this._stateManager.updateUsage(this._kiroUsage);
-    }
-  }
-
   private _renderDebounceTimer: NodeJS.Timeout | null = null;
-  private _renderDebounceMs: number = 50;
+  private _renderDebounceMs: number = CONFIG.RENDER_DEBOUNCE_MS;
 
   private renderWebview() {
     if (!this._view) return;
@@ -557,16 +529,16 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       autoRegStatus,
       kiroUsage: this._kiroUsage,
       autoRegSettings,
-      consoleLogs: this._consoleLogs,
+      consoleLogs: this.consoleLogs,
       version: this._version,
       language: this._language,
       availableUpdate: this._availableUpdate
     }));
-    
+
     this._view.webview.html = html;
-    
+
     const duration = performance.now() - start;
-    if (duration > 50) {
+    if (duration > CONFIG.PERF_LOG_THRESHOLD_MS) {
       console.log(`[PERF] renderWebview total: ${duration.toFixed(1)}ms (${this._accounts.length} accounts)`);
     }
   }
@@ -617,11 +589,11 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async loadProfiles() {
     if (!this._view) return;
-    
+
     const provider = this.getProfileProvider();
     const profiles = provider.getAll();
     const activeId = provider.getActive()?.id;
-    
+
     this._view.webview.postMessage({
       type: 'profilesLoaded',
       profiles,
@@ -631,10 +603,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async getActiveProfile() {
     if (!this._view) return;
-    
+
     const provider = this.getProfileProvider();
     const profile = provider.getActive();
-    
+
     this._view.webview.postMessage({
       type: 'activeProfileLoaded',
       profile: profile || null
@@ -643,10 +615,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async getProfile(profileId: string) {
     if (!this._view) return;
-    
+
     const provider = this.getProfileProvider();
     const profile = provider.getById(profileId);
-    
+
     if (profile) {
       this._view.webview.postMessage({
         type: 'profileLoaded',
@@ -657,7 +629,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async createProfile(profileData: Partial<ImapProfile>) {
     const provider = this.getProfileProvider();
-    
+
     try {
       const profile = await provider.create({
         name: profileData.name || 'New Profile',
@@ -665,7 +637,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
         strategy: profileData.strategy || { type: 'single' },
         status: 'active'
       });
-      
+
       this.addLog(`✓ Created profile: ${profile.name}`);
       vscode.window.showInformationMessage(`Profile "${profile.name}" created`);
       await this.loadProfiles();
@@ -677,9 +649,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async updateProfile(profileData: Partial<ImapProfile>) {
     if (!profileData.id) return;
-    
+
     const provider = this.getProfileProvider();
-    
+
     try {
       const profile = await provider.update(profileData.id, profileData);
       if (profile) {
@@ -696,9 +668,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   async deleteProfile(profileId: string) {
     const provider = this.getProfileProvider();
     const profile = provider.getById(profileId);
-    
+
     if (!profile) return;
-    
+
     try {
       await provider.delete(profileId);
       this.addLog(`✓ Deleted profile: ${profile.name}`);
@@ -712,7 +684,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async setActiveProfile(profileId: string) {
     const provider = this.getProfileProvider();
-    
+
     try {
       await provider.setActive(profileId);
       const profile = provider.getById(profileId);
@@ -727,11 +699,11 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async detectProvider(email: string) {
     if (!this._view || !email) return;
-    
+
     const provider = this.getProfileProvider();
     const hint = provider.getProviderHint(email);
     const recommended = provider.getRecommendedStrategy(email);
-    
+
     this._view.webview.postMessage({
       type: 'providerDetected',
       hint,
@@ -741,10 +713,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
   async testImapConnection(params: { server: string; user: string; password: string; port: number }) {
     if (!this._view) return;
-    
+
     // For now, just show a message - actual IMAP test would require Python
     this.addLog(`Testing IMAP: ${params.server}:${params.port} as ${params.user}...`);
-    
+
     // TODO: Call Python script to test IMAP connection
     vscode.window.showInformationMessage(
       `IMAP test: ${params.server}:${params.port}`,
@@ -758,16 +730,16 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       filters: { 'Text files': ['txt', 'csv'] },
       title: 'Select file with email list'
     });
-    
+
     if (!uris || uris.length === 0) return;
-    
+
     try {
       const content = fs.readFileSync(uris[0].fsPath, 'utf8');
       const emails = content
         .split(/[\n,;]+/)
         .map(e => e.trim())
         .filter(e => e.includes('@'));
-      
+
       if (emails.length > 0 && this._view) {
         this._view.webview.postMessage({
           type: 'emailsImported',

@@ -234,9 +234,6 @@ class AWSRegistration:
             if self.browser.check_aws_error():
                 return {'email': email, 'success': False, 'error': 'AWS temporary error'}
             
-            self.browser.close_cookie_dialog()
-            time.sleep(1)
-            
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
             self.browser.enter_email(email)
@@ -264,35 +261,27 @@ class AWSRegistration:
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
             print(f"[7/8] Waiting for Allow access page...")
             
-            # Оптимизированное ожидание Allow access (до 15 секунд)
+            # ОПТИМИЗИРОВАНО: быстрый polling с минимальными задержками
             start_time = time.time()
-            allow_access_found = False
             
-            while time.time() - start_time < 15:
+            while time.time() - start_time < 10:  # Уменьшено с 15
                 current_url = self.browser.current_url
+                
+                if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
+                    print(f"   [OK] Already redirected to callback!")
+                    break
                 
                 if 'view.awsapps.com' in current_url:
                     elapsed = time.time() - start_time
                     print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
-                    allow_access_found = True
+                    
+                    # Сразу кликаем Allow access
+                    if not self.browser.click_allow_access():
+                        print(f"   [!] Failed to click Allow access")
+                        self.browser.screenshot("error_allow_access_click")
                     break
                 
-                if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
-                    print(f"   [OK] Already redirected to callback!")
-                    allow_access_found = True
-                    break
-                
-                time.sleep(0.1)
-            
-            # Кликаем "Allow access" если нужно
-            current_url = self.browser.current_url
-            if 'view.awsapps.com' in current_url and '127.0.0.1' not in current_url:
-                print(f"   Clicking Allow access button...")
-                self.browser.close_cookie_dialog(force=True)
-                
-                if not self.browser.click_allow_access():
-                    print(f"   [!] Failed to click Allow access")
-                    self.browser.screenshot("error_allow_access_click")
+                time.sleep(0.05)  # Уменьшено с 0.1
             
             # ШАГ 8: Ждём callback и обмениваем code на токены
             print(f"[8/8] Waiting for OAuth callback...")

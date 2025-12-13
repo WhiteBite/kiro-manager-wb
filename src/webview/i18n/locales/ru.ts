@@ -1,19 +1,32 @@
 import { Translations } from '../types';
 
 export const ru: Translations = {
+  // Header & Navigation
   kiroAccounts: 'Аккаунты Kiro',
   compactViewTip: 'Уменьшить карточки для показа большего числа аккаунтов',
   settingsTip: 'Настроить авто-переключение, режим браузера, логи',
+  back: 'Назад',
+
+  // Stats
   valid: 'активных',
   expired: 'истекших',
   total: 'всего',
   noActive: 'Нет активного',
   validFilter: 'Активные',
   expiredFilter: 'Истекшие',
+
+  // Account Groups
+  activeGroup: 'Активный',
+  readyGroup: 'Готовы',
+  badGroup: 'Истекшие / Исчерпанные',
+
+  // Usage card
   todaysUsage: 'Использование',
   used: 'использовано',
   daysLeft: 'дней осталось',
   resetsAtMidnight: 'Сброс в полночь',
+
+  // Actions
   autoReg: 'Авто-рег',
   autoRegTip: 'Создать новый AWS Builder ID автоматически',
   import: 'Импорт',
@@ -23,12 +36,16 @@ export const ru: Translations = {
   export: 'Экспорт',
   exportTip: 'Сохранить все аккаунты в JSON файл',
   running: 'Выполняется...',
+
+  // Filters
   all: 'Все',
   byUsage: 'По usage',
   byExpiry: 'По сроку',
   byDate: 'По дате',
   searchPlaceholder: 'Поиск аккаунтов...',
   newBadge: 'НОВЫЙ',
+
+  // Account card
   active: 'Активен',
   copyTokenTip: 'Скопировать access token в буфер обмена',
   refreshTokenTip: 'Обновить истекший токен',
@@ -36,16 +53,27 @@ export const ru: Translations = {
   deleteTip: 'Удалить аккаунт и файл токена',
   noAccounts: 'Нет аккаунтов',
   createFirst: 'Создать первый аккаунт',
+
+  // Console
   console: 'Консоль',
   clearTip: 'Очистить вывод консоли',
   openLogTip: 'Открыть полный лог в редакторе',
   copyLogsTip: 'Копировать логи',
+
+  // Progress
   step: 'Шаг',
+
+  // Footer
   connected: 'Подключено',
+
+  // Dialog
   confirm: 'Подтвердить',
   cancel: 'Отмена',
   deleteTitle: 'Удалить аккаунт',
   deleteConfirm: 'Вы уверены, что хотите удалить этот аккаунт?',
+  areYouSure: 'Вы уверены?',
+
+  // Settings
   settingsTitle: 'Настройки',
   autoSwitch: 'Авто-переключение',
   autoSwitchDesc: 'Переключаться на следующий аккаунт',
@@ -61,17 +89,47 @@ export const ru: Translations = {
   spoofingDesc: 'Рандомизировать отпечаток браузера',
   language: 'Язык',
   languageDesc: 'Язык интерфейса',
-  // Profile Editor
+
+  // Kiro Patch
+  kiroPatch: 'Патч Kiro',
+  kiroPatchDesc: 'Патчит Kiro для использования кастомного Machine ID',
+  patchStatusLoading: 'Загрузка...',
+  patchStatusActive: 'Патч установлен',
+  patchStatusNotPatched: 'Не пропатчен',
+  patch: 'Патч',
+  removePatch: 'Убрать',
+  newMachineId: 'Новый ID',
+  patchKiroTitle: 'Пропатчить Kiro',
+  patchKiroConfirm: 'Это пропатчит Kiro для использования кастомного Machine ID. Сначала закройте Kiro! Продолжить?',
+  removePatchTitle: 'Удалить патч',
+  removePatchConfirm: 'Это восстановит оригинальные файлы Kiro. Продолжить?',
+
+  // Profile Editor - Basic
   newProfile: 'Новый профиль',
+  editProfile: 'Редактировать профиль',
   profileName: 'Название',
   profileNamePlaceholder: 'Мой Gmail',
   server: 'Сервер',
   port: 'Порт',
   password: 'Пароль',
   testConnection: 'Проверить',
+  testing: 'Проверка...',
   emailStrategy: 'Стратегия Email',
   emailStrategyDesc: 'Выберите как генерировать email для регистрации',
   save: 'Сохранить',
+  createProfile: 'Создать профиль',
+
+  // Profile Editor - Wizard
+  enterYourEmail: 'Введите ваш email',
+  detected: 'Обнаружен',
+  chooseStrategy: 'Выберите стратегию',
+  recommended: 'Рекомендуем',
+  otherOptions: 'Другие варианты',
+  useAppPassword: 'Используйте пароль приложения',
+  imapConnection: 'Подключение к почте',
+  optional: 'опционально',
+  checkConnection: 'Проверить подключение',
+
   // Strategies
   strategySingleName: 'Один Email',
   strategySingleDesc: 'Используется ваш IMAP email напрямую. Только 1 аккаунт на email.',
@@ -82,15 +140,33 @@ export const ru: Translations = {
   strategyCatchAllName: 'Catch-All Домен',
   strategyCatchAllDesc: 'Генерирует случайные email на вашем домене. Требуется настроенный catch-all на почтовом сервере.',
   strategyCatchAllExample: 'JohnSmith4521@yourdomain.com',
-  strategyCatchAllHint: '💡 Укажите домен на котором настроен catch-all. Все письма на любой@домен будут приходить в ваш IMAP ящик.',
+  strategyCatchAllHint: 'Укажите домен на котором настроен catch-all. Все письма на любой@домен будут приходить в ваш IMAP ящик.',
   strategyCatchAllDomain: 'Домен для регистрации',
   strategyPoolName: 'Пул Email',
   strategyPoolDesc: 'Используйте список своих email адресов. Каждый email используется один раз по очереди.',
-  strategyPoolHint: '💡 Добавьте email адреса которые будут использоваться по очереди. Каждый email = 1 аккаунт.',
+  strategyPoolHint: 'Добавьте email адреса которые будут использоваться по очереди. Каждый email = 1 аккаунт.',
   strategyPoolAdd: 'Добавить email...',
   strategyPoolFromFile: 'Из файла',
   strategyPoolPaste: 'Вставить',
   example: 'Пример',
+
+  // Strategy Features
+  unlimitedAccounts: 'Безлимит аккаунтов',
+  allEmailsOneInbox: 'Все письма в одном ящике',
+  noOwnDomain: 'Не нужен свой домен',
+  notAllProvidersSupport: 'Не все провайдеры поддерживают',
+  uniqueEmails: 'Уникальные email адреса',
+  needOwnDomain: 'Нужен свой домен',
+  needCatchAllSetup: 'Нужна настройка catch-all',
+  easyToSetup: 'Просто настроить',
+  worksEverywhere: 'Работает везде',
+  oneAccountPerEmail: 'Только 1 аккаунт на email',
+  worksWithAnyProvider: 'Работает с любым провайдером',
+  controlOverList: 'Контроль над списком',
+  needManyEmails: 'Нужно много email-ов',
+  requiresDomain: 'Требуется свой домен',
+  providerNoAlias: 'не поддерживает алиасы',
+
   // Profile Panel & Active Profile
   activeProfile: 'Активный профиль',
   change: 'Изменить',
@@ -99,11 +175,15 @@ export const ru: Translations = {
   emailProfiles: 'Email Профили',
   noProfiles: 'Нет профилей',
   addProfile: 'Добавить профиль',
+  success: 'Успешно',
+  failed: 'Ошибок',
+
   // Strategy short descriptions
   strategySingleShort: 'Один аккаунт на email',
   strategyPlusAliasShort: 'user+random@domain',
   strategyCatchAllShort: 'Любой email на домене',
   strategyPoolShort: 'Список ваших email',
+
   // Danger Zone
   dangerZone: 'Опасная зона',
   resetMachineId: 'Сброс Machine ID',
@@ -111,14 +191,52 @@ export const ru: Translations = {
   resetMachineIdTip: 'Сбросить machineId, sqmId, devDeviceId и serviceMachineId',
   reset: 'Сбросить',
   restartAfterReset: 'После сброса нужно перезапустить Kiro',
+  resetMachineIdTitle: 'Сброс Machine ID',
+  resetMachineIdConfirm: 'Это сбросит telemetry ID Kiro. Потребуется перезапуск. Продолжить?',
+
   // Other
   deleteAll: 'Удалить все',
   delete: 'Удалить',
   checkUpdates: 'Проверить',
   newVersion: 'Новая версия!',
   download: 'Скачать',
+  edit: 'Редактировать',
+  unnamed: 'Без имени',
+  customDomain: 'Свой домен',
+  emailPasswordHint: 'Используйте пароль от почты',
+
   // SSO Modal
   ssoImport: 'SSO Импорт',
   ssoHint: '1. Откройте view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Скопируйте x-amz-sso_authn',
   pasteCookie: 'Вставьте cookie...',
+
+  // Provider Names
+  providerGmail: 'Gmail',
+  providerYandex: 'Яндекс',
+  providerMailru: 'Mail.ru',
+  providerOutlook: 'Outlook',
+  providerCustom: 'Свой домен',
+
+  // Provider Password Hints
+  gmailPasswordHint: 'Используйте App Password (пароль приложения)',
+  yandexPasswordHint: 'Используйте пароль приложения из настроек Яндекс',
+  mailruPasswordHint: 'Создайте пароль для внешних приложений в настройках',
+  outlookPasswordHint: 'Используйте пароль от аккаунта Microsoft',
+
+  // Toasts & Messages
+  accountDeleted: 'Аккаунт удалён',
+  badAccountsDeleted: 'Плохие аккаунты удалены',
+  resettingMachineId: 'Сброс Machine ID...',
+  patchingKiro: 'Патчим Kiro...',
+  removingPatch: 'Удаляем патч...',
+  profileCreated: 'Профиль создан',
+  profileUpdated: 'Профиль обновлён',
+  profileDeleted: 'Профиль удалён',
+  tokenCopied: 'Токен скопирован',
+  logsCopied: 'Логи скопированы',
+  fillAllFields: 'Заполните все поля IMAP',
+  clipboardError: 'Не удалось прочитать буфер обмена',
+  deleteProfileConfirm: 'Удалить этот профиль?',
+  deleteBadAccountsConfirm: 'Удалить все истёкшие/исчерпанные аккаунты?',
+  emailsImported: 'Импортировано {count} email',
 };
