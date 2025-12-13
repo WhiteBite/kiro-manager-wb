@@ -26,6 +26,30 @@ export { RegProgress, AutoRegSettings };
 export type { Language } from './i18n';
 export { getTranslations } from './i18n';
 
+// Helper to render console logs
+function getLogClass(log: string): string {
+  if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')) return 'error';
+  if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅')) return 'success';
+  if (log.includes('WARN') || log.includes('⚠')) return 'warning';
+  return '';
+}
+
+function renderConsoleLogs(logs: string[] | undefined): string {
+  if (!logs || logs.length === 0) return '';
+  // Show last 100 logs
+  const visibleLogs = logs.slice(-100);
+  return visibleLogs.map(log => 
+    `<div class="console-line ${getLogClass(log)}">${escapeHtml(log)}</div>`
+  ).join('');
+}
+
+function hasConsoleErrors(logs: string[] | undefined): boolean {
+  if (!logs) return false;
+  return logs.some(log => 
+    log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')
+  );
+}
+
 export interface WebviewProps {
   accounts: AccountInfo[];
   autoSwitchEnabled: boolean;
@@ -248,14 +272,14 @@ export function generateWebviewHtml(
       <div class="console-toggle" onclick="toggleConsole()">
         <span class="console-toggle-icon">▲</span>
         <span class="console-toggle-title">${t.console}</span>
-        <span class="console-toggle-count" id="consoleCount">0</span>
+        <span class="console-toggle-count${hasConsoleErrors(props.consoleLogs) ? ' has-errors' : ''}" id="consoleCount">${props.consoleLogs?.length || 0}</span>
       </div>
       <div class="console-content" id="consoleContent">
         <div class="console-actions">
           <button class="icon-btn" onclick="clearConsole()" title="${t.clearTip}">🗑</button>
           <button class="icon-btn" onclick="copyLogs()" title="${t.copyLogsTip}">📋</button>
         </div>
-        <div class="console-body" id="consoleBody"></div>
+        <div class="console-body" id="consoleBody">${renderConsoleLogs(props.consoleLogs)}</div>
       </div>
     </div>
     
