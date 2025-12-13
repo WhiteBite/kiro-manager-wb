@@ -173,6 +173,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const env = {
     ...process.env,
     PYTHONUNBUFFERED: '1',  // Also set env var for unbuffered output
+    PYTHONIOENCODING: 'utf-8',  // Fix encoding for Windows (cp1251 doesn't support emoji)
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
