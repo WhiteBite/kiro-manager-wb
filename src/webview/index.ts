@@ -135,7 +135,6 @@ export function generateWebviewHtml(
   });
   const progressHtml = renderProgressPanel({ progress, statusText, language: lang });
   const accountsHtml = renderAccountList(accounts, lang);
-  const consoleHtml = renderConsolePanel({ logs: props.consoleLogs, language: lang });
   const script = generateWebviewScript(accounts.length);
   
   // Update banner
@@ -218,6 +217,15 @@ export function generateWebviewHtml(
     
     ${progressHtml}
     
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <div class="search-wrapper">
+        <input type="text" class="search-input" id="searchInput" placeholder="${t.searchPlaceholder}" oninput="searchAccounts(this.value)">
+        <span class="search-icon">${ICONS.search || '🔍'}</span>
+        <button class="search-clear" onclick="clearSearch()">✕</button>
+      </div>
+    </div>
+    
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-tabs">
@@ -226,7 +234,7 @@ export function generateWebviewHtml(
         <button class="filter-tab" onclick="filterAccounts('expired')">${t.expiredFilter}</button>
       </div>
       <select class="sort-select" onchange="sortAccounts(this.value)">
-        <option value="email">${t.byEmail}</option>
+        <option value="date">${t.byDate}</option>
         <option value="usage">${t.byUsage}</option>
         <option value="expiry">${t.byExpiry}</option>
       </select>
@@ -235,7 +243,21 @@ export function generateWebviewHtml(
     <!-- Account List -->
     <div class="list" id="accountList">${accountsHtml}</div>
     
-    ${consoleHtml}
+    <!-- Floating Console (above footer) -->
+    <div class="console-floating" id="consoleFloating">
+      <div class="console-toggle" onclick="toggleConsole()">
+        <span class="console-toggle-icon">▲</span>
+        <span class="console-toggle-title">${t.console}</span>
+        <span class="console-toggle-count" id="consoleCount">0</span>
+      </div>
+      <div class="console-content" id="consoleContent">
+        <div class="console-actions">
+          <button class="icon-btn" onclick="clearConsole()" title="${t.clearTip}">🗑</button>
+          <button class="icon-btn" onclick="copyLogs()" title="${t.copyLogsTip}">📋</button>
+        </div>
+        <div class="console-body" id="consoleBody"></div>
+      </div>
+    </div>
     
     <!-- Footer -->
     <div class="footer">

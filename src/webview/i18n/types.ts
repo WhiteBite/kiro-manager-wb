@@ -33,9 +33,11 @@ export interface Translations {
   running: string;
   // Filters
   all: string;
-  byEmail: string;
   byUsage: string;
   byExpiry: string;
+  byDate: string;
+  searchPlaceholder: string;
+  newBadge: string;
   // Account card
   active: string;
   copyTokenTip: string;
