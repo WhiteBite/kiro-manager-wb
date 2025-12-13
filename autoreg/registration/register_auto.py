@@ -3,11 +3,24 @@
 С выводом прогресса для VS Code extension
 """
 import sys
+import os
 import time
 import json
 import argparse
 import random
 from pathlib import Path
+
+# Fix encoding for Windows (cp1251 doesn't support emoji)
+if sys.platform == 'win32':
+    # Try to set UTF-8 mode
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+    # Set environment variable for child processes
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -103,19 +116,19 @@ def main():
         
         if result.get('success'):
             progress(8, 8, "Complete", f"Account: {result['email']}")
-            print("\n✅ SUCCESS")
+            print("\n[OK] SUCCESS")
             print(f"Email: {result['email']}")
             print(f"Password: {result['password']}")
             print(f"Token: {result.get('token_file', 'N/A')}")
         else:
             progress(8, 8, "Failed", result.get('error', 'Unknown error'))
-            print(f"\n❌ FAILED: {result.get('error', 'Unknown')}")
+            print(f"\n[X] FAILED: {result.get('error', 'Unknown')}")
         
         return result
 
     except Exception as e:
         progress(8, 8, "Error", str(e))
-        print(f"\n❌ ERROR: {e}")
+        print(f"\n[X] ERROR: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()
