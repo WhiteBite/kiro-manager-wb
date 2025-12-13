@@ -114,6 +114,9 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function clearConsole() {
+      const consoleBody = document.getElementById('consoleBody');
+      if (consoleBody) consoleBody.innerHTML = '';
+      updateConsoleCount();
       vscode.postMessage({ command: 'clearConsole' });
     }
     
@@ -124,6 +127,25 @@ export function generateWebviewScript(totalAccounts: number): string {
           .map(el => el.textContent)
           .join('\\n');
         vscode.postMessage({ command: 'copyLogs', logs: logs });
+      }
+    }
+    
+    function toggleConsole() {
+      const console = document.getElementById('consoleFloating');
+      if (console) {
+        console.classList.toggle('collapsed');
+        setState({ consoleCollapsed: console.classList.contains('collapsed') });
+      }
+    }
+    
+    function updateConsoleCount() {
+      const consoleBody = document.getElementById('consoleBody');
+      const countEl = document.getElementById('consoleCount');
+      if (consoleBody && countEl) {
+        const count = consoleBody.children.length;
+        const hasErrors = consoleBody.querySelector('.console-line.error') !== null;
+        countEl.textContent = count.toString();
+        countEl.classList.toggle('has-errors', hasErrors);
       }
     }
     
@@ -195,27 +217,94 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
-        vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
+        // Animate card removal
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+          if (card.dataset.email && pendingAction.filename.includes(card.dataset.email.split('@')[0])) {
+            card.classList.add('removing');
+          }
+        });
+        setTimeout(() => {
+          vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
+        }, 250);
       }
       closeDialog();
+    }
+    
+    // Search
+    let searchQuery = '';
+    function searchAccounts(query) {
+      searchQuery = query.toLowerCase().trim();
+      applyFilters();
+    }
+    
+    function clearSearch() {
+      const input = document.getElementById('searchInput');
+      if (input) input.value = '';
+      searchQuery = '';
+      applyFilters();
     }
     
     // Filtering & Sorting
     function filterAccounts(filter) {
       setState({ filter });
-      document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.textContent.toLowerCase() === filter);
+      document.querySelectorAll('.filter-tab').forEach((tab, i) => {
+        const filters = ['all', 'valid', 'expired'];
+        tab.classList.toggle('active', filters[i] === filter);
       });
+      applyFilters();
+    }
+    
+    function applyFilters() {
+      const filter = getState().filter || 'all';
       document.querySelectorAll('.card').forEach(card => {
         const isExpired = card.classList.contains('expired');
-        const show = filter === 'all' || (filter === 'valid' && !isExpired) || (filter === 'expired' && isExpired);
-        card.style.display = show ? '' : 'none';
+        const email = (card.dataset.email || '').toLowerCase();
+        
+        // Filter check
+        const filterMatch = filter === 'all' || (filter === 'valid' && !isExpired) || (filter === 'expired' && isExpired);
+        
+        // Search check
+        const searchMatch = !searchQuery || email.includes(searchQuery);
+        
+        card.style.display = (filterMatch && searchMatch) ? '' : 'none';
       });
     }
     
     function sortAccounts(sort) {
       setState({ sort });
-      vscode.postMessage({ command: 'sortAccounts', sort });
+      const list = document.getElementById('accountList');
+      if (!list) return;
+      
+      const cards = Array.from(list.querySelectorAll('.card'));
+      
+      cards.sort((a, b) => {
+        if (sort === 'date') {
+          const dateA = a.dataset.created || '';
+          const dateB = b.dataset.created || '';
+          return dateB.localeCompare(dateA); // Newest first
+        } else if (sort === 'usage') {
+          const usageA = parseFloat(a.dataset.usagePercent) || 0;
+          const usageB = parseFloat(b.dataset.usagePercent) || 0;
+          return usageA - usageB; // Lowest usage first
+        } else if (sort === 'expiry') {
+          // Get expiry from card meta
+          const getExpiry = (card) => {
+            const meta = card.querySelector('.card-meta-item:last-child');
+            const text = meta?.textContent || '';
+            const match = text.match(/(\\d+)/);
+            return match ? parseInt(match[1]) : 999;
+          };
+          return getExpiry(a) - getExpiry(b);
+        }
+        return 0;
+      });
+      
+      // Re-append in sorted order with animation
+      cards.forEach((card, i) => {
+        card.style.animationDelay = (i * 0.02) + 's';
+        list.appendChild(card);
+      });
     }
     
     // Keyboard shortcuts
@@ -223,11 +312,20 @@ export function generateWebviewScript(totalAccounts: number): string {
       if (e.key === 'Escape') {
         closeDialog();
         document.getElementById('settingsPanel')?.classList.remove('visible');
+        clearSearch();
       }
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'r') { e.preventDefault(); refresh(); }
         if (e.key === 'n') { e.preventDefault(); startAutoReg(); }
         if (e.key === 'f') { e.preventDefault(); document.getElementById('searchInput')?.focus(); }
+      }
+    });
+    
+    // Focus search on / key
+    document.addEventListener('keypress', (e) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('searchInput')?.focus();
       }
     });
     
@@ -399,10 +497,10 @@ export function generateWebviewScript(totalAccounts: number): string {
         return;
       }
       
-      // Make sure console panel is visible
-      const consolePanel = consoleBody.closest('.console-panel');
-      if (consolePanel) {
-        consolePanel.style.display = '';
+      // Expand console when new log arrives
+      const consoleFloating = document.getElementById('consoleFloating');
+      if (consoleFloating && consoleFloating.classList.contains('collapsed')) {
+        consoleFloating.classList.remove('collapsed');
       }
       
       const line = document.createElement('div');
@@ -413,14 +511,8 @@ export function generateWebviewScript(totalAccounts: number): string {
       line.textContent = logLine;
       consoleBody.appendChild(line);
       
-      // Update console title with count
-      const consoleTitle = document.querySelector('.console-title');
-      if (consoleTitle) {
-        const count = consoleBody.children.length;
-        const lang = document.body.dataset.lang || 'en';
-        const consoleText = { en: 'Console', ru: 'Консоль', zh: '控制台' };
-        consoleTitle.textContent = (consoleText[lang] || consoleText.en) + ' (' + count + ')';
-      }
+      // Update count badge
+      updateConsoleCount();
       
       // Keep max 200 lines
       while (consoleBody.children.length > 200) {
@@ -526,6 +618,14 @@ export function generateWebviewScript(totalAccounts: number): string {
         toggleHideExpired(true);
         const checkbox = document.getElementById('hideExhausted');
         if (checkbox) checkbox.checked = true;
+      }
+      
+      // Restore console state (collapsed by default)
+      const consoleFloating = document.getElementById('consoleFloating');
+      if (consoleFloating) {
+        if (state.consoleCollapsed !== false) {
+          consoleFloating.classList.add('collapsed');
+        }
       }
       
       // Auto-scroll console

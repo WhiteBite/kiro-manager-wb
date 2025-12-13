@@ -17,6 +17,7 @@ export interface TokenData {
   email?: string;
   _clientId?: string;
   _clientSecret?: string;
+  createdAt?: string;
 }
 
 export interface AccountUsage {
@@ -39,6 +40,7 @@ export interface AccountInfo {
   usageCount: number;
   tokenLimit: number;
   usage?: AccountUsage;
+  createdAt?: string;
 }
 
 export interface UsageStats {

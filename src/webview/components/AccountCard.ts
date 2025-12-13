@@ -13,6 +13,18 @@ export interface AccountCardProps {
   language?: Language;
 }
 
+// Check if account was created within last 24 hours
+function isNewAccount(account: AccountInfo): boolean {
+  const tokenData = account.tokenData as { createdAt?: string };
+  const accData = account as { createdAt?: string };
+  const createdAt = tokenData?.createdAt || accData.createdAt;
+  if (!createdAt) return false;
+  const created = new Date(createdAt).getTime();
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  return (now - created) < dayMs;
+}
+
 export function renderAccountCard({ account, index, language = 'en' }: AccountCardProps): string {
   const t = getTranslations(language);
   const email = getAccountEmail(account);
@@ -24,6 +36,7 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
   const isSuspended = hasUsage && account.usage!.suspended === true;
   const isExhausted = hasUsage && !isUnknownUsage && !isSuspended && account.usage!.percentageUsed >= 100;
   const isLoading = hasUsage && account.usage!.loading;
+  const isNew = isNewAccount(account);
   
   const classes = [
     'card',
@@ -34,28 +47,41 @@ export function renderAccountCard({ account, index, language = 'en' }: AccountCa
     isUnknownUsage ? 'unknown-usage' : '',
   ].filter(Boolean).join(' ');
 
-  // Usage display logic:
-  // -1 = unknown (show "?"), loading = show spinner, otherwise show value
+  // Usage display logic
   let usageDisplay: string;
+  let usagePercent = 0;
   if (!hasUsage || isUnknownUsage) {
     usageDisplay = '<span class="usage-unknown" title="' + (language === 'ru' ? 'Переключитесь на аккаунт для загрузки' : 'Switch to account to load') + '">?</span>';
   } else if (isLoading) {
     usageDisplay = '<span class="usage-loading">...</span>';
   } else {
     usageDisplay = account.usage!.currentUsage.toLocaleString();
+    usagePercent = account.usage!.percentageUsed || 0;
   }
 
+  // Mini usage bar
+  const usageBarClass = usagePercent < 50 ? 'low' : usagePercent < 80 ? 'medium' : 'high';
+  const usageBar = hasUsage && !isUnknownUsage && !isLoading 
+    ? `<div class="card-usage-bar"><div class="card-usage-fill ${usageBarClass}" style="width: ${Math.min(usagePercent, 100)}%"></div></div>` 
+    : '';
+
+  // Get created timestamp for sorting
+  const tokenData = account.tokenData as { createdAt?: string };
+  const accData = account as { createdAt?: string };
+  const createdAt = tokenData?.createdAt || accData.createdAt || '';
+
   return `
-    <div class="${classes}" data-email="${escapeHtml(email)}" data-index="${index}" data-usage-loaded="${hasUsage}">
+    <div class="${classes}" data-email="${escapeHtml(email)}" data-index="${index}" data-usage-loaded="${hasUsage}" data-created="${createdAt}" data-usage-percent="${usagePercent}">
       <div class="card-main" onclick="switchAccount('${escapeHtml(account.filename)}')">
         <div class="card-avatar">${avatar}</div>
         <div class="card-info">
           <div class="card-email">${escapeHtml(email)}</div>
           <div class="card-meta">
-            <span class="card-meta-item card-usage">${ICONS.chart} ${usageDisplay}</span>
+            <span class="card-meta-item card-usage">${ICONS.chart} ${usageDisplay}${usageBar}</span>
             <span class="card-meta-item">${ICONS.clock} ${account.expiresIn ? formatExpiry(account.expiresIn) : '—'}</span>
           </div>
         </div>
+        ${isNew && !account.isActive ? `<span class="card-status new">${t.newBadge}</span>` : ''}
         ${account.isActive ? `<span class="card-status active">${t.active}</span>` : ''}
         ${isSuspended ? `<span class="card-status suspended">${language === 'ru' ? 'БАН' : 'BAN'}</span>` : ''}
         ${isExhausted && !isSuspended ? `<span class="card-status exhausted">${language === 'ru' ? 'ЛИМИТ' : 'LIMIT'}</span>` : ''}
