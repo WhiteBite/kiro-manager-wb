@@ -159,6 +159,9 @@ class AWSRegistration:
                 self.browser.close()
             self.browser = BrowserAutomation(headless=self.headless)
             
+            # Спуфинг уже применён в BrowserAutomation.__init__
+            # через apply_pre_navigation_spoofing
+            
             # Открываем OAuth authorize URL (НЕ profile.aws напрямую!)
             print(f"   Opening: {auth_url[:60]}...")
             self.browser.navigate(auth_url)

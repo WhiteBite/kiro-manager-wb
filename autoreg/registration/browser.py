@@ -17,6 +17,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Force unbuffered output for real-time logging
 print = functools.partial(print, flush=True)
 
+# Импортируем спуфинг
+from spoof import apply_pre_navigation_spoofing
+from spoofers.behavior import BehaviorSpoofModule
+
 
 def find_chrome_path() -> Optional[str]:
     """Find Chrome/Chromium executable path on different platforms"""
@@ -233,6 +237,22 @@ class BrowserAutomation:
         except Exception as e:
             print(f"   [!] Failed to clear cookies: {e}")
         
+        # КРИТИЧНО: Применяем спуфинг ДО навигации на страницу
+        # Это гарантирует что AWS FWCIM получит подменённые данные
+        try:
+            self._spoofer = apply_pre_navigation_spoofing(self.page)
+            print("   [S] Anti-fingerprint spoofing applied")
+        except Exception as e:
+            print(f"   [!] Spoofing failed: {e}")
+            self._spoofer = None
+        
+        # Инициализируем модуль человеческого поведения
+        self._behavior = BehaviorSpoofModule()
+        
+        # Настраиваем параметры поведения для более быстрой работы
+        self._behavior.typing_delay_range = (0.03, 0.08)
+        self._behavior.action_delay_range = (0.1, 0.3)
+        
         # Включаем перехват сетевых запросов
         self._setup_network_logging()
         
@@ -424,48 +444,69 @@ class BrowserAutomation:
     
     def human_type(self, element, text: str, click_first: bool = True, fast: bool = True):
         """
-        Вводит текст используя execCommand для совместимости с Cloudscape/React.
-        Оптимизировано: минимальные задержки.
+        Вводит текст с человеческими задержками.
         
         Args:
             element: Элемент для ввода
             text: Текст для ввода
             click_first: Кликнуть на элемент перед вводом
-            fast: Быстрый режим (по умолчанию True)
+            fast: Быстрый режим - использует execCommand вместо посимвольного ввода
         """
-        if click_first:
-            element.click()
-            time.sleep(0.03)  # Минимальная задержка
-        
-        # Очищаем поле и вводим текст одной операцией
-        self.page.run_js('''
-            const input = arguments[0];
-            const text = arguments[1];
-            input.focus();
-            input.value = '';
-            input.select();
-            document.execCommand('insertText', false, text);
-        ''', element, text)
-        
-        time.sleep(0.05)  # Минимальная пауза для React
+        if fast:
+            # Быстрый режим: execCommand для совместимости с React
+            if click_first:
+                element.click()
+                self._behavior.human_delay(0.02, 0.05)
+            
+            self.page.run_js('''
+                const input = arguments[0];
+                const text = arguments[1];
+                input.focus();
+                input.value = '';
+                input.select();
+                document.execCommand('insertText', false, text);
+            ''', element, text)
+            
+            self._behavior.human_delay(0.03, 0.08)
+        else:
+            # Медленный режим: посимвольный ввод с человеческими задержками
+            self._behavior.human_type(element, text, clear_first=click_first)
     
-    def human_click(self, element):
+    def human_click(self, element, with_delay: bool = True):
         """
-        Кликает по элементу. Оптимизировано для скорости.
+        Кликает по элементу с человеческой задержкой.
         
         Args:
             element: Элемент для клика
+            with_delay: Добавить задержку до/после клика
         """
+        if with_delay:
+            self._behavior.human_delay(0.1, 0.3)
+        
         try:
-            # Быстрый клик через JS (самый надёжный и быстрый)
+            # Быстрый клик через JS
             self.page.run_js('arguments[0].click()', element)
-            time.sleep(0.05)  # Минимальная пауза
         except:
             try:
                 element.click()
-                time.sleep(0.05)
             except:
                 pass
+        
+        if with_delay:
+            self._behavior.human_delay(0.05, 0.15)
+    
+    def simulate_human_activity(self):
+        """
+        Симулирует активность реального пользователя.
+        Вызывать периодически для обхода поведенческого анализа.
+        """
+        # Случайные движения мыши
+        self._behavior.random_mouse_movement(self, count=random.randint(1, 3))
+        
+        # Иногда скроллим страницу
+        if random.random() < 0.3:
+            direction = random.choice(['up', 'down'])
+            self._behavior.scroll_page(self, direction=direction)
     
     @staticmethod
     def generate_password(length: int = PASSWORD_LENGTH) -> str:
@@ -750,6 +791,9 @@ class BrowserAutomation:
         
         # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
+        
+        # Симулируем "осмотр" страницы перед вводом
+        self._behavior.simulate_reading(duration=random.uniform(0.3, 0.8))
         
         # Быстрые селекторы в порядке приоритета
         selectors = [
@@ -1361,11 +1405,15 @@ class BrowserAutomation:
                     if self.page.ele(selector, timeout=0.05):
                         print(f"   [OK] Page loaded")
                         self.close_cookie_dialog()
+                        # Симулируем активность после загрузки страницы
+                        self.simulate_human_activity()
                         return
                 except:
                     pass
         
         self.close_cookie_dialog()
+        # Симулируем активность даже если индикаторы не найдены
+        self.simulate_human_activity()
     
     def check_aws_error(self) -> bool:
         """Проверяет наличие ошибки AWS"""
