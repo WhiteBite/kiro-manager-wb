@@ -1,19 +1,32 @@
 import { Translations } from '../types';
 
 export const en: Translations = {
+  // Header & Navigation
   kiroAccounts: 'Kiro Accounts',
   compactViewTip: 'Shrink cards to show more accounts',
   settingsTip: 'Configure auto-switch, browser mode, logging',
+  back: 'Back',
+
+  // Stats
   valid: 'valid',
   expired: 'expired',
   total: 'total',
   noActive: 'No active',
   validFilter: 'Valid',
   expiredFilter: 'Expired',
+
+  // Account Groups
+  activeGroup: 'Active',
+  readyGroup: 'Ready',
+  badGroup: 'Expired / Exhausted',
+
+  // Usage card
   todaysUsage: "Today's Usage",
   used: 'used',
   daysLeft: 'days left',
   resetsAtMidnight: 'Resets at midnight',
+
+  // Actions
   autoReg: 'Auto-Reg',
   autoRegTip: 'Create new AWS Builder ID automatically',
   import: 'Import',
@@ -23,12 +36,16 @@ export const en: Translations = {
   export: 'Export',
   exportTip: 'Save all accounts to JSON file',
   running: 'Running...',
+
+  // Filters
   all: 'All',
   byUsage: 'By Usage',
   byExpiry: 'By Expiry',
   byDate: 'By Date',
   searchPlaceholder: 'Search accounts...',
   newBadge: 'NEW',
+
+  // Account card
   active: 'Active',
   copyTokenTip: 'Copy access token to clipboard',
   refreshTokenTip: 'Refresh expired token',
@@ -36,16 +53,27 @@ export const en: Translations = {
   deleteTip: 'Remove account and token file',
   noAccounts: 'No accounts yet',
   createFirst: 'Create First Account',
+
+  // Console
   console: 'Console',
   clearTip: 'Clear console output',
   openLogTip: 'Open full log file in editor',
   copyLogsTip: 'Copy logs to clipboard',
+
+  // Progress
   step: 'Step',
+
+  // Footer
   connected: 'Connected',
+
+  // Dialog
   confirm: 'Confirm',
   cancel: 'Cancel',
   deleteTitle: 'Delete Account',
   deleteConfirm: 'Are you sure you want to delete this account?',
+  areYouSure: 'Are you sure?',
+
+  // Settings
   settingsTitle: 'Settings',
   autoSwitch: 'Auto-switch on expiry',
   autoSwitchDesc: 'Automatically switch to next valid account',
@@ -61,17 +89,47 @@ export const en: Translations = {
   spoofingDesc: 'Randomize browser fingerprint',
   language: 'Language',
   languageDesc: 'Interface language',
-  // Profile Editor
+
+  // Kiro Patch
+  kiroPatch: 'Kiro Patch',
+  kiroPatchDesc: 'Patches Kiro to use custom Machine ID',
+  patchStatusLoading: 'Loading...',
+  patchStatusActive: 'Patched',
+  patchStatusNotPatched: 'Not patched',
+  patch: 'Patch',
+  removePatch: 'Remove',
+  newMachineId: 'New ID',
+  patchKiroTitle: 'Patch Kiro',
+  patchKiroConfirm: 'This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?',
+  removePatchTitle: 'Remove Patch',
+  removePatchConfirm: 'This will restore original Kiro files. Continue?',
+
+  // Profile Editor - Basic
   newProfile: 'New Profile',
+  editProfile: 'Edit Profile',
   profileName: 'Profile Name',
   profileNamePlaceholder: 'My Gmail',
   server: 'Server',
   port: 'Port',
   password: 'Password',
   testConnection: 'Test',
+  testing: 'Testing...',
   emailStrategy: 'Email Strategy',
   emailStrategyDesc: 'Choose how to generate emails for registration',
   save: 'Save',
+  createProfile: 'Create Profile',
+
+  // Profile Editor - Wizard
+  enterYourEmail: 'Enter your email',
+  detected: 'Detected',
+  chooseStrategy: 'Choose strategy',
+  recommended: 'Recommended',
+  otherOptions: 'Other options',
+  useAppPassword: 'Use App Password',
+  imapConnection: 'IMAP Connection',
+  optional: 'optional',
+  checkConnection: 'Check connection',
+
   // Strategies
   strategySingleName: 'Single Email',
   strategySingleDesc: 'Uses your IMAP email directly. Only 1 account per email.',
@@ -82,15 +140,33 @@ export const en: Translations = {
   strategyCatchAllName: 'Catch-All Domain',
   strategyCatchAllDesc: 'Generates random emails on your domain. Requires catch-all configured on mail server.',
   strategyCatchAllExample: 'JohnSmith4521@yourdomain.com',
-  strategyCatchAllHint: '💡 Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.',
+  strategyCatchAllHint: 'Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.',
   strategyCatchAllDomain: 'Registration Domain',
   strategyPoolName: 'Email Pool',
   strategyPoolDesc: 'Use a list of your email addresses. Each email is used once in order.',
-  strategyPoolHint: '💡 Add email addresses to use in order. Each email = 1 account.',
+  strategyPoolHint: 'Add email addresses to use in order. Each email = 1 account.',
   strategyPoolAdd: 'Add email...',
   strategyPoolFromFile: 'From file',
   strategyPoolPaste: 'Paste',
   example: 'Example',
+
+  // Strategy Features
+  unlimitedAccounts: 'Unlimited accounts',
+  allEmailsOneInbox: 'All emails in one inbox',
+  noOwnDomain: 'No own domain needed',
+  notAllProvidersSupport: 'Not all providers support',
+  uniqueEmails: 'Unique email addresses',
+  needOwnDomain: 'Need own domain',
+  needCatchAllSetup: 'Need catch-all setup',
+  easyToSetup: 'Easy to setup',
+  worksEverywhere: 'Works everywhere',
+  oneAccountPerEmail: 'Only 1 account per email',
+  worksWithAnyProvider: 'Works with any provider',
+  controlOverList: 'Control over list',
+  needManyEmails: 'Need many emails',
+  requiresDomain: 'Requires own domain',
+  providerNoAlias: 'does not support aliases',
+
   // Profile Panel & Active Profile
   activeProfile: 'Active Profile',
   change: 'Change',
@@ -99,11 +175,15 @@ export const en: Translations = {
   emailProfiles: 'Email Profiles',
   noProfiles: 'No profiles configured',
   addProfile: 'Add Profile',
+  success: 'Success',
+  failed: 'Failed',
+
   // Strategy short descriptions
   strategySingleShort: 'One account per email',
   strategyPlusAliasShort: 'user+random@domain',
   strategyCatchAllShort: 'Any email on domain',
   strategyPoolShort: 'Your email list',
+
   // Danger Zone
   dangerZone: 'Danger Zone',
   resetMachineId: 'Reset Machine ID',
@@ -111,14 +191,52 @@ export const en: Translations = {
   resetMachineIdTip: 'Reset machineId, sqmId, devDeviceId and serviceMachineId',
   reset: 'Reset',
   restartAfterReset: 'Restart Kiro after reset',
+  resetMachineIdTitle: 'Reset Machine ID',
+  resetMachineIdConfirm: 'This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?',
+
   // Other
   deleteAll: 'Delete all',
   delete: 'Delete',
   checkUpdates: 'Check Updates',
   newVersion: 'New version!',
   download: 'Download',
+  edit: 'Edit',
+  unnamed: 'Unnamed',
+  customDomain: 'Custom Domain',
+  emailPasswordHint: 'Use your email password',
+
   // SSO Modal
   ssoImport: 'SSO Import',
   ssoHint: '1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn',
   pasteCookie: 'Paste cookie...',
+
+  // Provider Names
+  providerGmail: 'Gmail',
+  providerYandex: 'Yandex',
+  providerMailru: 'Mail.ru',
+  providerOutlook: 'Outlook',
+  providerCustom: 'Custom Domain',
+
+  // Provider Password Hints
+  gmailPasswordHint: 'Use App Password from Google Account settings',
+  yandexPasswordHint: 'Use app password from Yandex settings',
+  mailruPasswordHint: 'Create app password in Mail.ru settings',
+  outlookPasswordHint: 'Use your Microsoft account password',
+
+  // Toasts & Messages
+  accountDeleted: 'Account deleted',
+  badAccountsDeleted: 'Bad accounts deleted',
+  resettingMachineId: 'Resetting Machine ID...',
+  patchingKiro: 'Patching Kiro...',
+  removingPatch: 'Removing patch...',
+  profileCreated: 'Profile created',
+  profileUpdated: 'Profile updated',
+  profileDeleted: 'Profile deleted',
+  tokenCopied: 'Token copied to clipboard',
+  logsCopied: 'Logs copied to clipboard',
+  fillAllFields: 'Please fill all IMAP fields',
+  clipboardError: 'Failed to read clipboard',
+  deleteProfileConfirm: 'Delete this profile?',
+  deleteBadAccountsConfirm: 'Delete all expired/exhausted accounts?',
+  emailsImported: 'Imported {count} emails',
 };

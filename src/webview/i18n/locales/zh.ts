@@ -1,19 +1,32 @@
 import { Translations } from '../types';
 
 export const zh: Translations = {
+  // Header & Navigation
   kiroAccounts: 'Kiro 账户',
   compactViewTip: '缩小卡片以显示更多账户',
   settingsTip: '配置自动切换、浏览器模式、日志',
+  back: '返回',
+
+  // Stats
   valid: '有效',
   expired: '已过期',
   total: '总计',
   noActive: '无活动账户',
   validFilter: '有效',
   expiredFilter: '已过期',
+
+  // Account Groups
+  activeGroup: '活动',
+  readyGroup: '就绪',
+  badGroup: '已过期 / 已耗尽',
+
+  // Usage card
   todaysUsage: '今日使用量',
   used: '已使用',
   daysLeft: '天剩余',
   resetsAtMidnight: '午夜重置',
+
+  // Actions
   autoReg: '自动注册',
   autoRegTip: '自动创建新的 AWS Builder ID',
   import: '导入',
@@ -23,12 +36,16 @@ export const zh: Translations = {
   export: '导出',
   exportTip: '将所有账户保存到 JSON 文件',
   running: '运行中...',
+
+  // Filters
   all: '全部',
   byUsage: '按使用量',
   byExpiry: '按到期时间',
   byDate: '按日期',
   searchPlaceholder: '搜索账户...',
   newBadge: '新',
+
+  // Account card
   active: '活动',
   copyTokenTip: '复制访问令牌到剪贴板',
   refreshTokenTip: '刷新过期令牌',
@@ -36,16 +53,27 @@ export const zh: Translations = {
   deleteTip: '删除账户和令牌文件',
   noAccounts: '暂无账户',
   createFirst: '创建第一个账户',
+
+  // Console
   console: '控制台',
   clearTip: '清除控制台输出',
   openLogTip: '在编辑器中打开完整日志',
   copyLogsTip: '复制日志',
+
+  // Progress
   step: '步骤',
+
+  // Footer
   connected: '已连接',
+
+  // Dialog
   confirm: '确认',
   cancel: '取消',
   deleteTitle: '删除账户',
   deleteConfirm: '确定要删除此账户吗？',
+  areYouSure: '确定吗？',
+
+  // Settings
   settingsTitle: '设置',
   autoSwitch: '到期自动切换',
   autoSwitchDesc: '自动切换到下一个有效账户',
@@ -61,17 +89,47 @@ export const zh: Translations = {
   spoofingDesc: '随机化浏览器指纹',
   language: '语言',
   languageDesc: '界面语言',
-  // Profile Editor
+
+  // Kiro Patch
+  kiroPatch: 'Kiro 补丁',
+  kiroPatchDesc: '为 Kiro 打补丁以使用自定义机器 ID',
+  patchStatusLoading: '加载中...',
+  patchStatusActive: '已打补丁',
+  patchStatusNotPatched: '未打补丁',
+  patch: '打补丁',
+  removePatch: '移除',
+  newMachineId: '新 ID',
+  patchKiroTitle: '为 Kiro 打补丁',
+  patchKiroConfirm: '这将为 Kiro 打补丁以使用自定义机器 ID。请先关闭 Kiro！继续？',
+  removePatchTitle: '移除补丁',
+  removePatchConfirm: '这将恢复原始 Kiro 文件。继续？',
+
+  // Profile Editor - Basic
   newProfile: '新建配置',
+  editProfile: '编辑配置',
   profileName: '配置名称',
   profileNamePlaceholder: '我的Gmail',
   server: '服务器',
   port: '端口',
   password: '密码',
   testConnection: '测试',
+  testing: '测试中...',
   emailStrategy: '邮箱策略',
   emailStrategyDesc: '选择如何生成注册邮箱',
   save: '保存',
+  createProfile: '创建配置',
+
+  // Profile Editor - Wizard
+  enterYourEmail: '输入您的邮箱',
+  detected: '已检测',
+  chooseStrategy: '选择策略',
+  recommended: '推荐',
+  otherOptions: '其他选项',
+  useAppPassword: '使用应用密码',
+  imapConnection: 'IMAP 连接',
+  optional: '可选',
+  checkConnection: '检查连接',
+
   // Strategies
   strategySingleName: '单一邮箱',
   strategySingleDesc: '直接使用您的IMAP邮箱。每个邮箱只能注册1个账户。',
@@ -82,15 +140,33 @@ export const zh: Translations = {
   strategyCatchAllName: 'Catch-All域名',
   strategyCatchAllDesc: '在您的域名上生成随机邮箱。需要在邮件服务器上配置catch-all。',
   strategyCatchAllExample: 'JohnSmith4521@yourdomain.com',
-  strategyCatchAllHint: '💡 输入配置了catch-all的域名。所有发送到任意@域名的邮件都会到达您的IMAP收件箱。',
+  strategyCatchAllHint: '输入配置了catch-all的域名。所有发送到任意@域名的邮件都会到达您的IMAP收件箱。',
   strategyCatchAllDomain: '注册域名',
   strategyPoolName: '邮箱池',
   strategyPoolDesc: '使用您的邮箱地址列表。每个邮箱按顺序使用一次。',
-  strategyPoolHint: '💡 添加要按顺序使用的邮箱地址。每个邮箱 = 1个账户。',
+  strategyPoolHint: '添加要按顺序使用的邮箱地址。每个邮箱 = 1个账户。',
   strategyPoolAdd: '添加邮箱...',
   strategyPoolFromFile: '从文件',
   strategyPoolPaste: '粘贴',
   example: '示例',
+
+  // Strategy Features
+  unlimitedAccounts: '无限账户',
+  allEmailsOneInbox: '所有邮件在一个收件箱',
+  noOwnDomain: '不需要自己的域名',
+  notAllProvidersSupport: '不是所有提供商都支持',
+  uniqueEmails: '唯一的邮箱地址',
+  needOwnDomain: '需要自己的域名',
+  needCatchAllSetup: '需要设置 catch-all',
+  easyToSetup: '易于设置',
+  worksEverywhere: '到处都能用',
+  oneAccountPerEmail: '每个邮箱只能1个账户',
+  worksWithAnyProvider: '适用于任何提供商',
+  controlOverList: '控制列表',
+  needManyEmails: '需要很多邮箱',
+  requiresDomain: '需要自己的域名',
+  providerNoAlias: '不支持别名',
+
   // Profile Panel & Active Profile
   activeProfile: '活动配置',
   change: '更改',
@@ -99,11 +175,15 @@ export const zh: Translations = {
   emailProfiles: '邮箱配置',
   noProfiles: '暂无配置',
   addProfile: '添加配置',
+  success: '成功',
+  failed: '失败',
+
   // Strategy short descriptions
   strategySingleShort: '每个邮箱一个账户',
   strategyPlusAliasShort: 'user+random@domain',
   strategyCatchAllShort: '域名上的任意邮箱',
   strategyPoolShort: '您的邮箱列表',
+
   // Danger Zone
   dangerZone: '危险区域',
   resetMachineId: '重置机器ID',
@@ -111,14 +191,52 @@ export const zh: Translations = {
   resetMachineIdTip: '重置machineId、sqmId、devDeviceId和serviceMachineId',
   reset: '重置',
   restartAfterReset: '重置后需要重启Kiro',
+  resetMachineIdTitle: '重置机器ID',
+  resetMachineIdConfirm: '这将重置 Kiro 遥测 ID。之后需要重启 Kiro。继续？',
+
   // Other
   deleteAll: '删除全部',
   delete: '删除',
   checkUpdates: '检查更新',
   newVersion: '新版本！',
   download: '下载',
+  edit: '编辑',
+  unnamed: '未命名',
+  customDomain: '自定义域名',
+  emailPasswordHint: '使用您的邮箱密码',
+
   // SSO Modal
   ssoImport: 'SSO导入',
   ssoHint: '1. 打开 view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. 复制 x-amz-sso_authn',
   pasteCookie: '粘贴cookie...',
+
+  // Provider Names
+  providerGmail: 'Gmail',
+  providerYandex: 'Yandex',
+  providerMailru: 'Mail.ru',
+  providerOutlook: 'Outlook',
+  providerCustom: '自定义域名',
+
+  // Provider Password Hints
+  gmailPasswordHint: '使用 Google 账户设置中的应用密码',
+  yandexPasswordHint: '使用 Yandex 设置中的应用密码',
+  mailruPasswordHint: '在 Mail.ru 设置中创建应用密码',
+  outlookPasswordHint: '使用您的 Microsoft 账户密码',
+
+  // Toasts & Messages
+  accountDeleted: '账户已删除',
+  badAccountsDeleted: '无效账户已删除',
+  resettingMachineId: '正在重置机器ID...',
+  patchingKiro: '正在为 Kiro 打补丁...',
+  removingPatch: '正在移除补丁...',
+  profileCreated: '配置已创建',
+  profileUpdated: '配置已更新',
+  profileDeleted: '配置已删除',
+  tokenCopied: '令牌已复制到剪贴板',
+  logsCopied: '日志已复制到剪贴板',
+  fillAllFields: '请填写所有 IMAP 字段',
+  clipboardError: '无法读取剪贴板',
+  deleteProfileConfirm: '删除此配置？',
+  deleteBadAccountsConfirm: '删除所有过期/耗尽的账户？',
+  emailsImported: '已导入 {count} 个邮箱',
 };

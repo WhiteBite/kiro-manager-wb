@@ -9,10 +9,10 @@ const SRC_DIR = path.join(__dirname, '..', 'src');
 const AUTOREG_DIR = path.join(__dirname, '..', 'autoreg');
 
 describe('Extension Path Configuration', () => {
-  
+
   describe('autoreg module references', () => {
     let autoregContent: string;
-    
+
     beforeAll(() => {
       // After refactoring, autoreg code is in src/commands/autoreg.ts
       autoregContent = fs.readFileSync(path.join(SRC_DIR, 'commands', 'autoreg.ts'), 'utf8');
@@ -42,13 +42,13 @@ describe('Extension Path Configuration', () => {
   describe('i18n translations', () => {
     const locales = ['en', 'ru', 'zh', 'de', 'es', 'fr', 'hi', 'ja', 'ko', 'pt'];
     const i18nDir = path.join(SRC_DIR, 'webview', 'i18n', 'locales');
-    
+
     // Get required keys from types.ts
     let requiredKeys: string[] = [];
-    
+
     beforeAll(() => {
       const typesContent = fs.readFileSync(
-        path.join(SRC_DIR, 'webview', 'i18n', 'types.ts'), 
+        path.join(SRC_DIR, 'webview', 'i18n', 'types.ts'),
         'utf8'
       );
       // Extract keys from interface
@@ -62,9 +62,9 @@ describe('Extension Path Configuration', () => {
       it(`${locale}.ts should have all required translation keys`, () => {
         const localePath = path.join(i18nDir, `${locale}.ts`);
         expect(fs.existsSync(localePath)).toBe(true);
-        
+
         const content = fs.readFileSync(localePath, 'utf8');
-        
+
         requiredKeys.forEach(key => {
           expect(content).toContain(`${key}:`);
         });
@@ -74,10 +74,10 @@ describe('Extension Path Configuration', () => {
 
   describe('webview scripts', () => {
     let scriptsContent: string;
-    
+
     beforeAll(() => {
       scriptsContent = fs.readFileSync(
-        path.join(SRC_DIR, 'webview', 'scripts.ts'), 
+        path.join(SRC_DIR, 'webview', 'scripts.ts'),
         'utf8'
       );
     });
@@ -86,12 +86,12 @@ describe('Extension Path Configuration', () => {
       const requiredFunctions = [
         'switchAccount',
         'copyToken',
-        'viewQuota',
-        'refreshToken',
         'confirmDelete',
         'startAutoReg',
-        'importToken',
         'refresh',
+        'openSettings',
+        'closeSettings',
+        'showToast',
       ];
 
       requiredFunctions.forEach(fn => {
@@ -102,7 +102,7 @@ describe('Extension Path Configuration', () => {
 
   describe('package.json', () => {
     let packageJson: any;
-    
+
     beforeAll(() => {
       packageJson = JSON.parse(
         fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')

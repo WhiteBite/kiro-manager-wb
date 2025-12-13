@@ -6,6 +6,7 @@
 let accounts = [];
 let ws = null;
 let pendingConfirm = null;
+let imapDefaults = null;  // Default IMAP settings from .env
 
 // API Helper
 async function api(endpoint, options = {}) {
@@ -14,12 +15,12 @@ async function api(endpoint, options = {}) {
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Request failed' }));
     throw new Error(error.detail || 'Request failed');
   }
-  
+
   return response.json();
 }
 
@@ -27,14 +28,14 @@ async function api(endpoint, options = {}) {
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-  
+
   ws.onopen = () => console.log('WebSocket connected');
-  
+
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     handleWsMessage(data);
   };
-  
+
   ws.onclose = () => {
     console.log('WebSocket disconnected, reconnecting...');
     setTimeout(connectWebSocket, 2000);
@@ -64,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAccounts();
   loadPatchStatus();
   loadSystemInfo();
-  
+  loadImapDefaults();
+
   // Collapse logs by default
   document.getElementById('logsPanel').classList.add('collapsed');
 });
@@ -84,7 +86,7 @@ async function loadAccounts() {
 
 function renderAccounts() {
   const list = document.getElementById('accountList');
-  
+
   if (accounts.length === 0) {
     list.innerHTML = `
       <div class="empty-state">
@@ -95,29 +97,29 @@ function renderAccounts() {
     `;
     return;
   }
-  
+
   // Group accounts
   const active = accounts.filter(a => a.isActive);
   const ready = accounts.filter(a => !a.isActive && !a.isExpired);
   const bad = accounts.filter(a => a.isExpired);
-  
+
   let html = '';
-  
+
   if (active.length > 0) {
     html += `<div class="list-group"><span>Active</span><span class="list-group-count">${active.length}</span></div>`;
     html += active.map(renderAccountCard).join('');
   }
-  
+
   if (ready.length > 0) {
     html += `<div class="list-group"><span>Ready</span><span class="list-group-count">${ready.length}</span></div>`;
     html += ready.map(renderAccountCard).join('');
   }
-  
+
   if (bad.length > 0) {
     html += `<div class="list-group danger"><span>Expired</span><span class="list-group-count">${bad.length}</span></div>`;
     html += bad.map(renderAccountCard).join('');
   }
-  
+
   list.innerHTML = html;
 }
 
@@ -126,7 +128,7 @@ function renderAccountCard(account) {
   const classes = ['account-card'];
   if (account.isActive) classes.push('active');
   if (account.isExpired) classes.push('expired');
-  
+
   return `
     <div class="${classes.join(' ')}" onclick="switchAccount('${account.filename}')">
       <div class="account-avatar">${avatar}</div>
@@ -152,7 +154,7 @@ function updateBadge(valid, total) {
 function updateHero(data) {
   const heroEmail = document.getElementById('heroEmail');
   const heroStats = document.getElementById('heroStats');
-  
+
   if (data.activeAccount) {
     const active = accounts.find(a => a.isActive);
     heroEmail.textContent = active?.accountName || active?.email || data.activeAccount;
@@ -206,7 +208,7 @@ function confirmDeleteAccount(filename) {
 function filterAccounts(query) {
   const cards = document.querySelectorAll('.account-card');
   const q = query.toLowerCase();
-  
+
   cards.forEach(card => {
     const name = card.querySelector('.account-name').textContent.toLowerCase();
     card.style.display = name.includes(q) ? '' : 'none';
@@ -218,33 +220,127 @@ function refresh() {
   loadPatchStatus();
 }
 
+// IMAP Defaults
+async function loadImapDefaults() {
+  try {
+    imapDefaults = await api('/system/imap-defaults');
+
+    // If defaults available, show indicator
+    if (imapDefaults.hasDefaults) {
+      updateImapIndicator(true);
+    }
+  } catch (error) {
+    console.error('Failed to load IMAP defaults:', error);
+  }
+}
+
+function updateImapIndicator(hasDefaults) {
+  const imapTab = document.querySelector('.tab[onclick="switchTab(\'imap\')"]');
+  if (imapTab && hasDefaults) {
+    imapTab.innerHTML = 'IMAP <span class="tab-badge">✓</span>';
+  }
+}
+
+async function saveImapSettings() {
+  const server = document.getElementById('imapServer')?.value?.trim();
+  const user = document.getElementById('imapUser')?.value?.trim();
+  const password = document.getElementById('imapPassword')?.value?.trim();
+  const domain = document.getElementById('emailDomain')?.value?.trim();
+
+  if (!server || !user || !password) {
+    showToast('Please fill in server, email and password', 'warning');
+    return;
+  }
+
+  try {
+    await api('/system/imap-settings', {
+      method: 'POST',
+      body: { server, user, password, domain: domain || '' }
+    });
+
+    showToast('IMAP settings saved', 'success');
+
+    // Reload defaults to update indicator
+    await loadImapDefaults();
+
+    // Update status
+    const status = document.getElementById('imapStatus');
+    if (status) {
+      status.textContent = '✓ Saved';
+      status.className = 'imap-status saved';
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+function getImapConfig() {
+  // Get user-configured values
+  const userServer = document.getElementById('imapServer')?.value?.trim();
+  const userUser = document.getElementById('imapUser')?.value?.trim();
+  const userPassword = document.getElementById('imapPassword')?.value?.trim();
+  const userDomain = document.getElementById('emailDomain')?.value?.trim();
+
+  // Check if user has configured their own settings
+  const hasUserConfig = userServer && userUser && userPassword;
+
+  if (hasUserConfig) {
+    return {
+      imapServer: userServer,
+      imapUser: userUser,
+      imapPassword: userPassword,
+      emailDomain: userDomain || imapDefaults?.domain || '',
+      usingDefaults: false
+    };
+  }
+
+  // Fall back to defaults from .env
+  if (imapDefaults?.hasDefaults) {
+    return {
+      imapServer: imapDefaults.server,
+      imapUser: imapDefaults.user,
+      imapPassword: imapDefaults.password,
+      emailDomain: imapDefaults.domain,
+      usingDefaults: true
+    };
+  }
+
+  return null;
+}
+
 // Auto-Registration
 async function startAutoReg() {
-  const config = {
-    headless: document.getElementById('settingHeadless')?.checked || false,
-    spoofing: document.getElementById('settingSpoofing')?.checked ?? true,
-    imapServer: document.getElementById('imapServer')?.value,
-    imapUser: document.getElementById('imapUser')?.value,
-    imapPassword: document.getElementById('imapPassword')?.value,
-    emailDomain: document.getElementById('emailDomain')?.value,
-    emailStrategy: document.getElementById('emailStrategy')?.value || 'catch_all'
-  };
-  
-  if (!config.imapServer || !config.imapUser || !config.imapPassword) {
-    showToast('Please configure IMAP settings first', 'warning');
+  const imapConfig = getImapConfig();
+
+  if (!imapConfig) {
+    showToast('IMAP not configured and no defaults available', 'error');
     openSettings();
     switchTab('imap');
     return;
   }
-  
+
+  if (imapConfig.usingDefaults) {
+    showToast('Using shared catch-all (example.com)', 'info');
+  }
+
+  const config = {
+    headless: document.getElementById('settingHeadless')?.checked || false,
+    spoofing: document.getElementById('settingSpoofing')?.checked ?? true,
+    imapServer: imapConfig.imapServer,
+    imapUser: imapConfig.imapUser,
+    imapPassword: imapConfig.imapPassword,
+    emailDomain: imapConfig.emailDomain,
+    emailStrategy: document.getElementById('emailStrategy')?.value || 'catch_all'
+  };
+
   try {
     const btn = document.getElementById('autoRegBtn');
     btn.disabled = true;
     btn.innerHTML = '⏳ Starting...';
-    
+
     showProgress();
     await api('/autoreg/start', { method: 'POST', body: config });
-    
+
     btn.innerHTML = '⏹️ Running...';
   } catch (error) {
     hideProgress();
@@ -295,7 +391,7 @@ async function importSso() {
     showToast('Please enter the cookie value', 'warning');
     return;
   }
-  
+
   try {
     await api('/autoreg/sso-import', { method: 'POST', body: { token } });
     closeSsoModal();
@@ -324,9 +420,9 @@ function updatePatchUI(status) {
   const machineId = document.getElementById('patchMachineId');
   const applyBtn = document.getElementById('patchApplyBtn');
   const removeBtn = document.getElementById('patchRemoveBtn');
-  
+
   indicator.classList.add('visible');
-  
+
   if (status.error) {
     indicator.className = 'patch-indicator visible not-patched';
     indicator.textContent = '⚠';
@@ -350,7 +446,7 @@ function updatePatchUI(status) {
     applyBtn.style.display = '';
     removeBtn.style.display = 'none';
   }
-  
+
   if (status.currentMachineId) {
     machineId.textContent = `Machine ID: ${status.currentMachineId}`;
     machineId.style.display = 'block';
@@ -406,7 +502,7 @@ async function loadSystemInfo() {
     document.getElementById('infoKiroVersion').textContent = info.kiroVersion;
     document.getElementById('infoMachineId').textContent = info.machineId.substring(0, 32) + '...';
     document.getElementById('infoTokensPath').textContent = info.tokensPath;
-    
+
     const kiroStatus = await api('/system/kiro/status');
     updateKiroStatus(kiroStatus);
   } catch (error) {
@@ -417,7 +513,7 @@ async function loadSystemInfo() {
 function updateKiroStatus(status) {
   const dot = document.getElementById('kiroStatusDot');
   const text = document.getElementById('kiroStatusText');
-  
+
   if (status.running) {
     dot.className = 'status-dot running';
     text.textContent = 'Running';
@@ -474,7 +570,7 @@ function closeSettings() {
 function switchTab(tabName) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  
+
   document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
 }
@@ -490,15 +586,15 @@ function appendLog(message, level = 'info') {
   line.className = `log-line ${level}`;
   line.textContent = message;
   content.appendChild(line);
-  
+
   // Keep max 200 lines
   while (content.children.length > 200) {
     content.removeChild(content.firstChild);
   }
-  
+
   content.scrollTop = content.scrollHeight;
   updateLogsCount();
-  
+
   // Auto-expand on new logs
   document.getElementById('logsPanel').classList.remove('collapsed');
 }
@@ -530,13 +626,13 @@ function closeConfirm() {
 
 function confirmAction() {
   if (!pendingConfirm) return;
-  
+
   switch (pendingConfirm.action) {
     case 'deleteAccount':
       deleteAccount(pendingConfirm.filename);
       break;
   }
-  
+
   closeConfirm();
 }
 
@@ -545,12 +641,12 @@ function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  
-  const icons = { success: '✓', error: '✗', warning: '⚠️' };
+
+  const icons = { success: '✓', error: '✗', warning: '⚠️', info: 'ℹ️' };
   toast.innerHTML = `<span>${icons[type] || '•'}</span><span>${message}</span>`;
-  
+
   container.appendChild(toast);
-  
+
   setTimeout(() => {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
