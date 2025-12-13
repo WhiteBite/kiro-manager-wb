@@ -816,4 +816,352 @@ export const profiles = `
     overflow-y: auto;
     padding: 12px;
   }
+
+  /* ========================================
+     WIZARD STYLES
+     ======================================== */
+  
+  .profile-editor.wizard {
+    display: flex;
+  }
+  
+  .wizard-step {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    animation: fadeIn 0.3s ease;
+  }
+  .wizard-step.compact {
+    padding: 12px 16px;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .step-number {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 50%;
+  }
+  .step-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  /* Email Input Section */
+  .email-input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .form-input-large {
+    padding: 14px 16px;
+    font-size: 15px;
+    border-radius: var(--radius-md);
+  }
+  
+  /* Provider Detection */
+  .provider-detection {
+    animation: fadeIn 0.3s ease;
+  }
+  .provider-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, rgba(63,182,139,0.15) 0%, rgba(63,182,139,0.05) 100%);
+    border: 1px solid rgba(63,182,139,0.3);
+    border-radius: 20px;
+    font-size: 12px;
+  }
+  .provider-icon {
+    font-size: 16px;
+  }
+  .provider-name {
+    font-weight: 600;
+  }
+  .provider-check {
+    color: var(--accent);
+    font-size: 11px;
+  }
+  
+  /* Strategy Cards */
+  .recommended-strategy {
+    margin-bottom: 16px;
+  }
+  
+  .strategy-card {
+    background: var(--bg-elevated);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .strategy-card:hover {
+    border-color: rgba(63,182,139,0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .strategy-card.selected {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 100%);
+  }
+  .strategy-card.recommended {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(63,182,139,0.12) 0%, rgba(63,182,139,0.03) 100%);
+  }
+  .strategy-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  .strategy-card-header {
+    margin-bottom: 12px;
+  }
+  .strategy-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .recommended-badge {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: white;
+  }
+  .disabled-badge {
+    background: var(--danger-dim);
+    color: var(--danger);
+  }
+  .strategy-card .strategy-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  
+  /* Strategy Diagram */
+  .strategy-diagram {
+    margin: 16px 0;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+  }
+  .strategy-diagram.mini {
+    padding: 10px;
+    margin: 10px 0;
+  }
+  .strategy-diagram.mini .diagram-email {
+    font-size: 9px;
+  }
+  
+  .diagram-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-width: fit-content;
+  }
+  .diagram-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    min-width: 120px;
+  }
+  .diagram-step.generated {
+    border-color: rgba(63,182,139,0.3);
+    background: linear-gradient(135deg, rgba(63,182,139,0.1) 0%, transparent 100%);
+  }
+  .diagram-step.aws {
+    background: linear-gradient(135deg, rgba(255,153,0,0.15) 0%, transparent 100%);
+    border-color: rgba(255,153,0,0.3);
+  }
+  .diagram-step.inbox {
+    background: linear-gradient(135deg, rgba(66,133,244,0.15) 0%, transparent 100%);
+    border-color: rgba(66,133,244,0.3);
+  }
+  .diagram-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .diagram-icon {
+    font-size: 24px;
+  }
+  .diagram-email {
+    font-size: 10px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--fg);
+    white-space: nowrap;
+  }
+  .diagram-email .highlight {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .diagram-arrow {
+    font-size: 20px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  
+  /* Strategy Features */
+  .strategy-features {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .strategy-features.compact {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .strategy-pros, .strategy-cons {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .feature-item {
+    font-size: 11px;
+    padding: 4px 0;
+  }
+  .feature-item.pro {
+    color: var(--accent);
+  }
+  .feature-item.con {
+    color: var(--warning);
+  }
+  
+  .strategy-select-btn {
+    margin-top: 8px;
+  }
+  .btn-block {
+    width: 100%;
+  }
+  
+  .disabled-reason {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+  }
+  
+  /* Other Strategies Toggle */
+  .other-strategies {
+    margin-top: 12px;
+  }
+  .other-strategies-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    transition: all 0.2s ease;
+  }
+  .other-strategies-toggle:hover {
+    background: var(--glass-bg);
+    color: var(--fg);
+  }
+  .other-strategies[open] .toggle-icon {
+    transform: rotate(180deg);
+  }
+  .toggle-icon {
+    transition: transform 0.2s ease;
+  }
+  .toggle-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .strategies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  
+  /* IMAP Settings in Wizard */
+  .imap-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .connection-status {
+    min-height: 24px;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .connection-status.success {
+    color: var(--accent);
+  }
+  .connection-status.error {
+    color: var(--danger);
+  }
+  
+  /* Pool Stats */
+  .pool-stats {
+    display: flex;
+    gap: 16px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .pool-count {
+    color: var(--accent);
+  }
+  .pool-pending {
+    color: var(--muted);
+  }
+  
+  /* Optional label */
+  .optional {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  
+  /* Button icon */
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
