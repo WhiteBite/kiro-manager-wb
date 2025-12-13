@@ -708,16 +708,26 @@ export function generateWebviewScript(totalAccounts: number): string {
         if (checkbox) checkbox.checked = true;
       }
       
-      // Restore console state (collapsed by default)
+      // Restore console state
       const consoleFloating = document.getElementById('consoleFloating');
+      const consoleBody = document.getElementById('consoleBody');
+      const hasLogs = consoleBody && consoleBody.children.length > 0;
+      
       if (consoleFloating) {
-        if (state.consoleCollapsed !== false) {
+        // If there are logs, keep console expanded (unless user explicitly collapsed it)
+        // If no logs, collapse by default
+        if (hasLogs) {
+          // Only collapse if user explicitly collapsed it before
+          if (state.consoleCollapsed === true) {
+            consoleFloating.classList.add('collapsed');
+          }
+        } else {
+          // No logs - collapse by default
           consoleFloating.classList.add('collapsed');
         }
       }
       
-      // Auto-scroll console
-      const consoleBody = document.getElementById('consoleBody');
+      // Auto-scroll console to bottom
       if (consoleBody) consoleBody.scrollTop = consoleBody.scrollHeight;
       
       // Init virtual list if needed
