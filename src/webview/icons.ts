@@ -6,6 +6,7 @@ export const ICONS = {
   // Navigation
   chevronLeft: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7.7-.7L6 8l5-5-.7-.7z"/></svg>`,
   chevronRight: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.7 13.7L11.4 8 5.7 2.3l-.7.7L10 8l-5 5 .7.7z"/></svg>`,
+  chevronDown: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2.3 5.7L8 11.4l5.7-5.7-.7-.7L8 10 3 5l-.7.7z"/></svg>`,
   
   // Actions
   check: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.8 3.5L6 11.3 2.2 7.5l-.7.7L6 12.7l8.5-8.5-.7-.7z"/></svg>`,
