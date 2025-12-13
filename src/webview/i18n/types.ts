@@ -72,6 +72,8 @@ export interface Translations {
   verboseDesc: string;
   screenshots: string;
   screenshotsDesc: string;
+  spoofing: string;
+  spoofingDesc: string;
   language: string;
   languageDesc: string;
 }

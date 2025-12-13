@@ -51,42 +51,7 @@ export function getStyles(): string {
     
 
     
-    /* Tooltip - по умолчанию сверху */
-    [title] { position: relative; }
-    [title]:hover::after { 
-      content: attr(title); 
-      position: absolute; 
-      bottom: 100%; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      padding: 4px 8px; 
-      background: var(--vscode-editorWidget-background, #252526); 
-      color: var(--vscode-editorWidget-foreground, #ccc); 
-      font-size: 10px; 
-      border-radius: 4px; 
-      white-space: nowrap; 
-      z-index: 1000; 
-      pointer-events: none;
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    /* Header tooltips - показываются СНИЗУ и справа */
-    .header [title]:hover::after { 
-      bottom: auto; 
-      top: 100%; 
-      left: auto; 
-      right: 0; 
-      transform: none; 
-      margin-top: 4px;
-    }
-    /* Card actions - сверху и справа */
-    .card-actions [title]:hover::after { 
-      left: auto; 
-      right: 0; 
-      transform: none;
-      margin-bottom: 4px;
-    }
+    /* Native tooltips - no custom CSS, let browser handle */
     
     /* Stats Bar */
     .stats-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 6px 12px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); font-size: 10px; }
@@ -267,10 +232,28 @@ export function getStyles(): string {
     .footer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: glow 2s ease-in-out infinite; }
     
     /* Dialog */
-    .dialog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; } .dialog-overlay.visible { display: flex; }
-    .dialog { background: var(--vscode-editorWidget-background, #252526); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); padding: 20px; max-width: 320px; box-shadow: var(--shadow-md); }
+    .dialog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; } .dialog-overlay.visible { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .dialog { background: var(--vscode-editorWidget-background, #252526); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); padding: 20px; max-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: dialogSlideIn 0.2s ease; }
+    @keyframes dialogSlideIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     .dialog-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; } .dialog-text { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
     .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .dialog .btn-danger { background: linear-gradient(135deg, var(--danger) 0%, #f06b6b 100%); color: #fff; }
+    .dialog .btn-danger:hover { box-shadow: 0 4px 12px rgba(229,83,83,0.4); }
+    
+    /* Toast notifications */
+    .toast-container { position: fixed; top: 50px; right: 12px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { padding: 10px 14px; background: var(--vscode-editorWidget-background, #252526); border: 1px solid var(--border-medium); border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.3); font-size: 11px; display: flex; align-items: center; gap: 8px; animation: toastSlideIn 0.3s ease; pointer-events: auto; max-width: 280px; }
+    @keyframes toastSlideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    .toast.removing { animation: toastSlideOut 0.3s ease forwards; }
+    @keyframes toastSlideOut { to { opacity: 0; transform: translateX(100%); } }
+    .toast-icon { font-size: 14px; }
+    .toast-message { flex: 1; }
+    .toast-action { padding: 4px 8px; font-size: 10px; font-weight: 600; background: var(--accent-dim); color: var(--accent); border: none; border-radius: 4px; cursor: pointer; transition: all var(--transition-fast); }
+    .toast-action:hover { background: var(--accent); color: #fff; }
+    .toast.success { border-color: var(--accent); }
+    .toast.error { border-color: var(--danger); }
+    .toast.warning { border-color: var(--warning); }
     
     /* Compact Mode */
     body.compact .card-main { padding: 6px 10px; } body.compact .card-avatar { width: 24px; height: 24px; font-size: 10px; } body.compact .card-meta { display: none; }
@@ -290,6 +273,11 @@ export function getStyles(): string {
     .usage-card.empty { background: var(--bg-elevated); border-color: var(--border-subtle); cursor: default; }
     .usage-card.empty .usage-title { color: var(--muted); }
     .usage-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    
+    /* Loading Usage Card */
+    .usage-card.loading { opacity: 0.7; pointer-events: none; }
+    .usage-card.loading::before { animation: loadingPulse 1.5s ease-in-out infinite; }
+    @keyframes loadingPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     
     /* Narrow sidebar adaptation */
     @media (max-width: 280px) {

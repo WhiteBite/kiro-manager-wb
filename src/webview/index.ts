@@ -269,13 +269,13 @@ export function generateWebviewHtml(
     </div>
     
     <!-- Dialog -->
-    <div class="dialog-overlay" id="dialogOverlay">
+    <div class="dialog-overlay" id="dialogOverlay" onclick="if(event.target === this) closeDialog()">
       <div class="dialog">
         <div class="dialog-title" id="dialogTitle">${t.deleteTitle}</div>
         <div class="dialog-text" id="dialogText">${t.deleteConfirm}</div>
         <div class="dialog-actions">
           <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
-          <button class="btn btn-primary" onclick="dialogAction()">${t.confirm}</button>
+          <button class="btn btn-danger" onclick="dialogAction()">${lang === 'ru' ? 'Удалить' : 'Delete'}</button>
         </div>
       </div>
     </div>

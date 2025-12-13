@@ -71,6 +71,11 @@ export function renderSettingsPanel({ autoSwitchEnabled, autoRegSettings, langua
       control: renderToggle('screenshots', autoRegSettings?.screenshotsOnError ?? true, "updateSetting('screenshotsOnError', this.checked)"),
     },
     {
+      label: t.spoofing,
+      desc: t.spoofingDesc,
+      control: renderToggle('spoofing', autoRegSettings?.spoofing ?? true, "updateSetting('spoofing', this.checked)"),
+    },
+    {
       label: t.language,
       desc: t.languageDesc,
       control: renderLanguageSelect(language),

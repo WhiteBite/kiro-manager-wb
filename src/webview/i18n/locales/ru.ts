@@ -57,6 +57,8 @@ export const ru: Translations = {
   verboseDesc: 'Показывать детальные логи',
   screenshots: 'Скриншоты при ошибках',
   screenshotsDesc: 'Сохранять скриншоты при ошибках',
+  spoofing: 'Режим спуфинга',
+  spoofingDesc: 'Рандомизировать отпечаток браузера',
   language: 'Язык',
   languageDesc: 'Язык интерфейса',
 };

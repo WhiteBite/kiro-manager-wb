@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "4.20.0",
+  "version": "4.21.0",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
@@ -125,6 +125,11 @@
           "type": "boolean",
           "default": false,
           "description": "Run browser in headless mode during auto-registration (hide browser window)"
+        },
+        "kiroAccountSwitcher.autoreg.spoofing": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable browser fingerprint spoofing during registration"
         },
         "kiroAccountSwitcher.autoreg.autoInject": {
           "type": "boolean",

@@ -57,6 +57,8 @@ export const ja: Translations = {
   verboseDesc: '詳細なログを表示',
   screenshots: 'エラー時スクリーンショット',
   screenshotsDesc: 'エラー発生時にスクリーンショットを保存',
+  spoofing: 'スプーフィングモード',
+  spoofingDesc: 'ブラウザフィンガープリントをランダム化',
   language: '言語',
   languageDesc: 'インターフェース言語',
 };

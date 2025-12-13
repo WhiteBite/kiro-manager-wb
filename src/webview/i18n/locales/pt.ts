@@ -57,6 +57,8 @@ export const pt: Translations = {
   verboseDesc: 'Mostrar logs detalhados',
   screenshots: 'Capturas em erro',
   screenshotsDesc: 'Salvar capturas quando ocorrerem erros',
+  spoofing: 'Modo spoofing',
+  spoofingDesc: 'Aleatorizar impressão digital do navegador',
   language: 'Idioma',
   languageDesc: 'Idioma da interface',
 };

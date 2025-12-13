@@ -377,6 +377,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       case 'screenshotsOnError':
         await config.update('debug.screenshotsOnError', value, vscode.ConfigurationTarget.Global);
         break;
+      case 'spoofing':
+        await config.update('autoreg.spoofing', value, vscode.ConfigurationTarget.Global);
+        break;
     }
 
     this.refresh();
@@ -405,11 +408,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   async refresh() {
     if (this._view) {
       const start = performance.now();
+      
       await this.refreshAccounts();
       await this.refreshUsage();
       this._availableUpdate = getAvailableUpdate(this._context);
       this.renderWebview();
-      this.loadAllUsage();
+      
       const duration = performance.now() - start;
       if (duration > 100) {
         console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
@@ -542,7 +546,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     const autoRegSettings = {
       headless: config.get<boolean>('autoreg.headless', false),
       verbose: config.get<boolean>('debug.verbose', false),
-      screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true)
+      screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true),
+      spoofing: config.get<boolean>('autoreg.spoofing', true)
     };
 
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({

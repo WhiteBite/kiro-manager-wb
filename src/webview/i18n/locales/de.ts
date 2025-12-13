@@ -57,6 +57,8 @@ export const de: Translations = {
   verboseDesc: 'Detaillierte Protokolle anzeigen',
   screenshots: 'Screenshots bei Fehlern',
   screenshotsDesc: 'Screenshots bei Fehlern speichern',
+  spoofing: 'Spoofing-Modus',
+  spoofingDesc: 'Browser-Fingerabdruck randomisieren',
   language: 'Sprache',
   languageDesc: 'Oberflächensprache',
 };

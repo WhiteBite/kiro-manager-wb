@@ -74,7 +74,13 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function refresh() {
+      const btn = document.querySelector('.btn-icon[title]');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+      }
       vscode.postMessage({ command: 'refresh' });
+      // Button will be restored when webview re-renders
     }
     
     function exportAccounts() {
@@ -82,7 +88,35 @@ export function generateWebviewScript(totalAccounts: number): string {
     }
     
     function switchAccount(filename) {
+      // Show loading state immediately
+      showUsageLoading();
       vscode.postMessage({ command: 'switchAccount', email: filename });
+    }
+    
+    function showUsageLoading() {
+      const usageCard = document.querySelector('.usage-card');
+      if (!usageCard) return;
+      
+      const lang = document.body.dataset.lang || 'en';
+      const loadingText = { en: 'Loading...', ru: 'Загрузка...', zh: '加载中...' };
+      
+      // Add loading class and update display
+      usageCard.classList.add('loading');
+      
+      const valueEl = usageCard.querySelector('.usage-value');
+      if (valueEl) {
+        valueEl.innerHTML = '<span class="usage-loading">' + (loadingText[lang] || loadingText.en) + '</span>';
+      }
+      
+      const fillEl = usageCard.querySelector('.usage-fill');
+      if (fillEl) {
+        fillEl.style.width = '0%';
+        fillEl.className = 'usage-fill';
+      }
+      
+      const footerSpans = usageCard.querySelectorAll('.usage-footer span');
+      if (footerSpans[0]) footerSpans[0].textContent = '—';
+      if (footerSpans[1]) footerSpans[1].textContent = '—';
     }
     
     function openUpdateUrl(url) {
@@ -147,6 +181,41 @@ export function generateWebviewScript(totalAccounts: number): string {
         countEl.textContent = count.toString();
         countEl.classList.toggle('has-errors', hasErrors);
       }
+    }
+    
+    // Toast notifications
+    function showToast(message, type = 'success', action = null) {
+      let container = document.querySelector('.toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      const icons = { success: '✓', error: '✗', warning: '⚠️', info: 'ℹ️' };
+      toast.innerHTML = '<span class="toast-icon">' + (icons[type] || icons.info) + '</span><span class="toast-message">' + message + '</span>';
+      
+      if (action) {
+        const btn = document.createElement('button');
+        btn.className = 'toast-action';
+        btn.textContent = action.text;
+        btn.onclick = () => { action.callback(); removeToast(toast); };
+        toast.appendChild(btn);
+      }
+      
+      container.appendChild(toast);
+      
+      // Auto remove after 4s (or 6s if has action)
+      setTimeout(() => removeToast(toast), action ? 6000 : 4000);
+      return toast;
+    }
+    
+    function removeToast(toast) {
+      if (!toast || !toast.parentNode) return;
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 300);
     }
     
     // Dialog
@@ -217,15 +286,30 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
-        // Animate card removal
+        const filename = pendingAction.filename;
+        const lang = document.body.dataset.lang || 'en';
+        
+        // Find and animate card removal
         const cards = document.querySelectorAll('.card');
+        let deletedCard = null;
+        let deletedEmail = '';
+        
         cards.forEach(card => {
-          if (card.dataset.email && pendingAction.filename.includes(card.dataset.email.split('@')[0])) {
+          const cardEmail = card.dataset.email || '';
+          if (filename === cardEmail || filename.includes(cardEmail.split('@')[0]) || cardEmail.includes(filename.split('@')[0])) {
+            deletedCard = card;
+            deletedEmail = cardEmail;
             card.classList.add('removing');
           }
         });
+        
+        // Send delete command after animation
         setTimeout(() => {
-          vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
+          vscode.postMessage({ command: 'deleteAccount', email: filename });
+          
+          // Show success toast
+          const msg = lang === 'ru' ? 'Аккаунт удалён' : 'Account deleted';
+          showToast(msg, 'success');
         }, 250);
       }
       closeDialog();
@@ -459,8 +543,12 @@ export function generateWebviewScript(totalAccounts: number): string {
       const usageCard = document.querySelector('.usage-card');
       if (!usageCard) return;
       
+      // Remove loading state
+      usageCard.classList.remove('loading', 'empty');
+      
       const percentage = usage.percentageUsed;
       const fillClass = percentage < 50 ? 'low' : percentage < 80 ? 'medium' : 'high';
+      const lang = document.body.dataset.lang || 'en';
       
       // Update values without full re-render
       const valueEl = usageCard.querySelector('.usage-value');
@@ -476,10 +564,10 @@ export function generateWebviewScript(totalAccounts: number): string {
       
       const footerSpans = usageCard.querySelectorAll('.usage-footer span');
       if (footerSpans[0]) {
-        footerSpans[0].textContent = percentage.toFixed(1) + '% used';
+        const usedText = { en: 'used', ru: 'использовано', zh: '已使用' };
+        footerSpans[0].textContent = percentage.toFixed(1) + '% ' + (usedText[lang] || usedText.en);
       }
       if (footerSpans[1] && usage.daysRemaining !== undefined) {
-        const lang = document.body.dataset.lang || 'en';
         const daysText = { en: 'days left', ru: 'дней осталось', zh: '天剩余' };
         footerSpans[1].textContent = usage.daysRemaining + ' ' + (daysText[lang] || daysText.en);
       }
