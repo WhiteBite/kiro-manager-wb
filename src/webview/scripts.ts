@@ -1,9 +1,8 @@
 /**
- * Client-side scripts for webview
+ * Client-side scripts for webview v5.0
  */
 
 import { generateStateScript } from './state';
-import { generateVirtualListScript } from './virtualList';
 
 export function generateWebviewScript(totalAccounts: number): string {
   return `
@@ -11,34 +10,79 @@ export function generateWebviewScript(totalAccounts: number): string {
     let pendingAction = null;
     
     ${generateStateScript()}
-    ${generateVirtualListScript()}
     
-    // UI Actions
-    function toggleCompact() {
-      document.body.classList.toggle('compact');
-      setState({ compact: document.body.classList.contains('compact') });
-      vscode.postMessage({ command: 'toggleCompact' });
-    }
+    // === UI Actions ===
     
     function openSettings() {
-      const panel = document.getElementById('settingsPanel');
-      panel.classList.toggle('visible');
-      setState({ settingsOpen: panel.classList.contains('visible') });
+      document.getElementById('settingsOverlay')?.classList.add('visible');
+      // Load active profile when opening settings
+      vscode.postMessage({ command: 'getActiveProfile' });
+      // Load patch status
+      vscode.postMessage({ command: 'getPatchStatus' });
+    }
+    
+    function closeSettings() {
+      document.getElementById('settingsOverlay')?.classList.remove('visible');
+    }
+    
+    // Render active profile in settings
+    function renderActiveProfile(profile) {
+      const container = document.getElementById('activeProfileContent');
+      if (!container) return;
+      
+      const lang = document.body.dataset.lang || 'en';
+      
+      const strategyLabels = {
+        single: { icon: '📧', name: lang === 'ru' ? 'Один Email' : 'Single Email', desc: lang === 'ru' ? 'один аккаунт' : 'one account' },
+        plus_alias: { icon: '➕', name: 'Plus Alias', desc: 'user+random@domain' },
+        catch_all: { icon: '🌐', name: 'Catch-All', desc: lang === 'ru' ? 'любой@домен' : 'any@domain' },
+        pool: { icon: '📋', name: lang === 'ru' ? 'Пул' : 'Pool', desc: lang === 'ru' ? 'список email' : 'email list' }
+      };
+      
+      if (!profile) {
+        container.innerHTML = \`
+          <div class="active-profile-empty">
+            <span class="empty-icon">📧</span>
+            <span class="empty-text">\${lang === 'ru' ? 'Профиль не настроен' : 'No profile configured'}</span>
+            <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">\${lang === 'ru' ? 'Настроить' : 'Configure'}</button>
+          </div>
+        \`;
+        return;
+      }
+      
+      const strategy = strategyLabels[profile.strategy?.type] || strategyLabels.single;
+      const stats = profile.stats || { registered: 0, failed: 0 };
+      
+      container.innerHTML = \`
+        <div class="active-profile-info">
+          <div class="active-profile-avatar">\${strategy.icon}</div>
+          <div class="active-profile-details">
+            <div class="active-profile-name">\${profile.name || 'Unnamed'}</div>
+            <div class="active-profile-email">\${profile.imap?.user || ''}</div>
+            <div class="active-profile-strategy">
+              <span class="strategy-name">\${strategy.name}</span>
+              <span class="strategy-desc">· \${strategy.desc}</span>
+            </div>
+          </div>
+        </div>
+        <div class="active-profile-stats">
+          <div class="active-profile-stat">
+            <span class="active-profile-stat-value success">\${stats.registered}</span>
+            <span class="active-profile-stat-label">\${lang === 'ru' ? 'Успешно' : 'Success'}</span>
+          </div>
+          <div class="active-profile-stat">
+            <span class="active-profile-stat-value danger">\${stats.failed}</span>
+            <span class="active-profile-stat-label">\${lang === 'ru' ? 'Ошибок' : 'Failed'}</span>
+          </div>
+        </div>
+      \`;
     }
     
     function toggleAutoSwitch(enabled) {
       vscode.postMessage({ command: 'toggleAutoSwitch', enabled });
     }
     
-    function toggleHideExpired(hide) {
-      setState({ hideExpired: hide });
-      // Hide exhausted accounts (usage >= 100%), not just expired tokens
-      document.querySelectorAll('.card.exhausted').forEach(card => {
-        card.style.display = hide ? 'none' : '';
-      });
-    }
-    
-    function updateSetting(key, value) {
+    function toggleSetting(key, value) {
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
     
@@ -46,85 +90,68 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'setLanguage', language: lang });
     }
     
-    function startAutoReg() {
-      console.log('startAutoReg clicked');
-      vscode.postMessage({ command: 'startAutoReg' });
-    }
-    
-    function importToken() {
-      vscode.postMessage({ command: 'importToken' });
-    }
-    
-    function showSsoImport() {
-      document.getElementById('ssoImportPanel')?.classList.add('visible');
-    }
-    
-    function hideSsoImport() {
-      document.getElementById('ssoImportPanel')?.classList.remove('visible');
-      document.getElementById('ssoTokenInput').value = '';
-    }
-    
-    function importSsoToken() {
-      const input = document.getElementById('ssoTokenInput');
-      const token = input?.value?.trim();
-      if (token) {
-        vscode.postMessage({ command: 'importSsoToken', token: token });
-        hideSsoImport();
-      }
-    }
-    
-    function refresh() {
-      const btn = document.querySelector('.btn-icon[title]');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>';
-      }
-      vscode.postMessage({ command: 'refresh' });
-      // Button will be restored when webview re-renders
-    }
-    
-    function exportAccounts() {
-      vscode.postMessage({ command: 'exportAccounts' });
-    }
-    
-    function switchAccount(filename) {
-      // Show loading state immediately
-      showUsageLoading();
-      vscode.postMessage({ command: 'switchAccount', email: filename });
-    }
-    
-    function showUsageLoading() {
-      const usageCard = document.querySelector('.usage-card');
-      if (!usageCard) return;
-      
-      const lang = document.body.dataset.lang || 'en';
-      const loadingText = { en: 'Loading...', ru: 'Загрузка...', zh: '加载中...' };
-      
-      // Add loading class and update display
-      usageCard.classList.add('loading');
-      
-      const valueEl = usageCard.querySelector('.usage-value');
-      if (valueEl) {
-        valueEl.innerHTML = '<span class="usage-loading">' + (loadingText[lang] || loadingText.en) + '</span>';
-      }
-      
-      const fillEl = usageCard.querySelector('.usage-fill');
-      if (fillEl) {
-        fillEl.style.width = '0%';
-        fillEl.className = 'usage-fill';
-      }
-      
-      const footerSpans = usageCard.querySelectorAll('.usage-footer span');
-      if (footerSpans[0]) footerSpans[0].textContent = '—';
-      if (footerSpans[1]) footerSpans[1].textContent = '—';
-    }
-    
-    function openUpdateUrl(url) {
-      vscode.postMessage({ command: 'openUrl', url: url });
-    }
-    
-    function checkForUpdates() {
+    function checkUpdates() {
       vscode.postMessage({ command: 'checkForUpdates' });
+    }
+    
+    function confirmResetMachineId() {
+      pendingAction = { type: 'resetMachineId' };
+      const lang = document.body.dataset.lang || 'en';
+      const titles = { en: 'Reset Machine ID', ru: 'Сброс Machine ID' };
+      const texts = { en: 'This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?', ru: 'Это сбросит telemetry ID Kiro. Потребуется перезапуск. Продолжить?' };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
+    function resetMachineId() {
+      vscode.postMessage({ command: 'resetMachineId' });
+    }
+    
+    // === Kiro Patching ===
+    
+    function confirmPatchKiro() {
+      pendingAction = { type: 'patchKiro' };
+      const lang = document.body.dataset.lang || 'en';
+      const titles = { en: 'Patch Kiro', ru: 'Пропатчить Kiro' };
+      const texts = { en: 'This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?', ru: 'Это пропатчит Kiro для использования кастомного Machine ID. Сначала закройте Kiro! Продолжить?' };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
+    function confirmUnpatchKiro() {
+      pendingAction = { type: 'unpatchKiro' };
+      const lang = document.body.dataset.lang || 'en';
+      const titles = { en: 'Remove Patch', ru: 'Удалить патч' };
+      const texts = { en: 'This will restore original Kiro files. Continue?', ru: 'Это восстановит оригинальные файлы Kiro. Продолжить?' };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
+    function patchKiro(force = false) {
+      vscode.postMessage({ command: 'patchKiro', force });
+    }
+    
+    function unpatchKiro() {
+      vscode.postMessage({ command: 'unpatchKiro' });
+    }
+    
+    function generateNewMachineId() {
+      vscode.postMessage({ command: 'generateMachineId' });
+    }
+    
+    function getPatchStatus() {
+      vscode.postMessage({ command: 'getPatchStatus' });
+    }
+    
+    function openVsCodeSettings() {
+      vscode.postMessage({ command: 'openVsCodeSettings' });
+    }
+    
+    function startAutoReg() {
+      vscode.postMessage({ command: 'startAutoReg' });
     }
     
     function stopAutoReg() {
@@ -135,148 +162,124 @@ export function generateWebviewScript(totalAccounts: number): string {
       vscode.postMessage({ command: 'togglePauseAutoReg' });
     }
     
+    function refresh() {
+      vscode.postMessage({ command: 'refresh' });
+    }
+    
+    function refreshUsage() {
+      vscode.postMessage({ command: 'refreshUsage' });
+    }
+    
+    function switchAccount(filename) {
+      vscode.postMessage({ command: 'switchAccount', email: filename });
+    }
+
     function copyToken(filename) {
       vscode.postMessage({ command: 'copyToken', email: filename });
     }
     
-    function viewQuota(filename) {
-      vscode.postMessage({ command: 'viewQuota', email: filename });
+    function openUpdateUrl(url) {
+      vscode.postMessage({ command: 'openUrl', url: url });
     }
     
-    function refreshToken(filename) {
-      vscode.postMessage({ command: 'refreshToken', email: filename });
+    // === SSO Modal ===
+    
+    function openSsoModal() {
+      document.getElementById('ssoModal')?.classList.add('visible');
+    }
+    
+    function closeSsoModal() {
+      document.getElementById('ssoModal')?.classList.remove('visible');
+      const input = document.getElementById('ssoTokenInput');
+      if (input) input.value = '';
+    }
+    
+    function importSsoToken() {
+      const input = document.getElementById('ssoTokenInput');
+      const token = input?.value?.trim();
+      if (token) {
+        vscode.postMessage({ command: 'importSsoToken', token });
+        closeSsoModal();
+      }
+    }
+    
+    // === Logs Drawer ===
+    
+    function toggleLogs() {
+      const drawer = document.getElementById('logsDrawer');
+      drawer?.classList.toggle('open');
     }
     
     function clearConsole() {
-      const consoleBody = document.getElementById('consoleBody');
-      if (consoleBody) consoleBody.innerHTML = '';
-      updateConsoleCount();
+      const content = document.getElementById('logsContent');
+      if (content) content.innerHTML = '';
+      updateLogsCount();
       vscode.postMessage({ command: 'clearConsole' });
     }
     
     function copyLogs() {
-      const consoleBody = document.getElementById('consoleBody');
-      if (consoleBody) {
-        const logs = Array.from(consoleBody.querySelectorAll('.console-line'))
+      const content = document.getElementById('logsContent');
+      if (content) {
+        const logs = Array.from(content.querySelectorAll('.log-line'))
           .map(el => el.textContent)
           .join('\\n');
-        vscode.postMessage({ command: 'copyLogs', logs: logs });
+        vscode.postMessage({ command: 'copyLogs', logs });
       }
     }
     
-    function toggleConsole() {
-      const console = document.getElementById('consoleFloating');
-      if (console) {
-        console.classList.toggle('collapsed');
-        setState({ consoleCollapsed: console.classList.contains('collapsed') });
-      }
-    }
-    
-    function updateConsoleCount() {
-      const consoleBody = document.getElementById('consoleBody');
-      const countEl = document.getElementById('consoleCount');
-      if (consoleBody && countEl) {
-        const count = consoleBody.children.length;
-        const hasErrors = consoleBody.querySelector('.console-line.error') !== null;
+    function updateLogsCount() {
+      const content = document.getElementById('logsContent');
+      const countEl = document.getElementById('logsCount');
+      if (content && countEl) {
+        const count = content.children.length;
+        const hasErrors = content.querySelector('.log-line.error') !== null;
         countEl.textContent = count.toString();
         countEl.classList.toggle('has-errors', hasErrors);
       }
     }
     
-    // Toast notifications
-    function showToast(message, type = 'success', action = null) {
-      let container = document.querySelector('.toast-container');
-      if (!container) {
-        container = document.createElement('div');
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-      }
+    function appendLogLine(log) {
+      const content = document.getElementById('logsContent');
+      if (!content) return;
       
-      const toast = document.createElement('div');
-      toast.className = 'toast ' + type;
-      const icons = { success: '✓', error: '✗', warning: '⚠️', info: 'ℹ️' };
-      toast.innerHTML = '<span class="toast-icon">' + (icons[type] || icons.info) + '</span><span class="toast-message">' + message + '</span>';
+      // Open drawer on new log
+      document.getElementById('logsDrawer')?.classList.add('open');
       
-      if (action) {
-        const btn = document.createElement('button');
-        btn.className = 'toast-action';
-        btn.textContent = action.text;
-        btn.onclick = () => { action.callback(); removeToast(toast); };
-        toast.appendChild(btn);
-      }
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      if (log.includes('✓') || log.includes('SUCCESS') || log.includes('✅')) line.classList.add('success');
+      else if (log.includes('✗') || log.includes('ERROR') || log.includes('❌')) line.classList.add('error');
+      else if (log.includes('⚠') || log.includes('WARN')) line.classList.add('warning');
+      line.textContent = log;
+      content.appendChild(line);
       
-      container.appendChild(toast);
+      // Keep max 200 lines
+      while (content.children.length > 200) content.removeChild(content.firstChild);
       
-      // Auto remove after 4s (or 6s if has action)
-      setTimeout(() => removeToast(toast), action ? 6000 : 4000);
-      return toast;
+      content.scrollTop = content.scrollHeight;
+      updateLogsCount();
     }
+
+    // === Delete Dialog ===
     
-    function removeToast(toast) {
-      if (!toast || !toast.parentNode) return;
-      toast.classList.add('removing');
-      setTimeout(() => toast.remove(), 300);
-    }
-    
-    // Dialog
     function confirmDelete(filename) {
       pendingAction = { type: 'delete', filename };
       const lang = document.body.dataset.lang || 'en';
-      const titles = { 
-        en: 'Delete Account', ru: 'Удалить аккаунт', zh: '删除账户', 
-        es: 'Eliminar cuenta', pt: 'Excluir conta', ja: 'アカウントを削除',
-        de: 'Konto löschen', fr: 'Supprimer le compte', ko: '계정 삭제', hi: 'खाता हटाएं'
-      };
-      const texts = { 
-        en: 'Are you sure you want to delete this account?', 
-        ru: 'Вы уверены, что хотите удалить этот аккаунт?',
-        zh: '您确定要删除此账户吗？', es: '¿Está seguro de que desea eliminar esta cuenta?',
-        pt: 'Tem certeza de que deseja excluir esta conta?', ja: 'このアカウントを削除してもよろしいですか？',
-        de: 'Sind Sie sicher, dass Sie dieses Konto löschen möchten?', 
-        fr: 'Êtes-vous sûr de vouloir supprimer ce compte ?',
-        ko: '이 계정을 삭제하시겠습니까?', hi: 'क्या आप वाकई इस खाते को हटाना चाहते हैं?'
-      };
+      const titles = { en: 'Delete Account', ru: 'Удалить аккаунт' };
+      const texts = { en: 'Are you sure?', ru: 'Вы уверены?' };
       document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
       document.getElementById('dialogText').textContent = texts[lang] || texts.en;
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
-    // Double-click confirmation for delete exhausted
-    let deleteExhaustedPending = false;
-    let deleteExhaustedTimeout = null;
-    
     function confirmDeleteExhausted() {
-      const exhaustedCards = document.querySelectorAll('.card.exhausted, .card.suspended');
-      const count = exhaustedCards.length;
-      if (count === 0) return;
-      
-      const btn = document.querySelector('.stat-exhausted');
+      pendingAction = { type: 'deleteExhausted' };
       const lang = document.body.dataset.lang || 'en';
-      
-      if (deleteExhaustedPending) {
-        // Second click - actually delete
-        deleteExhaustedPending = false;
-        if (deleteExhaustedTimeout) clearTimeout(deleteExhaustedTimeout);
-        if (btn) btn.classList.remove('confirm-pending');
-        vscode.postMessage({ command: 'deleteExhaustedAccounts' });
-      } else {
-        // First click - show confirmation state
-        deleteExhaustedPending = true;
-        if (btn) {
-          btn.classList.add('confirm-pending');
-          const originalText = btn.querySelector('span:nth-child(2)').textContent;
-          btn.querySelector('span:nth-child(2)').textContent = lang === 'ru' ? 'Удалить?' : 'Delete?';
-          btn.querySelector('.stat-delete').textContent = '⚠️';
-          
-          // Reset after 3 seconds
-          deleteExhaustedTimeout = setTimeout(() => {
-            deleteExhaustedPending = false;
-            btn.classList.remove('confirm-pending');
-            btn.querySelector('span:nth-child(2)').textContent = originalText;
-            btn.querySelector('.stat-delete').textContent = '🗑';
-          }, 3000);
-        }
-      }
+      const titles = { en: 'Delete All Bad Accounts', ru: 'Удалить все плохие' };
+      const texts = { en: 'Delete all expired/exhausted accounts?', ru: 'Удалить все истёкшие/исчерпанные?' };
+      document.getElementById('dialogTitle').textContent = titles[lang] || titles.en;
+      document.getElementById('dialogText').textContent = texts[lang] || texts.en;
+      document.getElementById('dialogOverlay').classList.add('visible');
     }
     
     function closeDialog() {
@@ -286,37 +289,28 @@ export function generateWebviewScript(totalAccounts: number): string {
     
     function dialogAction() {
       if (pendingAction?.type === 'delete') {
-        const filename = pendingAction.filename;
-        const lang = document.body.dataset.lang || 'en';
-        
-        // Find and animate card removal
-        const cards = document.querySelectorAll('.card');
-        let deletedCard = null;
-        let deletedEmail = '';
-        
-        cards.forEach(card => {
-          const cardEmail = card.dataset.email || '';
-          if (filename === cardEmail || filename.includes(cardEmail.split('@')[0]) || cardEmail.includes(filename.split('@')[0])) {
-            deletedCard = card;
-            deletedEmail = cardEmail;
-            card.classList.add('removing');
-          }
-        });
-        
-        // Send delete command after animation
-        setTimeout(() => {
-          vscode.postMessage({ command: 'deleteAccount', email: filename });
-          
-          // Show success toast
-          const msg = lang === 'ru' ? 'Аккаунт удалён' : 'Account deleted';
-          showToast(msg, 'success');
-        }, 250);
+        vscode.postMessage({ command: 'deleteAccount', email: pendingAction.filename });
+        showToast('Account deleted', 'success');
+      } else if (pendingAction?.type === 'deleteExhausted') {
+        vscode.postMessage({ command: 'deleteExhaustedAccounts' });
+        showToast('Bad accounts deleted', 'success');
+      } else if (pendingAction?.type === 'resetMachineId') {
+        vscode.postMessage({ command: 'resetMachineId' });
+        showToast('Resetting Machine ID...', 'success');
+      } else if (pendingAction?.type === 'patchKiro') {
+        vscode.postMessage({ command: 'patchKiro' });
+        showToast('Patching Kiro...', 'success');
+      } else if (pendingAction?.type === 'unpatchKiro') {
+        vscode.postMessage({ command: 'unpatchKiro' });
+        showToast('Removing patch...', 'success');
       }
       closeDialog();
     }
     
-    // Search
+    // === Search ===
+    
     let searchQuery = '';
+    
     function searchAccounts(query) {
       searchQuery = query.toLowerCase().trim();
       applyFilters();
@@ -329,91 +323,34 @@ export function generateWebviewScript(totalAccounts: number): string {
       applyFilters();
     }
     
-    // Filtering & Sorting
-    function filterAccounts(filter) {
-      setState({ filter });
-      document.querySelectorAll('.filter-tab').forEach((tab, i) => {
-        const filters = ['all', 'valid', 'expired'];
-        tab.classList.toggle('active', filters[i] === filter);
-      });
-      applyFilters();
-    }
-    
     function applyFilters() {
-      const filter = getState().filter || 'all';
-      document.querySelectorAll('.card').forEach(card => {
-        const isExpired = card.classList.contains('expired');
-        const email = (card.dataset.email || '').toLowerCase();
-        
-        // Filter check
-        const filterMatch = filter === 'all' || (filter === 'valid' && !isExpired) || (filter === 'expired' && isExpired);
-        
-        // Search check
-        const searchMatch = !searchQuery || email.includes(searchQuery);
-        
-        card.style.display = (filterMatch && searchMatch) ? '' : 'none';
+      document.querySelectorAll('.account').forEach(acc => {
+        const email = (acc.querySelector('.account-email')?.textContent || '').toLowerCase();
+        const match = !searchQuery || email.includes(searchQuery);
+        acc.style.display = match ? '' : 'none';
       });
     }
     
-    function sortAccounts(sort) {
-      setState({ sort });
-      const list = document.getElementById('accountList');
-      if (!list) return;
+    // === Toast ===
+    
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
       
-      const cards = Array.from(list.querySelectorAll('.card'));
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      const icons = { success: '✓', error: '✗', warning: '⚠️' };
+      toast.innerHTML = '<span class="toast-icon">' + (icons[type] || '•') + '</span><span class="toast-message">' + message + '</span>';
+      container.appendChild(toast);
       
-      cards.sort((a, b) => {
-        if (sort === 'date') {
-          const dateA = a.dataset.created || '';
-          const dateB = b.dataset.created || '';
-          return dateB.localeCompare(dateA); // Newest first
-        } else if (sort === 'usage') {
-          const usageA = parseFloat(a.dataset.usagePercent) || 0;
-          const usageB = parseFloat(b.dataset.usagePercent) || 0;
-          return usageA - usageB; // Lowest usage first
-        } else if (sort === 'expiry') {
-          // Get expiry from card meta
-          const getExpiry = (card) => {
-            const meta = card.querySelector('.card-meta-item:last-child');
-            const text = meta?.textContent || '';
-            const match = text.match(/(\\d+)/);
-            return match ? parseInt(match[1]) : 999;
-          };
-          return getExpiry(a) - getExpiry(b);
-        }
-        return 0;
-      });
-      
-      // Re-append in sorted order with animation
-      cards.forEach((card, i) => {
-        card.style.animationDelay = (i * 0.02) + 's';
-        list.appendChild(card);
-      });
+      setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
     }
+
+    // === Message Handler ===
     
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeDialog();
-        document.getElementById('settingsPanel')?.classList.remove('visible');
-        clearSearch();
-      }
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'r') { e.preventDefault(); refresh(); }
-        if (e.key === 'n') { e.preventDefault(); startAutoReg(); }
-        if (e.key === 'f') { e.preventDefault(); document.getElementById('searchInput')?.focus(); }
-      }
-    });
-    
-    // Focus search on / key
-    document.addEventListener('keypress', (e) => {
-      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
-        e.preventDefault();
-        document.getElementById('searchInput')?.focus();
-      }
-    });
-    
-    // Handle messages from extension
     window.addEventListener('message', (event) => {
       const msg = event.data;
       switch (msg.type) {
@@ -421,317 +358,453 @@ export function generateWebviewScript(totalAccounts: number): string {
           appendLogLine(msg.log);
           break;
         case 'updateStatus':
-          updateAutoRegStatus(msg.status);
+          updateStatus(msg.status);
           break;
-        case 'updateUsage':
-          updateUsageCard(msg.usage);
+        case 'toast':
+          showToast(msg.message, msg.toastType || 'success');
           break;
-        case 'updateAccounts':
-          updateAccountCards(msg.accounts);
+        case 'profilesLoaded':
+          renderProfilesList(msg.profiles, msg.activeProfileId);
+          break;
+        case 'activeProfileLoaded':
+          renderActiveProfile(msg.profile);
+          break;
+        case 'profileLoaded':
+          populateProfileEditor(msg.profile);
+          break;
+        case 'providerDetected':
+          applyProviderHint(msg.hint, msg.recommendedStrategy);
+          break;
+        case 'emailsImported':
+          addImportedEmails(msg.emails);
+          break;
+        case 'patchStatus':
+          updatePatchStatus(msg);
           break;
       }
     });
     
-    // Incremental account cards update
-    function updateAccountCards(accounts) {
-      if (!accounts || !accounts.length) return;
+    function updatePatchStatus(status) {
+      const patchBtn = document.getElementById('patchKiroBtn');
+      const unpatchBtn = document.getElementById('unpatchKiroBtn');
+      const generateBtn = document.getElementById('generateIdBtn');
+      const statusEl = document.getElementById('patchStatusText');
+      const machineIdEl = document.getElementById('currentMachineId');
+      const indicator = document.getElementById('patchIndicator');
       
-      const list = document.getElementById('accountList');
-      if (!list) return;
+      const lang = document.body.dataset.lang || 'en';
       
-      accounts.forEach(acc => {
-        const email = acc.tokenData?.email || acc.tokenData?.accountName || acc.filename;
-        const card = list.querySelector('[data-email="' + email + '"]');
-        if (!card) return;
-        
-        // Update active state
-        card.classList.toggle('active', acc.isActive);
-        card.classList.toggle('expired', acc.isExpired);
-        
-        // Update usage display
-        const usageEl = card.querySelector('.card-usage');
-        if (usageEl && acc.usage) {
-          const usage = acc.usage;
-          const isUnknown = usage.currentUsage === -1;
-          const isExhausted = !isUnknown && usage.percentageUsed >= 100;
-          
-          card.classList.toggle('exhausted', isExhausted);
-          card.classList.toggle('unknown-usage', isUnknown);
-          
-          // Update usage text
-          const usageText = isUnknown ? '?' : usage.currentUsage.toLocaleString();
-          usageEl.innerHTML = usageEl.innerHTML.replace(/>[^<]*<\\/span>|>\\d+|>\\?|>—/, '>' + usageText);
+      // Update settings panel status
+      if (statusEl) {
+        if (status.error) {
+          statusEl.textContent = status.error;
+          statusEl.className = 'patch-status error';
+        } else if (status.isPatched) {
+          statusEl.textContent = lang === 'ru' ? 'Патч установлен ✓' : 'Patched ✓';
+          statusEl.className = 'patch-status success';
+        } else {
+          statusEl.textContent = lang === 'ru' ? 'Не пропатчен' : 'Not patched';
+          statusEl.className = 'patch-status warning';
         }
-        
-        // Update status badges
-        const statusBadges = card.querySelectorAll('.card-status');
-        statusBadges.forEach(badge => badge.remove());
-        
-        const cardMain = card.querySelector('.card-main');
-        const actionsDiv = card.querySelector('.card-actions');
-        if (cardMain && actionsDiv) {
-          const lang = document.body.dataset.lang || 'en';
-          if (acc.isActive) {
-            const badge = document.createElement('span');
-            badge.className = 'card-status active';
-            badge.textContent = lang === 'ru' ? 'АКТИВЕН' : 'ACTIVE';
-            cardMain.insertBefore(badge, actionsDiv);
+      }
+      
+      // Update machine ID preview
+      if (machineIdEl && status.currentMachineId) {
+        machineIdEl.textContent = status.currentMachineId.substring(0, 16) + '...';
+        machineIdEl.title = status.currentMachineId;
+      }
+      
+      // Update header indicator
+      if (indicator) {
+        indicator.className = 'patch-indicator visible';
+        if (status.error) {
+          indicator.classList.add('error');
+          indicator.title = lang === 'ru' ? 'Ошибка патча: ' + status.error : 'Patch error: ' + status.error;
+        } else if (status.isPatched) {
+          indicator.classList.add('patched');
+          indicator.title = lang === 'ru' ? 'Патч активен (v' + status.patchVersion + ')' : 'Patch active (v' + status.patchVersion + ')';
+        } else if (status.currentMachineId) {
+          // Has custom ID but not patched - needs attention
+          indicator.classList.add('not-patched');
+          indicator.title = lang === 'ru' ? 'Патч не применён! Нажмите чтобы открыть настройки' : 'Patch not applied! Click to open settings';
+          indicator.onclick = openSettings;
+        } else {
+          // No custom ID, no patch - hide indicator
+          indicator.className = 'patch-indicator';
+        }
+      }
+      
+      // Update buttons visibility
+      if (patchBtn) patchBtn.style.display = status.isPatched ? 'none' : '';
+      if (unpatchBtn) unpatchBtn.style.display = status.isPatched ? '' : 'none';
+    }
+    
+    function updateStatus(status) {
+      const btn = document.querySelector('.btn-primary');
+      const hero = document.querySelector('.hero');
+      const lang = document.body.dataset.lang || 'en';
+      
+      if (!status) {
+        // Registration finished
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '⚡ ' + (lang === 'ru' ? 'Авто-рег' : 'Auto-Reg');
+        }
+        // Refresh to show new account
+        vscode.postMessage({ command: 'refresh' });
+        return;
+      }
+      
+      // Show running state
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> ' + (lang === 'ru' ? 'Запуск...' : 'Running...');
+      }
+      
+      // Update hero with progress
+      try {
+        const progress = JSON.parse(status);
+        if (progress && hero) {
+          const percent = Math.round((progress.step / progress.totalSteps) * 100);
+          hero.className = 'hero progress';
+          hero.innerHTML = \`
+            <div class="hero-header">
+              <span class="hero-email">\${progress.stepName || ''}</span>
+              <span class="hero-step">\${progress.step}/\${progress.totalSteps}</span>
+            </div>
+            <div class="hero-progress">
+              <div class="hero-progress-fill low" style="width: \${percent}%"></div>
+            </div>
+            <div class="hero-stats">
+              <span class="hero-usage">\${progress.detail || ''}</span>
+              <span class="hero-percent">\${percent}%</span>
+            </div>
+          \`;
+        }
+      } catch {}
+    }
+    
+    // === Keyboard Shortcuts ===
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+        closeSettings();
+        closeSsoModal();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchInput')?.focus();
+      }
+    });
+    
+    // === IMAP Profiles ===
+    
+    let currentPoolEmails = [];
+    let editingProfileId = null;
+    
+    function openProfilesPanel() {
+      document.getElementById('profilesPanel')?.classList.add('visible');
+      vscode.postMessage({ command: 'loadProfiles' });
+    }
+    
+    function closeProfilesPanel() {
+      document.getElementById('profilesPanel')?.classList.remove('visible');
+    }
+    
+    function createProfile() {
+      editingProfileId = null;
+      currentPoolEmails = [];
+      document.getElementById('profileEditor')?.classList.add('visible');
+      // Reset form
+      document.getElementById('profileName').value = '';
+      document.getElementById('imapUser').value = '';
+      document.getElementById('imapServer').value = '';
+      document.getElementById('imapPort').value = '993';
+      document.getElementById('imapPassword').value = '';
+      selectStrategy('single');
+    }
+    
+    function editProfile(profileId) {
+      editingProfileId = profileId;
+      vscode.postMessage({ command: 'getProfile', profileId });
+    }
+    
+    function closeProfileEditor() {
+      document.getElementById('profileEditor')?.classList.remove('visible');
+      editingProfileId = null;
+    }
+    
+    function selectProfile(profileId) {
+      vscode.postMessage({ command: 'setActiveProfile', profileId });
+    }
+    
+    function deleteProfile(profileId) {
+      if (confirm('Delete this profile?')) {
+        vscode.postMessage({ command: 'deleteProfile', profileId });
+      }
+    }
+    
+    function selectStrategy(strategy) {
+      document.querySelectorAll('.strategy-option').forEach(el => {
+        el.classList.toggle('selected', el.dataset.strategy === strategy);
+      });
+      const catchAllConfig = document.getElementById('catchAllConfig');
+      const poolConfig = document.getElementById('poolConfig');
+      if (catchAllConfig) catchAllConfig.style.display = strategy === 'catch_all' ? 'block' : 'none';
+      if (poolConfig) poolConfig.style.display = strategy === 'pool' ? 'block' : 'none';
+    }
+    
+    function onEmailInput(email) {
+      vscode.postMessage({ command: 'detectProvider', email });
+    }
+    
+    function testImapConnection() {
+      const server = document.getElementById('imapServer')?.value;
+      const user = document.getElementById('imapUser')?.value;
+      const password = document.getElementById('imapPassword')?.value;
+      const port = document.getElementById('imapPort')?.value || '993';
+      vscode.postMessage({ command: 'testImap', server, user, password, port: parseInt(port) });
+    }
+    
+    function togglePasswordVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    
+    function addEmailToPool() {
+      const input = document.getElementById('newPoolEmail');
+      const email = input?.value?.trim();
+      if (!email || !email.includes('@')) return;
+      if (!currentPoolEmails.includes(email.toLowerCase())) {
+        currentPoolEmails.push(email);
+        renderPoolList();
+      }
+      if (input) input.value = '';
+    }
+    
+    function removeEmailFromPool(index) {
+      currentPoolEmails.splice(index, 1);
+      renderPoolList();
+    }
+    
+    function renderPoolList() {
+      const list = document.getElementById('poolList');
+      if (!list) return;
+      list.innerHTML = currentPoolEmails.map((email, i) => 
+        '<div class="pool-item pending" data-index="' + i + '">' +
+          '<span class="pool-status">⬜</span>' +
+          '<span class="pool-email">' + email + '</span>' +
+          '<button class="pool-remove" onclick="removeEmailFromPool(' + i + ')">✕</button>' +
+        '</div>'
+      ).join('');
+    }
+    
+    function importEmailsFromFile() {
+      vscode.postMessage({ command: 'importEmailsFromFile' });
+    }
+    
+    function pasteEmails() {
+      navigator.clipboard.readText().then(text => {
+        const emails = text.split(/[\\n,;\\s]+/).filter(e => e.includes('@'));
+        emails.forEach(email => {
+          const e = email.trim().toLowerCase();
+          if (e && !currentPoolEmails.includes(e)) {
+            currentPoolEmails.push(email.trim());
           }
-          if (acc.usage && acc.usage.percentageUsed >= 100) {
-            const badge = document.createElement('span');
-            badge.className = 'card-status exhausted';
-            badge.textContent = lang === 'ru' ? 'ЛИМИТ' : 'LIMIT';
-            cardMain.insertBefore(badge, actionsDiv);
-          }
-          if (acc.isExpired && (!acc.usage || acc.usage.percentageUsed < 100)) {
-            const badge = document.createElement('span');
-            badge.className = 'card-status expired';
-            badge.textContent = lang === 'ru' ? 'ИСТЁК' : 'EXPIRED';
-            cardMain.insertBefore(badge, actionsDiv);
-          }
+        });
+        renderPoolList();
+      }).catch(() => {
+        showToast('Failed to read clipboard', 'error');
+      });
+    }
+    
+    function saveProfile() {
+      const name = document.getElementById('profileName')?.value?.trim() || 'Unnamed';
+      const server = document.getElementById('imapServer')?.value?.trim();
+      const user = document.getElementById('imapUser')?.value?.trim();
+      const password = document.getElementById('imapPassword')?.value;
+      const port = parseInt(document.getElementById('imapPort')?.value) || 993;
+      
+      const selectedStrategy = document.querySelector('.strategy-option.selected');
+      const strategyType = selectedStrategy?.dataset?.strategy || 'single';
+      
+      const strategy = { type: strategyType };
+      if (strategyType === 'catch_all') {
+        strategy.domain = document.getElementById('catchAllDomain')?.value?.trim();
+      } else if (strategyType === 'pool') {
+        strategy.emails = currentPoolEmails.map(email => ({ email, status: 'pending' }));
+      }
+      
+      if (!server || !user || !password) {
+        showToast('Please fill all IMAP fields', 'error');
+        return;
+      }
+      
+      vscode.postMessage({
+        command: editingProfileId ? 'updateProfile' : 'createProfile',
+        profile: {
+          id: editingProfileId,
+          name,
+          imap: { server, user, password, port },
+          strategy
         }
       });
       
-      // Update stats bar
-      updateStatsBar(accounts);
+      closeProfileEditor();
     }
     
-    // Update stats bar with new account data
-    function updateStatsBar(accounts) {
-      const validCount = accounts.filter(a => !a.isExpired).length;
-      const expiredCount = accounts.filter(a => a.isExpired).length;
-      const activeAccount = accounts.find(a => a.isActive);
-      const totalUsage = accounts.reduce((sum, acc) => {
-        const usage = acc.usage?.currentUsage;
-        return sum + (usage && usage !== -1 ? usage : 0);
-      }, 0);
-      
-      const statsBar = document.querySelector('.stats-bar');
-      if (!statsBar) return;
-      
-      const statItems = statsBar.querySelectorAll('.stat-item');
-      const lang = document.body.dataset.lang || 'en';
-      
-      // Update active account
-      if (statItems[0]) {
-        const dot = statItems[0].querySelector('.stat-dot');
-        const text = statItems[0].querySelector('span:last-child');
-        if (dot) dot.className = 'stat-dot ' + (activeAccount ? 'active' : 'valid');
-        if (text) {
-          const email = activeAccount?.tokenData?.email || activeAccount?.tokenData?.accountName || '';
-          text.textContent = activeAccount ? email.split('@')[0] : (lang === 'ru' ? 'Нет активного' : 'No active');
-        }
-      }
-      
-      // Update valid count
-      if (statItems[1]) {
-        const text = statItems[1].querySelector('span:last-child');
-        if (text) text.textContent = validCount + ' ' + (lang === 'ru' ? 'активных' : 'valid');
-      }
-      
-      // Update total usage
-      const totalEl = statsBar.querySelector('.stat-total');
-      if (totalEl) {
-        totalEl.innerHTML = totalEl.innerHTML.replace(/\\d[\\d,]*/, totalUsage.toLocaleString());
-      }
-    }
+    // === Profile Message Handlers ===
     
-    // Incremental usage card update
-    function updateUsageCard(usage) {
-      if (!usage) return;
+    function renderProfilesList(profiles, activeId) {
+      const container = document.getElementById('profilesContent');
+      if (!container) return;
       
-      const usageCard = document.querySelector('.usage-card');
-      if (!usageCard) return;
-      
-      // Remove loading state
-      usageCard.classList.remove('loading', 'empty');
-      
-      const percentage = usage.percentageUsed;
-      const fillClass = percentage < 50 ? 'low' : percentage < 80 ? 'medium' : 'high';
-      const lang = document.body.dataset.lang || 'en';
-      
-      // Update values without full re-render
-      const valueEl = usageCard.querySelector('.usage-value');
-      if (valueEl) {
-        valueEl.textContent = usage.currentUsage.toLocaleString() + ' / ' + usage.usageLimit.toLocaleString();
-      }
-      
-      const fillEl = usageCard.querySelector('.usage-fill');
-      if (fillEl) {
-        fillEl.style.width = Math.min(percentage, 100) + '%';
-        fillEl.className = 'usage-fill ' + fillClass;
-      }
-      
-      const footerSpans = usageCard.querySelectorAll('.usage-footer span');
-      if (footerSpans[0]) {
-        const usedText = { en: 'used', ru: 'использовано', zh: '已使用' };
-        footerSpans[0].textContent = percentage.toFixed(1) + '% ' + (usedText[lang] || usedText.en);
-      }
-      if (footerSpans[1] && usage.daysRemaining !== undefined) {
-        const daysText = { en: 'days left', ru: 'дней осталось', zh: '天剩余' };
-        footerSpans[1].textContent = usage.daysRemaining + ' ' + (daysText[lang] || daysText.en);
-      }
-      
-      // Remove stale indicator if present
-      usageCard.classList.remove('stale');
-      const staleIndicator = usageCard.querySelector('.stale-indicator');
-      if (staleIndicator) staleIndicator.remove();
-    }
-    
-    function appendLogLine(logLine) {
-      const consoleBody = document.getElementById('consoleBody');
-      if (!consoleBody) {
-        console.warn('consoleBody not found');
+      if (!profiles || profiles.length === 0) {
+        container.innerHTML = \`
+          <div class="profiles-empty">
+            <div class="empty-icon">📧</div>
+            <div class="empty-text">\${document.body.dataset.lang === 'ru' ? 'Нет профилей' : 'No profiles configured'}</div>
+            <button class="btn btn-primary" onclick="createProfile()">+ \${document.body.dataset.lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}</button>
+          </div>
+        \`;
         return;
       }
       
-      // Expand console when new log arrives
-      const consoleFloating = document.getElementById('consoleFloating');
-      if (consoleFloating && consoleFloating.classList.contains('collapsed')) {
-        consoleFloating.classList.remove('collapsed');
-      }
+      const strategyLabels = {
+        single: 'Single Email',
+        plus_alias: 'Plus Alias',
+        catch_all: 'Catch-All',
+        pool: 'Email Pool'
+      };
       
-      const line = document.createElement('div');
-      line.className = 'console-line';
-      if (logLine.includes('✓') || logLine.includes('[OK]') || logLine.includes('✅')) line.classList.add('success');
-      else if (logLine.includes('✗') || logLine.includes('Error') || logLine.includes('❌') || logLine.includes('FAIL')) line.classList.add('error');
-      else if (logLine.includes('⚠️') || logLine.includes('[!]') || logLine.includes('WARN')) line.classList.add('warning');
-      line.textContent = logLine;
-      consoleBody.appendChild(line);
+      const strategyIcons = {
+        single: '📧',
+        plus_alias: '➕',
+        catch_all: '🌐',
+        pool: '📋'
+      };
       
-      // Update count badge
-      updateConsoleCount();
+      let html = '<div class="profiles-list">';
       
-      // Keep max 200 lines
-      while (consoleBody.children.length > 200) {
-        consoleBody.removeChild(consoleBody.firstChild);
-      }
-      
-      // Auto-scroll to bottom
-      consoleBody.scrollTop = consoleBody.scrollHeight;
-    }
-    
-    function updateAutoRegStatus(status) {
-      const autoRegBtn = document.querySelector('.btn-primary');
-      const lang = document.body.dataset.lang || 'en';
-      const runningText = { en: 'Running...', ru: 'Запуск...', zh: '运行中...' };
-      const autoRegText = { en: 'Auto-Reg', ru: 'Авто-рег', zh: '自动注册' };
-      
-      if (!status) {
-        // Hide progress panel when status is empty
-        const panel = document.querySelector('.progress-panel');
-        if (panel) panel.style.display = 'none';
+      profiles.forEach(profile => {
+        const isActive = profile.id === activeId;
+        const strategyType = profile.strategy?.type || 'single';
+        const stats = profile.stats || { registered: 0, failed: 0 };
         
-        // Enable button and restore text
-        if (autoRegBtn) {
-          autoRegBtn.disabled = false;
-          autoRegBtn.innerHTML = '⚡ ' + (autoRegText[lang] || autoRegText.en);
-        }
-        return;
-      }
-      
-      // Disable button and show running state
-      if (autoRegBtn) {
-        autoRegBtn.disabled = true;
-        autoRegBtn.innerHTML = '<span class="spinner"></span> ' + (runningText[lang] || runningText.en);
-      }
-      
-      // Helper to create progress panel if it doesn't exist
-      function ensureProgressPanel() {
-        let panel = document.querySelector('.progress-panel');
-        if (!panel) {
-          const actions = document.querySelector('.actions');
-          if (actions) {
-            const newPanel = document.createElement('div');
-            newPanel.className = 'progress-panel';
-            newPanel.innerHTML = \`
-              <div class="progress-header">
-                <div class="progress-title"></div>
-                <div class="progress-actions">
-                  <button class="progress-btn" onclick="togglePauseAutoReg()" title="Pause">⏸</button>
-                  <button class="progress-btn danger" onclick="stopAutoReg()" title="Cancel">✕</button>
-                </div>
+        html += \`
+          <div class="profile-card \${isActive ? 'active' : ''}" data-id="\${profile.id}">
+            <div class="profile-card-header">
+              <div class="profile-card-radio" onclick="selectProfile('\${profile.id}')">
+                <span class="radio-dot \${isActive ? 'checked' : ''}"></span>
               </div>
-              <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
-              <div class="progress-footer">
-                <div class="progress-detail"></div>
-                <div class="progress-step"></div>
+              <div class="profile-card-info" onclick="editProfile('\${profile.id}')">
+                <div class="profile-card-name">\${profile.name || 'Unnamed'}</div>
+                <div class="profile-card-email">\${profile.imap?.user || ''}</div>
               </div>
-            \`;
-            actions.insertAdjacentElement('afterend', newPanel);
-            panel = newPanel;
-          }
-        }
-        return panel;
+              <div class="profile-card-actions">
+                <button class="icon-btn" onclick="editProfile('\${profile.id}')" title="Edit">✏️</button>
+                <button class="icon-btn danger" onclick="deleteProfile('\${profile.id}')" title="Delete">🗑</button>
+              </div>
+            </div>
+            <div class="profile-card-meta">
+              <span class="profile-strategy">\${strategyIcons[strategyType]} \${strategyLabels[strategyType]}</span>
+              <span class="profile-stats">✓ \${stats.registered} / ✗ \${stats.failed}</span>
+            </div>
+          </div>
+        \`;
+      });
+      
+      html += '</div>';
+      html += \`<button class="btn btn-primary profiles-add-btn" onclick="createProfile()">+ \${document.body.dataset.lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}</button>\`;
+      
+      container.innerHTML = html;
+    }
+    
+    function populateProfileEditor(profile) {
+      if (!profile) return;
+      
+      editingProfileId = profile.id;
+      
+      document.getElementById('profileName').value = profile.name || '';
+      document.getElementById('imapUser').value = profile.imap?.user || '';
+      document.getElementById('imapServer').value = profile.imap?.server || '';
+      document.getElementById('imapPort').value = profile.imap?.port || 993;
+      document.getElementById('imapPassword').value = profile.imap?.password || '';
+      
+      const strategyType = profile.strategy?.type || 'single';
+      selectStrategy(strategyType);
+      
+      if (strategyType === 'catch_all' && profile.strategy?.domain) {
+        document.getElementById('catchAllDomain').value = profile.strategy.domain;
       }
       
-      // Try to parse as JSON progress
-      try {
-        const progress = JSON.parse(status);
-        if (progress && progress.step !== undefined) {
-          const panel = ensureProgressPanel();
-          if (panel) {
-            panel.style.display = '';
-            const percentage = (progress.step / progress.totalSteps) * 100;
-            const fill = panel.querySelector('.progress-fill');
-            const title = panel.querySelector('.progress-title');
-            const detail = panel.querySelector('.progress-detail');
-            const step = panel.querySelector('.progress-step');
-            
-            if (fill) fill.style.width = percentage + '%';
-            if (title) title.textContent = progress.stepName || '';
-            if (detail) detail.textContent = progress.detail || '';
-            if (step) step.textContent = 'Step ' + progress.step + '/' + progress.totalSteps;
-          }
-        }
-      } catch (e) {
-        // Plain text status - show progress panel with text
-        const panel = ensureProgressPanel();
-        if (panel) {
-          panel.style.display = '';
-          const title = panel.querySelector('.progress-title');
-          if (title) title.textContent = status;
-        }
+      if (strategyType === 'pool' && profile.strategy?.emails) {
+        currentPoolEmails = profile.strategy.emails.map(e => e.email);
+        renderPoolList();
+      }
+      
+      document.getElementById('profileEditor')?.classList.add('visible');
+      
+      // Update editor title
+      const title = document.querySelector('.editor-title');
+      if (title) {
+        title.textContent = document.body.dataset.lang === 'ru' ? 'Редактировать профиль' : 'Edit Profile';
       }
     }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      // Restore state
-      const state = getState();
-      if (state.compact) document.body.classList.add('compact');
-      if (state.settingsOpen) document.getElementById('settingsPanel')?.classList.add('visible');
-      if (state.filter !== 'all') filterAccounts(state.filter);
-      if (state.hideExpired) {
-        toggleHideExpired(true);
-        const checkbox = document.getElementById('hideExhausted');
-        if (checkbox) checkbox.checked = true;
+    
+    function applyProviderHint(hint, recommendedStrategy) {
+      if (!hint) return;
+      
+      const serverInput = document.getElementById('imapServer');
+      const portInput = document.getElementById('imapPort');
+      const hintEl = document.getElementById('providerHint');
+      
+      if (serverInput && !serverInput.value) {
+        serverInput.value = hint.imapServer || '';
+      }
+      if (portInput && !portInput.value) {
+        portInput.value = hint.imapPort || 993;
       }
       
-      // Restore console state
-      const consoleFloating = document.getElementById('consoleFloating');
-      const consoleBody = document.getElementById('consoleBody');
-      const hasLogs = consoleBody && consoleBody.children.length > 0;
+      if (hintEl) {
+        const lang = document.body.dataset.lang || 'en';
+        const aliasSupport = hint.supportsAlias 
+          ? (lang === 'ru' ? '✓ Поддерживает +alias' : '✓ Supports +alias')
+          : (lang === 'ru' ? '✗ Не поддерживает +alias' : '✗ No +alias support');
+        hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\`;
+        hintEl.style.display = 'block';
+      }
       
-      if (consoleFloating) {
-        // If there are logs, keep console expanded (unless user explicitly collapsed it)
-        // If no logs, collapse by default
-        if (hasLogs) {
-          // Only collapse if user explicitly collapsed it before
-          if (state.consoleCollapsed === true) {
-            consoleFloating.classList.add('collapsed');
-          }
-        } else {
-          // No logs - collapse by default
-          consoleFloating.classList.add('collapsed');
+      // Auto-select recommended strategy
+      if (recommendedStrategy) {
+        selectStrategy(recommendedStrategy);
+      }
+    }
+    
+    function addImportedEmails(emails) {
+      if (!emails || !Array.isArray(emails)) return;
+      
+      emails.forEach(email => {
+        const e = email.trim().toLowerCase();
+        if (e && e.includes('@') && !currentPoolEmails.includes(e)) {
+          currentPoolEmails.push(email.trim());
         }
-      }
+      });
       
-      // Auto-scroll console to bottom
-      if (consoleBody) consoleBody.scrollTop = consoleBody.scrollHeight;
+      renderPoolList();
+      showToast(\`Imported \${emails.length} emails\`, 'success');
+    }
+    
+    // === Init ===
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      // Scroll logs to bottom
+      const logsContent = document.getElementById('logsContent');
+      if (logsContent) logsContent.scrollTop = logsContent.scrollHeight;
       
-      // Init virtual list if needed
-      initVirtualList(${totalAccounts});
+      // Load patch status on init
+      vscode.postMessage({ command: 'getPatchStatus' });
     });
   `;
 }

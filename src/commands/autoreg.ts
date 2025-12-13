@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
+import { ImapProfileProvider } from '../providers/ImapProfileProvider';
 import { autoregProcess } from '../process-manager';
 
 // Get autoreg directory
@@ -120,17 +121,28 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
   const spoofing = config.get<boolean>('autoreg.spoofing', true);
-  const imapServer = config.get<string>('imap.server', '');
-  const imapUser = config.get<string>('imap.user', '');
-  const imapPassword = config.get<string>('imap.password', '');
-  const emailDomain = config.get<string>('autoreg.emailDomain', 'example.com');
+
+  // Get IMAP settings from active profile or fallback to old settings
+  const profileProvider = ImapProfileProvider.getInstance(context);
+  const activeProfile = profileProvider.getActive();
+  const profileEnv = profileProvider.getActiveProfileEnv();
+  
+  // Fallback to old settings if no profile
+  const imapServer = profileEnv.IMAP_SERVER || config.get<string>('imap.server', '');
+  const imapUser = profileEnv.IMAP_USER || config.get<string>('imap.user', '');
+  const imapPassword = profileEnv.IMAP_PASSWORD || config.get<string>('imap.password', '');
+  const emailDomain = profileEnv.EMAIL_DOMAIN || config.get<string>('autoreg.emailDomain', 'example.com');
+  const emailStrategy = profileEnv.EMAIL_STRATEGY || 'catch_all';
+  const emailPool = profileEnv.EMAIL_POOL || '';
+  const profileId = profileEnv.PROFILE_ID || '';
 
   if (!imapServer || !imapUser || !imapPassword) {
     const result = await vscode.window.showWarningMessage(
-      'IMAP settings not configured. Configure now?',
+      'IMAP settings not configured. Configure a profile first.',
       'Open Settings', 'Cancel'
     );
     if (result === 'Open Settings') {
+      // Open webview and show profiles panel
       vscode.commands.executeCommand('workbench.action.openSettings', 'kiroAccountSwitcher.imap');
     }
     return;
@@ -178,12 +190,17 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
     EMAIL_DOMAIN: emailDomain,
+    EMAIL_STRATEGY: emailStrategy,
+    EMAIL_POOL: emailPool,
+    PROFILE_ID: profileId,
     SPOOFING_ENABLED: spoofing ? '1' : '0'
   };
 
   provider.addLog(`Starting autoreg...`);
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
+  provider.addLog(`Profile: ${activeProfile?.name || 'Legacy settings'}`);
+  provider.addLog(`Strategy: ${emailStrategy}`);
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
   provider.addLog(`Spoofing mode: ${spoofing ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
@@ -271,6 +288,250 @@ function parseProgressLine(line: string, provider: KiroAccountsProvider) {
       stepName: stepName.trim(),
       detail: detail.trim()
     }));
+  }
+}
+
+/**
+ * Patch Kiro to use custom Machine ID
+ * Calls Python cli.py patch apply
+ */
+export async function patchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider, force: boolean = false) {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    vscode.window.showErrorMessage('Autoreg not found');
+    return;
+  }
+
+  provider.addLog('🔧 Patching Kiro...');
+
+  const pythonCmd = getPythonCommand();
+  const { spawnSync } = require('child_process');
+
+  const args = ['cli.py', 'patch', 'apply', '--skip-check'];
+  if (force) args.push('--force');
+
+  const result = spawnSync(pythonCmd, args, {
+    cwd: autoregDir,
+    encoding: 'utf8',
+    timeout: 30000,
+    shell: process.platform === 'win32',
+    env: { ...process.env, PYTHONPATH: autoregDir }
+  });
+
+  if (result.stdout) {
+    result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      provider.addLog(line);
+    });
+  }
+
+  if (result.stderr) {
+    result.stderr.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      if (!line.includes('InsecureRequestWarning')) {
+        provider.addLog(`⚠️ ${line}`);
+      }
+    });
+  }
+
+  if (result.status === 0) {
+    provider.addLog('✅ Kiro patched successfully!');
+    vscode.window.showInformationMessage('Kiro patched! Restart Kiro for changes to take effect.');
+  } else {
+    provider.addLog(`❌ Patch failed (code ${result.status})`);
+    vscode.window.showErrorMessage('Patch failed. Check console for details.');
+  }
+}
+
+/**
+ * Remove Kiro patch (restore original)
+ */
+export async function unpatchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    vscode.window.showErrorMessage('Autoreg not found');
+    return;
+  }
+
+  provider.addLog('🔧 Removing Kiro patch...');
+
+  const pythonCmd = getPythonCommand();
+  const { spawnSync } = require('child_process');
+
+  const args = ['cli.py', 'patch', 'remove', '--skip-check'];
+
+  const result = spawnSync(pythonCmd, args, {
+    cwd: autoregDir,
+    encoding: 'utf8',
+    timeout: 30000,
+    shell: process.platform === 'win32',
+    env: { ...process.env, PYTHONPATH: autoregDir }
+  });
+
+  if (result.stdout) {
+    result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      provider.addLog(line);
+    });
+  }
+
+  if (result.status === 0) {
+    provider.addLog('✅ Kiro patch removed!');
+    vscode.window.showInformationMessage('Kiro restored! Restart Kiro for changes to take effect.');
+  } else {
+    provider.addLog(`❌ Unpatch failed (code ${result.status})`);
+    vscode.window.showErrorMessage('Unpatch failed. Check console for details.');
+  }
+}
+
+/**
+ * Generate new custom Machine ID
+ */
+export async function generateMachineId(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    vscode.window.showErrorMessage('Autoreg not found');
+    return;
+  }
+
+  provider.addLog('🔄 Generating new Machine ID...');
+
+  const pythonCmd = getPythonCommand();
+  const { spawnSync } = require('child_process');
+
+  const args = ['cli.py', 'patch', 'generate-id'];
+
+  const result = spawnSync(pythonCmd, args, {
+    cwd: autoregDir,
+    encoding: 'utf8',
+    timeout: 30000,
+    shell: process.platform === 'win32',
+    env: { ...process.env, PYTHONPATH: autoregDir }
+  });
+
+  if (result.stdout) {
+    result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      provider.addLog(line);
+    });
+  }
+
+  if (result.status === 0) {
+    provider.addLog('✅ New Machine ID generated!');
+    vscode.window.showInformationMessage('New Machine ID generated! Restart Kiro for changes to take effect.');
+  } else {
+    provider.addLog(`❌ Generation failed (code ${result.status})`);
+    vscode.window.showErrorMessage('Generation failed. Check console for details.');
+  }
+}
+
+export interface PatchStatusResult {
+  isPatched: boolean;
+  kiroVersion?: string;
+  patchVersion?: string;
+  currentMachineId?: string;
+  error?: string;
+}
+
+/**
+ * Get patch status
+ */
+export async function getPatchStatus(context: vscode.ExtensionContext): Promise<PatchStatusResult> {
+  return checkPatchStatus(context);
+}
+
+/**
+ * Check patch status - can be called from extension.ts on startup
+ */
+export async function checkPatchStatus(context: vscode.ExtensionContext): Promise<PatchStatusResult> {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    return { isPatched: false, error: 'Autoreg not found' };
+  }
+
+  const pythonCmd = getPythonCommand();
+  const { spawnSync } = require('child_process');
+
+  // Use a simple Python script to get JSON status
+  const script = `
+import json
+import sys
+sys.path.insert(0, '${autoregDir.replace(/\\/g, '\\\\')}')
+from services.kiro_patcher_service import KiroPatcherService
+s = KiroPatcherService()
+status = s.get_status()
+print(json.dumps({
+  'isPatched': status.is_patched,
+  'kiroVersion': status.kiro_version,
+  'patchVersion': status.patch_version,
+  'currentMachineId': status.current_machine_id,
+  'error': status.error
+}))
+`;
+
+  const result = spawnSync(pythonCmd, ['-c', script], {
+    cwd: autoregDir,
+    encoding: 'utf8',
+    timeout: 10000,
+    shell: process.platform === 'win32'
+  });
+
+  if (result.status === 0 && result.stdout) {
+    try {
+      return JSON.parse(result.stdout.trim());
+    } catch {
+      return { isPatched: false, error: 'Failed to parse status' };
+    }
+  }
+
+  return { isPatched: false, error: result.stderr || 'Unknown error' };
+}
+
+/**
+ * Reset Kiro Machine ID (telemetry IDs)
+ * Calls Python cli.py machine reset
+ */
+export async function resetMachineId(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    vscode.window.showErrorMessage('Autoreg not found');
+    return;
+  }
+
+  provider.addLog('🔄 Resetting Machine ID...');
+
+  const pythonCmd = getPythonCommand();
+  const { spawnSync } = require('child_process');
+
+  const args = ['cli.py', 'machine', 'reset'];
+
+  const result = spawnSync(pythonCmd, args, {
+    cwd: autoregDir,
+    encoding: 'utf8',
+    timeout: 30000,
+    shell: process.platform === 'win32',
+    env: { ...process.env, PYTHONPATH: autoregDir }
+  });
+
+  if (result.stdout) {
+    result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      provider.addLog(line);
+    });
+  }
+
+  if (result.stderr) {
+    result.stderr.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+      if (!line.includes('InsecureRequestWarning')) {
+        provider.addLog(`⚠️ ${line}`);
+      }
+    });
+  }
+
+  if (result.status === 0) {
+    provider.addLog('✅ Machine ID reset successfully!');
+    vscode.window.showInformationMessage('Machine ID reset! Restart Kiro for changes to take effect.');
+  } else {
+    provider.addLog(`❌ Machine ID reset failed (code ${result.status})`);
+    if (result.error) {
+      provider.addLog(`Error: ${result.error.message}`);
+    }
+    vscode.window.showErrorMessage('Machine ID reset failed. Check console for details.');
   }
 }
 

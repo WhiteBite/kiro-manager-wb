@@ -1,10 +1,20 @@
 /**
  * Webview Styles
  * All CSS styles for the sidebar panel
+ * 
+ * Architecture:
+ * - Modular styles are in ./styles/ folder
+ * - This file combines them with legacy styles for backward compatibility
  */
 
+import { getAllStyles } from './styles/index';
+
 export function getStyles(): string {
-  return `
+  // Get modular styles first, then add legacy styles for backward compatibility
+  const modularStyles = getAllStyles();
+  
+  // Legacy styles (kept for backward compatibility with existing UI)
+  const legacyStyles = `
     :root {
       --accent: #3fb68b; --accent-hover: #4ec9a0; --accent-dim: rgba(63, 182, 139, 0.12); --accent-glow: rgba(63, 182, 139, 0.4);
       --danger: #e55353; --danger-dim: rgba(229, 83, 83, 0.12); --warning: #d9a334;
@@ -297,5 +307,9 @@ export function getStyles(): string {
       .card-status { font-size: 8px; padding: 2px 4px; }
       .usage-value { font-size: 12px; }
     }
+    
   `;
+  
+  // Combine modular styles with legacy styles
+  return modularStyles + legacyStyles;
 }

@@ -1,54 +1,20 @@
 /**
- * Webview HTML generation - v4.2 Modular Architecture
+ * Webview HTML generation - v5.0 Clean Dashboard
  */
 
 import { AccountInfo } from '../types';
 import { KiroUsageData } from '../utils';
 import { ICONS } from './icons';
 import { escapeHtml, getAccountEmail } from './helpers';
-import { 
-  renderAccountList, 
-  renderUsageCard, 
-  renderSettingsPanel, 
-  renderConsolePanel,
-  renderProgressPanel,
-  RegProgress 
-} from './components';
+import { RegProgress } from './components';
 import { AutoRegSettings } from './types';
 import { generateWebviewScript } from './scripts';
 import { Language, getTranslations } from './i18n';
 import { getStyles } from './styles';
 
-// Re-export types
 export { RegProgress, AutoRegSettings };
-
-// Re-export Language from i18n
 export type { Language } from './i18n';
 export { getTranslations } from './i18n';
-
-// Helper to render console logs
-function getLogClass(log: string): string {
-  if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')) return 'error';
-  if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅')) return 'success';
-  if (log.includes('WARN') || log.includes('⚠')) return 'warning';
-  return '';
-}
-
-function renderConsoleLogs(logs: string[] | undefined): string {
-  if (!logs || logs.length === 0) return '';
-  // Show last 100 logs
-  const visibleLogs = logs.slice(-100);
-  return visibleLogs.map(log => 
-    `<div class="console-line ${getLogClass(log)}">${escapeHtml(log)}</div>`
-  ).join('');
-}
-
-function hasConsoleErrors(logs: string[] | undefined): boolean {
-  if (!logs) return false;
-  return logs.some(log => 
-    log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')
-  );
-}
 
 export interface WebviewProps {
   accounts: AccountInfo[];
@@ -63,23 +29,403 @@ export interface WebviewProps {
   availableUpdate?: { version: string; url: string } | null;
 }
 
-function parseAutoRegStatus(status: string): { progress: RegProgress | null; statusText: string; isRunning: boolean } {
-  let progress: RegProgress | null = null;
-  let isRunning = false;
-  
-  if (status?.startsWith('{')) {
-    try {
-      progress = JSON.parse(status);
-      isRunning = progress !== null && progress.step < progress.totalSteps;
-    } catch {}
-  }
-  
-  const statusText = status && !status.startsWith('{') ? status : '';
-  isRunning = isRunning || statusText.includes('Installing') || statusText.includes('Initializing');
-  
-  return { progress, statusText, isRunning };
+// Parse registration status
+function parseStatus(status: string): { progress: RegProgress | null; isRunning: boolean } {
+  if (!status?.startsWith('{')) return { progress: null, isRunning: false };
+  try {
+    const progress = JSON.parse(status) as RegProgress;
+    return { progress, isRunning: progress.step < progress.totalSteps };
+  } catch { return { progress: null, isRunning: false }; }
 }
 
+// Get usage bar color class
+function getUsageClass(percent: number): string {
+  if (percent < 80) return 'low';
+  if (percent < 95) return 'medium';
+  return 'high';
+}
+
+// Log line class
+function getLogClass(log: string): string {
+  if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗')) return 'error';
+  if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅')) return 'success';
+  if (log.includes('WARN') || log.includes('⚠')) return 'warning';
+  return '';
+}
+
+// Render Hero Dashboard
+function renderHero(
+  activeAccount: AccountInfo | undefined,
+  usage: KiroUsageData | null | undefined,
+  progress: RegProgress | null,
+  isRunning: boolean,
+  t: ReturnType<typeof getTranslations>
+): string {
+  // Registration in progress - show progress
+  if (isRunning && progress) {
+    const percent = Math.round((progress.step / progress.totalSteps) * 100);
+    return `
+      <div class="hero progress">
+        <div class="hero-header">
+          <span class="hero-email">${escapeHtml(progress.stepName)}</span>
+          <span class="hero-step">${progress.step}/${progress.totalSteps}</span>
+        </div>
+        <div class="hero-progress">
+          <div class="hero-progress-fill low" style="width: ${percent}%"></div>
+        </div>
+        <div class="hero-stats">
+          <span class="hero-usage">${escapeHtml(progress.detail || '')}</span>
+          <span class="hero-percent">${percent}%</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // No active account
+  if (!activeAccount) {
+    return `
+      <div class="hero empty">
+        <div class="hero-email">${t.noActive}</div>
+      </div>
+    `;
+  }
+
+  const email = getAccountEmail(activeAccount);
+  const current = usage?.currentUsage ?? 0;
+  const limit = usage?.usageLimit ?? 500;
+  const percent = usage?.percentageUsed ?? 0;
+  const daysLeft = usage?.daysRemaining ?? '?';
+  const usageClass = getUsageClass(percent);
+
+  return `
+    <div class="hero" onclick="refreshUsage()">
+      <div class="hero-header">
+        <span class="hero-email" title="${escapeHtml(email)}">${escapeHtml(email)}</span>
+        <span class="hero-days">${daysLeft}${typeof daysLeft === 'number' ? 'd' : ''} ${t.daysLeft}</span>
+      </div>
+      <div class="hero-progress">
+        <div class="hero-progress-fill ${usageClass}" style="width: ${Math.min(percent, 100)}%"></div>
+      </div>
+      <div class="hero-stats">
+        <span class="hero-usage font-mono">${current.toLocaleString()} / ${limit}</span>
+        <span class="hero-percent">${percent.toFixed(1)}%</span>
+      </div>
+    </div>
+  `;
+}
+
+// Render Account Row
+function renderAccount(acc: AccountInfo, index: number, t: ReturnType<typeof getTranslations>): string {
+  const email = getAccountEmail(acc);
+  const avatar = email.charAt(0).toUpperCase();
+  const usage = acc.usage;
+  const hasUsage = usage !== undefined;
+  const isUnknown = hasUsage && usage!.currentUsage === -1;
+  const isSuspended = hasUsage && usage!.suspended === true;
+  const isExhausted = hasUsage && !isUnknown && !isSuspended && usage!.percentageUsed >= 100;
+  
+  const classes = [
+    'account',
+    acc.isActive ? 'active' : '',
+    acc.isExpired ? 'expired' : '',
+    isExhausted ? 'exhausted' : '',
+    isSuspended ? 'suspended' : '',
+  ].filter(Boolean).join(' ');
+
+  const statusClass = acc.isActive ? 'active' : 
+    isSuspended ? 'suspended' : 
+    isExhausted ? 'exhausted' : 
+    acc.isExpired ? 'expired' : 'ready';
+
+  const usageText = isUnknown ? '?' : hasUsage ? usage!.currentUsage.toLocaleString() : '—';
+  const expiryText = acc.expiresIn || '—';
+
+  return `
+    <div class="${classes}" data-index="${index}" onclick="switchAccount('${escapeHtml(acc.filename)}')">
+      <div class="account-avatar">
+        ${avatar}
+        <span class="account-status ${statusClass}"></span>
+      </div>
+      <div class="account-info">
+        <div class="account-email">${escapeHtml(email)}</div>
+        <div class="account-meta">
+          <span>${ICONS.chart} ${usageText}</span>
+          <span>${ICONS.clock} ${expiryText}</span>
+        </div>
+      </div>
+      <div class="account-actions">
+        <button class="account-btn" title="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(acc.filename)}')">${ICONS.copy}</button>
+        <button class="account-btn danger" title="${t.deleteTip}" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(acc.filename)}')">${ICONS.trash}</button>
+      </div>
+    </div>
+  `;
+}
+
+// Render grouped account list
+function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnType<typeof getTranslations>): string {
+  if (accounts.length === 0) {
+    return `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-text">${t.noAccounts}</div>
+        <button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>
+      </div>
+    `;
+  }
+
+  // Group accounts
+  const active: AccountInfo[] = [];
+  const ready: AccountInfo[] = [];
+  const bad: AccountInfo[] = []; // expired, exhausted, suspended
+
+  accounts.forEach(acc => {
+    const usage = acc.usage;
+    const isSuspended = usage?.suspended === true;
+    const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
+    
+    if (acc.isExpired || isExhausted || isSuspended) {
+      bad.push(acc);
+    } else if (acc.isActive) {
+      active.push(acc);
+    } else {
+      ready.push(acc);
+    }
+  });
+
+  let html = '';
+  let globalIndex = 0;
+
+  // Active accounts
+  if (active.length > 0) {
+    html += `<div class="list-group"><span>Active</span><span class="list-group-count">${active.length}</span></div>`;
+    active.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+  }
+
+  // Ready accounts
+  if (ready.length > 0) {
+    html += `<div class="list-group"><span>Ready</span><span class="list-group-count">${ready.length}</span></div>`;
+    ready.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+  }
+
+  // Bad accounts (expired/exhausted/suspended)
+  if (bad.length > 0) {
+    html += `
+      <div class="list-group danger">
+        <span>Expired / Exhausted</span>
+        <button class="list-group-action" onclick="confirmDeleteExhausted()">${t.deleteAll}</button>
+        <span class="list-group-count">${bad.length}</span>
+      </div>
+    `;
+    bad.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+  }
+
+  return html;
+}
+
+// Render Settings Overlay
+function renderSettings(
+  autoSwitchEnabled: boolean,
+  settings: AutoRegSettings | undefined,
+  lang: Language,
+  t: ReturnType<typeof getTranslations>,
+  version: string
+): string {
+  const langOptions = ['en', 'ru', 'zh', 'es', 'pt', 'ja', 'de', 'fr', 'ko', 'hi']
+    .map(l => `<option value="${l}" ${l === lang ? 'selected' : ''}>${l.toUpperCase()}</option>`)
+    .join('');
+
+  // Strategy labels
+  const strategyLabels: Record<string, { icon: string; name: string; desc: string }> = {
+    single: { 
+      icon: '📧', 
+      name: t.strategySingleName,
+      desc: t.strategySingleShort
+    },
+    plus_alias: { 
+      icon: '➕', 
+      name: t.strategyPlusAliasName,
+      desc: t.strategyPlusAliasShort
+    },
+    catch_all: { 
+      icon: '🌐', 
+      name: t.strategyCatchAllName,
+      desc: t.strategyCatchAllShort
+    },
+    pool: { 
+      icon: '📋', 
+      name: t.strategyPoolName,
+      desc: t.strategyPoolShort
+    }
+  };
+
+  return `
+    <div class="overlay" id="settingsOverlay">
+      <div class="overlay-header">
+        <button class="overlay-back" onclick="closeSettings()">← Back</button>
+        <span class="overlay-title">${t.settingsTitle}</span>
+      </div>
+      <div class="overlay-content">
+        <!-- Active Profile Card -->
+        <div class="active-profile-card" id="activeProfileCard">
+          <div class="active-profile-header">
+            <span class="active-profile-label">${t.activeProfile}</span>
+            <button class="btn btn-secondary btn-sm" onclick="openProfilesPanel()">${t.change}</button>
+          </div>
+          <div class="active-profile-content" id="activeProfileContent">
+            <div class="active-profile-empty">
+              <span class="empty-icon">📧</span>
+              <span class="empty-text">${t.noProfileConfigured}</span>
+              <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">${t.configure}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.autoSwitch}</div>
+            <div class="setting-desc">${t.autoSwitchDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${autoSwitchEnabled ? 'checked' : ''} onchange="toggleAutoSwitch(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.headless}</div>
+            <div class="setting-desc">${t.headlessDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.headless ? 'checked' : ''} onchange="toggleSetting('headless', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.verbose}</div>
+            <div class="setting-desc">${t.verboseDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.verbose ? 'checked' : ''} onchange="toggleSetting('verbose', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.screenshots}</div>
+            <div class="setting-desc">${t.screenshotsDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.screenshotsOnError ? 'checked' : ''} onchange="toggleSetting('screenshotsOnError', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.language}</div>
+            <div class="setting-desc">${t.languageDesc}</div>
+          </div>
+          <select class="select" onchange="changeLanguage(this.value)">${langOptions}</select>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone-section">
+          <div class="danger-zone-header">
+            <span class="danger-zone-icon">⚠️</span>
+            <span class="danger-zone-title">${t.dangerZone}</span>
+          </div>
+          
+          <!-- Kiro Patching -->
+          <div class="danger-zone-card patch-card">
+            <div class="danger-zone-info">
+              <div class="danger-zone-label">${lang === 'ru' ? 'Патч Kiro' : 'Kiro Patch'}</div>
+              <div class="danger-zone-desc">${lang === 'ru' ? 'Патчит Kiro для использования кастомного Machine ID' : 'Patches Kiro to use custom Machine ID'}</div>
+              <div class="patch-status-row">
+                <span id="patchStatusText" class="patch-status">${lang === 'ru' ? 'Загрузка...' : 'Loading...'}</span>
+                <span id="currentMachineId" class="machine-id-preview"></span>
+              </div>
+            </div>
+            <div class="danger-zone-actions">
+              <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="${lang === 'ru' ? 'Пропатчить Kiro' : 'Patch Kiro'}">
+                🔧 ${lang === 'ru' ? 'Патч' : 'Patch'}
+              </button>
+              <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="${lang === 'ru' ? 'Удалить патч' : 'Remove patch'}">
+                ↩️ ${lang === 'ru' ? 'Убрать' : 'Remove'}
+              </button>
+              <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="${lang === 'ru' ? 'Новый Machine ID' : 'Generate new ID'}">
+                🎲 ${lang === 'ru' ? 'Новый ID' : 'New ID'}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Reset Telemetry -->
+          <div class="danger-zone-card">
+            <div class="danger-zone-info">
+              <div class="danger-zone-label">${t.resetMachineId}</div>
+              <div class="danger-zone-desc">${t.resetMachineIdDesc}</div>
+            </div>
+            <button class="btn btn-danger" onclick="confirmResetMachineId()" title="${t.resetMachineIdTip}">
+              🔄 ${t.reset}
+            </button>
+          </div>
+          <div class="danger-zone-hint">
+            💡 ${t.restartAfterReset}
+          </div>
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <span class="overlay-version">v${version}</span>
+        <button class="btn btn-secondary" onclick="checkUpdates()">${t.checkUpdates}</button>
+      </div>
+    </div>
+  `;
+}
+
+// Render Logs Drawer
+function renderLogs(logs: string[] | undefined, t: ReturnType<typeof getTranslations>): string {
+  const hasErrors = logs?.some(l => l.includes('ERROR') || l.includes('FAIL') || l.includes('✗')) ?? false;
+  const logLines = (logs || []).slice(-100).map(log => 
+    `<div class="log-line ${getLogClass(log)}">${escapeHtml(log)}</div>`
+  ).join('');
+
+  return `
+    <div class="logs-drawer" id="logsDrawer">
+      <div class="logs-header" onclick="toggleLogs()">
+        <div class="logs-header-left">
+          <span class="logs-title">${t.console}</span>
+          <span class="logs-count${hasErrors ? ' has-errors' : ''}" id="logsCount">${logs?.length || 0}</span>
+        </div>
+        <span class="logs-toggle">▲</span>
+      </div>
+      <div class="logs-actions">
+        <button class="icon-btn" onclick="clearConsole()" title="${t.clearTip}">🗑</button>
+        <button class="icon-btn" onclick="copyLogs()" title="${t.copyLogsTip}">📋</button>
+      </div>
+      <div class="logs-content" id="logsContent">${logLines}</div>
+    </div>
+  `;
+}
+
+// Render SSO Modal
+function renderSsoModal(t: ReturnType<typeof getTranslations>): string {
+  return `
+    <div class="modal-overlay" id="ssoModal" onclick="if(event.target === this) closeSsoModal()">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">${t.ssoImport}</span>
+          <button class="modal-close" onclick="closeSsoModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-hint">${t.ssoHint}</div>
+          <textarea class="modal-textarea" id="ssoTokenInput" placeholder="${t.pasteCookie}"></textarea>
+          <button class="btn btn-primary" style="width:100%" onclick="importSsoToken()">${t.import}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Main HTML generator
 export function generateWebviewHtml(props: WebviewProps): string;
 export function generateWebviewHtml(
   accounts: AccountInfo[], 
@@ -104,72 +450,29 @@ export function generateWebviewHtml(
   version?: string,
   language?: Language
 ): string {
-  // Handle both call signatures
   const props: WebviewProps = Array.isArray(propsOrAccounts) 
-    ? {
-        accounts: propsOrAccounts,
-        autoSwitchEnabled: autoSwitchEnabled ?? false,
-        autoRegStatus: autoRegStatus ?? '',
-        regProgress,
-        kiroUsage,
-        autoRegSettings,
-        consoleLogs,
-        version,
-        language,
-      }
+    ? { accounts: propsOrAccounts, autoSwitchEnabled: autoSwitchEnabled ?? false, autoRegStatus: autoRegStatus ?? '', regProgress, kiroUsage, autoRegSettings, consoleLogs, version, language }
     : propsOrAccounts;
 
   const { accounts } = props;
-  const EXTENSION_VERSION = props.version || 'dev';
   const lang = props.language || 'en';
-  
-  // Get translations from centralized i18n
   const t = getTranslations(lang);
-  
-  // Calculate stats (exclude unknown usage from total)
-  const validCount = accounts.filter(a => !a.isExpired).length;
-  const expiredCount = accounts.filter(a => a.isExpired).length;
-  const suspendedCount = accounts.filter(a => a.usage?.suspended === true).length;
-  const exhaustedCount = accounts.filter(a => a.usage && !a.usage.suspended && a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100).length;
-  const badAccountsCount = exhaustedCount + suspendedCount; // Total accounts to delete
+  const ver = props.version || 'dev';
   const activeAccount = accounts.find(a => a.isActive);
-  const totalUsage = accounts.reduce((sum, acc) => {
-    const usage = acc.usage?.currentUsage;
-    return sum + (usage && usage !== -1 ? usage : 0);
-  }, 0);
-  
-  // Get active account name for usage card
-  const activeAccountName = activeAccount?.tokenData?.accountName || activeAccount?.filename || '';
-  
-  // Parse status
-  const { progress, statusText, isRunning } = parseAutoRegStatus(props.autoRegStatus);
+  const { progress, isRunning } = parseStatus(props.autoRegStatus);
+  const validCount = accounts.filter(a => !a.isExpired).length;
 
-  // Render components
-  const settingsHtml = renderSettingsPanel({
-    autoSwitchEnabled: props.autoSwitchEnabled,
-    autoRegSettings: props.autoRegSettings,
-    language: lang,
-  });
-  
-  const usageHtml = renderUsageCard({ 
-    usage: props.kiroUsage, 
-    language: lang,
-    accountName: activeAccountName,
-    isStale: false // Will be set to true if data is outdated
-  });
-  const progressHtml = renderProgressPanel({ progress, statusText, language: lang });
-  const accountsHtml = renderAccountList(accounts, lang);
   const script = generateWebviewScript(accounts.length);
-  
+
   // Update banner
-  const updateBannerHtml = props.availableUpdate ? `
+  const updateBanner = props.availableUpdate ? `
     <div class="update-banner" onclick="openUpdateUrl('${props.availableUpdate.url}')">
-      <div class="update-banner-icon">🚀</div>
+      <span class="update-banner-icon">🚀</span>
       <div class="update-banner-content">
-        <div class="update-banner-title">${lang === 'ru' ? 'Доступна новая версия!' : lang === 'zh' ? '新版本可用！' : 'New version available!'}</div>
+        <div class="update-banner-title">${lang === 'ru' ? 'Новая версия!' : 'New version!'}</div>
         <div class="update-banner-version">v${props.availableUpdate.version}</div>
       </div>
-      <div class="update-banner-action">${lang === 'ru' ? 'Скачать' : lang === 'zh' ? '下载' : 'Download'} →</div>
+      <span class="update-banner-action">${lang === 'ru' ? 'Скачать' : 'Download'} →</span>
     </div>
   ` : '';
 
@@ -181,118 +484,57 @@ export function generateWebviewHtml(
   <style>${getStyles()}</style>
 </head>
 <body data-lang="${lang}">
-  <div class="content" id="content">
+  <div class="app">
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <span class="header-title">${t.kiroAccounts}</span>
-        <span class="header-badge">${accounts.length}</span>
+        <span class="header-title">KIRO</span>
+        <span class="header-badge">${validCount}/${accounts.length}</span>
+        <span class="patch-indicator" id="patchIndicator" title="${lang === 'ru' ? 'Статус патча' : 'Patch status'}"></span>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" onclick="toggleCompact()" title="${t.compactViewTip}">${ICONS.menu}</button>
+        <button class="icon-btn" onclick="toggleLogs()" title="${t.console}">${ICONS.file}</button>
         <button class="icon-btn" onclick="openSettings()" title="${t.settingsTip}">${ICONS.settings}</button>
       </div>
     </div>
-    
-    ${updateBannerHtml}
-    
-    ${settingsHtml}
-    
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-dot ${activeAccount ? 'active' : 'valid'}"></span>
-        <span>${activeAccount ? escapeHtml(getAccountEmail(activeAccount).split('@')[0]) : t.noActive}</span>
-      </div>
-      <div class="stat-item"><span class="stat-dot valid"></span><span>${validCount} ${t.valid}</span></div>
-      ${expiredCount > 0 ? `<div class="stat-item"><span class="stat-dot expired"></span><span>${expiredCount} ${t.expired}</span></div>` : ''}
-      ${badAccountsCount > 0 ? `<div class="stat-item stat-exhausted" onclick="confirmDeleteExhausted()" title="${lang === 'ru' ? 'Удалить исчерпанные/забаненные' : 'Delete exhausted/banned'}"><span class="stat-dot exhausted"></span><span>${badAccountsCount} ${lang === 'ru' ? (suspendedCount > 0 ? 'бан/лимит' : 'лимит') : (suspendedCount > 0 ? 'ban/limit' : 'limit')}</span><span class="stat-delete">🗑</span></div>` : ''}
-      <div class="stat-total">${ICONS.chart} ${totalUsage.toLocaleString()} ${t.total}</div>
-    </div>
-    
-    ${usageHtml}
-    
-    <!-- Action Buttons -->
-    <div class="actions">
-      <button class="btn btn-primary" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
-        ${isRunning ? '<span class="spinner"></span>' : ICONS.bolt}
-        ${isRunning ? t.running : t.autoReg}
-      </button>
-      <button class="btn btn-secondary" onclick="showSsoImport()" title="${lang === 'ru' ? 'Импорт из браузера' : 'Import from browser'}">
-        🌐 ${lang === 'ru' ? 'SSO' : 'SSO'}
-      </button>
-      <button class="btn btn-secondary btn-icon" onclick="refresh()" title="${t.refreshTip}">${ICONS.refresh}</button>
-    </div>
-    
-    <!-- SSO Import Panel -->
-    <div class="sso-import-panel" id="ssoImportPanel">
-      <div class="sso-import-header">
-        <span>${lang === 'ru' ? 'Импорт из SSO Cookie' : 'SSO Cookie Import'}</span>
-        <button class="icon-btn" onclick="hideSsoImport()">✕</button>
-      </div>
-      <div class="sso-import-body">
-        <p class="sso-import-hint">${lang === 'ru' ? '1. Откройте view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Скопируйте x-amz-sso_authn' : '1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn'}</p>
-        <textarea id="ssoTokenInput" class="sso-input" placeholder="${lang === 'ru' ? 'Вставьте cookie...' : 'Paste cookie...'}"></textarea>
-        <button class="btn btn-primary btn-full" onclick="importSsoToken()">
-          ${lang === 'ru' ? 'Импортировать' : 'Import'}
+
+    ${updateBanner}
+
+    <!-- Hero Dashboard -->
+    ${renderHero(activeAccount, props.kiroUsage, progress, isRunning, t)}
+
+    <!-- Action Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-buttons">
+        <button class="btn btn-primary" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
+          ${isRunning ? '<span class="spinner"></span>' : ICONS.bolt}
+          ${isRunning ? t.running : t.autoReg}
         </button>
+        <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
+        <button class="btn btn-secondary btn-icon" onclick="refresh()" title="${t.refreshTip}">${ICONS.refresh}</button>
       </div>
-    </div>
-    
-    ${progressHtml}
-    
-    <!-- Search Bar -->
-    <div class="search-bar">
       <div class="search-wrapper">
+        <span class="search-icon">${ICONS.search}</span>
         <input type="text" class="search-input" id="searchInput" placeholder="${t.searchPlaceholder}" oninput="searchAccounts(this.value)">
-        <span class="search-icon">${ICONS.search || '🔍'}</span>
-        <button class="search-clear" onclick="clearSearch()">✕</button>
+        <button class="search-clear" onclick="clearSearch()">×</button>
       </div>
     </div>
-    
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-      <div class="filter-tabs">
-        <button class="filter-tab active" onclick="filterAccounts('all')">${t.all}</button>
-        <button class="filter-tab" onclick="filterAccounts('valid')">${t.validFilter}</button>
-        <button class="filter-tab" onclick="filterAccounts('expired')">${t.expiredFilter}</button>
-      </div>
-      <select class="sort-select" onchange="sortAccounts(this.value)">
-        <option value="date">${t.byDate}</option>
-        <option value="usage">${t.byUsage}</option>
-        <option value="expiry">${t.byExpiry}</option>
-      </select>
-    </div>
-    
+
     <!-- Account List -->
-    <div class="list" id="accountList">${accountsHtml}</div>
-    
-    <!-- Floating Console (above footer) -->
-    <div class="console-floating" id="consoleFloating">
-      <div class="console-toggle" onclick="toggleConsole()">
-        <span class="console-toggle-icon">▲</span>
-        <span class="console-toggle-title">${t.console}</span>
-        <span class="console-toggle-count${hasConsoleErrors(props.consoleLogs) ? ' has-errors' : ''}" id="consoleCount">${props.consoleLogs?.length || 0}</span>
-      </div>
-      <div class="console-content" id="consoleContent">
-        <div class="console-actions">
-          <button class="icon-btn" onclick="clearConsole()" title="${t.clearTip}">🗑</button>
-          <button class="icon-btn" onclick="copyLogs()" title="${t.copyLogsTip}">📋</button>
-        </div>
-        <div class="console-body" id="consoleBody">${renderConsoleLogs(props.consoleLogs)}</div>
-      </div>
+    <div class="list" id="accountList">
+      ${renderAccountList(accounts, lang, t)}
     </div>
-    
-    <!-- Footer -->
-    <div class="footer">
-      <div class="footer-version">
-        <span>v${EXTENSION_VERSION}</span>
-        ${props.availableUpdate ? `<a href="#" onclick="openUpdateUrl('${props.availableUpdate.url}')" class="update-badge" title="v${props.availableUpdate.version} available">⬆ Update</a>` : ''}
-      </div>
-      <div class="footer-status"><span class="footer-dot"></span><span>${t.connected}</span></div>
-    </div>
-    
-    <!-- Dialog -->
+
+    <!-- Logs Drawer -->
+    ${renderLogs(props.consoleLogs, t)}
+
+    <!-- Settings Overlay -->
+    ${renderSettings(props.autoSwitchEnabled, props.autoRegSettings, lang, t, ver)}
+
+    <!-- SSO Modal -->
+    ${renderSsoModal(t)}
+
+    <!-- Delete Dialog -->
     <div class="dialog-overlay" id="dialogOverlay" onclick="if(event.target === this) closeDialog()">
       <div class="dialog">
         <div class="dialog-title" id="dialogTitle">${t.deleteTitle}</div>
@@ -301,6 +543,137 @@ export function generateWebviewHtml(
           <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
           <button class="btn btn-danger" onclick="dialogAction()">${lang === 'ru' ? 'Удалить' : 'Delete'}</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- IMAP Profiles Panel -->
+    <div class="profiles-panel" id="profilesPanel">
+      <div class="profiles-panel-header">
+        <button class="overlay-back" onclick="closeProfilesPanel()">← Back</button>
+        <span class="profiles-panel-title">${lang === 'ru' ? 'Email Профили' : 'Email Profiles'}</span>
+      </div>
+      <div class="profiles-panel-content" id="profilesContent">
+        <div class="profiles-empty">
+          <div class="empty-icon">📧</div>
+          <div class="empty-text">${lang === 'ru' ? 'Нет профилей' : 'No profiles configured'}</div>
+          <button class="btn btn-primary" onclick="createProfile()">
+            ${ICONS.plus} ${lang === 'ru' ? 'Добавить профиль' : 'Add Profile'}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Editor -->
+    <div class="profile-editor" id="profileEditor">
+      <div class="editor-header">
+        <button class="overlay-back" onclick="closeProfileEditor()">← Back</button>
+        <span class="editor-title">${t.newProfile}</span>
+      </div>
+      <div class="editor-content">
+        <div class="form-group">
+          <label class="form-label">${t.profileName}</label>
+          <input type="text" class="form-input" id="profileName" placeholder="${t.profileNamePlaceholder}">
+        </div>
+        
+        <div class="form-section">
+          <div class="form-section-title">IMAP</div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="imapUser" placeholder="your@email.com" oninput="onEmailInput(this.value)">
+            <div class="form-hint" id="providerHint"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label class="form-label">${t.server}</label>
+              <input type="text" class="form-input" id="imapServer" placeholder="imap.gmail.com">
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label">${t.port}</label>
+              <input type="number" class="form-input" id="imapPort" value="993">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.password}</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="imapPassword" placeholder="••••••••">
+              <button class="password-toggle" onclick="togglePasswordVisibility('imapPassword')">${ICONS.eye || '👁'}</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
+        </div>
+        
+        <div class="form-section">
+          <div class="form-section-title">${t.emailStrategy}</div>
+          <div class="form-section-desc">${t.emailStrategyDesc}</div>
+          
+          <div class="strategy-selector">
+            <div class="strategy-option selected" data-strategy="single" onclick="selectStrategy('single')">
+              <div class="strategy-icon">📧</div>
+              <div class="strategy-content">
+                <div class="strategy-label">${t.strategySingleName}</div>
+                <div class="strategy-desc">${t.strategySingleDesc}</div>
+                <div class="strategy-example">${t.example}: ${t.strategySingleExample}</div>
+              </div>
+              <div class="strategy-check">✓</div>
+            </div>
+            <div class="strategy-option" data-strategy="plus_alias" onclick="selectStrategy('plus_alias')">
+              <div class="strategy-icon">➕</div>
+              <div class="strategy-content">
+                <div class="strategy-label">${t.strategyPlusAliasName}</div>
+                <div class="strategy-desc">${t.strategyPlusAliasDesc}</div>
+                <div class="strategy-example">${t.example}: ${t.strategyPlusAliasExample}</div>
+              </div>
+              <div class="strategy-check">✓</div>
+            </div>
+            <div class="strategy-option" data-strategy="catch_all" onclick="selectStrategy('catch_all')">
+              <div class="strategy-icon">🌐</div>
+              <div class="strategy-content">
+                <div class="strategy-label">${t.strategyCatchAllName}</div>
+                <div class="strategy-desc">${t.strategyCatchAllDesc}</div>
+                <div class="strategy-example">${t.example}: ${t.strategyCatchAllExample}</div>
+              </div>
+              <div class="strategy-check">✓</div>
+            </div>
+            <div class="strategy-option" data-strategy="pool" onclick="selectStrategy('pool')">
+              <div class="strategy-icon">📋</div>
+              <div class="strategy-content">
+                <div class="strategy-label">${t.strategyPoolName}</div>
+                <div class="strategy-desc">${t.strategyPoolDesc}</div>
+              </div>
+              <div class="strategy-check">✓</div>
+            </div>
+          </div>
+          
+          <div class="strategy-config" id="catchAllConfig" style="display: none;">
+            <div class="config-hint">${t.strategyCatchAllHint}</div>
+            <div class="form-group">
+              <label class="form-label">${t.strategyCatchAllDomain}</label>
+              <input type="text" class="form-input" id="catchAllDomain" placeholder="your-domain.com">
+            </div>
+          </div>
+          
+          <div class="strategy-config" id="poolConfig" style="display: none;">
+            <div class="config-hint">${t.strategyPoolHint}</div>
+            <div class="email-pool-editor">
+              <div class="pool-list" id="poolList"></div>
+              <div class="pool-add">
+                <input type="email" class="form-input" id="newPoolEmail" placeholder="${t.strategyPoolAdd}" onkeypress="if(event.key==='Enter') addEmailToPool()">
+                <button class="btn btn-secondary" onclick="addEmailToPool()">${ICONS.plus}</button>
+              </div>
+              <div class="pool-actions">
+                <button class="btn btn-secondary" onclick="importEmailsFromFile()">📁 ${t.strategyPoolFromFile}</button>
+                <button class="btn btn-secondary" onclick="pasteEmails()">📋 ${t.strategyPoolPaste}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="editor-footer">
+        <button class="btn btn-secondary" onclick="closeProfileEditor()">${t.cancel}</button>
+        <button class="btn btn-primary" onclick="saveProfile()">${t.save}</button>
       </div>
     </div>
   </div>

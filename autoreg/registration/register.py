@@ -32,8 +32,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 print = functools.partial(print, flush=True)
 
 from core.config import get_config
+from core.email_generator import EmailGenerator, EmailResult
 from .browser import BrowserAutomation
-from .mail_handler import get_mail_handler
+from .mail_handler import get_mail_handler, create_mail_handler_from_env
 from .oauth_pkce import OAuthPKCE
 
 config = get_config()
@@ -97,16 +98,77 @@ class AWSRegistration:
         self.browser = None
         self.mail_handler = None
         self.oauth = None
+        self.email_generator = None
     
-    def _init_mail(self, email_domain: str):
+    def _init_mail(self, email_domain: str = None):
+        """Initialize mail handler from environment settings"""
         if not self.mail_handler:
-            self.mail_handler = get_mail_handler(email_domain)
+            self.mail_handler = create_mail_handler_from_env()
         return self.mail_handler
     
+    def _init_email_generator(self) -> EmailGenerator:
+        """Initialize email generator from environment settings"""
+        if not self.email_generator:
+            self.email_generator = EmailGenerator.from_env()
+        return self.email_generator
+    
+    def register_auto(self, password: Optional[str] = None) -> dict:
+        """
+        Автоматическая регистрация с использованием email стратегии.
+        
+        Email и имя генерируются автоматически на основе настроенной стратегии:
+        - single: использует IMAP email напрямую
+        - plus_alias: генерирует user+random@domain
+        - catch_all: генерирует random@custom-domain
+        - pool: берёт следующий email из списка
+        
+        Returns:
+            dict с результатом регистрации
+        """
+        # Инициализируем генератор email
+        generator = self._init_email_generator()
+        
+        try:
+            # Генерируем email по стратегии
+            email_result = generator.generate()
+            print(f"[EMAIL] Strategy: {generator.config.strategy}")
+            print(f"[EMAIL] Registration: {email_result.registration_email}")
+            print(f"[EMAIL] IMAP lookup: {email_result.imap_lookup_email}")
+            print(f"[EMAIL] Name: {email_result.display_name}")
+            
+            # Вызываем основной метод регистрации
+            result = self.register_single(
+                email=email_result.registration_email,
+                name=email_result.display_name,
+                password=password,
+                imap_lookup_email=email_result.imap_lookup_email
+            )
+            
+            # Добавляем информацию о стратегии
+            result['strategy'] = generator.config.strategy
+            result['imap_lookup_email'] = email_result.imap_lookup_email
+            
+            return result
+            
+        except ValueError as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'strategy': generator.config.strategy
+            }
+    
     def register_single(self, email: str, name: Optional[str] = None, 
-                       password: Optional[str] = None) -> dict:
+                       password: Optional[str] = None,
+                       imap_lookup_email: Optional[str] = None) -> dict:
         """
         Регистрация одного аккаунта через OAuth PKCE Flow
+        
+        Args:
+            email: Email для регистрации в AWS
+            name: Имя пользователя (генерируется если не указано)
+            password: Пароль (генерируется если не указан)
+            imap_lookup_email: Email для поиска в IMAP (для plus_alias стратегии)
+                              Если не указан, используется email
         
         Flow:
         1. Start OAuth (callback server + PKCE + client registration)
@@ -120,6 +182,9 @@ class AWSRegistration:
         9. Click "Allow access" button (CRITICAL!)
         10. AWS redirects to callback → OAuth exchanges code for tokens
         """
+        # Email для поиска в IMAP (может отличаться от registration email)
+        lookup_email = imap_lookup_email or email
+        
         # Генерируем имя из email если не указано
         if name is None:
             username = email.split('@')[0]
@@ -130,12 +195,11 @@ class AWSRegistration:
         if password is None:
             password = BrowserAutomation.generate_password()
         
-        # Инициализируем почту
-        email_domain = email.split('@')[1]
-        mail_handler = self._init_mail(email_domain)
+        # Инициализируем почту (использует настройки из env)
+        mail_handler = self._init_mail()
         
         if not mail_handler:
-            return {'email': email, 'success': False, 'error': 'Mail handler not available'}
+            return {'email': email, 'success': False, 'error': 'Mail handler not available. Check IMAP settings.'}
         
         try:
             # ШАГ 1: Запускаем OAuth PKCE flow
@@ -183,8 +247,9 @@ class AWSRegistration:
             self.browser.enter_name(name)
             
             # ШАГ 5: Получаем и вводим код верификации
-            print(f"[5/8] Waiting for verification code...")
-            code = mail_handler.get_verification_code(email, timeout=TIMEOUTS['verification_code'])
+            # Используем lookup_email для поиска в IMAP (важно для plus_alias стратегии)
+            print(f"[5/8] Waiting for verification code (lookup: {lookup_email})...")
+            code = mail_handler.get_verification_code(lookup_email, timeout=TIMEOUTS['verification_code'])
             
             if not code:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}

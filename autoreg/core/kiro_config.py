@@ -83,15 +83,45 @@ def get_kiro_version() -> str:
     return FALLBACK_VERSION
 
 
-@lru_cache(maxsize=1)
-def get_machine_id() -> str:
+def get_custom_machine_id_path() -> Path:
+    """Путь к файлу с кастомным Machine ID (создаётся патчером)"""
+    return Path.home() / '.kiro-batch-login' / 'machine-id.txt'
+
+
+def get_machine_id(use_custom: bool = True) -> str:
     """
-    Получает Machine ID точно так же как Kiro IDE (через node-machine-id логику).
+    Получает Machine ID.
     
-    Windows: SHA256 от MachineGuid из реестра
-    Linux: SHA256 от /etc/machine-id
-    macOS: SHA256 от IOPlatformUUID
+    Приоритет:
+    1. Кастомный ID из ~/.kiro-batch-login/machine-id.txt (если use_custom=True)
+    2. Системный ID (как node-machine-id):
+       - Windows: SHA256 от MachineGuid из реестра
+       - Linux: SHA256 от /etc/machine-id
+       - macOS: SHA256 от IOPlatformUUID
     
+    Args:
+        use_custom: Использовать кастомный ID если есть (по умолчанию True)
+    """
+    # Сначала проверяем кастомный ID (от патчера)
+    if use_custom:
+        custom_path = get_custom_machine_id_path()
+        if custom_path.exists():
+            try:
+                custom_id = custom_path.read_text().strip()
+                # Валидация: должен быть 64-символьный hex
+                if custom_id and len(custom_id) == 64 and all(c in '0123456789abcdef' for c in custom_id.lower()):
+                    return custom_id.lower()
+            except Exception:
+                pass
+    
+    # Fallback на системный ID
+    return _get_system_machine_id()
+
+
+@lru_cache(maxsize=1)
+def _get_system_machine_id() -> str:
+    """
+    Получает системный Machine ID (как node-machine-id).
     Кэшируется для производительности.
     """
     try:
@@ -205,7 +235,9 @@ def get_kiro_info() -> Dict[str, Any]:
 # Для удобства импорта
 __all__ = [
     'get_kiro_version',
-    'get_machine_id', 
+    'get_machine_id',
+    'get_custom_machine_id_path',
+    '_get_system_machine_id',
     'get_kiro_user_agent',
     'get_kiro_scopes',
     'get_client_id_hash',

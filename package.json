@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "4.22.3",
+  "version": "5.1.0",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
@@ -144,17 +144,46 @@
         "kiroAccountSwitcher.imap.server": {
           "type": "string",
           "default": "",
-          "description": "IMAP server address (e.g., mail.example.com)"
+          "description": "IMAP server address (e.g., imap.gmail.com)",
+          "order": 10
         },
         "kiroAccountSwitcher.imap.user": {
           "type": "string",
           "default": "",
-          "description": "IMAP username/email"
+          "description": "IMAP username/email",
+          "order": 11
         },
         "kiroAccountSwitcher.imap.password": {
           "type": "string",
           "default": "",
-          "description": "IMAP password"
+          "description": "IMAP password or app password",
+          "order": 12
+        },
+        "kiroAccountSwitcher.imap.port": {
+          "type": "number",
+          "default": 993,
+          "description": "IMAP port (usually 993 for SSL)",
+          "order": 13
+        },
+        "kiroAccountSwitcher.email.strategy": {
+          "type": "string",
+          "default": "catch_all",
+          "enum": ["single", "plus_alias", "catch_all", "pool"],
+          "enumDescriptions": [
+            "Single Email - use IMAP email directly (one account per email)",
+            "Plus Alias - user+random@domain (Gmail, Outlook support)",
+            "Catch-All - random emails on your domain (requires catch-all)",
+            "Email Pool - use a list of your emails"
+          ],
+          "description": "Email generation strategy for auto-registration",
+          "order": 14
+        },
+        "kiroAccountSwitcher.email.pool": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "List of emails for pool strategy",
+          "order": 15
         },
         "kiroAccountSwitcher.debug.verbose": {
           "type": "boolean",

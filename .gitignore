@@ -31,6 +31,10 @@ __pycache__/
 *.so
 .deps_installed
 
+# PyInstaller
+autoreg/build/
+autoreg/dist/
+
 # IDE
 .idea/
 *.swp

@@ -1,6 +1,11 @@
 """
 IMAP Mail Handler для сбора кодов верификации
-Поддерживает example.com с фильтрацией по To: заголовку
+
+Поддерживает разные стратегии email:
+- single: письма приходят напрямую на IMAP email
+- plus_alias: письма на user+tag@domain приходят в user@domain
+- catch_all: письма на любой@domain приходят в один ящик (фильтр по To:)
+- pool: каждый email = отдельный ящик (или общий с фильтром по To:)
 """
 
 import imaplib
@@ -8,6 +13,7 @@ import email
 import re
 import time
 import sys
+import os
 from typing import Optional
 from pathlib import Path
 
@@ -32,27 +38,21 @@ def safe_print(msg: str):
 
 from core.config import get_config
 
-import os
 
-# Для обратной совместимости - приоритет env переменным
-def _get_imap_config():
+def get_imap_settings() -> dict:
+    """
+    Get IMAP settings from environment (set by VS Code extension).
+    Falls back to config file if env not set.
+    """
     config = get_config()
-    domain = os.environ.get('EMAIL_DOMAIN', config.registration.email_domain)
-    
-    # Приоритет env переменным (от VS Code extension)
-    host = os.environ.get('IMAP_SERVER', config.imap.host)
-    email = os.environ.get('IMAP_USER', config.imap.email)
-    password = os.environ.get('IMAP_PASSWORD', config.imap.password)
     
     return {
-        domain: {
-            'host': host,
-            'email': email,
-            'password': password,
-        }
+        'host': os.environ.get('IMAP_SERVER', config.imap.host),
+        'port': int(os.environ.get('IMAP_PORT', '993')),
+        'user': os.environ.get('IMAP_USER', config.imap.email),
+        'password': os.environ.get('IMAP_PASSWORD', config.imap.password),
+        'strategy': os.environ.get('EMAIL_STRATEGY', 'single'),
     }
-
-IMAP_CONFIG = _get_imap_config()
 
 
 class IMAPMailHandler:
@@ -249,29 +249,38 @@ class IMAPMailHandler:
         return None
 
 
-def get_mail_handler(email_domain: str) -> Optional[IMAPMailHandler]:
+def get_mail_handler(email_domain: str = None) -> Optional[IMAPMailHandler]:
     """
-    Получить обработчик почты для домена
+    Получить обработчик почты.
     
-    Args:
-        email_domain: Домен email (например, example.com)
+    Использует настройки из environment (установленные VS Code extension).
+    Параметр email_domain оставлен для обратной совместимости, но игнорируется.
     
     Returns:
         IMAPMailHandler или None
     """
-    config = IMAP_CONFIG.get(email_domain)
+    settings = get_imap_settings()
     
-    if not config:
-        safe_print(f"[!] No config for domain: {email_domain}")
+    if not settings['host'] or not settings['user'] or not settings['password']:
+        safe_print(f"[!] IMAP settings not configured")
+        safe_print(f"    Please configure IMAP in extension settings")
         return None
     
     handler = IMAPMailHandler(
-        imap_host=config['host'],
-        imap_email=config['email'],
-        imap_password=config['password']
+        imap_host=settings['host'],
+        imap_email=settings['user'],
+        imap_password=settings['password']
     )
     
     if handler.connect():
         return handler
     
     return None
+
+
+def create_mail_handler_from_env() -> Optional[IMAPMailHandler]:
+    """
+    Create mail handler from environment variables.
+    This is the preferred way to create handler when called from VS Code extension.
+    """
+    return get_mail_handler()
