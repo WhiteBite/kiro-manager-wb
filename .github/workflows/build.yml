@@ -71,11 +71,32 @@ jobs:
           path: "*.vsix"
           retention-days: 30
 
-      - name: Create Release
+      - name: Create Tagged Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
           files: "*.vsix"
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-update "latest" release on every master push
+      - name: Update Latest Release
+        if: github.ref == 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          body: |
+            🚀 **Automatic build from master branch**
+
+            Commit: ${{ github.sha }}
+            Date: ${{ github.event.head_commit.timestamp }}
+
+            This release is automatically updated on every push to master.
+            For stable releases, see tagged versions.
+          files: "*.vsix"
+          prerelease: true
+          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
