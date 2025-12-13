@@ -31,6 +31,7 @@ from services.quota_service import QuotaService
 from services.machine_id_service import MachineIdService
 from services.kiro_service import KiroService
 from services.sso_import_service import SsoImportService
+from services.kiro_patcher_service import KiroPatcherService
 
 
 def cmd_status(args):
@@ -317,6 +318,131 @@ def cmd_machine_restore(args):
 
 
 # =============================================================================
+# Patch Commands
+# =============================================================================
+
+def cmd_patch_status(args):
+    """Статус патча Kiro"""
+    service = KiroPatcherService()
+    status = service.get_status()
+    
+    print("\n" + "="*60)
+    print("[*] Kiro Patch Status")
+    print("="*60)
+    
+    if status.error:
+        print(f"\n[X] Error: {status.error}")
+        return
+    
+    print(f"\n[V] Kiro Version: {status.kiro_version or 'Unknown'}")
+    print(f"[F] Target File: {status.machine_id_file}")
+    
+    if status.is_patched:
+        print(f"\n[OK] Status: PATCHED (v{status.patch_version})")
+    else:
+        print(f"\n[X] Status: NOT PATCHED")
+    
+    if status.current_machine_id:
+        print(f"\n[ID] Custom Machine ID:")
+        print(f"   {status.current_machine_id[:32]}...")
+    else:
+        print(f"\n[ID] Custom Machine ID: Not set")
+    
+    if status.backup_exists:
+        print(f"\n[P] Backup: {status.backup_path}")
+    else:
+        print(f"\n[P] Backup: None")
+    
+    print("\n" + "="*60)
+
+
+def cmd_patch_apply(args):
+    """Применить патч к Kiro"""
+    service = KiroPatcherService()
+    
+    print("[R] Applying patch to Kiro...")
+    
+    result = service.patch(force=args.force, skip_running_check=getattr(args, 'skip_check', False))
+    
+    if result.success:
+        print(f"[OK] {result.message}")
+        print(f"   Backup: {result.backup_path}")
+        print(f"   Patched: {result.patched_file}")
+        
+        # Показываем текущий machine ID
+        machine_id = service.get_machine_id()
+        if machine_id:
+            print(f"\n[ID] Current Machine ID:")
+            print(f"   {machine_id[:32]}...")
+        
+        print("\n[!] Restart Kiro for changes to take effect")
+    else:
+        print(f"[X] {result.message}")
+
+
+def cmd_patch_remove(args):
+    """Удалить патч (восстановить оригинал)"""
+    service = KiroPatcherService()
+    
+    print("[R] Removing patch from Kiro...")
+    
+    result = service.unpatch(skip_running_check=getattr(args, 'skip_check', False))
+    
+    if result.success:
+        print(f"[OK] {result.message}")
+        print(f"   Restored from: {result.backup_path}")
+        print("\n[!] Restart Kiro for changes to take effect")
+    else:
+        print(f"[X] {result.message}")
+
+
+def cmd_patch_generate_id(args):
+    """Сгенерировать новый Machine ID"""
+    service = KiroPatcherService()
+    
+    if args.id:
+        # Установить конкретный ID
+        if service.set_machine_id(args.id):
+            print(f"[OK] Machine ID set: {args.id[:32]}...")
+        else:
+            print("[X] Invalid Machine ID format. Must be 64-char hex string.")
+    else:
+        # Сгенерировать новый
+        new_id = service.generate_machine_id()
+        print(f"[OK] New Machine ID generated:")
+        print(f"   {new_id}")
+        print(f"\n[F] Saved to: {service.custom_id_path}")
+    
+    # Проверяем патч
+    status = service.get_status()
+    if not status.is_patched:
+        print("\n[!] Warning: Kiro is not patched. Run 'patch apply' first.")
+
+
+def cmd_patch_check(args):
+    """Проверить нужно ли обновить патч"""
+    service = KiroPatcherService()
+    
+    needs_update, reason = service.check_update_needed()
+    
+    if needs_update:
+        print(f"[!] Patch needs update: {reason}")
+        if args.auto_fix:
+            print("[R] Auto-fixing...")
+            result = service.patch(force=True, skip_running_check=True)
+            if result.success:
+                print(f"[OK] {result.message}")
+            else:
+                print(f"[X] {result.message}")
+    else:
+        status = service.get_status()
+        if status.is_patched:
+            print(f"[OK] Patch is up to date (v{status.patch_version})")
+        else:
+            print("[INFO] Kiro is not patched")
+
+
+# =============================================================================
 # Kiro Commands
 # =============================================================================
 
@@ -531,6 +657,30 @@ def main():
     sso_parser.add_argument('-a', '--activate', action='store_true', help='Activate in Kiro after import')
     sso_parser.set_defaults(func=cmd_sso_import)
     
+    # patch
+    patch_parser = subparsers.add_parser('patch', help='Kiro patching (custom Machine ID)')
+    patch_sub = patch_parser.add_subparsers(dest='patch_cmd')
+    
+    patch_status = patch_sub.add_parser('status', help='Show patch status')
+    patch_status.set_defaults(func=cmd_patch_status)
+    
+    patch_apply = patch_sub.add_parser('apply', help='Apply patch to Kiro')
+    patch_apply.add_argument('-f', '--force', action='store_true', help='Force re-patch')
+    patch_apply.add_argument('--skip-check', action='store_true', help='Skip Kiro running check (dangerous!)')
+    patch_apply.set_defaults(func=cmd_patch_apply)
+    
+    patch_remove = patch_sub.add_parser('remove', help='Remove patch (restore original)')
+    patch_remove.add_argument('--skip-check', action='store_true', help='Skip Kiro running check')
+    patch_remove.set_defaults(func=cmd_patch_remove)
+    
+    patch_gen = patch_sub.add_parser('generate-id', help='Generate new Machine ID')
+    patch_gen.add_argument('id', nargs='?', help='Set specific ID (64-char hex)')
+    patch_gen.set_defaults(func=cmd_patch_generate_id)
+    
+    patch_check = patch_sub.add_parser('check', help='Check if patch needs update')
+    patch_check.add_argument('--auto-fix', action='store_true', help='Auto re-apply patch if needed')
+    patch_check.set_defaults(func=cmd_patch_check)
+    
     # Parse
     args = parser.parse_args()
     
@@ -549,6 +699,10 @@ def main():
     
     if args.command == 'kiro' and not args.kiro_cmd:
         cmd_kiro_status(args)
+        return
+    
+    if args.command == 'patch' and not args.patch_cmd:
+        cmd_patch_status(args)
         return
     
     if hasattr(args, 'func'):

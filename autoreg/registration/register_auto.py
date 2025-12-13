@@ -82,8 +82,7 @@ def main():
     parser.add_argument('--headless', action='store_true', help='Run browser in headless mode')
     parser.add_argument('--no-headless', action='store_true', help='Show browser window')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--email', type=str, help='Custom email to use')
-    parser.add_argument('--domain', type=str, default='example.com', help='Email domain')
+    parser.add_argument('--email', type=str, help='Custom email to use (overrides strategy)')
     args = parser.parse_args()
 
     # Determine headless mode
@@ -97,22 +96,28 @@ def main():
     if args.verbose:
         set_setting('debug.verbose', True)
 
-    # Generate email
-    email = args.email if args.email else generate_human_email(args.domain)
-
-    progress(1, 8, "Initializing", f"Email: {email}")
+    # Get strategy from environment
+    strategy = os.environ.get('EMAIL_STRATEGY', 'catch_all')
+    
+    progress(1, 8, "Initializing", f"Strategy: {strategy}")
 
     if args.verbose:
         print(f"[DEBUG] Headless: {headless}")
-        print(f"[DEBUG] Email: {email}")
+        print(f"[DEBUG] Strategy: {strategy}")
+        print(f"[DEBUG] IMAP User: {os.environ.get('IMAP_USER', 'not set')}")
 
     reg = AWSRegistration(headless=headless)
 
     try:
         progress(2, 8, "Starting OAuth", "Getting auth URL...")
         
-        # Use register_single (standard method)
-        result = reg.register_single(email)
+        # Use register_auto which handles email strategies
+        if args.email:
+            # Manual email override
+            result = reg.register_single(args.email)
+        else:
+            # Use configured strategy
+            result = reg.register_auto()
         
         if result.get('success'):
             progress(8, 8, "Complete", f"Account: {result['email']}")
@@ -120,6 +125,8 @@ def main():
             print(f"Email: {result['email']}")
             print(f"Password: {result['password']}")
             print(f"Token: {result.get('token_file', 'N/A')}")
+            if result.get('strategy'):
+                print(f"Strategy: {result['strategy']}")
         else:
             progress(8, 8, "Failed", result.get('error', 'Unknown error'))
             print(f"\n[X] FAILED: {result.get('error', 'Unknown')}")

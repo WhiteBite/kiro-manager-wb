@@ -7,3 +7,7 @@ export { renderUsageCard, renderUsageSkeleton } from './UsageCard';
 export { renderSettingsPanel } from './SettingsPanel';
 export { renderConsolePanel } from './ConsolePanel';
 export { renderProgressPanel, type RegProgress } from './ProgressPanel';
+
+// IMAP Profiles
+export { renderImapProfileCard, renderImapProfileList } from './ImapProfileCard';
+export { renderProfileEditor, profileEditorScripts } from './ProfileEditor';

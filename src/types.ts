@@ -50,3 +50,99 @@ export interface UsageStats {
     limit?: number;
   };
 }
+
+// ============================================
+// IMAP Profiles & Email Strategies
+// ============================================
+
+/**
+ * Email generation strategy type
+ */
+export type EmailStrategyType = 'single' | 'plus_alias' | 'catch_all' | 'pool';
+
+/**
+ * Email item in pool (for 'pool' strategy)
+ */
+export interface EmailPoolItem {
+  email: string;
+  status: 'pending' | 'used' | 'failed';
+  usedAt?: string;
+  error?: string;
+  accountId?: string; // linked account after registration
+}
+
+/**
+ * Email generation strategy configuration
+ */
+export interface EmailStrategy {
+  type: EmailStrategyType;
+  
+  // For 'catch_all' strategy
+  domain?: string;
+  
+  // For 'pool' strategy  
+  emails?: EmailPoolItem[];
+}
+
+/**
+ * IMAP connection settings
+ */
+export interface ImapSettings {
+  server: string;
+  port?: number;
+  user: string;
+  password: string;
+  ssl?: boolean;
+}
+
+/**
+ * IMAP Profile - combines IMAP settings with email strategy
+ */
+export interface ImapProfile {
+  id: string;
+  name: string;
+  imap: ImapSettings;
+  strategy: EmailStrategy;
+  status: 'active' | 'paused' | 'exhausted' | 'error';
+  isDefault?: boolean;
+  
+  // Statistics
+  stats: {
+    registered: number;
+    failed: number;
+    lastUsed?: string;
+    lastError?: string;
+  };
+  
+  // Provider detection (auto-filled)
+  provider?: {
+    name: string;           // "Gmail", "Yandex", etc.
+    supportsAlias: boolean;
+    catchAllPossible: boolean;
+  };
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Provider hints for auto-detection
+ */
+export interface ProviderHint {
+  name: string;
+  domains: string[];
+  imapServer: string;
+  imapPort: number;
+  supportsAlias: boolean;
+  catchAllPossible: boolean;
+  recommendedStrategy: EmailStrategyType;
+}
+
+/**
+ * All IMAP profiles storage
+ */
+export interface ImapProfilesData {
+  profiles: ImapProfile[];
+  activeProfileId?: string;
+  version: number;
+}

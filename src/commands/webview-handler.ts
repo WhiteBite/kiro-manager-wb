@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
 import { switchToAccount, refreshAccountToken, refreshAllAccounts, deleteAccount } from '../accounts';
-import { runAutoReg, importSsoToken } from '../commands/autoreg';
+import { runAutoReg, importSsoToken, resetMachineId, patchKiro, unpatchKiro, generateMachineId, getPatchStatus } from '../commands/autoreg';
 
 export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: any) {
   switch (msg.command) {
@@ -155,6 +155,73 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
 
     case 'deleteExhaustedAccounts':
       await provider.deleteExhaustedAccounts();
+      break;
+
+    // === IMAP Profiles ===
+    
+    case 'loadProfiles':
+      await provider.loadProfiles();
+      break;
+
+    case 'getActiveProfile':
+      await provider.getActiveProfile();
+      break;
+
+    case 'getProfile':
+      await provider.getProfile(msg.profileId);
+      break;
+
+    case 'createProfile':
+      await provider.createProfile(msg.profile);
+      break;
+
+    case 'updateProfile':
+      await provider.updateProfile(msg.profile);
+      break;
+
+    case 'deleteProfile':
+      await provider.deleteProfile(msg.profileId);
+      break;
+
+    case 'setActiveProfile':
+      await provider.setActiveProfile(msg.profileId);
+      break;
+
+    case 'detectProvider':
+      await provider.detectProvider(msg.email);
+      break;
+
+    case 'testImap':
+      await provider.testImapConnection(msg);
+      break;
+
+    case 'importEmailsFromFile':
+      await provider.importEmailsFromFile();
+      break;
+
+    case 'openVsCodeSettings':
+      vscode.commands.executeCommand('workbench.action.openSettings', 'kiroAccountSwitcher.imap');
+      break;
+
+    case 'resetMachineId':
+      await resetMachineId(provider.context, provider);
+      break;
+
+    case 'patchKiro':
+      await patchKiro(provider.context, provider, msg.force || false);
+      break;
+
+    case 'unpatchKiro':
+      await unpatchKiro(provider.context, provider);
+      break;
+
+    case 'generateMachineId':
+      await generateMachineId(provider.context, provider);
+      break;
+
+    case 'getPatchStatus':
+      const status = await getPatchStatus(provider.context);
+      provider.sendPatchStatus(status);
       break;
   }
 }

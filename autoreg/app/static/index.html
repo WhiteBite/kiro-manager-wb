@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiro Account Manager</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">KIRO</h1>
+        <span class="badge" id="accountBadge">0/0</span>
+        <span class="patch-indicator" id="patchIndicator" title="Patch status"></span>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" onclick="toggleLogs()" title="Console">📋</button>
+        <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Hero Dashboard -->
+    <div class="hero" id="heroDashboard">
+      <div class="hero-content">
+        <div class="hero-email" id="heroEmail">No active account</div>
+        <div class="hero-stats" id="heroStats"></div>
+      </div>
+      <div class="hero-progress" id="heroProgress" style="display: none;">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText"></div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-buttons">
+        <button class="btn btn-primary" id="autoRegBtn" onclick="startAutoReg()">
+          ⚡ Auto-Reg
+        </button>
+        <button class="btn btn-secondary" onclick="openSsoModal()">🌐 SSO</button>
+        <button class="btn btn-secondary btn-icon" onclick="refresh()" title="Refresh">🔄</button>
+      </div>
+      <div class="search-wrapper">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..." oninput="filterAccounts(this.value)">
+      </div>
+    </div>
+
+    <!-- Account List -->
+    <div class="account-list" id="accountList">
+      <div class="loading">Loading accounts...</div>
+    </div>
+
+    <!-- Logs Panel -->
+    <div class="logs-panel" id="logsPanel">
+      <div class="logs-header" onclick="toggleLogs()">
+        <span>Console</span>
+        <span class="logs-count" id="logsCount">0</span>
+        <span class="logs-toggle">▼</span>
+      </div>
+      <div class="logs-actions">
+        <button class="icon-btn-sm" onclick="clearLogs()">🗑️</button>
+        <button class="icon-btn-sm" onclick="copyLogs()">📋</button>
+      </div>
+      <div class="logs-content" id="logsContent"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button class="modal-close" onclick="closeSettings()">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- Tabs -->
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab('general')">General</button>
+            <button class="tab" onclick="switchTab('imap')">IMAP</button>
+            <button class="tab" onclick="switchTab('patch')">Patch</button>
+            <button class="tab" onclick="switchTab('system')">System</button>
+          </div>
+
+          <!-- General Tab -->
+          <div class="tab-content active" id="tab-general">
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Headless Mode</div>
+                <div class="setting-desc">Run browser without visible window</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="settingHeadless">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Browser Spoofing</div>
+                <div class="setting-desc">Enable fingerprint spoofing</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="settingSpoofing" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- IMAP Tab -->
+          <div class="tab-content" id="tab-imap">
+            <div class="form-group">
+              <label>IMAP Server</label>
+              <input type="text" class="form-input" id="imapServer" placeholder="imap.gmail.com">
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>Email</label>
+                <input type="email" class="form-input" id="imapUser" placeholder="your@email.com">
+              </div>
+              <div class="form-group flex-1">
+                <label>Port</label>
+                <input type="number" class="form-input" id="imapPort" value="993">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" class="form-input" id="imapPassword" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label>Email Domain (for catch-all)</label>
+              <input type="text" class="form-input" id="emailDomain" placeholder="your-domain.com">
+            </div>
+            <div class="form-group">
+              <label>Strategy</label>
+              <select class="form-select" id="emailStrategy">
+                <option value="catch_all">Catch-All (random@domain)</option>
+                <option value="plus_alias">Plus Alias (user+random@domain)</option>
+                <option value="single">Single Email</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Patch Tab -->
+          <div class="tab-content" id="tab-patch">
+            <div class="patch-status-card" id="patchStatusCard">
+              <div class="patch-status-header">
+                <span class="patch-status-icon" id="patchStatusIcon">⏳</span>
+                <div class="patch-status-info">
+                  <div class="patch-status-title" id="patchStatusTitle">Loading...</div>
+                  <div class="patch-status-version" id="patchStatusVersion"></div>
+                </div>
+              </div>
+              <div class="patch-machine-id" id="patchMachineId"></div>
+            </div>
+            <div class="patch-actions">
+              <button class="btn btn-warning" id="patchApplyBtn" onclick="applyPatch()">🔧 Apply Patch</button>
+              <button class="btn btn-secondary" id="patchRemoveBtn" onclick="removePatch()" style="display:none">↩️ Remove</button>
+              <button class="btn btn-secondary" onclick="generateMachineId()">🎲 New ID</button>
+            </div>
+            <div class="danger-zone">
+              <div class="danger-zone-title">⚠️ Danger Zone</div>
+              <div class="danger-zone-item">
+                <div>
+                  <div class="setting-label">Reset Telemetry IDs</div>
+                  <div class="setting-desc">Reset all Kiro telemetry identifiers</div>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="resetTelemetry()">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Tab -->
+          <div class="tab-content" id="tab-system">
+            <div class="system-info" id="systemInfo">
+              <div class="info-row"><span>Platform:</span><span id="infoPlatform">-</span></div>
+              <div class="info-row"><span>Kiro Version:</span><span id="infoKiroVersion">-</span></div>
+              <div class="info-row"><span>Machine ID:</span><span id="infoMachineId" class="mono">-</span></div>
+              <div class="info-row"><span>Tokens Path:</span><span id="infoTokensPath" class="mono small">-</span></div>
+            </div>
+            <div class="kiro-controls">
+              <div class="kiro-status" id="kiroStatus">
+                <span class="status-dot" id="kiroStatusDot"></span>
+                <span id="kiroStatusText">Checking...</span>
+              </div>
+              <div class="kiro-buttons">
+                <button class="btn btn-secondary btn-sm" onclick="startKiro()">▶️ Start</button>
+                <button class="btn btn-secondary btn-sm" onclick="stopKiro()">⏹️ Stop</button>
+                <button class="btn btn-secondary btn-sm" onclick="restartKiro()">🔄 Restart</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSO Modal -->
+    <div class="modal" id="ssoModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>SSO Import</h2>
+          <button class="modal-close" onclick="closeSsoModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">
+            1. Login to https://view.awsapps.com/start<br>
+            2. Open DevTools (F12) → Application → Cookies<br>
+            3. Copy the value of x-amz-sso_authn
+          </p>
+          <textarea class="form-textarea" id="ssoToken" placeholder="Paste cookie value here..."></textarea>
+          <button class="btn btn-primary btn-full" onclick="importSso()">Import</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div class="modal" id="confirmModal">
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h2 id="confirmTitle">Confirm</h2>
+        </div>
+        <div class="modal-body">
+          <p id="confirmText"></p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+            <button class="btn btn-danger" id="confirmBtn" onclick="confirmAction()">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

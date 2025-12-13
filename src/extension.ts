@@ -10,15 +10,25 @@ import { loadAccounts, switchToAccount, refreshAccountToken, refreshAllAccounts 
 import { getTokensDir } from './utils';
 import { checkForUpdates } from './update-checker';
 import { KiroAccountsProvider } from './providers';
+import { ImapProfileProvider } from './providers/ImapProfileProvider';
+import { checkPatchStatus } from './commands/autoreg';
 
 let statusBarItem: vscode.StatusBarItem;
 let accountsProvider: KiroAccountsProvider;
+let imapProfileProvider: ImapProfileProvider;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Kiro Account Switcher activated');
 
   // Check for updates in background
   checkForUpdates(context);
+
+  // Check if Kiro patch is still active (may have been overwritten by Kiro update)
+  checkPatchOnStartup(context);
+
+  // Initialize IMAP Profile Provider (singleton with settings sync)
+  imapProfileProvider = ImapProfileProvider.getInstance(context);
+  context.subscriptions.push({ dispose: () => imapProfileProvider.dispose() });
 
   // Status bar
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -172,5 +182,41 @@ function setupAutoSwitch(context: vscode.ExtensionContext) {
     }, intervalMinutes * 60 * 1000);
 
     context.subscriptions.push({ dispose: () => clearInterval(interval) });
+  }
+}
+
+// Check if Kiro patch was overwritten (e.g., after Kiro update)
+async function checkPatchOnStartup(context: vscode.ExtensionContext) {
+  try {
+    const status = await checkPatchStatus(context);
+    
+    // If we have a custom machine ID file but patch is not applied, warn user
+    if (status.currentMachineId && !status.isPatched && !status.error) {
+      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+      const lastKiroVersion = config.get<string>('patch.lastKiroVersion', '');
+      
+      // Check if Kiro version changed
+      if (status.kiroVersion && status.kiroVersion !== lastKiroVersion) {
+        const action = await vscode.window.showWarningMessage(
+          `Kiro was updated to ${status.kiroVersion}. The Machine ID patch needs to be re-applied.`,
+          'Re-apply Patch',
+          'Ignore'
+        );
+        
+        if (action === 'Re-apply Patch') {
+          vscode.commands.executeCommand('kiroAccountSwitcher.openSettings');
+          // Will show settings where user can click Patch button
+        }
+        
+        // Save current version
+        await config.update('patch.lastKiroVersion', status.kiroVersion, vscode.ConfigurationTarget.Global);
+      }
+    } else if (status.isPatched && status.kiroVersion) {
+      // Save version when patch is active
+      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+      await config.update('patch.lastKiroVersion', status.kiroVersion, vscode.ConfigurationTarget.Global);
+    }
+  } catch (error) {
+    console.error('Patch check failed:', error);
   }
 }

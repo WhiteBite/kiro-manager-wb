@@ -11,10 +11,11 @@ import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActi
 import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage } from '../utils';
 import { generateWebviewHtml } from '../webview';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
-import { AccountInfo } from '../types';
+import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
 import { autoregProcess } from '../process-manager';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
+import { ImapProfileProvider } from './ImapProfileProvider';
 
 // Simple performance measurement
 function perf<T>(name: string, fn: () => T): T {
@@ -598,6 +599,195 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       }
     } catch (err) {
       console.error(`Failed to load usage for ${accountName}:`, err);
+    }
+  }
+
+  // ============================================
+  // IMAP Profiles Management
+  // ============================================
+
+  private _profileProvider?: ImapProfileProvider;
+
+  private getProfileProvider(): ImapProfileProvider {
+    if (!this._profileProvider) {
+      this._profileProvider = ImapProfileProvider.getInstance(this._context);
+    }
+    return this._profileProvider;
+  }
+
+  async loadProfiles() {
+    if (!this._view) return;
+    
+    const provider = this.getProfileProvider();
+    const profiles = provider.getAll();
+    const activeId = provider.getActive()?.id;
+    
+    this._view.webview.postMessage({
+      type: 'profilesLoaded',
+      profiles,
+      activeProfileId: activeId
+    });
+  }
+
+  async getActiveProfile() {
+    if (!this._view) return;
+    
+    const provider = this.getProfileProvider();
+    const profile = provider.getActive();
+    
+    this._view.webview.postMessage({
+      type: 'activeProfileLoaded',
+      profile: profile || null
+    });
+  }
+
+  async getProfile(profileId: string) {
+    if (!this._view) return;
+    
+    const provider = this.getProfileProvider();
+    const profile = provider.getById(profileId);
+    
+    if (profile) {
+      this._view.webview.postMessage({
+        type: 'profileLoaded',
+        profile
+      });
+    }
+  }
+
+  async createProfile(profileData: Partial<ImapProfile>) {
+    const provider = this.getProfileProvider();
+    
+    try {
+      const profile = await provider.create({
+        name: profileData.name || 'New Profile',
+        imap: profileData.imap || { server: '', user: '', password: '' },
+        strategy: profileData.strategy || { type: 'single' },
+        status: 'active'
+      });
+      
+      this.addLog(`✓ Created profile: ${profile.name}`);
+      vscode.window.showInformationMessage(`Profile "${profile.name}" created`);
+      await this.loadProfiles();
+    } catch (err) {
+      this.addLog(`✗ Failed to create profile: ${err}`);
+      vscode.window.showErrorMessage(`Failed to create profile: ${err}`);
+    }
+  }
+
+  async updateProfile(profileData: Partial<ImapProfile>) {
+    if (!profileData.id) return;
+    
+    const provider = this.getProfileProvider();
+    
+    try {
+      const profile = await provider.update(profileData.id, profileData);
+      if (profile) {
+        this.addLog(`✓ Updated profile: ${profile.name}`);
+        vscode.window.showInformationMessage(`Profile "${profile.name}" updated`);
+        await this.loadProfiles();
+      }
+    } catch (err) {
+      this.addLog(`✗ Failed to update profile: ${err}`);
+      vscode.window.showErrorMessage(`Failed to update profile: ${err}`);
+    }
+  }
+
+  async deleteProfile(profileId: string) {
+    const provider = this.getProfileProvider();
+    const profile = provider.getById(profileId);
+    
+    if (!profile) return;
+    
+    try {
+      await provider.delete(profileId);
+      this.addLog(`✓ Deleted profile: ${profile.name}`);
+      vscode.window.showInformationMessage(`Profile "${profile.name}" deleted`);
+      await this.loadProfiles();
+    } catch (err) {
+      this.addLog(`✗ Failed to delete profile: ${err}`);
+      vscode.window.showErrorMessage(`Failed to delete profile: ${err}`);
+    }
+  }
+
+  async setActiveProfile(profileId: string) {
+    const provider = this.getProfileProvider();
+    
+    try {
+      await provider.setActive(profileId);
+      const profile = provider.getById(profileId);
+      if (profile) {
+        this.addLog(`✓ Active profile: ${profile.name}`);
+      }
+      await this.loadProfiles();
+    } catch (err) {
+      this.addLog(`✗ Failed to set active profile: ${err}`);
+    }
+  }
+
+  async detectProvider(email: string) {
+    if (!this._view || !email) return;
+    
+    const provider = this.getProfileProvider();
+    const hint = provider.getProviderHint(email);
+    const recommended = provider.getRecommendedStrategy(email);
+    
+    this._view.webview.postMessage({
+      type: 'providerDetected',
+      hint,
+      recommendedStrategy: recommended
+    });
+  }
+
+  async testImapConnection(params: { server: string; user: string; password: string; port: number }) {
+    if (!this._view) return;
+    
+    // For now, just show a message - actual IMAP test would require Python
+    this.addLog(`Testing IMAP: ${params.server}:${params.port} as ${params.user}...`);
+    
+    // TODO: Call Python script to test IMAP connection
+    vscode.window.showInformationMessage(
+      `IMAP test: ${params.server}:${params.port}`,
+      'Connection test requires running auto-reg'
+    );
+  }
+
+  async importEmailsFromFile() {
+    const uris = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      filters: { 'Text files': ['txt', 'csv'] },
+      title: 'Select file with email list'
+    });
+    
+    if (!uris || uris.length === 0) return;
+    
+    try {
+      const content = fs.readFileSync(uris[0].fsPath, 'utf8');
+      const emails = content
+        .split(/[\n,;]+/)
+        .map(e => e.trim())
+        .filter(e => e.includes('@'));
+      
+      if (emails.length > 0 && this._view) {
+        this._view.webview.postMessage({
+          type: 'emailsImported',
+          emails
+        });
+        vscode.window.showInformationMessage(`Imported ${emails.length} emails`);
+      } else {
+        vscode.window.showWarningMessage('No valid emails found in file');
+      }
+    } catch (err) {
+      vscode.window.showErrorMessage(`Failed to read file: ${err}`);
+    }
+  }
+
+  sendPatchStatus(status: { isPatched: boolean; kiroVersion?: string; patchVersion?: string; currentMachineId?: string; error?: string }) {
+    if (this._view) {
+      this._view.webview.postMessage({
+        type: 'patchStatus',
+        ...status
+      });
     }
   }
 }
