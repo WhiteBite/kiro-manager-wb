@@ -58,3 +58,6 @@ coverage/
 
 # AWS FWCIM analysis (local only)
 amz/
+
+# Recordings
+record/
