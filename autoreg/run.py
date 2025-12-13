@@ -8,8 +8,6 @@ import sys
 import argparse
 from pathlib import Path
 
-__version__ = "1.0.0"
-
 # Setup paths for both development and bundled modes
 if getattr(sys, 'frozen', False):
     # Running as bundled exe - add _MEIPASS to path
@@ -18,6 +16,8 @@ if getattr(sys, 'frozen', False):
 else:
     # Development mode - add parent directory
     sys.path.insert(0, str(Path(__file__).parent))
+
+from version import __version__
 
 
 def main():
