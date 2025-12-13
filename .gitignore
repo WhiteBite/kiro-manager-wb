@@ -55,3 +55,6 @@ autoreg/*.log
 # Test artifacts
 coverage/
 .nyc_output/
+
+# AWS FWCIM analysis (local only)
+amz/
