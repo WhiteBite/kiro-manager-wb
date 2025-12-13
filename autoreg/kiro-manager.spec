@@ -76,6 +76,7 @@ hiddenimports = [
     'imaplib',
     
     # Our modules
+    'version',
     'app',
     'app.main',
     'app.utils',
