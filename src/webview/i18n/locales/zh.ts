@@ -57,6 +57,8 @@ export const zh: Translations = {
   verboseDesc: '显示详细日志',
   screenshots: '错误截图',
   screenshotsDesc: '发生错误时保存截图',
+  spoofing: '伪装模式',
+  spoofingDesc: '随机化浏览器指纹',
   language: '语言',
   languageDesc: '界面语言',
 };

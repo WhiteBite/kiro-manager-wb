@@ -119,6 +119,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
+  const spoofing = config.get<boolean>('autoreg.spoofing', true);
   const imapServer = config.get<string>('imap.server', '');
   const imapUser = config.get<string>('imap.user', '');
   const imapPassword = config.get<string>('imap.password', '');
@@ -175,13 +176,15 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
-    EMAIL_DOMAIN: emailDomain
+    EMAIL_DOMAIN: emailDomain,
+    SPOOFING_ENABLED: spoofing ? '1' : '0'
   };
 
   provider.addLog(`Starting autoreg...`);
   provider.addLog(`Working dir: ${autoregDir}`);
   provider.addLog(`Python: ${pythonCmd}`);
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
+  provider.addLog(`Spoofing mode: ${spoofing ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
   // Use ProcessManager for better control

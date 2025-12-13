@@ -323,11 +323,16 @@ export async function refreshAllAccounts(): Promise<void> {
   }
 }
 
-export async function deleteAccount(accountName: string): Promise<boolean> {
+export async function deleteAccount(accountName: string, skipConfirm: boolean = true): Promise<boolean> {
   const accounts = loadAccounts();
+  
+  // Better account matching - try multiple strategies
   const account = accounts.find(a => 
+    a.filename === accountName ||
     a.tokenData.accountName === accountName || 
-    a.filename.includes(accountName)
+    a.tokenData.email === accountName ||
+    a.filename.includes(accountName) ||
+    (a.tokenData.email && accountName.includes(a.tokenData.email.split('@')[0]))
   );
 
   if (!account) {
@@ -335,15 +340,16 @@ export async function deleteAccount(accountName: string): Promise<boolean> {
     return false;
   }
 
-  // Confirm deletion
-  const confirm = await vscode.window.showWarningMessage(
-    `Delete account "${accountName}"? This will remove the token file.`,
-    { modal: true },
-    'Delete'
-  );
-
-  if (confirm !== 'Delete') {
-    return false;
+  // Skip confirmation if already confirmed in webview
+  if (!skipConfirm) {
+    const confirm = await vscode.window.showWarningMessage(
+      `Delete account "${accountName}"? This will remove the token file.`,
+      { modal: true },
+      'Delete'
+    );
+    if (confirm !== 'Delete') {
+      return false;
+    }
   }
 
   try {
@@ -354,12 +360,18 @@ export async function deleteAccount(accountName: string): Promise<boolean> {
 
     // Remove from usage stats
     const stats = loadUsageStats();
-    if (stats[accountName]) {
-      delete stats[accountName];
+    const accName = account.tokenData.accountName || account.tokenData.email || accountName;
+    if (stats[accName]) {
+      delete stats[accName];
       saveUsageStats(stats);
     }
 
-    vscode.window.showInformationMessage(`Account "${accountName}" deleted`);
+    // Also try to clean up by email
+    if (account.tokenData.email && stats[account.tokenData.email]) {
+      delete stats[account.tokenData.email];
+      saveUsageStats(stats);
+    }
+
     return true;
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to delete: ${error}`);

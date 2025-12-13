@@ -239,11 +239,18 @@ class BrowserAutomation:
         
         # КРИТИЧНО: Применяем спуфинг ДО навигации на страницу
         # Это гарантирует что AWS FWCIM получит подменённые данные
-        try:
-            self._spoofer = apply_pre_navigation_spoofing(self.page)
-            print("   [S] Anti-fingerprint spoofing applied")
-        except Exception as e:
-            print(f"   [!] Spoofing failed: {e}")
+        # Проверяем env переменную SPOOFING_ENABLED (по умолчанию включено)
+        spoofing_enabled = os.environ.get('SPOOFING_ENABLED', '1') == '1'
+        
+        if spoofing_enabled:
+            try:
+                self._spoofer = apply_pre_navigation_spoofing(self.page)
+                print("   [S] Anti-fingerprint spoofing applied")
+            except Exception as e:
+                print(f"   [!] Spoofing failed: {e}")
+                self._spoofer = None
+        else:
+            print("   [S] Spoofing disabled by settings")
             self._spoofer = None
         
         # Инициализируем модуль человеческого поведения
