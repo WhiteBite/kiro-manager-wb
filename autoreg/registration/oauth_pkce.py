@@ -17,6 +17,7 @@ import requests
 import time
 import threading
 import socket
+import uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlencode, urlparse, parse_qs
 from datetime import datetime, timedelta
@@ -27,6 +28,12 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
+from core.kiro_config import (
+    get_machine_id,
+    get_kiro_user_agent,
+    get_kiro_scopes,
+    get_client_id_hash,
+)
 
 _paths = get_paths()
 TOKENS_DIR = _paths.tokens_dir
@@ -36,14 +43,8 @@ OIDC_REGION = "us-east-1"
 OIDC_BASE = f"https://oidc.{OIDC_REGION}.amazonaws.com"
 START_URL = "https://view.awsapps.com/start"
 
-# Kiro scopes для CodeWhisperer/Kiro (БЕЗ sso:account:access!)
-KIRO_SCOPES = [
-    "codewhisperer:completions",
-    "codewhisperer:analysis",
-    "codewhisperer:conversations",
-    "codewhisperer:taskassist",
-    "codewhisperer:transformations"
-]
+# Kiro scopes (динамически из kiro_config)
+KIRO_SCOPES = get_kiro_scopes()
 
 
 def base64url_encode(data: bytes) -> str:
@@ -167,8 +168,19 @@ class OAuthPKCE:
         """
         Step 1: Register OIDC client dynamically
         POST https://oidc.{region}.amazonaws.com/client/register
+        
+        Использует User-Agent как в Kiro IDE для совместимости.
         """
         print("[OAuth] Registering OIDC client...")
+        
+        # Headers как в Kiro IDE
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": get_kiro_user_agent(),
+            "Accept": "application/json",
+        }
+        
+        print(f"[OAuth] User-Agent: {headers['User-Agent'][:50]}...")
         
         # Retry logic for connection issues
         max_retries = 3
@@ -186,7 +198,7 @@ class OAuthPKCE:
                         "redirectUris": [self.redirect_uri],
                         "issuerUrl": START_URL
                     },
-                    headers={"Content-Type": "application/json"},
+                    headers=headers,
                     timeout=30
                 )
                 
@@ -208,7 +220,6 @@ class OAuthPKCE:
         
         # Should not reach here, but just in case
         raise Exception(f"Client registration failed: {last_error}")
-        return data["clientId"], data.get("clientSecret", "")
     
     def _start_callback_server(self):
         """
@@ -257,10 +268,19 @@ class OAuthPKCE:
         - clientSecret (not client_secret)
         - redirectUri (not redirect_uri)
         - codeVerifier (not code_verifier)
+        
+        Использует User-Agent как в Kiro IDE.
         """
         print("[OAuth] Exchanging code for token...")
         print(f"   clientId: {self.client_id[:20]}...")
         print(f"   clientSecret: {self.client_secret[:30] if self.client_secret else 'EMPTY'}...")
+        
+        # Headers как в Kiro IDE
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": get_kiro_user_agent(),
+            "Accept": "application/json",
+        }
         
         # AWS SSO OIDC uses camelCase parameters
         data = {
@@ -275,7 +295,7 @@ class OAuthPKCE:
         resp = requests.post(
             f"{OIDC_BASE}/token",
             json=data,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             timeout=30
         )
         
@@ -299,9 +319,8 @@ class OAuthPKCE:
         expires_in = token_data.get('expiresIn', token_data.get('expires_in', 3600))
         expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat() + 'Z'
         
-        # Calculate clientIdHash (SHA1 как в Kiro IDE)
-        client_id_hash_input = json.dumps({"startUrl": START_URL}, separators=(',', ':'))
-        client_id_hash = hashlib.sha1(client_id_hash_input.encode('utf-8')).hexdigest()
+        # Calculate clientIdHash (динамически как в Kiro IDE)
+        client_id_hash = get_client_id_hash(START_URL)
         
         token_file = {
             "accessToken": token_data.get('accessToken', token_data.get('access_token')),

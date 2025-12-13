@@ -10,13 +10,14 @@ import requests
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.config import get_config
+from core.kiro_config import get_machine_id, get_kiro_user_agent, get_kiro_version
 from core.exceptions import QuotaError, AuthBannedError
 
 
@@ -27,9 +28,6 @@ DEFAULT_PROFILE_ARN = "arn:aws:codewhisperer:us-east-1:699475941385:profile/EHGA
 # Retry configuration
 MAX_RETRIES = 3
 RETRY_DELAY_SEC = 1.0
-
-# Kiro version for headers
-KIRO_VERSION = "0.6.18"
 
 
 @dataclass
@@ -102,32 +100,20 @@ class QuotaService:
         self.paths = get_paths()
         self.config = get_config()
     
-    def _get_machine_id(self) -> str:
-        """Получает machine ID из Kiro или генерирует"""
-        if self.paths.kiro_storage_json and self.paths.kiro_storage_json.exists():
-            try:
-                data = json.loads(self.paths.kiro_storage_json.read_text())
-                machine_id = data.get('telemetry.machineId')
-                if machine_id:
-                    return machine_id
-            except:
-                pass
-        
-        return hashlib.sha256(uuid.uuid4().bytes).hexdigest()
-    
     def _generate_headers(self, access_token: str, for_idc: bool = False) -> Dict[str, str]:
-        """Генерирует заголовки для API запроса (как в kiro-account-manager)"""
+        """Генерирует заголовки для API запроса (как в Kiro IDE)"""
+        machine_id = get_machine_id()
+        
         headers = {
             'Authorization': f'Bearer {access_token}',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'User-Agent': get_kiro_user_agent()
         }
         
         if for_idc:
-            machine_id = self._get_machine_id()
-            
+            kiro_version = get_kiro_version()
             headers.update({
-                'x-amz-user-agent': f"aws-sdk-js/1.0.0 KiroIDE-{KIRO_VERSION}-{machine_id}",
-                'user-agent': f"aws-sdk-js/1.0.0 ua/2.1 os/windows lang/js md/nodejs#20.16.0 api/codewhispererruntime#1.0.0 m/E KiroIDE-{KIRO_VERSION}-{machine_id}",
+                'x-amz-user-agent': f"aws-sdk-js/1.0.0 KiroIDE-{kiro_version}-{machine_id}",
                 'amz-sdk-invocation-id': str(uuid.uuid4()),
                 'amz-sdk-request': 'attempt=1; max=1',
                 'Connection': 'close'  # Важно для IdC!
