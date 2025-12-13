@@ -12,11 +12,11 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.config import get_config
+from core.kiro_config import get_machine_id, get_kiro_user_agent
 from core.exceptions import (
     TokenError, TokenExpiredError, TokenRefreshError, TokenNotFoundError
 )
@@ -146,6 +146,13 @@ class TokenService:
         """Обновить Social токен через Desktop Auth API (с retry)"""
         url = f"{self.DESKTOP_AUTH_API.format(region=region)}/refreshToken"
         
+        # Headers как в Kiro IDE
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": get_kiro_user_agent(),
+        }
+        
         last_error = ""
         for attempt in range(MAX_RETRIES):
             if attempt > 0:
@@ -155,7 +162,7 @@ class TokenService:
                 resp = requests.post(
                     url,
                     json={"refreshToken": refresh_token},
-                    headers={"Content-Type": "application/json", "Accept": "application/json"},
+                    headers=headers,
                     timeout=self.config.timeouts.api_request
                 )
                 
@@ -188,6 +195,13 @@ class TokenService:
         """Обновить IdC токен через AWS OIDC API (с retry)"""
         url = f"{self.OIDC_API.format(region=region)}/token"
         
+        # Headers как в Kiro IDE
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": get_kiro_user_agent(),
+        }
+        
         # JSON формат (как в kiro-account-manager)
         payload = {
             "clientId": client_id,
@@ -205,7 +219,7 @@ class TokenService:
                 resp = requests.post(
                     url,
                     json=payload,
-                    headers={"Content-Type": "application/json", "Accept": "application/json"},
+                    headers=headers,
                     timeout=self.config.timeouts.api_request
                 )
                 

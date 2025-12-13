@@ -358,6 +358,42 @@ def cmd_kiro_restart(args):
         print(f"[X] Failed: {e}")
 
 
+def cmd_kiro_info(args):
+    """Показать информацию о Kiro IDE (версия, User-Agent и т.д.)"""
+    from core.kiro_config import get_kiro_info
+    
+    info = get_kiro_info()
+    
+    print("\n" + "="*60)
+    print("[*] Kiro IDE Configuration (Dynamic)")
+    print("="*60)
+    
+    print(f"\n[F] Install Path:")
+    print(f"   {info['install_path']}")
+    
+    print(f"\n[V] Version:")
+    print(f"   {info['version']}")
+    
+    print(f"\n[PC] Machine ID:")
+    print(f"   {info['machine_id']}")
+    
+    print(f"\n[W] User-Agent:")
+    print(f"   {info['user_agent']}")
+    
+    print(f"\n[F] Storage Path:")
+    print(f"   {info['storage_path']}")
+    
+    print(f"\n[KEY] Scopes:")
+    for scope in info['scopes']:
+        print(f"   - {scope}")
+    
+    print("\n" + "="*60)
+    
+    if args.json:
+        print("\nJSON:")
+        print(json.dumps(info, indent=2))
+
+
 # =============================================================================
 # SSO Import Commands
 # =============================================================================
@@ -483,6 +519,10 @@ def main():
     
     kiro_restart = kiro_sub.add_parser('restart', help='Restart Kiro')
     kiro_restart.set_defaults(func=cmd_kiro_restart)
+    
+    kiro_info = kiro_sub.add_parser('info', help='Show Kiro config (version, User-Agent, etc.)')
+    kiro_info.add_argument('--json', '-j', action='store_true', help='JSON output')
+    kiro_info.set_defaults(func=cmd_kiro_info)
     
     # sso-import
     sso_parser = subparsers.add_parser('sso-import', help='Import account from SSO cookie')

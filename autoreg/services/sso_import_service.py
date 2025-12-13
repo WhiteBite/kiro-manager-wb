@@ -12,13 +12,14 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from pathlib import Path
 
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.config import get_config
+from core.kiro_config import get_kiro_user_agent, get_kiro_scopes
 from core.exceptions import AuthError
 
 
@@ -26,14 +27,8 @@ from core.exceptions import AuthError
 PORTAL_BASE = "https://portal.sso.us-east-1.amazonaws.com"
 START_URL = "https://view.awsapps.com/start"
 
-# Scopes for Kiro
-KIRO_SCOPES = [
-    "codewhisperer:analysis",
-    "codewhisperer:completions",
-    "codewhisperer:conversations",
-    "codewhisperer:taskassist",
-    "codewhisperer:transformations"
-]
+# Scopes for Kiro (динамически из kiro_config)
+KIRO_SCOPES = get_kiro_scopes()
 
 
 @dataclass
@@ -147,13 +142,17 @@ class SsoImportService:
         resp = requests.post(
             f"{oidc_base}/client/register",
             json={
-                "clientName": "Kiro Account Manager",
+                "clientName": "Kiro IDE",
                 "clientType": "public",
                 "scopes": KIRO_SCOPES,
                 "grantTypes": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
                 "issuerUrl": START_URL
             },
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": get_kiro_user_agent(),
+                "Accept": "application/json"
+            },
             timeout=self.timeout
         )
         
@@ -172,7 +171,11 @@ class SsoImportService:
                 "clientSecret": client_secret,
                 "startUrl": START_URL
             },
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": get_kiro_user_agent(),
+                "Accept": "application/json"
+            },
             timeout=self.timeout
         )
         
@@ -188,7 +191,8 @@ class SsoImportService:
             f"{PORTAL_BASE}/token/whoAmI",
             headers={
                 "Authorization": f"Bearer {bearer_token}",
-                "Accept": "application/json"
+                "Accept": "application/json",
+                "User-Agent": get_kiro_user_agent()
             },
             timeout=self.timeout
         )
@@ -203,7 +207,8 @@ class SsoImportService:
             json={},
             headers={
                 "Authorization": f"Bearer {bearer_token}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "User-Agent": get_kiro_user_agent()
             },
             timeout=self.timeout
         )
@@ -224,6 +229,7 @@ class SsoImportService:
             },
             headers={
                 "Content-Type": "application/json",
+                "User-Agent": get_kiro_user_agent(),
                 "Referer": "https://view.awsapps.com/"
             },
             timeout=self.timeout
@@ -254,6 +260,7 @@ class SsoImportService:
             },
             headers={
                 "Content-Type": "application/json",
+                "User-Agent": get_kiro_user_agent(),
                 "Referer": "https://view.awsapps.com/"
             },
             timeout=self.timeout
@@ -280,7 +287,11 @@ class SsoImportService:
                     "grantType": "urn:ietf:params:oauth:grant-type:device_code",
                     "deviceCode": device_code
                 },
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": get_kiro_user_agent(),
+                    "Accept": "application/json"
+                },
                 timeout=self.timeout
             )
             
@@ -321,7 +332,8 @@ class SsoImportService:
             },
             headers={
                 "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json"
+                "Accept": "application/json",
+                "User-Agent": get_kiro_user_agent()
             },
             timeout=self.timeout
         )
