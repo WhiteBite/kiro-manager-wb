@@ -125,38 +125,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "Kiro Account Manager ${{ github.ref_name }}"
-          body: |
-            ## 📦 Kiro Account Manager - Standalone Application
-
-            Автономное приложение для управления аккаунтами Kiro. Не требует Python!
-
-            ### 📥 Скачать:
-
-            | Файл | Платформа | Описание |
-            |------|-----------|----------|
-            | `kiro-manager-windows-${{ github.ref_name }}.exe` | 🪟 Windows x64 | Для Windows 10/11 |
-            | `kiro-manager-linux-${{ github.ref_name }}` | 🐧 Linux x64 | Ubuntu, Debian, Fedora и др. |
-            | `kiro-manager-macos-x64-${{ github.ref_name }}` | 🍎 macOS Intel | Для Mac с процессором Intel |
-            | `kiro-manager-macos-arm64-${{ github.ref_name }}` | 🍎 macOS Silicon | Для Mac M1/M2/M3 |
-
-            ### 🚀 Запуск:
-
-            **Windows:** Просто запустите `.exe` файл
-
-            **Linux/macOS:** 
-            ```bash
-            chmod +x kiro-manager-*
-            ./kiro-manager-linux  # или macos-x64 / macos-arm64
-            ```
-
-            Приложение откроет браузер на `http://127.0.0.1:8420`
-
-            ### ⚙️ Параметры:
-            - `--port 8080` - другой порт
-            - `--no-browser` - не открывать браузер
-            - `--host 0.0.0.0` - доступ из сети
-
           files: |
             artifacts/kiro-manager-windows/kiro-manager-windows-${{ steps.version.outputs.version }}.exe
             artifacts/kiro-manager-linux/kiro-manager-linux-${{ steps.version.outputs.version }}

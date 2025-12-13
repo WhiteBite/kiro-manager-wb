@@ -21,6 +21,7 @@ import uvicorn
 
 from app.api import accounts, quota, autoreg, patch, system
 from app.websocket import ConnectionManager
+from version import __version__, __app_name__
 
 # WebSocket manager for real-time logs
 ws_manager = ConnectionManager()
@@ -30,7 +31,7 @@ ws_manager = ConnectionManager()
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     print("\n" + "=" * 50)
-    print("🚀 Kiro Account Manager v1.0.0")
+    print(f"🚀 {__app_name__} v{__version__}")
     print("=" * 50)
     yield
     print("\n👋 Shutting down...")
@@ -38,9 +39,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Kiro Account Manager",
+    title=__app_name__,
     description="Manage Kiro accounts, quotas, and auto-registration",
-    version="1.0.0",
+    version=__version__,
     lifespan=lifespan
 )
 
@@ -93,7 +94,7 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/health")
 async def health():
     """Health check endpoint"""
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": __version__}
 
 
 def open_browser(port: int):
