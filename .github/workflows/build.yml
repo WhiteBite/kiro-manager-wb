@@ -185,14 +185,16 @@ jobs:
           cat changelog.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release-files
+          find artifacts -type f -exec cp {} release-files/ \;
+          ls -la release-files/
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/vsix/*.vsix
-            artifacts/kiro-manager-windows/*.exe
-            artifacts/kiro-manager-linux/kiro-manager-linux-*
-            artifacts/kiro-manager-macos-arm64/kiro-manager-macos-*
+          files: release-files/*
           fail_on_unmatched_files: false
           body: |
             ## ⚡ Kiro Account Switcher ${{ steps.version.outputs.version }}
