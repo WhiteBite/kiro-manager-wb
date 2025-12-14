@@ -36,6 +36,7 @@ export const pt: Translations = {
   export: 'Exportar',
   exportTip: 'Salvar todas as contas em arquivo JSON',
   running: 'Executando...',
+  stop: 'Parar',
 
   // Filters
   all: 'Todas',

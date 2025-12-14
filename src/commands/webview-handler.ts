@@ -9,10 +9,12 @@ import { switchToAccount, refreshAccountToken, refreshAllAccounts, deleteAccount
 import { runAutoReg, importSsoToken, resetMachineId, patchKiro, unpatchKiro, generateMachineId, getPatchStatus } from '../commands/autoreg';
 import { WebviewCommand, isWebviewCommand } from '../webview/messages';
 
-export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: WebviewCommand | Record<string, unknown>) {
-  switch (msg.command) {
+export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: Record<string, unknown>) {
+  const command = msg.command as string;
+
+  switch (command) {
     case 'switch':
-      await switchToAccount(msg.account);
+      await switchToAccount(msg.account as string);
       // Force refresh usage after account switch
       await provider.refreshUsageAfterSwitch();
       break;
@@ -23,7 +25,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'delete':
-      await deleteAccount(msg.account);
+      await deleteAccount(msg.account as string);
       provider.refresh();
       break;
 
@@ -50,7 +52,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'loadUsage':
-      await provider.loadUsageForAccount(msg.account);
+      await provider.loadUsageForAccount(msg.account as string);
       break;
 
     case 'loadAllUsage':
@@ -58,11 +60,11 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'toggleSetting':
-      await provider.toggleSetting(msg.setting);
+      await provider.toggleSetting(msg.setting as string);
       break;
 
     case 'updateSetting':
-      await provider.updateSetting(msg.key, msg.value);
+      await provider.updateSetting(msg.key as string, msg.value as boolean);
       break;
 
     case 'clearConsole':
@@ -74,7 +76,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'copyPassword':
-      await provider.copyPassword(msg.account);
+      await provider.copyPassword(msg.account as string);
       break;
 
     case 'stopAutoReg':
@@ -90,25 +92,25 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'switchAccount':
-      await switchToAccount(msg.email);
+      await switchToAccount(msg.email as string);
       // Force refresh usage after account switch
       await provider.refreshUsageAfterSwitch();
       break;
 
     case 'copyToken':
-      await provider.copyToken(msg.email);
+      await provider.copyToken(msg.email as string);
       break;
 
     case 'viewQuota':
-      await provider.viewQuota(msg.email);
+      await provider.viewQuota(msg.email as string);
       break;
 
     case 'refreshToken':
-      await provider.refreshSingleToken(msg.email);
+      await provider.refreshSingleToken(msg.email as string);
       break;
 
     case 'deleteAccount':
-      await deleteAccount(msg.email);
+      await deleteAccount(msg.email as string);
       provider.refresh();
       break;
 
@@ -122,11 +124,11 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'setLanguage':
-      provider.setLanguage(msg.language);
+      provider.setLanguage(msg.language as 'en' | 'ru' | 'zh' | 'es' | 'pt' | 'ja' | 'de' | 'fr' | 'ko' | 'hi');
       break;
 
     case 'openUrl':
-      vscode.env.openExternal(vscode.Uri.parse(msg.url));
+      vscode.env.openExternal(vscode.Uri.parse(msg.url as string));
       break;
 
     case 'checkForUpdates':
@@ -135,13 +137,13 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
 
     case 'copyLogs':
       if (msg.logs) {
-        await vscode.env.clipboard.writeText(msg.logs);
+        await vscode.env.clipboard.writeText(msg.logs as string);
         vscode.window.showInformationMessage('Logs copied to clipboard');
       }
       break;
 
     case 'importSsoToken':
-      await importSsoToken(provider.context, provider, msg.token);
+      await importSsoToken(provider.context, provider, msg.token as string);
       break;
 
     case 'refreshUsage':
@@ -169,31 +171,31 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'getProfile':
-      await provider.getProfile(msg.profileId);
+      await provider.getProfile(msg.profileId as string);
       break;
 
     case 'createProfile':
-      await provider.createProfile(msg.profile);
+      await provider.createProfile(msg.profile as Record<string, unknown>);
       break;
 
     case 'updateProfile':
-      await provider.updateProfile(msg.profile);
+      await provider.updateProfile(msg.profile as Record<string, unknown>);
       break;
 
     case 'deleteProfile':
-      await provider.deleteProfile(msg.profileId);
+      await provider.deleteProfile(msg.profileId as string);
       break;
 
     case 'setActiveProfile':
-      await provider.setActiveProfile(msg.profileId);
+      await provider.setActiveProfile(msg.profileId as string);
       break;
 
     case 'detectProvider':
-      await provider.detectProvider(msg.email);
+      await provider.detectProvider(msg.email as string);
       break;
 
     case 'testImap':
-      await provider.testImapConnection(msg);
+      await provider.testImapConnection(msg as { server: string; user: string; password: string; port: number });
       break;
 
     case 'importEmailsFromFile':
@@ -209,7 +211,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'patchKiro':
-      await patchKiro(provider.context, provider, msg.force || false);
+      await patchKiro(provider.context, provider, (msg.force as boolean) || false);
       break;
 
     case 'unpatchKiro':

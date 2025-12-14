@@ -36,6 +36,7 @@ export const zh: Translations = {
   export: '导出',
   exportTip: '将所有账户保存到 JSON 文件',
   running: '运行中...',
+  stop: '停止',
 
   // Filters
   all: '全部',
