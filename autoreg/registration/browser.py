@@ -1262,6 +1262,7 @@ class BrowserAutomation:
         # ОПТИМИЗАЦИЯ: Ждём кнопку напрямую, без отдельного ожидания страницы
         # Используем waitUntil с коротким polling
         btn = None
+        btn_selector = None  # Сохраняем селектор для повторного поиска
         start_time = time.time()
         max_wait = 5  # Уменьшено с 10 итераций по 0.3с
         
@@ -1287,6 +1288,7 @@ class BrowserAutomation:
             try:
                 btn = self.page.ele(selector, timeout=0.25)
                 if btn:
+                    btn_selector = selector
                     print(f"   [OK] Found button via {selector[:30]}")
                     break
             except:
@@ -1299,6 +1301,7 @@ class BrowserAutomation:
                     try:
                         btn = self.page.ele(selector, timeout=0.15)
                         if btn:
+                            btn_selector = selector
                             print(f"   [OK] Found button via fallback")
                             break
                     except:
@@ -1314,10 +1317,13 @@ class BrowserAutomation:
         
         # Клик с человеческим поведением
         for attempt in range(3):
-            # Проверяем disabled
-            if btn.attr('disabled'):
-                self._behavior.human_delay(0.2, 0.4)
-                continue
+            # Проверяем disabled (с защитой от NoneElement)
+            try:
+                if btn and btn.attr('disabled'):
+                    self._behavior.human_delay(0.2, 0.4)
+                    continue
+            except:
+                pass
             
             print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1})...")
             
@@ -1330,11 +1336,12 @@ class BrowserAutomation:
                 print("   [OK] Redirected to callback!")
                 return True
             
-            # Перезапрашиваем элемент (избегаем stale)
-            try:
-                btn = self.page.ele('@data-testid=allow-access-button', timeout=0.3)
-            except:
-                pass
+            # Перезапрашиваем элемент (избегаем stale) используя тот же селектор
+            if btn_selector:
+                try:
+                    btn = self.page.ele(btn_selector, timeout=0.3)
+                except:
+                    pass
         
         # Последняя проверка
         if '127.0.0.1' in self.page.url:
