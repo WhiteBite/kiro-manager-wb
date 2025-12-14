@@ -89,10 +89,6 @@ jobs:
             name: linux
             ext: ""
             asset_name: kiro-manager-linux
-          - os: macos-13
-            name: macos-x64
-            ext: ""
-            asset_name: kiro-manager-macos-x64
           - os: macos-14
             name: macos-arm64
             ext: ""
@@ -196,7 +192,6 @@ jobs:
             artifacts/vsix/*.vsix
             artifacts/kiro-manager-windows/*.exe
             artifacts/kiro-manager-linux/*
-            artifacts/kiro-manager-macos-x64/*
             artifacts/kiro-manager-macos-arm64/*
           fail_on_unmatched_files: false
           body: |
@@ -211,8 +206,7 @@ jobs:
             | 🔌 VS Code / Kiro | `kiro-account-switcher-${{ steps.version.outputs.version }}.vsix` | Расширение (все платформы) |
             | 🪟 Windows | `kiro-manager-windows-${{ steps.version.outputs.version }}.exe` | Standalone авторег |
             | 🐧 Linux | `kiro-manager-linux-${{ steps.version.outputs.version }}` | Standalone авторег |
-            | 🍎 macOS Intel | `kiro-manager-macos-x64-${{ steps.version.outputs.version }}` | Standalone авторег |
-            | 🍎 macOS Apple Silicon | `kiro-manager-macos-arm64-${{ steps.version.outputs.version }}` | Standalone авторег |
+            | 🍎 macOS | `kiro-manager-macos-arm64-${{ steps.version.outputs.version }}` | Standalone авторег (Apple Silicon) |
             
             ### 🔧 Installation
             
