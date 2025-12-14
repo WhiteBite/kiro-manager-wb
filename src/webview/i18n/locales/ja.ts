@@ -21,7 +21,10 @@ export const ja: Translations = {
   badGroup: '期限切れ / 使い切り',
   expiredGroup: '期限切れ',
   exhaustedGroup: '使い切り',
+  bannedGroup: 'BAN済み',
+  banned: 'BAN',
   refreshAll: 'すべて更新',
+  deleteAll: 'すべて削除',
 
   // Usage card
   todaysUsage: '今日の使用量',
@@ -93,6 +96,21 @@ export const ja: Translations = {
   spoofingDesc: 'ブラウザフィンガープリントをランダム化',
   language: '言語',
   languageDesc: 'インターフェース言語',
+
+  // Spoofing modules
+  spoofAutomation: '自動化',
+  spoofAutomationDesc: 'webdriverフラグを隠す',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'フィンガープリントをランダム化',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'ハードウェア情報を偽装',
+  spoofAudio: 'オーディオ/フォント',
+  spoofAudioDesc: 'オーディオコンテキストをマスク',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'ローカルIPを隠す',
+  spoofBehavior: '動作',
+  spoofBehaviorDesc: '人間らしい動作',
+  spoofWarning: '無効にするとボット検出される可能性があります',
 
   // Kiro Patch
   kiroPatch: 'Kiro パッチ',
@@ -199,7 +217,6 @@ export const ja: Translations = {
   resetMachineIdConfirm: 'KiroのテレメトリIDをリセットします。その後Kiroを再起動する必要があります。続行しますか？',
 
   // Other
-  deleteAll: 'すべて削除',
   delete: '削除',
   checkUpdates: '更新を確認',
   newVersion: '新バージョン！',
@@ -242,5 +259,7 @@ export const ja: Translations = {
   clipboardError: 'クリップボードの読み取りに失敗しました',
   deleteProfileConfirm: 'このプロファイルを削除しますか？',
   deleteBadAccountsConfirm: 'すべての期限切れ/使い切りアカウントを削除しますか？',
+  deleteBannedAccountsConfirm: 'BAN済みアカウントをすべて削除しますか？',
+  bannedAccountsDeleted: 'BAN済みアカウントを削除しました',
   emailsImported: '{count}件のメールをインポートしました',
 };

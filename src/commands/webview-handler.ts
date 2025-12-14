@@ -160,6 +160,10 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await provider.deleteExhaustedAccounts();
       break;
 
+    case 'deleteBannedAccounts':
+      await provider.deleteBannedAccounts();
+      break;
+
     case 'refreshAllExpired':
       await provider.refreshAllExpiredTokens();
       break;

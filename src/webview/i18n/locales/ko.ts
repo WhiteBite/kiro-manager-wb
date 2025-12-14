@@ -21,7 +21,10 @@ export const ko: Translations = {
   badGroup: '만료됨 / 소진됨',
   expiredGroup: '만료됨',
   exhaustedGroup: '소진됨',
+  bannedGroup: '차단됨',
+  banned: '차단',
   refreshAll: '모두 새로고침',
+  deleteAll: '모두 삭제',
 
   // Usage card
   todaysUsage: '오늘 사용량',
@@ -93,6 +96,21 @@ export const ko: Translations = {
   spoofingDesc: '브라우저 지문 무작위화',
   language: '언어',
   languageDesc: '인터페이스 언어',
+
+  // Spoofing modules
+  spoofAutomation: '자동화',
+  spoofAutomationDesc: 'webdriver 플래그 숨김',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: '지문 무작위화',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: '하드웨어 정보 위장',
+  spoofAudio: '오디오/폰트',
+  spoofAudioDesc: '오디오 컨텍스트 마스킹',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: '로컬 IP 숨김',
+  spoofBehavior: '행동',
+  spoofBehaviorDesc: '인간적인 동작',
+  spoofWarning: '비활성화하면 봇 감지될 수 있음',
 
   // Kiro Patch
   kiroPatch: 'Kiro 패치',
@@ -199,7 +217,6 @@ export const ko: Translations = {
   resetMachineIdConfirm: 'Kiro 텔레메트리 ID를 재설정합니다. 이후 Kiro를 다시 시작해야 합니다. 계속하시겠습니까?',
 
   // Other
-  deleteAll: '모두 삭제',
   delete: '삭제',
   checkUpdates: '업데이트 확인',
   newVersion: '새 버전!',
@@ -242,5 +259,7 @@ export const ko: Translations = {
   clipboardError: '클립보드 읽기 실패',
   deleteProfileConfirm: '이 프로필을 삭제하시겠습니까?',
   deleteBadAccountsConfirm: '모든 만료/소진된 계정을 삭제하시겠습니까?',
+  deleteBannedAccountsConfirm: '차단된 계정을 모두 삭제하시겠습니까?',
+  bannedAccountsDeleted: '차단된 계정이 삭제되었습니다',
   emailsImported: '{count}개 이메일 가져옴',
 };

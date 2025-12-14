@@ -21,7 +21,10 @@ export const es: Translations = {
   badGroup: 'Expiradas / Agotadas',
   expiredGroup: 'Expiradas',
   exhaustedGroup: 'Agotadas',
+  bannedGroup: 'Baneadas',
+  banned: 'BANEADO',
   refreshAll: 'Actualizar todas',
+  deleteAll: 'Eliminar todas',
 
   // Usage card
   todaysUsage: 'Uso de hoy',
@@ -93,6 +96,21 @@ export const es: Translations = {
   spoofingDesc: 'Aleatorizar huella del navegador',
   language: 'Idioma',
   languageDesc: 'Idioma de la interfaz',
+
+  // Spoofing modules
+  spoofAutomation: 'Automatización',
+  spoofAutomationDesc: 'Oculta flags de webdriver',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'Aleatoriza huella',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'Falsifica info de hardware',
+  spoofAudio: 'Audio/Fuentes',
+  spoofAudioDesc: 'Enmascara contexto de audio',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'Oculta IP local',
+  spoofBehavior: 'Comportamiento',
+  spoofBehaviorDesc: 'Acciones humanas',
+  spoofWarning: 'Desactivar puede causar detección de bot',
 
   // Kiro Patch
   kiroPatch: 'Parche Kiro',
@@ -199,7 +217,6 @@ export const es: Translations = {
   resetMachineIdConfirm: 'Esto restablecerá los IDs de telemetría de Kiro. Necesitarás reiniciar Kiro después. ¿Continuar?',
 
   // Other
-  deleteAll: 'Eliminar todo',
   delete: 'Eliminar',
   checkUpdates: 'Buscar Actualizaciones',
   newVersion: '¡Nueva versión!',
@@ -242,5 +259,7 @@ export const es: Translations = {
   clipboardError: 'Error al leer portapapeles',
   deleteProfileConfirm: '¿Eliminar este perfil?',
   deleteBadAccountsConfirm: '¿Eliminar todas las cuentas expiradas/agotadas?',
+  deleteBannedAccountsConfirm: '¿Eliminar todas las cuentas baneadas?',
+  bannedAccountsDeleted: 'Cuentas baneadas eliminadas',
   emailsImported: '{count} emails importados',
 };

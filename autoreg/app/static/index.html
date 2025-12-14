@@ -101,15 +101,76 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            <div class="setting-row">
-              <div>
-                <div class="setting-label">Browser Spoofing</div>
-                <div class="setting-desc">Enable fingerprint spoofing</div>
+
+            <!-- Spoofing Section -->
+            <div class="spoof-section">
+              <div class="spoof-header">
+                <div class="spoof-title">
+                  <span class="spoof-icon">🛡️</span>
+                  <div>
+                    <div class="setting-label">Browser Fingerprint Spoofing</div>
+                    <div class="setting-desc">Anti-detection system for AWS registration</div>
+                  </div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="settingSpoofing" checked onchange="toggleSpoofDetails()">
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
-              <label class="toggle">
-                <input type="checkbox" id="settingSpoofing" checked>
-                <span class="toggle-slider"></span>
-              </label>
+
+              <div class="spoof-details" id="spoofDetails">
+                <div class="spoof-info">
+                  <p>Spoofing masks browser fingerprint to bypass AWS FWCIM detection system. When enabled:</p>
+                </div>
+                <div class="spoof-modules">
+                  <div class="spoof-module">
+                    <span class="module-icon">🤖</span>
+                    <div class="module-info">
+                      <div class="module-name">Automation Detection</div>
+                      <div class="module-desc">Hides webdriver, automation flags</div>
+                    </div>
+                  </div>
+                  <div class="spoof-module">
+                    <span class="module-icon">🎨</span>
+                    <div class="module-info">
+                      <div class="module-name">Canvas & WebGL</div>
+                      <div class="module-desc">Randomizes rendering fingerprint</div>
+                    </div>
+                  </div>
+                  <div class="spoof-module">
+                    <span class="module-icon">🖥️</span>
+                    <div class="module-info">
+                      <div class="module-name">Navigator & Screen</div>
+                      <div class="module-desc">Spoofs hardware info, screen size</div>
+                    </div>
+                  </div>
+                  <div class="spoof-module">
+                    <span class="module-icon">🔊</span>
+                    <div class="module-info">
+                      <div class="module-name">Audio & Fonts</div>
+                      <div class="module-desc">Masks audio context, font list</div>
+                    </div>
+                  </div>
+                  <div class="spoof-module">
+                    <span class="module-icon">🌐</span>
+                    <div class="module-info">
+                      <div class="module-name">WebRTC & Network</div>
+                      <div class="module-desc">Hides local IP, connection info</div>
+                    </div>
+                  </div>
+                  <div class="spoof-module">
+                    <span class="module-icon">🖱️</span>
+                    <div class="module-info">
+                      <div class="module-name">Human Behavior</div>
+                      <div class="module-desc">Simulates realistic mouse & typing</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="spoof-warning">
+                  <span>⚠️</span>
+                  <span>Disabling may cause registration failures due to bot detection</span>
+                </div>
+              </div>
             </div>
           </div>
 

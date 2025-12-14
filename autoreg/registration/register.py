@@ -289,8 +289,18 @@ class AWSRegistration:
                             print(f"   [!] Failed to click Allow access, retrying...")
                             self.browser.screenshot("error_allow_access_click")
                     
+                # Если застряли на signin.aws/login - пробуем залогиниться
+                elif 'signin.aws' in current_url and '/login' in current_url:
+                    elapsed = time.time() - start_time
+                    if elapsed > 10:  # Даём время на автоматический редирект
+                        print(f"   [!] Stuck on login page, trying to login...")
+                        if self.browser.login_existing_account(email, password):
+                            print(f"   [OK] Logged in successfully")
+                        else:
+                            print(f"   [...] Still on: {current_url[:60]}...")
+                
                 # Логируем промежуточные URL для диагностики
-                elif 'signin.aws' in current_url or 'profile.aws' in current_url:
+                elif 'profile.aws' in current_url:
                     if time.time() - start_time > 5:  # Логируем только если долго
                         print(f"   [...] Still on: {current_url[:60]}...")
                 

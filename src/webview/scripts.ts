@@ -90,6 +90,15 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
     
+    function toggleSpoofing(enabled) {
+      vscode.postMessage({ command: 'updateSetting', key: 'spoofing', value: enabled });
+      // Toggle details visibility
+      const details = document.getElementById('spoofDetails');
+      if (details) {
+        details.classList.toggle('hidden', !enabled);
+      }
+    }
+    
     function changeLanguage(lang) {
       vscode.postMessage({ command: 'setLanguage', language: lang });
     }
@@ -275,6 +284,13 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
+    function confirmDeleteBanned() {
+      pendingAction = { type: 'deleteBanned' };
+      document.getElementById('dialogTitle').textContent = T.deleteTitle;
+      document.getElementById('dialogText').textContent = T.deleteBannedAccountsConfirm || 'Delete all banned accounts?';
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
     function refreshAllExpired() {
       vscode.postMessage({ command: 'refreshAllExpired' });
     }
@@ -291,6 +307,9 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       } else if (pendingAction?.type === 'deleteExhausted') {
         vscode.postMessage({ command: 'deleteExhaustedAccounts' });
         showToast(T.badAccountsDeleted, 'success');
+      } else if (pendingAction?.type === 'deleteBanned') {
+        vscode.postMessage({ command: 'deleteBannedAccounts' });
+        showToast(T.bannedAccountsDeleted || 'Banned accounts deleted', 'success');
       } else if (pendingAction?.type === 'resetMachineId') {
         vscode.postMessage({ command: 'resetMachineId' });
         showToast(T.resettingMachineId, 'success');

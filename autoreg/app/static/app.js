@@ -653,6 +653,26 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
+// Spoofing toggle
+function toggleSpoofDetails() {
+  const checkbox = document.getElementById('settingSpoofing');
+  const details = document.getElementById('spoofDetails');
+
+  if (checkbox && details) {
+    if (checkbox.checked) {
+      details.classList.remove('hidden');
+    } else {
+      details.classList.add('hidden');
+    }
+  }
+}
+
+// Initialize spoof details visibility on load
+document.addEventListener('DOMContentLoaded', () => {
+  // ... existing init code runs first
+  setTimeout(toggleSpoofDetails, 100);
+});
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {

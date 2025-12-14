@@ -115,6 +115,7 @@ export const layout = `
   }
   .list-group.danger { color: var(--danger); }
   .list-group.warning { color: var(--warning); }
+  .list-group.banned { color: #ff0000; }
   .list-group.warning .list-group-action {
     background: rgba(217, 163, 52, 0.15);
     color: var(--warning);
@@ -122,6 +123,14 @@ export const layout = `
   .list-group.warning .list-group-action:hover {
     background: var(--warning);
     color: #000;
+  }
+  .list-group.banned .list-group-action {
+    background: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+  }
+  .list-group.banned .list-group-action:hover {
+    background: #ff0000;
+    color: #fff;
   }
   .list-group-count {
     padding: 2px 6px;

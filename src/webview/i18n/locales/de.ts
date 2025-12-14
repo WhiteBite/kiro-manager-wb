@@ -21,7 +21,10 @@ export const de: Translations = {
   badGroup: 'Abgelaufen / Erschöpft',
   expiredGroup: 'Abgelaufen',
   exhaustedGroup: 'Erschöpft',
+  bannedGroup: 'Gesperrt',
+  banned: 'GESPERRT',
   refreshAll: 'Alle aktualisieren',
+  deleteAll: 'Alle löschen',
 
   // Usage card
   todaysUsage: 'Heutige Nutzung',
@@ -93,6 +96,21 @@ export const de: Translations = {
   spoofingDesc: 'Browser-Fingerabdruck randomisieren',
   language: 'Sprache',
   languageDesc: 'Oberflächensprache',
+
+  // Spoofing modules
+  spoofAutomation: 'Automatisierung',
+  spoofAutomationDesc: 'Versteckt Webdriver-Flags',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'Randomisiert Fingerabdruck',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'Fälscht Hardware-Info',
+  spoofAudio: 'Audio/Schriften',
+  spoofAudioDesc: 'Maskiert Audio-Kontext',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'Versteckt lokale IP',
+  spoofBehavior: 'Verhalten',
+  spoofBehaviorDesc: 'Menschliche Aktionen',
+  spoofWarning: 'Deaktivieren kann Bot-Erkennung auslösen',
 
   // Kiro Patch
   kiroPatch: 'Kiro Patch',
@@ -199,7 +217,6 @@ export const de: Translations = {
   resetMachineIdConfirm: 'Dies setzt die Kiro-Telemetrie-IDs zurück. Sie müssen Kiro danach neu starten. Fortfahren?',
 
   // Other
-  deleteAll: 'Alle löschen',
   delete: 'Löschen',
   checkUpdates: 'Updates prüfen',
   newVersion: 'Neue Version!',
@@ -242,5 +259,7 @@ export const de: Translations = {
   clipboardError: 'Zwischenablage konnte nicht gelesen werden',
   deleteProfileConfirm: 'Dieses Profil löschen?',
   deleteBadAccountsConfirm: 'Alle abgelaufenen/erschöpften Konten löschen?',
+  deleteBannedAccountsConfirm: 'Alle gesperrten Konten löschen?',
+  bannedAccountsDeleted: 'Gesperrte Konten gelöscht',
   emailsImported: '{count} E-Mails importiert',
 };

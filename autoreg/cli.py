@@ -323,8 +323,20 @@ def cmd_machine_restore(args):
 
 def cmd_patch_status(args):
     """Статус патча Kiro"""
+    import json as json_module
     service = KiroPatcherService()
     status = service.get_status()
+    
+    # JSON output for programmatic use
+    if getattr(args, 'json', False):
+        print(json_module.dumps({
+            'isPatched': status.is_patched,
+            'kiroVersion': status.kiro_version,
+            'patchVersion': status.patch_version,
+            'currentMachineId': status.current_machine_id,
+            'error': status.error
+        }))
+        return
     
     print("\n" + "="*60)
     print("[*] Kiro Patch Status")
@@ -662,6 +674,7 @@ def main():
     patch_sub = patch_parser.add_subparsers(dest='patch_cmd')
     
     patch_status = patch_sub.add_parser('status', help='Show patch status')
+    patch_status.add_argument('--json', '-j', action='store_true', help='JSON output')
     patch_status.set_defaults(func=cmd_patch_status)
     
     patch_apply = patch_sub.add_parser('apply', help='Apply patch to Kiro')

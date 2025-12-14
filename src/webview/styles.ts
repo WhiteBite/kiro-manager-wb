@@ -12,7 +12,7 @@ import { getAllStyles } from './styles/index';
 export function getStyles(): string {
   // Get modular styles first, then add legacy styles for backward compatibility
   const modularStyles = getAllStyles();
-  
+
   // Legacy styles (kept for backward compatibility with existing UI)
   const legacyStyles = `
     :root {
@@ -154,6 +154,9 @@ export function getStyles(): string {
     .card.exhausted { opacity: 0.6; border-color: var(--danger); background: linear-gradient(135deg, var(--danger-dim) 0%, rgba(229,83,83,0.05) 100%); } .card.exhausted:hover { opacity: 0.8; }
     .card.suspended { opacity: 0.5; border-color: #8b0000; background: rgba(139, 0, 0, 0.15); text-decoration: line-through; } .card.suspended:hover { opacity: 0.7; }
     .card.suspended .card-avatar { background: #8b0000; }
+    .card.banned { opacity: 0.5; border-color: #ff0000; background: linear-gradient(135deg, rgba(255, 0, 0, 0.15) 0%, rgba(139, 0, 0, 0.1) 100%); } .card.banned:hover { opacity: 0.7; }
+    .card.banned .card-avatar { background: linear-gradient(135deg, #ff0000 0%, #8b0000 100%); }
+    .card.banned .card-email { text-decoration: line-through; }
     .card.removing { animation: cardSlideOut 0.3s ease forwards; }
     @keyframes cardSlideOut { to { opacity: 0; transform: translateX(-100%); height: 0; margin: 0; padding: 0; border: 0; } }
     .card-main { display: flex; align-items: center; padding: 8px 10px; gap: 8px; cursor: pointer; position: relative; overflow: hidden; }
@@ -173,7 +176,9 @@ export function getStyles(): string {
     .card-usage-fill.medium { background: linear-gradient(90deg, var(--warning), #e5b84a); }
     .card-usage-fill.high { background: linear-gradient(90deg, var(--danger), #f06b6b); }
     .card-status { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); } .card-status.suspended { background: rgba(139, 0, 0, 0.3); color: #ff4444; }
+    .card-status.active { background: var(--accent-dim); color: var(--accent); } .card-status.expired { background: var(--expired-dim); color: var(--expired); } .card-status.exhausted { background: var(--danger-dim); color: var(--danger); } .card-status.suspended { background: rgba(139, 0, 0, 0.3); color: #ff4444; } .card-status.banned { background: rgba(255, 0, 0, 0.3); color: #ff0000; animation: banPulse 1.5s ease infinite; }
+    @keyframes banPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,0,0,0.4); } 50% { box-shadow: 0 0 0 4px rgba(255,0,0,0.1); } }
+    .ban-badge { margin-left: 4px; font-size: 10px; } .ban-reason { color: #ff4444; font-weight: 600; font-size: 8px; text-transform: uppercase; }
     .card-status.new { background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.2) 100%); color: #a78bfa; animation: newBadgePulse 2s ease infinite; }
     @keyframes newBadgePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.4); } 50% { box-shadow: 0 0 0 4px rgba(167,139,250,0.1); } }
     .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity var(--transition-fast); } .card:hover .card-actions { opacity: 1; }
@@ -307,9 +312,24 @@ export function getStyles(): string {
       .card-status { font-size: 8px; padding: 2px 4px; }
       .usage-value { font-size: 12px; }
     }
+
+    /* Spoofing Section */
+    .spoof-section { margin-top: 16px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+    .spoof-header { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: linear-gradient(135deg, rgba(63, 182, 139, 0.08), transparent); }
+    .spoof-title { display: flex; align-items: center; gap: 10px; }
+    .spoof-icon { font-size: 18px; }
+    .spoof-details { padding: 0 12px 12px; border-top: 1px solid var(--border-subtle); }
+    .spoof-details.hidden { display: none; }
+    .spoof-modules { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
+    .spoof-module { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--glass-bg); border-radius: var(--radius-sm); border: 1px solid var(--glass-border); }
+    .module-icon { font-size: 14px; flex-shrink: 0; }
+    .module-info { min-width: 0; }
+    .module-name { font-size: 10px; font-weight: 600; }
+    .module-desc { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spoof-warning { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 10px; background: rgba(217, 163, 52, 0.1); border: 1px solid rgba(217, 163, 52, 0.3); border-radius: var(--radius-sm); font-size: 10px; color: var(--warning); }
     
   `;
-  
+
   // Combine modular styles with legacy styles
   return modularStyles + legacyStyles;
 }

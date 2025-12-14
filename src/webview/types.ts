@@ -9,6 +9,13 @@ export interface AutoRegSettings {
   spoofing: boolean;
 }
 
+export interface RegProgress {
+  step: number;
+  totalSteps: number;
+  stepName: string;
+  detail: string;
+}
+
 export interface WebviewMessage {
   command: string;
   [key: string]: unknown;
