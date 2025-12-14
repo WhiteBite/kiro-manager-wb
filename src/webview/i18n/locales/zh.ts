@@ -19,6 +19,9 @@ export const zh: Translations = {
   activeGroup: '活动',
   readyGroup: '就绪',
   badGroup: '已过期 / 已耗尽',
+  expiredGroup: '已过期',
+  exhaustedGroup: '已耗尽',
+  refreshAll: '全部刷新',
 
   // Usage card
   todaysUsage: '今日使用量',

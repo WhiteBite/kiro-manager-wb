@@ -19,6 +19,9 @@ export const ru: Translations = {
   activeGroup: 'Активный',
   readyGroup: 'Готовы',
   badGroup: 'Истекшие / Исчерпанные',
+  expiredGroup: 'Истекшие',
+  exhaustedGroup: 'Исчерпанные',
+  refreshAll: 'Обновить все',
 
   // Usage card
   todaysUsage: 'Использование',

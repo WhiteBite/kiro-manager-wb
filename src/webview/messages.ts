@@ -18,6 +18,7 @@ export type WebviewCommand =
     | { command: 'refreshToken'; email: string }
     | { command: 'viewQuota'; email: string }
     | { command: 'deleteExhaustedAccounts' }
+    | { command: 'refreshAllExpired' }
 
     // Auto-reg
     | { command: 'startAutoReg' }

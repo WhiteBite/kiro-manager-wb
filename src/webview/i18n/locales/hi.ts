@@ -19,6 +19,9 @@ export const hi: Translations = {
   activeGroup: 'सक्रिय',
   readyGroup: 'तैयार',
   badGroup: 'समाप्त / खत्म',
+  expiredGroup: 'समाप्त',
+  exhaustedGroup: 'खत्म',
+  refreshAll: 'सभी रिफ्रेश करें',
 
   // Usage card
   todaysUsage: 'आज का उपयोग',

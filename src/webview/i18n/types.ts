@@ -30,6 +30,9 @@ export interface Translations {
   activeGroup: string;
   readyGroup: string;
   badGroup: string;
+  expiredGroup: string;
+  exhaustedGroup: string;
+  refreshAll: string;
 
   // ============================================
   // Usage card

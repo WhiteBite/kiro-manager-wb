@@ -19,6 +19,9 @@ export const ko: Translations = {
   activeGroup: '활성',
   readyGroup: '준비됨',
   badGroup: '만료됨 / 소진됨',
+  expiredGroup: '만료됨',
+  exhaustedGroup: '소진됨',
+  refreshAll: '모두 새로고침',
 
   // Usage card
   todaysUsage: '오늘 사용량',
