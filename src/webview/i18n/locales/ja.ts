@@ -263,5 +263,13 @@ export const ja: Translations = {
   deleteBadAccountsConfirm: 'すべての期限切れ/使い切りアカウントを削除しますか？',
   deleteBannedAccountsConfirm: 'BAN済みアカウントをすべて削除しますか？',
   bannedAccountsDeleted: 'BAN済みアカウントを削除しました',
-  emailsImported: '{count}件のメールをインポートしました',
+  emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };

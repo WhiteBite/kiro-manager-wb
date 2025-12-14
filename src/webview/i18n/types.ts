@@ -319,4 +319,14 @@ export interface Translations {
   deleteBannedAccountsConfirm: string;
   bannedAccountsDeleted: string;
   emailsImported: string;
+
+  // ============================================
+  // Import/Export
+  // ============================================
+  exportAccounts: string;
+  exportAccountsDesc: string;
+  importAccounts: string;
+  importAccountsDesc: string;
+  exportSelected: string;
+  exportAll: string;
 }

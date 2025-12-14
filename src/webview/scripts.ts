@@ -107,6 +107,14 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       vscode.postMessage({ command: 'checkForUpdates' });
     }
     
+    function exportAllAccounts() {
+      vscode.postMessage({ command: 'exportAccounts' });
+    }
+    
+    function importAccounts() {
+      vscode.postMessage({ command: 'importAccounts' });
+    }
+    
     function confirmResetMachineId() {
       pendingAction = { type: 'resetMachineId' };
       document.getElementById('dialogTitle').textContent = T.resetMachineIdTitle;

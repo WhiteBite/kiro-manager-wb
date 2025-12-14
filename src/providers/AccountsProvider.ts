@@ -182,30 +182,159 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  // Export accounts
-  async exportAccounts() {
+  // Export accounts (full tokens for transfer)
+  async exportAccounts(selectedOnly: string[] = []) {
     const accounts = loadAccounts();
     if (accounts.length === 0) {
       vscode.window.showWarningMessage('No accounts to export');
       return;
     }
 
-    const data = accounts.map(a => ({
-      name: a.tokenData.accountName || a.filename,
-      email: a.tokenData.email || '',
-      expires: a.expiresIn,
-      usage: a.usage?.currentUsage || 0
-    }));
+    // Filter if specific accounts selected
+    const toExport = selectedOnly.length > 0
+      ? accounts.filter(a => selectedOnly.includes(a.tokenData.accountName || a.filename))
+      : accounts;
 
-    const content = JSON.stringify(data, null, 2);
+    if (toExport.length === 0) {
+      vscode.window.showWarningMessage('No accounts selected for export');
+      return;
+    }
+
+    // Export full token data for transfer
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      accounts: toExport.map(a => ({
+        filename: a.filename,
+        tokenData: a.tokenData,
+        // Include password from accounts.json if available
+        password: this.getAccountPassword(a.tokenData.accountName || a.filename)
+      }))
+    };
+
+    const content = JSON.stringify(exportData, null, 2);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const uri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file('kiro-accounts.json'),
+      defaultUri: vscode.Uri.file(`kiro-accounts-export-${timestamp}.json`),
       filters: { 'JSON': ['json'] }
     });
 
     if (uri) {
       fs.writeFileSync(uri.fsPath, content);
-      vscode.window.showInformationMessage(`Exported ${accounts.length} accounts`);
+      vscode.window.showInformationMessage(`Exported ${toExport.length} accounts with tokens`);
+      this.addLog(`✅ Exported ${toExport.length} accounts to ${uri.fsPath}`);
+    }
+  }
+
+  // Import accounts from export file
+  async importAccounts() {
+    const uri = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      filters: { 'JSON': ['json'] },
+      openLabel: 'Import Accounts'
+    });
+
+    if (!uri || uri.length === 0) return;
+
+    try {
+      const content = fs.readFileSync(uri[0].fsPath, 'utf8');
+      const data = JSON.parse(content);
+
+      if (!data.accounts || !Array.isArray(data.accounts)) {
+        vscode.window.showErrorMessage('Invalid export file format');
+        return;
+      }
+
+      const tokensDir = getTokensDir();
+      if (!fs.existsSync(tokensDir)) {
+        fs.mkdirSync(tokensDir, { recursive: true });
+      }
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (const acc of data.accounts) {
+        if (!acc.tokenData) continue;
+
+        // Generate new filename to avoid conflicts
+        const accountName = acc.tokenData.accountName || 'imported';
+        const timestamp = Date.now();
+        const newFilename = `token-BuilderId-IdC-${accountName.replace(/[^a-zA-Z0-9_-]/g, '_')}-${timestamp}.json`;
+        const targetPath = path.join(tokensDir, newFilename);
+
+        // Check if account already exists
+        const existing = loadAccounts().find(a =>
+          a.tokenData.accountName === acc.tokenData.accountName ||
+          a.tokenData.refreshToken === acc.tokenData.refreshToken
+        );
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
+        // Save token file
+        fs.writeFileSync(targetPath, JSON.stringify(acc.tokenData, null, 2));
+        imported++;
+
+        // Save password to accounts.json if available
+        if (acc.password) {
+          this.saveAccountPassword(acc.tokenData.accountName, acc.password, acc.tokenData.email);
+        }
+      }
+
+      this.addLog(`✅ Imported ${imported} accounts, skipped ${skipped} duplicates`);
+      vscode.window.showInformationMessage(`Imported ${imported} accounts${skipped > 0 ? `, skipped ${skipped} duplicates` : ''}`);
+      this.refresh();
+
+    } catch (err) {
+      vscode.window.showErrorMessage(`Import failed: ${err}`);
+      this.addLog(`❌ Import failed: ${err}`);
+    }
+  }
+
+  // Get password from accounts.json
+  private getAccountPassword(accountName: string): string | undefined {
+    const autoregDir = this.getAutoregDir();
+    const accountsFile = path.join(autoregDir, 'accounts.json');
+
+    if (fs.existsSync(accountsFile)) {
+      try {
+        const accounts = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
+        const acc = accounts.find((a: any) =>
+          a.email?.includes(accountName) || a.name?.includes(accountName)
+        );
+        return acc?.password;
+      } catch { }
+    }
+    return undefined;
+  }
+
+  // Save password to accounts.json
+  private saveAccountPassword(accountName: string, password: string, email?: string) {
+    const autoregDir = this.getAutoregDir();
+    if (!autoregDir) return;
+
+    const accountsFile = path.join(autoregDir, 'accounts.json');
+    let accounts: any[] = [];
+
+    if (fs.existsSync(accountsFile)) {
+      try {
+        accounts = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
+      } catch { }
+    }
+
+    // Check if already exists
+    const existing = accounts.find((a: any) => a.name === accountName || a.email === email);
+    if (!existing) {
+      accounts.push({
+        email: email || accountName,
+        password,
+        name: accountName,
+        created_at: new Date().toISOString(),
+        status: 'imported'
+      });
+      fs.writeFileSync(accountsFile, JSON.stringify(accounts, null, 2));
     }
   }
 

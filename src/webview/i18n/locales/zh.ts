@@ -263,5 +263,13 @@ export const zh: Translations = {
   deleteBadAccountsConfirm: '删除所有过期/耗尽的账户？',
   deleteBannedAccountsConfirm: '删除所有被封禁的账户？',
   bannedAccountsDeleted: '已删除被封禁的账户',
-  emailsImported: '已导入 {count} 个邮箱',
+  emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };
