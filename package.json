@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "5.3.2",
+  "version": "5.3.3",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
@@ -168,7 +168,12 @@
         "kiroAccountSwitcher.email.strategy": {
           "type": "string",
           "default": "catch_all",
-          "enum": ["single", "plus_alias", "catch_all", "pool"],
+          "enum": [
+            "single",
+            "plus_alias",
+            "catch_all",
+            "pool"
+          ],
           "enumDescriptions": [
             "Single Email - use IMAP email directly (one account per email)",
             "Plus Alias - user+random@domain (Gmail, Outlook support)",
@@ -180,7 +185,9 @@
         },
         "kiroAccountSwitcher.email.pool": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "List of emails for pool strategy",
           "order": 15
