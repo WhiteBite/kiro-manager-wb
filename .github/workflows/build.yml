@@ -152,14 +152,20 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: dl-artifacts
 
       - name: Get version from tag
         id: version
         run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
       - name: List artifacts
-        run: find artifacts -type f || true
+        run: find dl-artifacts -type f || true
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release-files
+          find dl-artifacts -type f -exec cp {} release-files/ \;
+          ls -la release-files/
 
       - name: Checkout for changelog
         uses: actions/checkout@v4
@@ -184,12 +190,6 @@ jobs:
           echo "commits<<EOF" >> $GITHUB_OUTPUT
           cat changelog.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Flatten artifacts
-        run: |
-          mkdir -p release-files
-          find artifacts -type f -exec cp {} release-files/ \;
-          ls -la release-files/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
