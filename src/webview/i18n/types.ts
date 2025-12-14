@@ -51,6 +51,7 @@ export interface Translations {
   export: string;
   exportTip: string;
   running: string;
+  stop: string;
 
   // ============================================
   // Filters
