@@ -263,27 +263,34 @@ class AWSRegistration:
             
             # ОПТИМИЗИРОВАНО: быстрый polling с минимальными задержками
             start_time = time.time()
+            allow_clicked = False
             
-            while time.time() - start_time < 45:  # Увеличено - AWS может долго грузить
+            while time.time() - start_time < 60:  # Увеличено - AWS может долго грузить
                 current_url = self.browser.current_url
                 
                 if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
                     print(f"   [OK] Already redirected to callback!")
                     break
                 
-                # AWS может редиректить на разные домены
-                if 'view.awsapps.com' in current_url or 'signin.aws' in current_url:
+                # Кнопка Allow access только на view.awsapps.com
+                if 'view.awsapps.com' in current_url:
                     elapsed = time.time() - start_time
-                    print(f"   [OK] Redirected to AWS portal in {elapsed:.2f}s")
-                    print(f"   URL: {current_url[:80]}...")
+                    print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
                     
-                    # Сразу кликаем Allow access
-                    if not self.browser.click_allow_access():
-                        print(f"   [!] Failed to click Allow access")
-                        self.browser.screenshot("error_allow_access_click")
-                    break
+                    if not allow_clicked:
+                        # Кликаем Allow access
+                        if self.browser.click_allow_access():
+                            allow_clicked = True
+                        else:
+                            print(f"   [!] Failed to click Allow access, retrying...")
+                            self.browser.screenshot("error_allow_access_click")
+                    
+                # Логируем промежуточные URL для диагностики
+                elif 'signin.aws' in current_url or 'profile.aws' in current_url:
+                    if time.time() - start_time > 5:  # Логируем только если долго
+                        print(f"   [...] Still on: {current_url[:60]}...")
                 
-                time.sleep(0.05)  # Уменьшено с 0.1
+                time.sleep(0.1)
             
             # ШАГ 8: Ждём callback и обмениваем code на токены
             print(f"[8/8] Waiting for OAuth callback...")
