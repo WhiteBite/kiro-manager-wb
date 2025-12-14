@@ -173,6 +173,10 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       vscode.postMessage({ command: 'copyToken', email: filename });
     }
     
+    function refreshToken(filename) {
+      vscode.postMessage({ command: 'refreshToken', email: filename });
+    }
+    
     function openUpdateUrl(url) {
       vscode.postMessage({ command: 'openUrl', url: url });
     }
