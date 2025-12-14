@@ -121,6 +121,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
   const spoofing = config.get<boolean>('autoreg.spoofing', true);
+  const deviceFlow = config.get<boolean>('autoreg.deviceFlow', false);
 
   // Get IMAP settings from active profile or fallback to old settings
   const profileProvider = ImapProfileProvider.getInstance(context);
@@ -181,6 +182,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   // Use register_auto for non-interactive mode with JSON progress output
   const args = ['-u', '-m', 'registration.register_auto'];
   if (headless) args.push('--headless');
+  if (deviceFlow) args.push('--device-flow');
 
   const env = {
     ...process.env,
@@ -193,7 +195,8 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     EMAIL_STRATEGY: emailStrategy,
     EMAIL_POOL: emailPool,
     PROFILE_ID: profileId,
-    SPOOFING_ENABLED: spoofing ? '1' : '0'
+    SPOOFING_ENABLED: spoofing ? '1' : '0',
+    DEVICE_FLOW: deviceFlow ? '1' : '0'
   };
 
   provider.addLog(`Starting autoreg...`);
@@ -203,6 +206,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   provider.addLog(`Strategy: ${emailStrategy}`);
   provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
   provider.addLog(`Spoofing mode: ${spoofing ? 'ON' : 'OFF'}`);
+  provider.addLog(`Device Flow: ${deviceFlow ? 'ON' : 'OFF'}`);
   provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
 
   // Use ProcessManager for better control

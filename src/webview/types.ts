@@ -7,6 +7,7 @@ export interface AutoRegSettings {
   verbose: boolean;
   screenshotsOnError: boolean;
   spoofing: boolean;
+  deviceFlow: boolean;
 }
 
 export interface RegProgress {

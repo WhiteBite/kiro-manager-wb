@@ -94,6 +94,8 @@ export const zh: Translations = {
   screenshotsDesc: '发生错误时保存截图',
   spoofing: '伪装模式',
   spoofingDesc: '随机化浏览器指纹',
+  deviceFlow: '设备流认证',
+  deviceFlowDesc: '使用设备代码而非本地服务器',
   language: '语言',
   languageDesc: '界面语言',
 

@@ -123,6 +123,8 @@ export interface Translations {
   screenshotsDesc: string;
   spoofing: string;
   spoofingDesc: string;
+  deviceFlow: string;
+  deviceFlowDesc: string;
   language: string;
   languageDesc: string;
 

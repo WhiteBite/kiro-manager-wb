@@ -36,6 +36,7 @@ from core.email_generator import EmailGenerator, EmailResult
 from .browser import BrowserAutomation
 from .mail_handler import get_mail_handler, create_mail_handler_from_env
 from .oauth_pkce import OAuthPKCE
+from .oauth_device import OAuthDevice
 
 config = get_config()
 TIMEOUTS = {
@@ -92,9 +93,10 @@ class AccountStorage:
 class AWSRegistration:
     """Регистрация AWS Builder ID через OAuth PKCE Flow (как в Kiro IDE)"""
     
-    def __init__(self, headless: bool = False):
+    def __init__(self, headless: bool = False, device_flow: bool = False):
         self.storage = AccountStorage()
         self.headless = headless
+        self.device_flow = device_flow
         self.browser = None
         self.mail_handler = None
         self.oauth = None
@@ -202,11 +204,12 @@ class AWSRegistration:
             return {'email': email, 'success': False, 'error': 'Mail handler not available. Check IMAP settings.'}
         
         try:
-            # ШАГ 1: Запускаем OAuth PKCE flow
-            print(f"\n[1/8] Starting OAuth PKCE flow...")
+            # ШАГ 1: Запускаем OAuth flow
+            flow_type = "Device" if self.device_flow else "PKCE"
+            print(f"\n[1/8] Starting OAuth {flow_type} flow...")
             if self.oauth:
                 self.oauth.close()
-            self.oauth = OAuthPKCE()
+            self.oauth = OAuthDevice() if self.device_flow else OAuthPKCE()
             
             # Получаем auth_url (это также запускает callback server и регистрирует client)
             auth_url = self.oauth.start(account_name=email.split('@')[0])

@@ -638,7 +638,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       headless: config.get<boolean>('autoreg.headless', false),
       verbose: config.get<boolean>('debug.verbose', false),
       screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true),
-      spoofing: config.get<boolean>('autoreg.spoofing', true)
+      spoofing: config.get<boolean>('autoreg.spoofing', true),
+      deviceFlow: config.get<boolean>('autoreg.deviceFlow', false)
     };
 
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({

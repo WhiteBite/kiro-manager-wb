@@ -200,6 +200,16 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version }
         </div>
         <div class="setting-row">
           <div>
+            <div class="setting-label">${t.deviceFlow}</div>
+            <div class="setting-desc">${t.deviceFlowDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.deviceFlow ? 'checked' : ''} onchange="toggleSetting('deviceFlow', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
             <div class="setting-label">${t.language}</div>
             <div class="setting-desc">${t.languageDesc}</div>
           </div>

@@ -201,6 +201,11 @@
           "type": "boolean",
           "default": true,
           "description": "Save screenshots when errors occur during registration"
+        },
+        "kiroAccountSwitcher.autoreg.deviceFlow": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Device Flow authentication instead of local callback server"
         }
       }
     }

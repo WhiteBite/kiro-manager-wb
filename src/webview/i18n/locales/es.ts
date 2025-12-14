@@ -94,6 +94,8 @@ export const es: Translations = {
   screenshotsDesc: 'Guardar capturas cuando ocurran errores',
   spoofing: 'Modo spoofing',
   spoofingDesc: 'Aleatorizar huella del navegador',
+  deviceFlow: 'Auth Device Flow',
+  deviceFlowDesc: 'Usar código de dispositivo en lugar de servidor local',
   language: 'Idioma',
   languageDesc: 'Idioma de la interfaz',
 
