@@ -270,6 +270,35 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this.refresh();
   }
 
+  // Delete all banned accounts
+  async deleteBannedAccounts() {
+    const bannedAccounts = this._accounts.filter(
+      a => a.usage?.isBanned === true
+    );
+
+    if (bannedAccounts.length === 0) {
+      vscode.window.showInformationMessage('No banned accounts to delete');
+      return;
+    }
+
+    let deleted = 0;
+    for (const acc of bannedAccounts) {
+      const accountName = acc.tokenData.accountName || acc.filename;
+      try {
+        if (fs.existsSync(acc.path)) {
+          fs.unlinkSync(acc.path);
+          deleted++;
+          this.addLog(`🗑 Deleted (⛔ banned): ${accountName}`);
+        }
+      } catch (err) {
+        this.addLog(`✗ Failed to delete ${accountName}: ${err}`);
+      }
+    }
+
+    vscode.window.showInformationMessage(`Deleted ${deleted} banned account(s)`);
+    this.refresh();
+  }
+
   // Refresh all expired tokens
   async refreshAllExpiredTokens() {
     // Find expired accounts (token expired but not exhausted/suspended)
@@ -299,20 +328,25 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       for (let i = 0; i < expiredAccounts.length; i++) {
         const acc = expiredAccounts[i];
         const accountName = acc.tokenData.accountName || acc.filename;
-        
-        progress.report({ 
+
+        progress.report({
           message: `${i + 1}/${expiredAccounts.length}: ${accountName}`,
           increment: (100 / expiredAccounts.length)
         });
 
         try {
-          const success = await refreshAccountToken(acc.filename);
-          if (success) {
+          const result = await refreshAccountToken(acc.filename, true);
+          if (result.success) {
             refreshed++;
             this.addLog(`✓ Refreshed: ${accountName}`);
           } else {
             failed++;
-            this.addLog(`✗ Failed to refresh: ${accountName}`);
+            if (result.isBanned) {
+              this.markAccountAsBanned(acc.filename, result.errorMessage);
+              this.addLog(`⛔ BANNED: ${accountName}`);
+            } else {
+              this.addLog(`✗ Failed to refresh: ${accountName} - ${result.errorMessage || result.error}`);
+            }
           }
         } catch (err) {
           failed++;
@@ -379,14 +413,42 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       title: `Refreshing token for ${accountName}...`,
       cancellable: false
     }, async () => {
-      const success = await refreshAccountToken(filename);
-      if (success) {
+      const result = await refreshAccountToken(filename, true);
+      if (result.success) {
         vscode.window.showInformationMessage(`Token refreshed: ${accountName}`);
         this.refresh();
       } else {
-        vscode.window.showErrorMessage(`Failed to refresh token: ${accountName}`);
+        // If banned, mark the account
+        if (result.isBanned) {
+          this.markAccountAsBanned(filename, result.errorMessage);
+        }
+        // Error message already shown by refreshAccountToken
       }
     });
+  }
+
+  // Mark account as banned in usage cache
+  private markAccountAsBanned(filename: string, reason?: string) {
+    const account = this._accounts.find(a => a.filename === filename);
+    if (account) {
+      const accName = account.tokenData.accountName || filename;
+      // Update usage with banned flag
+      if (account.usage) {
+        account.usage.isBanned = true;
+        account.usage.banReason = reason;
+      } else {
+        account.usage = {
+          currentUsage: -1,
+          usageLimit: 500,
+          percentageUsed: 0,
+          daysRemaining: -1,
+          isBanned: true,
+          banReason: reason
+        };
+      }
+      this.addLog(`⛔ Account marked as BANNED: ${accName}`);
+      this.refresh();
+    }
   }
 
   async toggleSetting(setting: string) {

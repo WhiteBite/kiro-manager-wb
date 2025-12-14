@@ -21,7 +21,10 @@ export const zh: Translations = {
   badGroup: '已过期 / 已耗尽',
   expiredGroup: '已过期',
   exhaustedGroup: '已耗尽',
+  bannedGroup: '已封禁',
+  banned: '封禁',
   refreshAll: '全部刷新',
+  deleteAll: '全部删除',
 
   // Usage card
   todaysUsage: '今日使用量',
@@ -93,6 +96,21 @@ export const zh: Translations = {
   spoofingDesc: '随机化浏览器指纹',
   language: '语言',
   languageDesc: '界面语言',
+
+  // Spoofing modules
+  spoofAutomation: '自动化',
+  spoofAutomationDesc: '隐藏 webdriver 标志',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: '随机化指纹',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: '伪装硬件信息',
+  spoofAudio: '音频/字体',
+  spoofAudioDesc: '掩盖音频上下文',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: '隐藏本地 IP',
+  spoofBehavior: '行为',
+  spoofBehaviorDesc: '模拟人类操作',
+  spoofWarning: '禁用可能导致机器人检测失败',
 
   // Kiro Patch
   kiroPatch: 'Kiro 补丁',
@@ -199,7 +217,6 @@ export const zh: Translations = {
   resetMachineIdConfirm: '这将重置 Kiro 遥测 ID。之后需要重启 Kiro。继续？',
 
   // Other
-  deleteAll: '删除全部',
   delete: '删除',
   checkUpdates: '检查更新',
   newVersion: '新版本！',
@@ -242,5 +259,7 @@ export const zh: Translations = {
   clipboardError: '无法读取剪贴板',
   deleteProfileConfirm: '删除此配置？',
   deleteBadAccountsConfirm: '删除所有过期/耗尽的账户？',
+  deleteBannedAccountsConfirm: '删除所有被封禁的账户？',
+  bannedAccountsDeleted: '已删除被封禁的账户',
   emailsImported: '已导入 {count} 个邮箱',
 };

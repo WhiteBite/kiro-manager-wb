@@ -21,7 +21,10 @@ export const hi: Translations = {
   badGroup: 'समाप्त / खत्म',
   expiredGroup: 'समाप्त',
   exhaustedGroup: 'खत्म',
+  bannedGroup: 'प्रतिबंधित',
+  banned: 'प्रतिबंधित',
   refreshAll: 'सभी रिफ्रेश करें',
+  deleteAll: 'सभी हटाएं',
 
   // Usage card
   todaysUsage: 'आज का उपयोग',
@@ -93,6 +96,21 @@ export const hi: Translations = {
   spoofingDesc: 'ब्राउज़र फिंगरप्रिंट को रैंडमाइज़ करें',
   language: 'भाषा',
   languageDesc: 'इंटरफ़ेस भाषा',
+
+  // Spoofing modules
+  spoofAutomation: 'ऑटोमेशन',
+  spoofAutomationDesc: 'webdriver फ्लैग छुपाएं',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'फिंगरप्रिंट रैंडमाइज़ करें',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'हार्डवेयर जानकारी स्पूफ करें',
+  spoofAudio: 'ऑडियो/फॉन्ट्स',
+  spoofAudioDesc: 'ऑडियो कॉन्टेक्स्ट मास्क करें',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'लोकल IP छुपाएं',
+  spoofBehavior: 'व्यवहार',
+  spoofBehaviorDesc: 'मानव जैसी क्रियाएं',
+  spoofWarning: 'अक्षम करने से बॉट डिटेक्शन हो सकता है',
 
   // Kiro Patch
   kiroPatch: 'Kiro पैच',
@@ -199,7 +217,6 @@ export const hi: Translations = {
   resetMachineIdConfirm: 'यह Kiro टेलीमेट्री ID रीसेट करेगा। आपको बाद में Kiro पुनः आरंभ करना होगा। जारी रखें?',
 
   // Other
-  deleteAll: 'सभी हटाएं',
   delete: 'हटाएं',
   checkUpdates: 'अपडेट जांचें',
   newVersion: 'नया संस्करण!',
@@ -242,5 +259,7 @@ export const hi: Translations = {
   clipboardError: 'क्लिपबोर्ड पढ़ने में विफल',
   deleteProfileConfirm: 'इस प्रोफ़ाइल को हटाएं?',
   deleteBadAccountsConfirm: 'सभी समाप्त/खत्म खातों को हटाएं?',
+  deleteBannedAccountsConfirm: 'सभी प्रतिबंधित खातों को हटाएं?',
+  bannedAccountsDeleted: 'प्रतिबंधित खाते हटा दिए गए',
   emailsImported: '{count} ईमेल आयात किए गए',
 };

@@ -21,7 +21,10 @@ export const en: Translations = {
   badGroup: 'Expired / Exhausted',
   expiredGroup: 'Expired',
   exhaustedGroup: 'Exhausted',
+  bannedGroup: 'Banned',
+  banned: 'BANNED',
   refreshAll: 'Refresh all',
+  deleteAll: 'Delete all',
 
   // Usage card
   todaysUsage: "Today's Usage",
@@ -93,6 +96,21 @@ export const en: Translations = {
   spoofingDesc: 'Randomize browser fingerprint',
   language: 'Language',
   languageDesc: 'Interface language',
+
+  // Spoofing modules
+  spoofAutomation: 'Automation',
+  spoofAutomationDesc: 'Hides webdriver flags',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'Randomizes fingerprint',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'Spoofs hardware info',
+  spoofAudio: 'Audio/Fonts',
+  spoofAudioDesc: 'Masks audio context',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'Hides local IP',
+  spoofBehavior: 'Behavior',
+  spoofBehaviorDesc: 'Human-like actions',
+  spoofWarning: 'Disabling may cause bot detection failures',
 
   // Kiro Patch
   kiroPatch: 'Kiro Patch',
@@ -199,7 +217,6 @@ export const en: Translations = {
   resetMachineIdConfirm: 'This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?',
 
   // Other
-  deleteAll: 'Delete all',
   delete: 'Delete',
   checkUpdates: 'Check Updates',
   newVersion: 'New version!',
@@ -242,5 +259,7 @@ export const en: Translations = {
   clipboardError: 'Failed to read clipboard',
   deleteProfileConfirm: 'Delete this profile?',
   deleteBadAccountsConfirm: 'Delete all expired/exhausted accounts?',
+  deleteBannedAccountsConfirm: 'Delete all banned accounts?',
+  bannedAccountsDeleted: 'Banned accounts deleted',
   emailsImported: 'Imported {count} emails',
 };

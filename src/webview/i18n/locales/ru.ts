@@ -21,7 +21,10 @@ export const ru: Translations = {
   badGroup: 'Истекшие / Исчерпанные',
   expiredGroup: 'Истекшие',
   exhaustedGroup: 'Исчерпанные',
+  bannedGroup: 'Забаненные',
+  banned: 'БАН',
   refreshAll: 'Обновить все',
+  deleteAll: 'Удалить все',
 
   // Usage card
   todaysUsage: 'Использование',
@@ -93,6 +96,21 @@ export const ru: Translations = {
   spoofingDesc: 'Рандомизировать отпечаток браузера',
   language: 'Язык',
   languageDesc: 'Язык интерфейса',
+
+  // Spoofing modules
+  spoofAutomation: 'Автоматизация',
+  spoofAutomationDesc: 'Скрывает флаги webdriver',
+  spoofCanvas: 'Canvas/WebGL',
+  spoofCanvasDesc: 'Рандомизирует отпечаток',
+  spoofNavigator: 'Navigator',
+  spoofNavigatorDesc: 'Подменяет инфо об устройстве',
+  spoofAudio: 'Аудио/Шрифты',
+  spoofAudioDesc: 'Маскирует аудио контекст',
+  spoofWebrtc: 'WebRTC',
+  spoofWebrtcDesc: 'Скрывает локальный IP',
+  spoofBehavior: 'Поведение',
+  spoofBehaviorDesc: 'Человеческие действия',
+  spoofWarning: 'Отключение может привести к обнаружению бота',
 
   // Kiro Patch
   kiroPatch: 'Патч Kiro',
@@ -199,7 +217,6 @@ export const ru: Translations = {
   resetMachineIdConfirm: 'Это сбросит telemetry ID Kiro. Потребуется перезапуск. Продолжить?',
 
   // Other
-  deleteAll: 'Удалить все',
   delete: 'Удалить',
   checkUpdates: 'Проверить',
   newVersion: 'Новая версия!',
@@ -242,5 +259,7 @@ export const ru: Translations = {
   clipboardError: 'Не удалось прочитать буфер обмена',
   deleteProfileConfirm: 'Удалить этот профиль?',
   deleteBadAccountsConfirm: 'Удалить все истёкшие/исчерпанные аккаунты?',
+  deleteBannedAccountsConfirm: 'Удалить все забаненные аккаунты?',
+  bannedAccountsDeleted: 'Забаненные аккаунты удалены',
   emailsImported: 'Импортировано {count} email',
 };

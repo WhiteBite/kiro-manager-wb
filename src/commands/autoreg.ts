@@ -126,7 +126,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const profileProvider = ImapProfileProvider.getInstance(context);
   const activeProfile = profileProvider.getActive();
   const profileEnv = profileProvider.getActiveProfileEnv();
-  
+
   // Fallback to old settings if no profile
   const imapServer = profileEnv.IMAP_SERVER || config.get<string>('imap.server', '');
   const imapUser = profileEnv.IMAP_USER || config.get<string>('imap.user', '');
@@ -213,7 +213,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     for (const line of lines) {
       provider.addLog(line);
       parseProgressLine(line, provider);
-      
+
       // Auto-confirm prompts (y/n, да/нет)
       if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
         provider.addLog('→ Auto-confirming: y');
@@ -275,9 +275,9 @@ function parseProgressLine(line: string, provider: KiroAccountsProvider) {
       const data = JSON.parse(json);
       provider.setStatus(JSON.stringify(data));
       return;
-    } catch {}
+    } catch { }
   }
-  
+
   // Format 2: [1/8] StepName: detail
   const match = line.match(/\[(\d+)\/(\d+)\]\s*([^:]+):\s*(.+)/);
   if (match) {
@@ -440,36 +440,36 @@ export async function getPatchStatus(context: vscode.ExtensionContext): Promise<
  * Check patch status - can be called from extension.ts on startup
  */
 export async function checkPatchStatus(context: vscode.ExtensionContext): Promise<PatchStatusResult> {
-  const autoregDir = getAutoregDir(context);
+  // Use bundled autoreg from extension, not workspace - ensures kiro_patcher_service exists
+  const bundledPath = path.join(context.extensionPath, 'autoreg');
+  const homePath = path.join(os.homedir(), '.kiro-autoreg');
+
+  // Prefer bundled, fallback to home
+  let autoregDir = '';
+  if (fs.existsSync(path.join(bundledPath, 'services', 'kiro_patcher_service.py'))) {
+    autoregDir = bundledPath;
+  } else if (fs.existsSync(path.join(homePath, 'services', 'kiro_patcher_service.py'))) {
+    autoregDir = homePath;
+  }
+
   if (!autoregDir) {
-    return { isPatched: false, error: 'Autoreg not found' };
+    return { isPatched: false, error: 'Patcher service not found' };
   }
 
   const pythonCmd = getPythonCommand();
   const { spawnSync } = require('child_process');
 
-  // Use a simple Python script to get JSON status
-  const script = `
-import json
-import sys
-sys.path.insert(0, '${autoregDir.replace(/\\/g, '\\\\')}')
-from services.kiro_patcher_service import KiroPatcherService
-s = KiroPatcherService()
-status = s.get_status()
-print(json.dumps({
-  'isPatched': status.is_patched,
-  'kiroVersion': status.kiro_version,
-  'patchVersion': status.patch_version,
-  'currentMachineId': status.current_machine_id,
-  'error': status.error
-}))
-`;
+  // Use dedicated script file to avoid inline Python issues on Windows
+  const scriptPath = path.join(autoregDir, 'scripts', 'patch_status.py');
 
-  const result = spawnSync(pythonCmd, ['-c', script], {
+  if (!fs.existsSync(scriptPath)) {
+    return { isPatched: false, error: 'patch_status.py not found' };
+  }
+
+  const result = spawnSync(pythonCmd, [scriptPath], {
     cwd: autoregDir,
     encoding: 'utf8',
-    timeout: 10000,
-    shell: process.platform === 'win32'
+    timeout: 10000
   });
 
   if (result.status === 0 && result.stdout) {

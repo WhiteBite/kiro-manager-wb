@@ -1,13 +1,12 @@
 /**
- * Component exports
+ * UI Components - Clean exports
  */
 
-export { renderAccountCard, renderAccountList, renderAccountSkeleton } from './AccountCard';
-export { renderUsageCard, renderUsageSkeleton } from './UsageCard';
-export { renderSettingsPanel } from './SettingsPanel';
-export { renderConsolePanel } from './ConsolePanel';
-export { renderProgressPanel, type RegProgress } from './ProgressPanel';
-
-// IMAP Profiles
-export { renderImapProfileCard, renderImapProfileList } from './ImapProfileCard';
-export { renderProfileEditor, profileEditorScripts } from './ProfileEditor';
+export { renderHeader } from './Header';
+export { renderHero } from './Hero';
+export { renderToolbar } from './Toolbar';
+export { renderAccountList } from './AccountList';
+export { renderSettings } from './Settings';
+export { renderLogs } from './Logs';
+export { renderModals } from './Modals';
+export { renderProfileEditor } from './ProfileEditor';
