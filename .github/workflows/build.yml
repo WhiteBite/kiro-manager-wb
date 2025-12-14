@@ -163,9 +163,9 @@ jobs:
 
       - name: Flatten artifacts
         run: |
-          mkdir -p release-files
-          find dl-artifacts -type f -exec cp {} release-files/ \;
-          ls -la release-files/
+          mkdir -p /tmp/release-files
+          find dl-artifacts -type f -exec cp {} /tmp/release-files/ \;
+          ls -la /tmp/release-files/
 
       - name: Checkout for changelog
         uses: actions/checkout@v4
@@ -194,7 +194,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release-files/*
+          files: /tmp/release-files/*
           fail_on_unmatched_files: false
           body: |
             ## ⚡ Kiro Account Switcher ${{ steps.version.outputs.version }}
