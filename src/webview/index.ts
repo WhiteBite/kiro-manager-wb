@@ -155,6 +155,7 @@ function renderAccount(acc: AccountInfo, index: number, t: ReturnType<typeof get
       </div>
       <div class="account-actions">
         <button class="account-btn" title="${t.copyTokenTip}" onclick="event.stopPropagation(); copyToken('${escapeHtml(acc.filename)}')">${ICONS.copy}</button>
+        <button class="account-btn ${acc.isExpired ? 'highlight' : ''}" title="${t.refreshTokenTip}" onclick="event.stopPropagation(); refreshToken('${escapeHtml(acc.filename)}')">${ICONS.refresh}</button>
         <button class="account-btn danger" title="${t.deleteTip}" onclick="event.stopPropagation(); confirmDelete('${escapeHtml(acc.filename)}')">${ICONS.trash}</button>
       </div>
     </div>
