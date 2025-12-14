@@ -94,6 +94,8 @@ export const ja: Translations = {
   screenshotsDesc: 'エラー発生時にスクリーンショットを保存',
   spoofing: 'スプーフィングモード',
   spoofingDesc: 'ブラウザフィンガープリントをランダム化',
+  deviceFlow: 'デバイスフロー認証',
+  deviceFlowDesc: 'ローカルサーバーの代わりにデバイスコードを使用',
   language: '言語',
   languageDesc: 'インターフェース言語',
 

@@ -94,6 +94,8 @@ export const ru: Translations = {
   screenshotsDesc: 'Сохранять скриншоты при ошибках',
   spoofing: 'Режим спуфинга',
   spoofingDesc: 'Рандомизировать отпечаток браузера',
+  deviceFlow: 'Device Flow авторизация',
+  deviceFlowDesc: 'Использовать код устройства вместо локального сервера',
   language: 'Язык',
   languageDesc: 'Язык интерфейса',
 

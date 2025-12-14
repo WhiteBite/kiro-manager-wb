@@ -83,6 +83,7 @@ def main():
     parser.add_argument('--no-headless', action='store_true', help='Show browser window')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
     parser.add_argument('--email', type=str, help='Custom email to use (overrides strategy)')
+    parser.add_argument('--device-flow', action='store_true', help='Use Device Flow OAuth instead of PKCE')
     args = parser.parse_args()
 
     # Determine headless mode
@@ -92,6 +93,9 @@ def main():
         headless = False
     else:
         headless = get_setting('browser.headless', False)
+    
+    # Determine device flow mode (from args or env)
+    device_flow = args.device_flow or os.environ.get('DEVICE_FLOW', '0') == '1'
 
     if args.verbose:
         set_setting('debug.verbose', True)
@@ -103,10 +107,11 @@ def main():
 
     if args.verbose:
         print(f"[DEBUG] Headless: {headless}")
+        print(f"[DEBUG] Device Flow: {device_flow}")
         print(f"[DEBUG] Strategy: {strategy}")
         print(f"[DEBUG] IMAP User: {os.environ.get('IMAP_USER', 'not set')}")
 
-    reg = AWSRegistration(headless=headless)
+    reg = AWSRegistration(headless=headless, device_flow=device_flow)
 
     try:
         progress(2, 8, "Starting OAuth", "Getting auth URL...")

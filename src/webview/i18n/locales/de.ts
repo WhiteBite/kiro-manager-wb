@@ -94,6 +94,8 @@ export const de: Translations = {
   screenshotsDesc: 'Screenshots bei Fehlern speichern',
   spoofing: 'Spoofing-Modus',
   spoofingDesc: 'Browser-Fingerabdruck randomisieren',
+  deviceFlow: 'Device Flow Auth',
+  deviceFlowDesc: 'Gerätecode statt lokalem Server verwenden',
   language: 'Sprache',
   languageDesc: 'Oberflächensprache',
 

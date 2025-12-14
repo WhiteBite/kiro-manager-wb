@@ -94,6 +94,8 @@ export const hi: Translations = {
   screenshotsDesc: 'त्रुटियों पर स्क्रीनशॉट सहेजें',
   spoofing: 'स्पूफिंग मोड',
   spoofingDesc: 'ब्राउज़र फिंगरप्रिंट को रैंडमाइज़ करें',
+  deviceFlow: 'डिवाइस फ्लो प्रमाणीकरण',
+  deviceFlowDesc: 'स्थानीय सर्वर के बजाय डिवाइस कोड का उपयोग करें',
   language: 'भाषा',
   languageDesc: 'इंटरफ़ेस भाषा',
 
