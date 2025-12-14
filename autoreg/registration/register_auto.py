@@ -58,7 +58,7 @@ LAST_NAMES = [
 ]
 
 
-def generate_human_email(domain: str = 'example.com') -> str:
+def generate_human_email(domain: str) -> str:
     first = random.choice(FIRST_NAMES)
     last = random.choice(LAST_NAMES)
     number = random.randint(100, 9999)
@@ -101,7 +101,7 @@ def main():
         set_setting('debug.verbose', True)
 
     # Get strategy from environment
-    strategy = os.environ.get('EMAIL_STRATEGY', 'catch_all')
+    strategy = os.environ.get('EMAIL_STRATEGY', 'single')
     
     progress(1, 8, "Initializing", f"Strategy: {strategy}")
 

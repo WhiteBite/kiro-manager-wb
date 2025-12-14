@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "5.5.0",
+  "version": "6.0.0",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
@@ -138,8 +138,8 @@
         },
         "kiroAccountSwitcher.autoreg.emailDomain": {
           "type": "string",
-          "default": "example.com",
-          "description": "Email domain for auto-registration"
+          "default": "",
+          "description": "Email domain for auto-registration (set in IMAP profile)"
         },
         "kiroAccountSwitcher.imap.server": {
           "type": "string",

@@ -26,7 +26,7 @@ class AutoRegConfig(BaseModel):
     imapUser: Optional[str] = None
     imapPassword: Optional[str] = None
     emailDomain: Optional[str] = None
-    emailStrategy: str = "catch_all"
+    emailStrategy: str = "single"
 
 
 class SsoImportRequest(BaseModel):

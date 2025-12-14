@@ -6,13 +6,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { 
-  ImapProfile, 
-  ImapProfilesData, 
-  EmailStrategy, 
+import {
+  ImapProfile,
+  ImapProfilesData,
+  EmailStrategy,
   EmailStrategyType,
   ProviderHint,
-  EmailPoolItem 
+  EmailPoolItem
 } from '../types';
 
 // Known email providers with their capabilities
@@ -100,7 +100,7 @@ export class ImapProfileProvider {
   private _syncingToSettings = false;
   private _syncingFromSettings = false;
   private _configChangeDisposable?: vscode.Disposable;
-  
+
   readonly onDidChange = this._onDidChange.event;
 
   private constructor(private context: vscode.ExtensionContext) {
@@ -116,10 +116,10 @@ export class ImapProfileProvider {
     // Listen for VS Code settings changes
     this._configChangeDisposable = vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (this._syncingToSettings) return; // Prevent loop
-      
-      if (e.affectsConfiguration('kiroAccountSwitcher.imap') || 
-          e.affectsConfiguration('kiroAccountSwitcher.email') ||
-          e.affectsConfiguration('kiroAccountSwitcher.autoreg.emailDomain')) {
+
+      if (e.affectsConfiguration('kiroAccountSwitcher.imap') ||
+        e.affectsConfiguration('kiroAccountSwitcher.email') ||
+        e.affectsConfiguration('kiroAccountSwitcher.autoreg.emailDomain')) {
         await this._syncFromSettings();
       }
     });
@@ -149,14 +149,14 @@ export class ImapProfileProvider {
       const parsed: ImapProfilesData = JSON.parse(data.toString());
       this.profiles = parsed.profiles || [];
       this.activeProfileId = parsed.activeProfileId;
-      
+
       // Migration: ensure all profiles have required fields
       this.profiles = this.profiles.map(p => this.migrateProfile(p));
     } catch {
       // File doesn't exist or invalid - start fresh
       this.profiles = [];
       this.activeProfileId = undefined;
-      
+
       // Migrate from old settings if exist
       await this.migrateFromOldSettings();
     }
@@ -168,21 +168,21 @@ export class ImapProfileProvider {
       activeProfileId: this.activeProfileId,
       version: 1
     };
-    
+
     // Ensure directory exists
     const dir = vscode.Uri.joinPath(this.context.globalStorageUri);
     try {
       await vscode.workspace.fs.createDirectory(dir);
     } catch { /* ignore if exists */ }
-    
+
     await vscode.workspace.fs.writeFile(
-      this.storageUri, 
+      this.storageUri,
       Buffer.from(JSON.stringify(data, null, 2))
     );
-    
+
     // Sync active profile to VS Code settings
     await this._syncToSettings();
-    
+
     this._onDidChange.fire();
   }
 
@@ -197,26 +197,26 @@ export class ImapProfileProvider {
   private async _syncToSettings(): Promise<void> {
     if (this._syncingFromSettings) return;
     this._syncingToSettings = true;
-    
+
     try {
       const profile = this.getActive();
       const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-      
+
       if (profile) {
         // Sync IMAP settings
         await config.update('imap.server', profile.imap.server, vscode.ConfigurationTarget.Global);
         await config.update('imap.user', profile.imap.user, vscode.ConfigurationTarget.Global);
         await config.update('imap.password', profile.imap.password, vscode.ConfigurationTarget.Global);
         await config.update('imap.port', profile.imap.port || 993, vscode.ConfigurationTarget.Global);
-        
+
         // Sync email strategy
         await config.update('email.strategy', profile.strategy.type, vscode.ConfigurationTarget.Global);
-        
+
         // Sync domain for catch_all
         if (profile.strategy.type === 'catch_all' && profile.strategy.domain) {
           await config.update('autoreg.emailDomain', profile.strategy.domain, vscode.ConfigurationTarget.Global);
         }
-        
+
         // Sync email pool
         if (profile.strategy.type === 'pool' && profile.strategy.emails) {
           const emails = profile.strategy.emails.map(e => e.email);
@@ -237,10 +237,10 @@ export class ImapProfileProvider {
   private async _syncFromSettings(): Promise<void> {
     if (this._syncingToSettings) return;
     this._syncingFromSettings = true;
-    
+
     try {
       const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-      
+
       const server = config.get<string>('imap.server', '');
       const user = config.get<string>('imap.user', '');
       const password = config.get<string>('imap.password', '');
@@ -248,13 +248,13 @@ export class ImapProfileProvider {
       const strategyType = config.get<EmailStrategyType>('email.strategy', 'catch_all');
       const domain = config.get<string>('autoreg.emailDomain', '');
       const emailPool = config.get<string[]>('email.pool', []);
-      
+
       // Skip if no IMAP settings
       if (!server && !user) {
         this._syncingFromSettings = false;
         return;
       }
-      
+
       // Build strategy
       const strategy: EmailStrategy = { type: strategyType };
       if (strategyType === 'catch_all' && domain) {
@@ -263,25 +263,25 @@ export class ImapProfileProvider {
       if (strategyType === 'pool' && emailPool.length > 0) {
         strategy.emails = emailPool.map(email => ({ email, status: 'pending' as const }));
       }
-      
+
       // Update or create profile
       const activeProfile = this.getActive();
-      
+
       if (activeProfile) {
         // Update existing profile
-        const hasChanges = 
+        const hasChanges =
           activeProfile.imap.server !== server ||
           activeProfile.imap.user !== user ||
           activeProfile.imap.password !== password ||
           activeProfile.imap.port !== port ||
           activeProfile.strategy.type !== strategyType;
-        
+
         if (hasChanges) {
           activeProfile.imap = { server, user, password, port };
           activeProfile.strategy = strategy;
           activeProfile.provider = this.detectProvider(user);
           activeProfile.updatedAt = new Date().toISOString();
-          
+
           // Save without triggering sync back
           const data: ImapProfilesData = {
             profiles: this.profiles,
@@ -289,10 +289,10 @@ export class ImapProfileProvider {
             version: 1
           };
           await vscode.workspace.fs.writeFile(
-            this.storageUri, 
+            this.storageUri,
             Buffer.from(JSON.stringify(data, null, 2))
           );
-          
+
           this._onDidChange.fire();
           console.log('[ImapProfileProvider] Synced from VS Code settings');
         }
@@ -353,13 +353,13 @@ export class ImapProfileProvider {
       updatedAt: now,
       provider: this.detectProvider(profile.imap.user)
     };
-    
+
     // If first profile, make it default
     if (this.profiles.length === 0) {
       newProfile.isDefault = true;
       this.activeProfileId = newProfile.id;
     }
-    
+
     this.profiles.push(newProfile);
     await this.save();
     return newProfile;
@@ -368,19 +368,19 @@ export class ImapProfileProvider {
   async update(id: string, updates: Partial<ImapProfile>): Promise<ImapProfile | undefined> {
     const index = this.profiles.findIndex(p => p.id === id);
     if (index === -1) return undefined;
-    
+
     this.profiles[index] = {
       ...this.profiles[index],
       ...updates,
       id, // Prevent id change
       updatedAt: new Date().toISOString()
     };
-    
+
     // Re-detect provider if email changed
     if (updates.imap?.user) {
       this.profiles[index].provider = this.detectProvider(updates.imap.user);
     }
-    
+
     await this.save();
     return this.profiles[index];
   }
@@ -388,14 +388,14 @@ export class ImapProfileProvider {
   async delete(id: string): Promise<boolean> {
     const index = this.profiles.findIndex(p => p.id === id);
     if (index === -1) return false;
-    
+
     this.profiles.splice(index, 1);
-    
+
     // If deleted active profile, select another
     if (this.activeProfileId === id) {
       this.activeProfileId = this.profiles[0]?.id;
     }
-    
+
     await this.save();
     return true;
   }
@@ -414,32 +414,32 @@ export class ImapProfileProvider {
   async addEmailsToPool(profileId: string, emails: string[]): Promise<void> {
     const profile = this.getById(profileId);
     if (!profile || profile.strategy.type !== 'pool') return;
-    
+
     const existingEmails = new Set(profile.strategy.emails?.map(e => e.email.toLowerCase()) || []);
     const newItems: EmailPoolItem[] = emails
       .filter(e => !existingEmails.has(e.toLowerCase()))
       .map(email => ({ email, status: 'pending' as const }));
-    
+
     profile.strategy.emails = [...(profile.strategy.emails || []), ...newItems];
     await this.update(profileId, { strategy: profile.strategy });
   }
 
   async updateEmailStatus(
-    profileId: string, 
-    email: string, 
+    profileId: string,
+    email: string,
     status: EmailPoolItem['status'],
     extra?: { error?: string; accountId?: string }
   ): Promise<void> {
     const profile = this.getById(profileId);
     if (!profile || profile.strategy.type !== 'pool') return;
-    
+
     const item = profile.strategy.emails?.find(e => e.email.toLowerCase() === email.toLowerCase());
     if (item) {
       item.status = status;
       item.usedAt = status === 'used' ? new Date().toISOString() : item.usedAt;
       if (extra?.error) item.error = extra.error;
       if (extra?.accountId) item.accountId = extra.accountId;
-      
+
       await this.update(profileId, { strategy: profile.strategy });
     }
   }
@@ -447,7 +447,7 @@ export class ImapProfileProvider {
   getNextEmailFromPool(profileId: string): string | undefined {
     const profile = this.getById(profileId);
     if (!profile || profile.strategy.type !== 'pool') return undefined;
-    
+
     return profile.strategy.emails?.find(e => e.status === 'pending')?.email;
   }
 
@@ -458,7 +458,7 @@ export class ImapProfileProvider {
   detectProvider(email: string): ImapProfile['provider'] | undefined {
     const domain = email.split('@')[1]?.toLowerCase();
     if (!domain) return undefined;
-    
+
     const hint = PROVIDER_HINTS.find(h => h.domains.includes(domain));
     if (hint) {
       return {
@@ -467,7 +467,7 @@ export class ImapProfileProvider {
         catchAllPossible: hint.catchAllPossible
       };
     }
-    
+
     // Custom domain - assume catch-all possible
     return {
       name: 'Custom Domain',
@@ -498,7 +498,7 @@ export class ImapProfileProvider {
   async recordSuccess(profileId: string): Promise<void> {
     const profile = this.getById(profileId);
     if (!profile) return;
-    
+
     profile.stats.registered++;
     profile.stats.lastUsed = new Date().toISOString();
     await this.update(profileId, { stats: profile.stats });
@@ -507,7 +507,7 @@ export class ImapProfileProvider {
   async recordFailure(profileId: string, error?: string): Promise<void> {
     const profile = this.getById(profileId);
     if (!profile) return;
-    
+
     profile.stats.failed++;
     profile.stats.lastError = error;
     profile.stats.lastUsed = new Date().toISOString();
@@ -543,11 +543,11 @@ export class ImapProfileProvider {
     const user = config.get<string>('imap.user');
     const password = config.get<string>('imap.password');
     const domain = config.get<string>('autoreg.emailDomain');
-    
+
     if (server && user && password) {
       // Determine strategy based on old settings
       let strategy: EmailStrategy;
-      
+
       if (domain && domain !== user.split('@')[1]) {
         // Different domain = catch_all mode
         strategy = { type: 'catch_all', domain };
@@ -559,14 +559,14 @@ export class ImapProfileProvider {
           strategy.domain = user.split('@')[1];
         }
       }
-      
+
       await this.create({
         name: 'Migrated Profile',
         imap: { server, user, password },
         strategy,
         status: 'active'
       });
-      
+
       console.log('[ImapProfileProvider] Migrated from old settings');
     }
   }
@@ -578,7 +578,7 @@ export class ImapProfileProvider {
   getActiveProfileEnv(): Record<string, string> {
     const profile = this.getActive();
     if (!profile) return {};
-    
+
     const env: Record<string, string> = {
       IMAP_SERVER: profile.imap.server,
       IMAP_USER: profile.imap.user,
@@ -587,16 +587,19 @@ export class ImapProfileProvider {
       EMAIL_STRATEGY: profile.strategy.type,
       PROFILE_ID: profile.id
     };
-    
+
     if (profile.strategy.type === 'catch_all' && profile.strategy.domain) {
       env.EMAIL_DOMAIN = profile.strategy.domain;
     }
-    
+
     if (profile.strategy.type === 'pool' && profile.strategy.emails) {
       const pending = profile.strategy.emails.filter(e => e.status === 'pending');
-      env.EMAIL_POOL = JSON.stringify(pending.map(e => e.email));
+      // Format: email or email:password for different IMAP accounts
+      env.EMAIL_POOL = JSON.stringify(pending.map(e =>
+        e.password ? `${e.email}:${e.password}` : e.email
+      ));
     }
-    
+
     return env;
   }
 }

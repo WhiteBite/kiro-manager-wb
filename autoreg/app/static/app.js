@@ -320,7 +320,7 @@ async function startAutoReg() {
   }
 
   if (imapConfig.usingDefaults) {
-    showToast('Using shared catch-all (example.com)', 'info');
+    showToast('Using default IMAP settings', 'info');
   }
 
   const config = {

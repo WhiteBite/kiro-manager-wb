@@ -122,7 +122,7 @@ class AWSRegistration:
         - single: использует IMAP email напрямую
         - plus_alias: генерирует user+random@domain
         - catch_all: генерирует random@custom-domain
-        - pool: берёт следующий email из списка
+        - pool: берёт следующий email:password из списка (поддерживает разные IMAP аккаунты)
         
         Returns:
             dict с результатом регистрации
@@ -137,6 +137,25 @@ class AWSRegistration:
             print(f"[EMAIL] Registration: {email_result.registration_email}")
             print(f"[EMAIL] IMAP lookup: {email_result.imap_lookup_email}")
             print(f"[EMAIL] Name: {email_result.display_name}")
+            
+            # Для pool стратегии с разными паролями - переподключаем IMAP
+            if email_result.imap_password:
+                print(f"[EMAIL] Pool mode: switching IMAP credentials")
+                if self.mail_handler:
+                    self.mail_handler.reconnect(
+                        new_email=email_result.imap_lookup_email,
+                        new_password=email_result.imap_password
+                    )
+                else:
+                    # Создаём новый handler с credentials из пула
+                    from .mail_handler import IMAPMailHandler, get_imap_settings
+                    settings = get_imap_settings()
+                    self.mail_handler = IMAPMailHandler(
+                        imap_host=settings['host'],
+                        imap_email=email_result.imap_lookup_email,
+                        imap_password=email_result.imap_password
+                    )
+                    self.mail_handler.connect()
             
             # Вызываем основной метод регистрации
             result = self.register_single(
@@ -417,7 +436,7 @@ class AWSRegistration:
             self.oauth.close()
 
 
-def generate_emails(count: int, domain: str = 'example.com') -> List[tuple]:
+def generate_emails(count: int, domain: str = '') -> List[tuple]:
     """Генерация email адресов"""
     import random
     
