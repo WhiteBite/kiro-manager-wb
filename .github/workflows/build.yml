@@ -165,6 +165,30 @@ jobs:
       - name: List artifacts
         run: find artifacts -type f || true
 
+      - name: Checkout for changelog
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 ${{ github.ref_name }}^ 2>/dev/null || echo "")
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "Previous tag: $PREV_TAG"
+            COMMITS=$(git log --pretty=format:"- %s" $PREV_TAG..${{ github.ref_name }} --no-merges | head -20)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" -10 --no-merges)
+          fi
+          
+          # Save to file for multiline
+          echo "$COMMITS" > changelog.txt
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          cat changelog.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -174,8 +198,41 @@ jobs:
             artifacts/kiro-manager-linux/*
             artifacts/kiro-manager-macos-x64/*
             artifacts/kiro-manager-macos-arm64/*
-          generate_release_notes: true
           fail_on_unmatched_files: false
+          body: |
+            ## ⚡ Kiro Account Switcher ${{ steps.version.outputs.version }}
+            
+            Расширение для управления аккаунтами Kiro IDE с авторегистрацией.
+            
+            ### 📦 Downloads
+            
+            | Platform | File | Description |
+            |----------|------|-------------|
+            | 🔌 VS Code / Kiro | `kiro-account-switcher-${{ steps.version.outputs.version }}.vsix` | Расширение (все платформы) |
+            | 🪟 Windows | `kiro-manager-windows-${{ steps.version.outputs.version }}.exe` | Standalone авторег |
+            | 🐧 Linux | `kiro-manager-linux-${{ steps.version.outputs.version }}` | Standalone авторег |
+            | 🍎 macOS Intel | `kiro-manager-macos-x64-${{ steps.version.outputs.version }}` | Standalone авторег |
+            | 🍎 macOS Apple Silicon | `kiro-manager-macos-arm64-${{ steps.version.outputs.version }}` | Standalone авторег |
+            
+            ### 🔧 Installation
+            
+            **VS Code / Kiro Extension:**
+            ```
+            Ctrl+Shift+P → Extensions: Install from VSIX → выбрать .vsix файл
+            ```
+            
+            **Standalone (Windows):**
+            ```
+            kiro-manager-windows-${{ steps.version.outputs.version }}.exe --help
+            ```
+            
+            ### 📝 Changes
+            
+            ${{ steps.changelog.outputs.commits }}
+            
+            ---
+            
+            📢 **Telegram:** [@whitebite_devsoft](https://t.me/whitebite_devsoft)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
