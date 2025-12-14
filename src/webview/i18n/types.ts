@@ -32,7 +32,10 @@ export interface Translations {
   badGroup: string;
   expiredGroup: string;
   exhaustedGroup: string;
+  bannedGroup: string;
+  banned: string;
   refreshAll: string;
+  deleteAll: string;
 
   // ============================================
   // Usage card
@@ -122,6 +125,21 @@ export interface Translations {
   spoofingDesc: string;
   language: string;
   languageDesc: string;
+
+  // Spoofing modules
+  spoofAutomation: string;
+  spoofAutomationDesc: string;
+  spoofCanvas: string;
+  spoofCanvasDesc: string;
+  spoofNavigator: string;
+  spoofNavigatorDesc: string;
+  spoofAudio: string;
+  spoofAudioDesc: string;
+  spoofWebrtc: string;
+  spoofWebrtcDesc: string;
+  spoofBehavior: string;
+  spoofBehaviorDesc: string;
+  spoofWarning: string;
 
   // ============================================
   // Kiro Patch
@@ -246,7 +264,6 @@ export interface Translations {
   // ============================================
   // Other
   // ============================================
-  deleteAll: string;
   delete: string;
   checkUpdates: string;
   newVersion: string;
@@ -297,5 +314,7 @@ export interface Translations {
   clipboardError: string;
   deleteProfileConfirm: string;
   deleteBadAccountsConfirm: string;
+  deleteBannedAccountsConfirm: string;
+  bannedAccountsDeleted: string;
   emailsImported: string;
 }
