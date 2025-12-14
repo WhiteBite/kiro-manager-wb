@@ -375,6 +375,7 @@ function renderSettings(
       </div>
       <div class="overlay-footer">
         <span class="overlay-version">v${version}</span>
+        <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
         <button class="btn btn-secondary" onclick="checkUpdates()">${t.checkUpdates}</button>
       </div>
     </div>
@@ -506,10 +507,17 @@ export function generateWebviewHtml(
     <!-- Action Toolbar -->
     <div class="toolbar">
       <div class="toolbar-buttons">
-        <button class="btn btn-primary" onclick="startAutoReg()" ${isRunning ? 'disabled' : ''}>
-          ${isRunning ? '<span class="spinner"></span>' : ICONS.bolt}
-          ${isRunning ? t.running : t.autoReg}
-        </button>
+        ${isRunning ? `
+          <button class="btn btn-primary" disabled>
+            <span class="spinner"></span> ${t.running}
+          </button>
+          <button class="btn btn-secondary btn-icon" onclick="togglePauseAutoReg()" title="Pause">⏸</button>
+          <button class="btn btn-danger btn-icon" onclick="stopAutoReg()" title="Stop">⏹</button>
+        ` : `
+          <button class="btn btn-primary" onclick="startAutoReg()">
+            ${ICONS.bolt} ${t.autoReg}
+          </button>
+        `}
         <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
         <button class="btn btn-secondary btn-icon" onclick="refresh()" title="${t.refreshTip}">${ICONS.refresh}</button>
       </div>

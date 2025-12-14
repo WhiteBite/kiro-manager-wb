@@ -4,6 +4,7 @@
 [![Version](https://img.shields.io/github/v/release/WhiteBite/Kiro-auto-reg-extension?label=version)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
 [![License](https://img.shields.io/github/license/WhiteBite/Kiro-auto-reg-extension)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/WhiteBite/Kiro-auto-reg-extension/total)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
+[![Telegram](https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram)](https://t.me/whitebite_devsoft)
 
 [Русский](README.md) | [English](README.en.md) | 中文
 
@@ -280,3 +281,9 @@ MIT。随便用，但记住免责声明。
 ## 贡献
 
 发现 bug？有想法？开 issue 或 PR。代码有些地方很丑，但能用。
+
+---
+
+## 联系方式
+
+📢 Telegram: [@whitebite_devsoft](https://t.me/whitebite_devsoft)
