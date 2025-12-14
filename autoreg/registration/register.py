@@ -237,10 +237,12 @@ class AWSRegistration:
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
             self.browser.enter_email(email)
+            self.browser.simulate_human_activity()  # Имитация человека
             self.browser.click_continue()
             
             # ШАГ 4: Вводим имя
             print(f"[4/8] Entering name: {name}")
+            self.browser.simulate_human_activity()  # Имитация человека
             self.browser.enter_name(name)
             
             # ШАГ 5: Получаем и вводим код верификации
@@ -252,10 +254,12 @@ class AWSRegistration:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}
             
             print(f"[5/8] Entering code: {code}")
+            self.browser.simulate_human_activity()  # Имитация человека
             self.browser.enter_verification_code(code)
             
             # ШАГ 6: Вводим пароль
             print(f"[6/8] Setting password...")
+            self.browser.simulate_human_activity()  # Имитация человека
             self.browser.enter_password(password)
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"

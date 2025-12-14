@@ -94,6 +94,28 @@ class BehaviorSpoofModule:
         element.click()
         self.human_delay(0.1, 0.3)
     
+    def human_js_click(self, page, element, pre_delay: bool = True):
+        """Кликает через JS с человеческой задержкой и скроллом"""
+        if pre_delay:
+            self.human_delay(0.15, 0.4)
+        
+        try:
+            # Скроллим к элементу плавно
+            page.run_js('''
+                arguments[0].scrollIntoView({behavior: "smooth", block: "center"});
+            ''', element)
+            self.human_delay(0.1, 0.25)
+            
+            # Клик
+            page.run_js('arguments[0].click()', element)
+        except:
+            try:
+                element.click()
+            except:
+                pass
+        
+        self.human_delay(0.1, 0.3)
+    
     def random_mouse_movement(self, browser, count: int = None):
         """
         Случайные движения мыши по странице.
