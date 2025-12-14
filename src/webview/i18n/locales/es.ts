@@ -19,6 +19,9 @@ export const es: Translations = {
   activeGroup: 'Activa',
   readyGroup: 'Listas',
   badGroup: 'Expiradas / Agotadas',
+  expiredGroup: 'Expiradas',
+  exhaustedGroup: 'Agotadas',
+  refreshAll: 'Actualizar todas',
 
   // Usage card
   todaysUsage: 'Uso de hoy',

@@ -275,6 +275,10 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
+    function refreshAllExpired() {
+      vscode.postMessage({ command: 'refreshAllExpired' });
+    }
+    
     function closeDialog() {
       document.getElementById('dialogOverlay').classList.remove('visible');
       pendingAction = null;

@@ -174,18 +174,23 @@ function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnTyp
     `;
   }
 
-  // Group accounts
+  // Group accounts into 4 categories
   const active: AccountInfo[] = [];
   const ready: AccountInfo[] = [];
-  const bad: AccountInfo[] = []; // expired, exhausted, suspended
+  const expired: AccountInfo[] = []; // token expired but can be refreshed
+  const exhausted: AccountInfo[] = []; // usage limit reached or suspended
 
   accounts.forEach(acc => {
     const usage = acc.usage;
     const isSuspended = usage?.suspended === true;
     const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
 
-    if (acc.isExpired || isExhausted || isSuspended) {
-      bad.push(acc);
+    if (isSuspended || isExhausted) {
+      // Exhausted: limit reached or suspended - can only delete
+      exhausted.push(acc);
+    } else if (acc.isExpired) {
+      // Expired: token expired but can be refreshed
+      expired.push(acc);
     } else if (acc.isActive) {
       active.push(acc);
     } else {
@@ -208,16 +213,28 @@ function renderAccountList(accounts: AccountInfo[], lang: Language, t: ReturnTyp
     ready.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
   }
 
-  // Bad accounts (expired/exhausted/suspended)
-  if (bad.length > 0) {
+  // Expired accounts (can be refreshed)
+  if (expired.length > 0) {
     html += `
-      <div class="list-group danger">
-        <span>${t.badGroup}</span>
-        <button class="list-group-action" onclick="confirmDeleteExhausted()">${t.deleteAll}</button>
-        <span class="list-group-count">${bad.length}</span>
+      <div class="list-group warning">
+        <span>${t.expiredGroup}</span>
+        <button class="list-group-action" onclick="refreshAllExpired()">${t.refreshAll}</button>
+        <span class="list-group-count">${expired.length}</span>
       </div>
     `;
-    bad.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    expired.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+  }
+
+  // Exhausted accounts (can only delete)
+  if (exhausted.length > 0) {
+    html += `
+      <div class="list-group danger">
+        <span>${t.exhaustedGroup}</span>
+        <button class="list-group-action" onclick="confirmDeleteExhausted()">${t.deleteAll}</button>
+        <span class="list-group-count">${exhausted.length}</span>
+      </div>
+    `;
+    exhausted.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
   }
 
   return html;
