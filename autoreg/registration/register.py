@@ -264,16 +264,18 @@ class AWSRegistration:
             # ОПТИМИЗИРОВАНО: быстрый polling с минимальными задержками
             start_time = time.time()
             
-            while time.time() - start_time < 10:  # Уменьшено с 15
+            while time.time() - start_time < 45:  # Увеличено - AWS может долго грузить
                 current_url = self.browser.current_url
                 
                 if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
                     print(f"   [OK] Already redirected to callback!")
                     break
                 
-                if 'view.awsapps.com' in current_url:
+                # AWS может редиректить на разные домены
+                if 'view.awsapps.com' in current_url or 'signin.aws' in current_url:
                     elapsed = time.time() - start_time
-                    print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
+                    print(f"   [OK] Redirected to AWS portal in {elapsed:.2f}s")
+                    print(f"   URL: {current_url[:80]}...")
                     
                     # Сразу кликаем Allow access
                     if not self.browser.click_allow_access():

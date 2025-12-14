@@ -1272,6 +1272,7 @@ class BrowserAutomation:
     def click_allow_access(self) -> bool:
         """Нажимает Allow access. ОПТИМИЗИРОВАНО: быстрый поиск и клик."""
         print("[OK] Looking for Allow access button...")
+        print(f"   Current URL: {self.page.url[:80]}...")
         
         # Скрываем cookie через CSS (мгновенно, без проверок)
         self._hide_cookie_banner()
@@ -1286,10 +1287,17 @@ class BrowserAutomation:
         fast_selectors = [
             '@data-testid=allow-access-button',
             'css:button[data-testid="allow-access-button"]',
+            'css:button[type="submit"]',  # Часто кнопка submit
         ]
         fallback_selectors = [
             'text=Allow access',
+            'text=Allow',
+            'text=Authorize',
+            'text=Continue',
             'xpath://button[contains(text(), "Allow")]',
+            'xpath://button[contains(text(), "Authorize")]',
+            'css:button.awsui-button-variant-primary',  # AWS UI primary button
+            'css:button[class*="primary"]',
         ]
         
         # Фаза 1: Быстрый поиск по data-testid (0.5 сек макс)
@@ -1304,7 +1312,7 @@ class BrowserAutomation:
         
         # Фаза 2: Fallback селекторы если нужно
         if not btn:
-            for _ in range(8):  # ~2 сек максимум
+            for _ in range(20):  # ~5 сек максимум
                 for selector in fallback_selectors:
                     try:
                         btn = self.page.ele(selector, timeout=0.15)
