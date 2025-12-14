@@ -171,7 +171,8 @@ export const zh: Translations = {
   strategyPoolHint: '添加要按顺序使用的邮箱地址。每个邮箱 = 1个账户。',
   strategyPoolAdd: '添加邮箱...',
   strategyPoolFromFile: '从文件',
-  strategyPoolPaste: '粘贴',
+  strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: '示例',
 
   // Strategy Features

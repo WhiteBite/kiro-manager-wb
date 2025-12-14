@@ -172,6 +172,7 @@ export const en: Translations = {
   strategyPoolAdd: 'email:password or email...',
   strategyPoolFromFile: 'From file',
   strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: 'Example',
 
   // Strategy Features

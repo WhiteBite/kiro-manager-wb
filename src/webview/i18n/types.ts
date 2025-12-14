@@ -329,4 +329,5 @@ export interface Translations {
   importAccountsDesc: string;
   exportSelected: string;
   exportAll: string;
+  poolEmpty: string;
 }

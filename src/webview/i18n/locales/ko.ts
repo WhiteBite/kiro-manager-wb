@@ -171,7 +171,8 @@ export const ko: Translations = {
   strategyPoolHint: '순서대로 사용할 이메일 주소를 추가하세요. 각 이메일 = 1개 계정.',
   strategyPoolAdd: '이메일 추가...',
   strategyPoolFromFile: '파일에서',
-  strategyPoolPaste: '붙여넣기',
+  strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: '예시',
 
   // Strategy Features

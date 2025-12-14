@@ -171,7 +171,8 @@ export const hi: Translations = {
   strategyPoolHint: 'क्रम में उपयोग करने के लिए ईमेल पते जोड़ें। प्रत्येक ईमेल = 1 खाता।',
   strategyPoolAdd: 'ईमेल जोड़ें...',
   strategyPoolFromFile: 'फ़ाइल से',
-  strategyPoolPaste: 'चिपकाएं',
+  strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: 'उदाहरण',
 
   // Strategy Features
