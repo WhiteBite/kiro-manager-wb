@@ -171,7 +171,8 @@ export const de: Translations = {
   strategyPoolHint: 'Fügen Sie E-Mail-Adressen hinzu, die der Reihe nach verwendet werden. Jede E-Mail = 1 Konto.',
   strategyPoolAdd: 'E-Mail hinzufügen...',
   strategyPoolFromFile: 'Aus Datei',
-  strategyPoolPaste: 'Einfügen',
+  strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: 'Beispiel',
 
   // Strategy Features

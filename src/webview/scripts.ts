@@ -572,8 +572,18 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       });
       const catchAllConfig = document.getElementById('catchAllConfig');
       const poolConfig = document.getElementById('poolConfig');
+      const imapEmailGroup = document.getElementById('imapEmailGroup');
+      const imapPasswordGroup = document.getElementById('imapPasswordGroup');
+      const testConnectionBtn = document.getElementById('testConnectionBtn');
+      
       if (catchAllConfig) catchAllConfig.style.display = strategy === 'catch_all' ? 'block' : 'none';
       if (poolConfig) poolConfig.style.display = strategy === 'pool' ? 'block' : 'none';
+      
+      // For Pool strategy - hide email/password fields (they come from pool list)
+      const isPool = strategy === 'pool';
+      if (imapEmailGroup) imapEmailGroup.style.display = isPool ? 'none' : 'block';
+      if (imapPasswordGroup) imapPasswordGroup.style.display = isPool ? 'none' : 'block';
+      if (testConnectionBtn) testConnectionBtn.style.display = isPool ? 'none' : 'block';
     }
     
     function onEmailInput(email) {
@@ -698,20 +708,50 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         });
       }
       
-      if (!server || !user || !password) {
-        showToast(T.fillAllFields, 'error');
-        return;
-      }
+      // For Pool strategy - email/password come from pool list, not from IMAP fields
+      const isPool = strategyType === 'pool';
       
-      vscode.postMessage({
-        command: editingProfileId ? 'updateProfile' : 'createProfile',
-        profile: {
-          id: editingProfileId,
-          name,
-          imap: { server, user, password, port },
-          strategy
+      if (isPool) {
+        // Validate pool has entries
+        if (!currentPoolEmails || currentPoolEmails.length === 0) {
+          showToast(T.poolEmpty || 'Add at least one email to pool', 'error');
+          return;
         }
-      });
+        if (!server) {
+          showToast(T.fillAllFields, 'error');
+          return;
+        }
+        // Use first pool email as fallback IMAP credentials
+        const firstEntry = currentPoolEmails[0];
+        const firstEmail = firstEntry.email || firstEntry;
+        const firstPassword = firstEntry.password || '';
+        
+        vscode.postMessage({
+          command: editingProfileId ? 'updateProfile' : 'createProfile',
+          profile: {
+            id: editingProfileId,
+            name,
+            imap: { server, user: firstEmail, password: firstPassword, port },
+            strategy
+          }
+        });
+      } else {
+        // For other strategies - require all IMAP fields
+        if (!server || !user || !password) {
+          showToast(T.fillAllFields, 'error');
+          return;
+        }
+        
+        vscode.postMessage({
+          command: editingProfileId ? 'updateProfile' : 'createProfile',
+          profile: {
+            id: editingProfileId,
+            name,
+            imap: { server, user, password, port },
+            strategy
+          }
+        });
+      }
       
       closeProfileEditor();
     }

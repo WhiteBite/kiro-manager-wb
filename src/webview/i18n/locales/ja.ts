@@ -171,7 +171,8 @@ export const ja: Translations = {
   strategyPoolHint: '順番に使用するメールアドレスを追加。各メール = 1アカウント。',
   strategyPoolAdd: 'メールを追加...',
   strategyPoolFromFile: 'ファイルから',
-  strategyPoolPaste: '貼り付け',
+  strategyPoolPaste: 'Paste',
+  poolEmpty: 'Add at least one email to pool',
   example: '例',
 
   // Strategy Features

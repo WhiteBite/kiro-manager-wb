@@ -6,11 +6,11 @@ import { ICONS } from '../icons';
 import { Translations } from '../i18n/types';
 
 export interface ProfileEditorProps {
-    t: Translations;
+  t: Translations;
 }
 
 function renderProfilesPanel(t: Translations): string {
-    return `
+  return `
     <div class="profiles-panel" id="profilesPanel">
       <div class="profiles-panel-header">
         <button class="overlay-back" onclick="closeProfilesPanel()">← ${t.back}</button>
@@ -30,7 +30,7 @@ function renderProfilesPanel(t: Translations): string {
 }
 
 function renderStrategySelector(t: Translations): string {
-    return `
+  return `
     <div class="strategy-selector">
       <div class="strategy-option selected" data-strategy="single" onclick="selectStrategy('single')">
         <div class="strategy-icon">📧</div>
@@ -95,7 +95,7 @@ function renderStrategySelector(t: Translations): string {
 }
 
 export function renderProfileEditor({ t }: ProfileEditorProps): string {
-    return `
+  return `
     ${renderProfilesPanel(t)}
     
     <div class="profile-editor" id="profileEditor">
@@ -109,9 +109,9 @@ export function renderProfileEditor({ t }: ProfileEditorProps): string {
           <input type="text" class="form-input" id="profileName" placeholder="${t.profileNamePlaceholder}">
         </div>
         
-        <div class="form-section">
+        <div class="form-section" id="imapSection">
           <div class="form-section-title">IMAP</div>
-          <div class="form-group">
+          <div class="form-group" id="imapEmailGroup">
             <label class="form-label">Email</label>
             <input type="email" class="form-input" id="imapUser" placeholder="your@email.com" oninput="onEmailInput(this.value)">
             <div class="form-hint" id="providerHint"></div>
@@ -126,14 +126,14 @@ export function renderProfileEditor({ t }: ProfileEditorProps): string {
               <input type="number" class="form-input" id="imapPort" value="993">
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="imapPasswordGroup">
             <label class="form-label">${t.password}</label>
             <div class="password-input-wrapper">
               <input type="password" class="form-input" id="imapPassword" placeholder="••••••••">
               <button class="password-toggle" onclick="togglePasswordVisibility('imapPassword')">${ICONS.eye || '👁'}</button>
             </div>
           </div>
-          <button class="btn btn-secondary" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
+          <button class="btn btn-secondary" id="testConnectionBtn" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
         </div>
         
         <div class="form-section">

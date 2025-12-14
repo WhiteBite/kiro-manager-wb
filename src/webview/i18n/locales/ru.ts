@@ -172,6 +172,7 @@ export const ru: Translations = {
   strategyPoolAdd: 'email:password или email...',
   strategyPoolFromFile: 'Из файла',
   strategyPoolPaste: 'Вставить',
+  poolEmpty: 'Добавьте хотя бы один email в пул',
   example: 'Пример',
 
   // Strategy Features
