@@ -27,7 +27,9 @@ export interface AccountUsage {
   daysRemaining: number;
   loading?: boolean;
   error?: string;
-  suspended?: boolean; // Account is suspended by AWS
+  suspended?: boolean; // Account is suspended by AWS (usage limit)
+  isBanned?: boolean;  // Account is banned/blocked (auth error)
+  banReason?: string;  // Reason for ban if known
 }
 
 export interface AccountInfo {
@@ -36,6 +38,7 @@ export interface AccountInfo {
   tokenData: TokenData;
   isActive: boolean;
   isExpired: boolean;
+  needsRefresh?: boolean; // Token expires within 10 min (like Kiro's proactive refresh)
   expiresIn: string;
   usageCount: number;
   tokenLimit: number;
@@ -76,10 +79,10 @@ export interface EmailPoolItem {
  */
 export interface EmailStrategy {
   type: EmailStrategyType;
-  
+
   // For 'catch_all' strategy
   domain?: string;
-  
+
   // For 'pool' strategy  
   emails?: EmailPoolItem[];
 }
@@ -105,7 +108,7 @@ export interface ImapProfile {
   strategy: EmailStrategy;
   status: 'active' | 'paused' | 'exhausted' | 'error';
   isDefault?: boolean;
-  
+
   // Statistics
   stats: {
     registered: number;
@@ -113,14 +116,14 @@ export interface ImapProfile {
     lastUsed?: string;
     lastError?: string;
   };
-  
+
   // Provider detection (auto-filled)
   provider?: {
     name: string;           // "Gmail", "Yandex", etc.
     supportsAlias: boolean;
     catchAllPossible: boolean;
   };
-  
+
   createdAt: string;
   updatedAt: string;
 }

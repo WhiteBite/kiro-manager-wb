@@ -8,4 +8,7 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts'],
   coverageDirectory: 'coverage',
   verbose: true,
+  moduleNameMapper: {
+    '^vscode$': '<rootDir>/tests/__mocks__/vscode.ts',
+  },
 };
