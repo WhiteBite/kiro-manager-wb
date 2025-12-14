@@ -24,6 +24,7 @@ class KiroStatus:
     installed: bool = False
     running: bool = False
     data_dir: Optional[Path] = None
+    install_path: Optional[Path] = None
     version: Optional[str] = None
     current_account: Optional[str] = None
     token_valid: bool = False
@@ -41,7 +42,8 @@ class KiroService:
         """Получить статус Kiro IDE"""
         status = KiroStatus(
             installed=self.paths.is_kiro_installed(),
-            data_dir=self.paths.kiro_data_dir
+            data_dir=self.paths.kiro_data_dir,
+            install_path=self._get_install_path()
         )
         
         if status.installed:
@@ -145,6 +147,30 @@ class KiroService:
                     return data.get('version')
                 except:
                     pass
+        return None
+    
+    def _get_install_path(self) -> Optional[Path]:
+        """Получить путь установки Kiro"""
+        if self.os_type == 'windows':
+            possible_paths = [
+                Path.home() / 'AppData' / 'Local' / 'Programs' / 'Kiro',
+                Path('C:/Program Files/Kiro'),
+                Path('C:/Program Files (x86)/Kiro'),
+            ]
+        elif self.os_type == 'darwin':
+            possible_paths = [
+                Path('/Applications/Kiro.app'),
+                Path.home() / 'Applications' / 'Kiro.app',
+            ]
+        else:
+            possible_paths = [
+                Path('/usr/share/kiro'),
+                Path.home() / '.local' / 'share' / 'kiro',
+            ]
+        
+        for path in possible_paths:
+            if path.exists():
+                return path
         return None
     
     # =========================================================================

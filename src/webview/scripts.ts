@@ -587,10 +587,27 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     
     function addEmailToPool() {
       const input = document.getElementById('newPoolEmail');
-      const email = input?.value?.trim();
-      if (!email || !email.includes('@')) return;
-      if (!currentPoolEmails.includes(email.toLowerCase())) {
-        currentPoolEmails.push(email);
+      const value = input?.value?.trim();
+      if (!value || !value.includes('@')) return;
+      
+      // Parse email:password format
+      let email, password;
+      if (value.includes(':') && value.indexOf(':') > value.indexOf('@')) {
+        const colonPos = value.lastIndexOf(':');
+        const atPos = value.indexOf('@');
+        if (colonPos > atPos) {
+          email = value.substring(0, colonPos);
+          password = value.substring(colonPos + 1);
+        } else {
+          email = value;
+        }
+      } else {
+        email = value;
+      }
+      
+      const existing = currentPoolEmails.find(e => (e.email || e).toLowerCase() === email.toLowerCase());
+      if (!existing) {
+        currentPoolEmails.push(password ? { email, password } : { email });
         renderPoolList();
       }
       if (input) input.value = '';
@@ -604,13 +621,15 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     function renderPoolList() {
       const list = document.getElementById('poolList');
       if (!list) return;
-      list.innerHTML = currentPoolEmails.map((email, i) => 
-        '<div class="pool-item pending" data-index="' + i + '">' +
+      list.innerHTML = currentPoolEmails.map((item, i) => {
+        const email = item.email || item;
+        const hasPassword = item.password ? ' 🔑' : '';
+        return '<div class="pool-item pending" data-index="' + i + '">' +
           '<span class="pool-status">⬜</span>' +
-          '<span class="pool-email">' + email + '</span>' +
+          '<span class="pool-email">' + email + hasPassword + '</span>' +
           '<button class="pool-remove" onclick="removeEmailFromPool(' + i + ')">✕</button>' +
-        '</div>'
-      ).join('');
+        '</div>';
+      }).join('');
     }
     
     function importEmailsFromFile() {
@@ -619,11 +638,28 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     
     function pasteEmails() {
       navigator.clipboard.readText().then(text => {
-        const emails = text.split(/[\\n,;\\s]+/).filter(e => e.includes('@'));
-        emails.forEach(email => {
-          const e = email.trim().toLowerCase();
-          if (e && !currentPoolEmails.includes(e)) {
-            currentPoolEmails.push(email.trim());
+        // Support formats: email, email:password, one per line or separated by newlines
+        const lines = text.split(/[\\n]+/).filter(e => e.includes('@'));
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          // Parse email:password format
+          let email, password;
+          if (trimmed.includes(':') && trimmed.indexOf(':') > trimmed.indexOf('@')) {
+            const colonPos = trimmed.lastIndexOf(':');
+            const atPos = trimmed.indexOf('@');
+            if (colonPos > atPos) {
+              email = trimmed.substring(0, colonPos);
+              password = trimmed.substring(colonPos + 1);
+            } else {
+              email = trimmed;
+            }
+          } else {
+            email = trimmed;
+          }
+          
+          const existing = currentPoolEmails.find(e => e.email?.toLowerCase() === email.toLowerCase() || e === email.toLowerCase());
+          if (!existing) {
+            currentPoolEmails.push(password ? { email, password } : { email });
           }
         });
         renderPoolList();
@@ -646,7 +682,12 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       if (strategyType === 'catch_all') {
         strategy.domain = document.getElementById('catchAllDomain')?.value?.trim();
       } else if (strategyType === 'pool') {
-        strategy.emails = currentPoolEmails.map(email => ({ email, status: 'pending' }));
+        // Support both old format (string) and new format (object with email/password)
+        strategy.emails = currentPoolEmails.map(item => {
+          const email = item.email || item;
+          const pwd = item.password;
+          return { email, password: pwd, status: 'pending' };
+        });
       }
       
       if (!server || !user || !password) {

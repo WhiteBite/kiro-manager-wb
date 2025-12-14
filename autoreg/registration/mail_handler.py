@@ -89,6 +89,25 @@ class IMAPMailHandler:
                 self.imap.logout()
             except:
                 pass
+            self.imap = None
+    
+    def reconnect(self, new_email: str = None, new_password: str = None) -> bool:
+        """
+        Переподключение к IMAP с новыми credentials.
+        Используется для pool стратегии где каждый email имеет свой пароль.
+        
+        Args:
+            new_email: Новый email для логина (опционально)
+            new_password: Новый пароль (опционально)
+        """
+        self.disconnect()
+        
+        if new_email:
+            self.imap_email = new_email
+        if new_password:
+            self.imap_password = new_password
+        
+        return self.connect()
     
     def get_verification_code(self, target_email: str, timeout: int = 300) -> Optional[str]:
         """

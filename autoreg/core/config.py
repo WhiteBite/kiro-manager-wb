@@ -9,13 +9,13 @@ from typing import Any, Optional
 from dataclasses import dataclass, field, asdict
 from dotenv import load_dotenv
 
-# Load .env from autoreg directory
+# Load .env from autoreg directory (without override - VS Code extension env vars take priority)
 _autoreg_dir = Path(__file__).parent.parent
 _env_file = _autoreg_dir / '.env'
 if _env_file.exists():
-    load_dotenv(_env_file, override=True)
+    load_dotenv(_env_file, override=False)
 else:
-    load_dotenv(override=True)  # Fallback to current directory
+    load_dotenv(override=False)  # Fallback to current directory
 
 
 @dataclass
@@ -31,7 +31,7 @@ class BrowserConfig:
 @dataclass
 class RegistrationConfig:
     """Настройки регистрации"""
-    email_domain: str = 'example.com'
+    email_domain: str = ''
     email_prefix: str = 'kiro_auto'
     default_name: str = 'Kiro User'
     auto_inject_to_kiro: bool = True

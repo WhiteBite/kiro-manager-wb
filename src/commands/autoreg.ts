@@ -132,8 +132,8 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const imapServer = profileEnv.IMAP_SERVER || config.get<string>('imap.server', '');
   const imapUser = profileEnv.IMAP_USER || config.get<string>('imap.user', '');
   const imapPassword = profileEnv.IMAP_PASSWORD || config.get<string>('imap.password', '');
-  const emailDomain = profileEnv.EMAIL_DOMAIN || config.get<string>('autoreg.emailDomain', 'example.com');
-  const emailStrategy = profileEnv.EMAIL_STRATEGY || 'catch_all';
+  const emailDomain = profileEnv.EMAIL_DOMAIN || config.get<string>('autoreg.emailDomain', '');
+  const emailStrategy = profileEnv.EMAIL_STRATEGY || 'single';
   const emailPool = profileEnv.EMAIL_POOL || '';
   const profileId = profileEnv.PROFILE_ID || '';
 

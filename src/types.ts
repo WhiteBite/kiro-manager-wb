@@ -68,6 +68,7 @@ export type EmailStrategyType = 'single' | 'plus_alias' | 'catch_all' | 'pool';
  */
 export interface EmailPoolItem {
   email: string;
+  password?: string; // IMAP password for this email (for different accounts like GMX)
   status: 'pending' | 'used' | 'failed';
   usedAt?: string;
   error?: string;

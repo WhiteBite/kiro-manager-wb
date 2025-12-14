@@ -39,6 +39,7 @@ class EmailResult:
     registration_email: str  # Email to use for AWS registration
     imap_lookup_email: str   # Email to search in IMAP (may differ for aliases)
     display_name: str        # Name to use during registration
+    imap_password: Optional[str] = None  # IMAP password (for pool strategy with different accounts)
     
     
 @dataclass
@@ -167,22 +168,42 @@ class EmailGenerator:
         )
     
     def _generate_from_pool(self) -> EmailResult:
-        """Pool mode - use emails from provided list"""
+        """Pool mode - use emails from provided list
+        
+        Supports formats:
+        - email@domain.com (uses main IMAP password)
+        - email@domain.com:password (uses specific password for this email)
+        """
         if not self.config.email_pool:
             raise ValueError("Email pool is empty")
         
         if self._pool_index >= len(self.config.email_pool):
             raise ValueError("Email pool exhausted - no more emails available")
         
-        email = self.config.email_pool[self._pool_index]
+        entry = self.config.email_pool[self._pool_index]
         self._pool_index += 1
+        
+        # Parse email:password format
+        imap_password = None
+        if ':' in entry and '@' in entry:
+            # Check if it's email:password format (password after last colon after @)
+            at_pos = entry.index('@')
+            colon_pos = entry.rfind(':')
+            if colon_pos > at_pos:
+                email = entry[:colon_pos]
+                imap_password = entry[colon_pos + 1:]
+            else:
+                email = entry
+        else:
+            email = entry
         
         name = self._generate_name_from_email(email)
         
         return EmailResult(
             registration_email=email,
             imap_lookup_email=email,
-            display_name=name
+            display_name=name,
+            imap_password=imap_password
         )
     
     def _generate_random_name(self) -> str:
