@@ -358,6 +358,41 @@ export const layout = `
     font-size: 10px;
   }
 
+  /* === Import/Export Section === */
+  .import-export-section {
+    margin-top: 20px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(63, 182, 139, 0.08) 0%, rgba(63, 182, 139, 0.02) 100%);
+    border: 1px solid rgba(63, 182, 139, 0.25);
+    border-radius: var(--radius-md);
+  }
+  .import-export-section .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .import-export-section .section-icon {
+    font-size: 14px;
+  }
+  .import-export-section .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .import-export-section .section-desc {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .import-export-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .import-export-actions .btn {
+    flex: 1;
+  }
+
   /* === Danger Zone Section === */
   .danger-zone-section {
     margin-top: 24px;

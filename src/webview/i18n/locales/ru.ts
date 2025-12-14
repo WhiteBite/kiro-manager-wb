@@ -264,4 +264,12 @@ export const ru: Translations = {
   deleteBannedAccountsConfirm: 'Удалить все забаненные аккаунты?',
   bannedAccountsDeleted: 'Забаненные аккаунты удалены',
   emailsImported: 'Импортировано {count} email',
+
+  // Import/Export
+  exportAccounts: 'Экспорт аккаунтов',
+  exportAccountsDesc: 'Экспорт аккаунтов с токенами для передачи',
+  importAccounts: 'Импорт аккаунтов',
+  importAccountsDesc: 'Импорт аккаунтов из файла экспорта',
+  exportSelected: 'Экспорт выбранных',
+  exportAll: 'Экспорт всех',
 };

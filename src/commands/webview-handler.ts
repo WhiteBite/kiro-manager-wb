@@ -72,7 +72,12 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'export':
+    case 'exportAccounts':
       await provider.exportAccounts();
+      break;
+
+    case 'importAccounts':
+      await provider.importAccounts();
       break;
 
     case 'copyPassword':

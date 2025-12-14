@@ -263,5 +263,13 @@ export const hi: Translations = {
   deleteBadAccountsConfirm: 'सभी समाप्त/खत्म खातों को हटाएं?',
   deleteBannedAccountsConfirm: 'सभी प्रतिबंधित खातों को हटाएं?',
   bannedAccountsDeleted: 'प्रतिबंधित खाते हटा दिए गए',
-  emailsImported: '{count} ईमेल आयात किए गए',
+  emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };

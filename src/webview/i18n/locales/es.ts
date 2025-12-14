@@ -263,5 +263,13 @@ export const es: Translations = {
   deleteBadAccountsConfirm: '¿Eliminar todas las cuentas expiradas/agotadas?',
   deleteBannedAccountsConfirm: '¿Eliminar todas las cuentas baneadas?',
   bannedAccountsDeleted: 'Cuentas baneadas eliminadas',
-  emailsImported: '{count} emails importados',
+  emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };

@@ -264,4 +264,12 @@ export const en: Translations = {
   deleteBannedAccountsConfirm: 'Delete all banned accounts?',
   bannedAccountsDeleted: 'Banned accounts deleted',
   emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens for transfer',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from export file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };

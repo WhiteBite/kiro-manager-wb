@@ -263,5 +263,13 @@ export const ko: Translations = {
   deleteBadAccountsConfirm: '모든 만료/소진된 계정을 삭제하시겠습니까?',
   deleteBannedAccountsConfirm: '차단된 계정을 모두 삭제하시겠습니까?',
   bannedAccountsDeleted: '차단된 계정이 삭제되었습니다',
-  emailsImported: '{count}개 이메일 가져옴',
+  emailsImported: 'Imported {count} emails',
+
+  // Import/Export
+  exportAccounts: 'Export Accounts',
+  exportAccountsDesc: 'Export accounts with tokens',
+  importAccounts: 'Import Accounts',
+  importAccountsDesc: 'Import accounts from file',
+  exportSelected: 'Export Selected',
+  exportAll: 'Export All',
 };

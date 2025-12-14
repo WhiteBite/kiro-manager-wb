@@ -85,6 +85,26 @@ function renderSpoofingSection(settings: AutoRegSettings | undefined, t: Transla
   `;
 }
 
+function renderImportExportSection(t: Translations): string {
+  return `
+    <div class="import-export-section">
+      <div class="section-header">
+        <span class="section-icon">📦</span>
+        <span class="section-title">${t.exportAccounts}</span>
+      </div>
+      <div class="section-desc">${t.exportAccountsDesc}</div>
+      <div class="import-export-actions">
+        <button class="btn btn-primary" onclick="exportAllAccounts()">
+          📤 ${t.exportAll}
+        </button>
+        <button class="btn btn-secondary" onclick="importAccounts()">
+          📥 ${t.importAccounts}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function renderDangerZone(t: Translations): string {
   return `
     <div class="danger-zone-section">
@@ -217,6 +237,7 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version }
         </div>
 
         ${renderSpoofingSection(settings, t)}
+        ${renderImportExportSection(t)}
         ${renderDangerZone(t)}
       </div>
       <div class="overlay-footer">
