@@ -114,6 +114,15 @@ export const layout = `
     letter-spacing: 0.5px;
   }
   .list-group.danger { color: var(--danger); }
+  .list-group.warning { color: var(--warning); }
+  .list-group.warning .list-group-action {
+    background: rgba(217, 163, 52, 0.15);
+    color: var(--warning);
+  }
+  .list-group.warning .list-group-action:hover {
+    background: var(--warning);
+    color: #000;
+  }
   .list-group-count {
     padding: 2px 6px;
     background: var(--bg-elevated);

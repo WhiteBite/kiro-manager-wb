@@ -19,6 +19,9 @@ export const ja: Translations = {
   activeGroup: 'アクティブ',
   readyGroup: '準備完了',
   badGroup: '期限切れ / 使い切り',
+  expiredGroup: '期限切れ',
+  exhaustedGroup: '使い切り',
+  refreshAll: 'すべて更新',
 
   // Usage card
   todaysUsage: '今日の使用量',

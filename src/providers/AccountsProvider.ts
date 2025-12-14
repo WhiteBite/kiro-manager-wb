@@ -270,6 +270,62 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this.refresh();
   }
 
+  // Refresh all expired tokens
+  async refreshAllExpiredTokens() {
+    // Find expired accounts (token expired but not exhausted/suspended)
+    const expiredAccounts = this._accounts.filter(acc => {
+      const usage = acc.usage;
+      const isSuspended = usage?.suspended === true;
+      const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
+      // Only expired tokens, not exhausted or suspended
+      return acc.isExpired && !isSuspended && !isExhausted;
+    });
+
+    if (expiredAccounts.length === 0) {
+      vscode.window.showInformationMessage('No expired tokens to refresh');
+      return;
+    }
+
+    this.addLog(`🔄 Refreshing ${expiredAccounts.length} expired token(s)...`);
+
+    let refreshed = 0;
+    let failed = 0;
+
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Refreshing ${expiredAccounts.length} expired tokens...`,
+      cancellable: false
+    }, async (progress) => {
+      for (let i = 0; i < expiredAccounts.length; i++) {
+        const acc = expiredAccounts[i];
+        const accountName = acc.tokenData.accountName || acc.filename;
+        
+        progress.report({ 
+          message: `${i + 1}/${expiredAccounts.length}: ${accountName}`,
+          increment: (100 / expiredAccounts.length)
+        });
+
+        try {
+          const success = await refreshAccountToken(acc.filename);
+          if (success) {
+            refreshed++;
+            this.addLog(`✓ Refreshed: ${accountName}`);
+          } else {
+            failed++;
+            this.addLog(`✗ Failed to refresh: ${accountName}`);
+          }
+        } catch (err) {
+          failed++;
+          this.addLog(`✗ Error refreshing ${accountName}: ${err}`);
+        }
+      }
+    });
+
+    const message = `Refreshed ${refreshed} token(s)` + (failed > 0 ? `, ${failed} failed` : '');
+    vscode.window.showInformationMessage(message);
+    this.refresh();
+  }
+
   // Webview provider implementation
   resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
