@@ -93,7 +93,7 @@ jobs:
             name: macos-x64
             ext: ""
             asset_name: kiro-manager-macos-x64
-          - os: macos-latest
+          - os: macos-14
             name: macos-arm64
             ext: ""
             asset_name: kiro-manager-macos-arm64
@@ -148,7 +148,7 @@ jobs:
   release:
     needs: [build-vsix, build-standalone]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.build-vsix.result == 'success'
     permissions:
       contents: write
 
@@ -163,7 +163,7 @@ jobs:
         run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
       - name: List artifacts
-        run: find artifacts -type f
+        run: find artifacts -type f || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -171,10 +171,11 @@ jobs:
           files: |
             artifacts/vsix/*.vsix
             artifacts/kiro-manager-windows/*.exe
-            artifacts/kiro-manager-linux/kiro-manager-linux-${{ steps.version.outputs.version }}
-            artifacts/kiro-manager-macos-x64/kiro-manager-macos-x64-${{ steps.version.outputs.version }}
-            artifacts/kiro-manager-macos-arm64/kiro-manager-macos-arm64-${{ steps.version.outputs.version }}
+            artifacts/kiro-manager-linux/*
+            artifacts/kiro-manager-macos-x64/*
+            artifacts/kiro-manager-macos-arm64/*
           generate_release_notes: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
