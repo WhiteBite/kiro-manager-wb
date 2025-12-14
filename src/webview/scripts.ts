@@ -647,7 +647,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     function pasteEmails() {
       navigator.clipboard.readText().then(text => {
         // Support formats: email, email:password, one per line or separated by newlines
-        const lines = text.split(/[\\n]+/).filter(e => e.includes('@'));
+        const lines = text.split(/[\r\n]+/).filter(e => e.includes('@'));
         lines.forEach(line => {
           const trimmed = line.trim();
           // Parse email:password format
