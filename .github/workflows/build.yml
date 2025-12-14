@@ -189,10 +189,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/vsix/*.vsix
-            artifacts/kiro-manager-windows/*.exe
-            artifacts/kiro-manager-linux/*
-            artifacts/kiro-manager-macos-arm64/*
+            artifacts/**/*.vsix
+            artifacts/**/*.exe
+            artifacts/**/kiro-manager-linux-*
+            artifacts/**/kiro-manager-macos-*
           fail_on_unmatched_files: false
           body: |
             ## ⚡ Kiro Account Switcher ${{ steps.version.outputs.version }}
