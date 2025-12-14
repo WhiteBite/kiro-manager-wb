@@ -36,6 +36,7 @@ export const ja: Translations = {
   export: 'エクスポート',
   exportTip: 'すべてのアカウントをJSONファイルに保存',
   running: '実行中...',
+  stop: '停止',
 
   // Filters
   all: 'すべて',

@@ -36,6 +36,7 @@ export const ru: Translations = {
   export: 'Экспорт',
   exportTip: 'Сохранить все аккаунты в JSON файл',
   running: 'Выполняется...',
+  stop: 'Стоп',
 
   // Filters
   all: 'Все',

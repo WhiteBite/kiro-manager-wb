@@ -36,6 +36,7 @@ export const ko: Translations = {
   export: '내보내기',
   exportTip: '모든 계정을 JSON 파일로 저장',
   running: '실행 중...',
+  stop: '중지',
 
   // Filters
   all: '전체',

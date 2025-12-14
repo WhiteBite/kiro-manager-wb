@@ -36,6 +36,7 @@ export const hi: Translations = {
   export: 'निर्यात',
   exportTip: 'सभी खातों को JSON फ़ाइल में सहेजें',
   running: 'चल रहा है...',
+  stop: 'रोकें',
 
   // Filters
   all: 'सभी',
