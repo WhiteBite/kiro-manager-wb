@@ -487,20 +487,7 @@ class BrowserAutomation:
             element: Элемент для клика
             with_delay: Добавить задержку до/после клика
         """
-        if with_delay:
-            self._behavior.human_delay(0.1, 0.3)
-        
-        try:
-            # Быстрый клик через JS
-            self.page.run_js('arguments[0].click()', element)
-        except:
-            try:
-                element.click()
-            except:
-                pass
-        
-        if with_delay:
-            self._behavior.human_delay(0.05, 0.15)
+        self._behavior.human_js_click(self.page, element, pre_delay=with_delay)
     
     def simulate_human_activity(self):
         """
@@ -718,15 +705,14 @@ class BrowserAutomation:
         
         # Вводим пароль
         print(f"   Entering password...")
-        pwd_field.click()
-        time.sleep(0.2)
+        self._behavior.human_click(pwd_field)
         self.page.run_js('arguments[0].focus()', pwd_field)
-        time.sleep(0.1)
+        self._behavior.human_delay(0.1, 0.2)
         
-        # Вводим через CDP
+        # Вводим через CDP с человеческими задержками
         for char in password:
             self.page.run_cdp('Input.insertText', text=char)
-            time.sleep(random.uniform(0.03, 0.08))
+            self._behavior.human_delay(0.03, 0.1)
         
         time.sleep(0.5)
         
@@ -1030,7 +1016,7 @@ class BrowserAutomation:
                 try:
                     btn = self.page.ele(selector, timeout=0.5)
                     if btn:
-                        self.page.run_js('arguments[0].click()', btn)
+                        self._behavior.human_js_click(self.page, btn, pre_delay=False)
                         clicked = True
                         print(f"   [OK] Clicked: {selector}")
                         break
@@ -1038,7 +1024,7 @@ class BrowserAutomation:
                     pass
             if clicked:
                 break
-            time.sleep(0.2)
+            self._behavior.human_delay(0.15, 0.3)
         
         if not clicked:
             print("   [!] Verify button not found, trying Enter key...")
@@ -1199,15 +1185,15 @@ class BrowserAutomation:
                     break
             
             if email_field:
-                email_field.click()
+                self._behavior.human_click(email_field)
                 email_field.fill(email)
                 print(f"   [OK] Email entered")
             
             # Нажимаем Continue если есть
             continue_btn = self.page.query_selector('button:has-text("Continue")')
             if continue_btn:
-                continue_btn.click()
-                time.sleep(2)
+                self._behavior.human_click(continue_btn)
+                self._behavior.human_delay(1.5, 2.5)
             
             # Вводим пароль
             password_selectors = [
@@ -1222,15 +1208,15 @@ class BrowserAutomation:
                     break
             
             if password_field:
-                password_field.click()
+                self._behavior.human_click(password_field)
                 password_field.fill(password)
                 print(f"   [OK] Password entered")
             
             # Нажимаем Sign in / Continue
             sign_in_btn = self.page.query_selector('button:has-text("Sign in"), button:has-text("Continue")')
             if sign_in_btn:
-                sign_in_btn.click()
-                time.sleep(3)
+                self._behavior.human_click(sign_in_btn)
+                self._behavior.human_delay(2.0, 3.5)
                 print(f"   [OK] Logged in")
                 return True
             
@@ -1256,15 +1242,11 @@ class BrowserAutomation:
                     btn = self.page.ele(selector, timeout=1)
                     if btn:
                         print(f"   [OK] Found Confirm button (attempt {attempt + 1})")
-                        try:
-                            btn.click()
-                        except:
-                            self.page.run_js('arguments[0].click()', btn)
-                        time.sleep(1)
+                        self._behavior.human_js_click(self.page, btn)
                         return True
                 except:
                     pass
-            time.sleep(0.5)
+            self._behavior.human_delay(0.4, 0.7)
         
         print("   [!] Confirm and continue button not found")
         return False
@@ -1330,36 +1312,27 @@ class BrowserAutomation:
             self.screenshot("error_no_allow_button")
             return False
         
-        # ОПТИМИЗАЦИЯ: Один быстрый клик с проверкой
+        # Клик с человеческим поведением
         for attempt in range(3):
             # Проверяем disabled
             if btn.attr('disabled'):
-                time.sleep(0.2)
+                self._behavior.human_delay(0.2, 0.4)
                 continue
             
             print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1})...")
             
-            # JS click - самый надёжный для React
-            try:
-                self.page.run_js('''
-                    arguments[0].scrollIntoView({block: "center"});
-                    arguments[0].click();
-                ''', btn)
-            except:
-                try:
-                    btn.click()
-                except:
-                    pass
+            # Клик через behavior
+            self._behavior.human_js_click(self.page, btn)
             
-            # Быстрая проверка редиректа
-            time.sleep(0.3)
+            # Проверка редиректа
+            self._behavior.human_delay(0.3, 0.6)
             if '127.0.0.1' in self.page.url:
                 print("   [OK] Redirected to callback!")
                 return True
             
             # Перезапрашиваем элемент (избегаем stale)
             try:
-                btn = self.page.ele('@data-testid=allow-access-button', timeout=0.2)
+                btn = self.page.ele('@data-testid=allow-access-button', timeout=0.3)
             except:
                 pass
         
@@ -1476,14 +1449,7 @@ class BrowserAutomation:
                 btn = self.page.ele(selector, timeout=0.3)
                 if btn:
                     print(f"   [!] Found close button: {selector}")
-                    try:
-                        self.human_click(btn)
-                    except:
-                        try:
-                            self.page.run_js('arguments[0].click()', btn)
-                        except:
-                            btn.click()
-                    time.sleep(0.5)
+                    self._behavior.human_js_click(self.page, btn)
                     
                     # Проверяем что модалка закрылась
                     if not self._check_aws_error():
@@ -1495,9 +1461,10 @@ class BrowserAutomation:
         # Fallback: нажимаем Escape
         try:
             print("   [!] Trying Escape key...")
+            self._behavior.human_delay(0.1, 0.3)
             self.page.run_cdp('Input.dispatchKeyEvent', type='keyDown', key='Escape', code='Escape', windowsVirtualKeyCode=27)
             self.page.run_cdp('Input.dispatchKeyEvent', type='keyUp', key='Escape', code='Escape', windowsVirtualKeyCode=27)
-            time.sleep(0.5)
+            self._behavior.human_delay(0.3, 0.6)
             
             if not self._check_aws_error():
                 print("   [OK] Error modal closed via Escape")
@@ -1508,8 +1475,9 @@ class BrowserAutomation:
         # Последний fallback: кликаем вне модалки
         try:
             print("   [!] Trying click outside modal...")
+            self._behavior.human_delay(0.1, 0.2)
             self.page.run_js('document.body.click()')
-            time.sleep(0.3)
+            self._behavior.human_delay(0.2, 0.4)
         except:
             pass
         
