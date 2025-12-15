@@ -165,3 +165,93 @@ class BehaviorSpoofModule:
             self.human_delay(0.2, 0.5)
         except Exception:
             pass
+
+
+    def bezier_mouse_move(self, page, start_x: int, start_y: int, end_x: int, end_y: int, steps: int = 20):
+        """
+        Движение мыши по кривой Безье (более реалистично).
+        
+        Args:
+            page: DrissionPage page instance
+            start_x, start_y: Начальная позиция
+            end_x, end_y: Конечная позиция
+            steps: Количество шагов
+        """
+        import math
+        
+        # Контрольные точки для кривой Безье
+        # Добавляем случайное отклонение
+        ctrl1_x = start_x + (end_x - start_x) * 0.3 + random.randint(-50, 50)
+        ctrl1_y = start_y + (end_y - start_y) * 0.1 + random.randint(-30, 30)
+        ctrl2_x = start_x + (end_x - start_x) * 0.7 + random.randint(-50, 50)
+        ctrl2_y = start_y + (end_y - start_y) * 0.9 + random.randint(-30, 30)
+        
+        def bezier(t, p0, p1, p2, p3):
+            """Кубическая кривая Безье"""
+            return (
+                (1-t)**3 * p0 +
+                3 * (1-t)**2 * t * p1 +
+                3 * (1-t) * t**2 * p2 +
+                t**3 * p3
+            )
+        
+        try:
+            for i in range(steps + 1):
+                t = i / steps
+                x = int(bezier(t, start_x, ctrl1_x, ctrl2_x, end_x))
+                y = int(bezier(t, start_y, ctrl1_y, ctrl2_y, end_y))
+                
+                page.run_js(f'''
+                    const event = new MouseEvent('mousemove', {{
+                        clientX: {x},
+                        clientY: {y},
+                        bubbles: true
+                    }});
+                    document.dispatchEvent(event);
+                ''')
+                
+                # Случайная задержка между шагами
+                time.sleep(random.uniform(0.005, 0.02))
+        except Exception:
+            pass
+    
+    def human_click_with_movement(self, page, element, from_pos: tuple = None):
+        """
+        Кликает по элементу с реалистичным движением мыши.
+        
+        Args:
+            page: DrissionPage page instance
+            element: Элемент для клика
+            from_pos: Начальная позиция (x, y), если None - случайная
+        """
+        try:
+            # Получаем позицию элемента
+            rect = page.run_js('''
+                const rect = arguments[0].getBoundingClientRect();
+                return {x: rect.x + rect.width/2, y: rect.y + rect.height/2};
+            ''', element)
+            
+            end_x = int(rect['x'])
+            end_y = int(rect['y'])
+            
+            # Начальная позиция
+            if from_pos:
+                start_x, start_y = from_pos
+            else:
+                start_x = random.randint(100, 800)
+                start_y = random.randint(100, 600)
+            
+            # Движение к элементу
+            self.bezier_mouse_move(page, start_x, start_y, end_x, end_y)
+            
+            # Небольшая пауза перед кликом
+            time.sleep(random.uniform(0.05, 0.15))
+            
+            # Клик
+            element.click()
+            
+            return (end_x, end_y)  # Возвращаем позицию для следующего движения
+        except Exception as e:
+            # Fallback на обычный клик
+            element.click()
+            return None

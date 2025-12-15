@@ -56,6 +56,61 @@ class SpoofProfile:
         'Consolas', 'Courier New', 'Georgia', 'Impact', 'Lucida Console',
         'Segoe UI', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana'
     ])
+    
+    def to_dict(self) -> dict:
+        """Сериализует профиль в словарь для сохранения"""
+        return {
+            'user_agent': self.user_agent,
+            'platform': self.platform,
+            'vendor': self.vendor,
+            'screen_width': self.screen_width,
+            'screen_height': self.screen_height,
+            'avail_width': self.avail_width,
+            'avail_height': self.avail_height,
+            'color_depth': self.color_depth,
+            'pixel_ratio': self.pixel_ratio,
+            'hardware_concurrency': self.hardware_concurrency,
+            'device_memory': self.device_memory,
+            'max_touch_points': self.max_touch_points,
+            'webgl_vendor': self.webgl_vendor,
+            'webgl_renderer': self.webgl_renderer,
+            'timezone': self.timezone,
+            'timezone_offset': self.timezone_offset,
+            'locale': self.locale,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'accuracy': self.accuracy,
+            'noise_seed': self.noise_seed,
+            'fonts': self.fonts,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'SpoofProfile':
+        """Создаёт профиль из словаря"""
+        return cls(
+            user_agent=data.get('user_agent', cls.user_agent),
+            platform=data.get('platform', cls.platform),
+            vendor=data.get('vendor', cls.vendor),
+            screen_width=data.get('screen_width', 1920),
+            screen_height=data.get('screen_height', 1080),
+            avail_width=data.get('avail_width', 1920),
+            avail_height=data.get('avail_height', 1040),
+            color_depth=data.get('color_depth', 24),
+            pixel_ratio=data.get('pixel_ratio', 1.0),
+            hardware_concurrency=data.get('hardware_concurrency', 8),
+            device_memory=data.get('device_memory', 8),
+            max_touch_points=data.get('max_touch_points', 0),
+            webgl_vendor=data.get('webgl_vendor', ''),
+            webgl_renderer=data.get('webgl_renderer', ''),
+            timezone=data.get('timezone', 'America/New_York'),
+            timezone_offset=data.get('timezone_offset', 300),
+            locale=data.get('locale', 'en-US'),
+            latitude=data.get('latitude', 40.7128),
+            longitude=data.get('longitude', -74.0060),
+            accuracy=data.get('accuracy', 50.0),
+            noise_seed=data.get('noise_seed', random.randint(1, 1000000)),
+            fonts=data.get('fonts', []),
+        )
 
 
 # Предустановленные профили для разных локаций
@@ -223,3 +278,78 @@ def generate_random_profile() -> SpoofProfile:
         longitude=base.longitude + random.uniform(-0.05, 0.05),
         accuracy=random.uniform(20, 100),
     )
+
+
+# === Сохранение/загрузка профиля ===
+
+import json
+from pathlib import Path
+
+
+def get_profile_path(email: str) -> Path:
+    """Возвращает путь к файлу профиля для email"""
+    from core.paths import get_paths
+    profiles_dir = get_paths().tokens_dir / 'profiles'
+    profiles_dir.mkdir(parents=True, exist_ok=True)
+    # Используем email как имя файла (заменяем @ и .)
+    safe_name = email.replace('@', '_at_').replace('.', '_')
+    return profiles_dir / f'{safe_name}.json'
+
+
+def save_profile(email: str, profile: SpoofProfile) -> bool:
+    """
+    Сохраняет профиль спуфинга для аккаунта.
+    
+    Вызывается после успешной регистрации.
+    """
+    try:
+        path = get_profile_path(email)
+        data = profile.to_dict()
+        data['email'] = email
+        data['saved_at'] = __import__('datetime').datetime.now().isoformat()
+        
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        
+        print(f"[PROFILE] Saved fingerprint for {email}")
+        return True
+    except Exception as e:
+        print(f"[PROFILE] Failed to save: {e}")
+        return False
+
+
+def load_profile(email: str) -> Optional[SpoofProfile]:
+    """
+    Загружает сохранённый профиль для аккаунта.
+    
+    Используется при работе с токеном для консистентности fingerprint.
+    """
+    try:
+        path = get_profile_path(email)
+        if not path.exists():
+            return None
+        
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        profile = SpoofProfile.from_dict(data)
+        print(f"[PROFILE] Loaded fingerprint for {email}")
+        return profile
+    except Exception as e:
+        print(f"[PROFILE] Failed to load: {e}")
+        return None
+
+
+def get_or_create_profile(email: str = None) -> SpoofProfile:
+    """
+    Получает профиль для email или создаёт новый.
+    
+    Если email указан и профиль существует - загружает его.
+    Иначе генерирует новый.
+    """
+    if email:
+        profile = load_profile(email)
+        if profile:
+            return profile
+    
+    return generate_random_profile()

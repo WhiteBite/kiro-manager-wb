@@ -20,6 +20,7 @@ print = functools.partial(print, flush=True)
 # Импортируем спуфинг
 from spoof import apply_pre_navigation_spoofing
 from spoofers.behavior import BehaviorSpoofModule
+from spoofers.profile_storage import ProfileStorage
 
 
 def find_chrome_path() -> Optional[str]:
@@ -149,11 +150,13 @@ BASE_DIR = get_paths().autoreg_dir
 class BrowserAutomation:
     """Автоматизация браузера для регистрации"""
     
-    def __init__(self, headless: bool = None):
+    def __init__(self, headless: bool = None, email: str = None):
         """
         Args:
             headless: Запуск без GUI (по умолчанию из настроек)
+            email: Email аккаунта (для сохранения профиля спуфинга)
         """
+        self._email = email
         settings = load_settings()
         browser_settings = settings.get('browser', {})
         
@@ -249,7 +252,15 @@ class BrowserAutomation:
         
         if spoofing_enabled:
             try:
-                self._spoofer = apply_pre_navigation_spoofing(self.page)
+                # Используем ProfileStorage для консистентного fingerprint
+                profile = None
+                if self._email:
+                    from core.paths import get_paths
+                    storage = ProfileStorage(get_paths().tokens_dir)
+                    profile = storage.get_or_create(self._email)
+                    self._profile_storage = storage
+                
+                self._spoofer = apply_pre_navigation_spoofing(self.page, profile)
                 print("   [S] Anti-fingerprint spoofing applied")
             except Exception as e:
                 print(f"   [!] Spoofing failed: {e}")

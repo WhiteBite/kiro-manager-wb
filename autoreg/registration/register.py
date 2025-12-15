@@ -259,7 +259,7 @@ class AWSRegistration:
             print(f"\n[2/8] Opening browser with OAuth authorize URL...")
             if self.browser:
                 self.browser.close()
-            self.browser = BrowserAutomation(headless=self.headless)
+            self.browser = BrowserAutomation(headless=self.headless, email=email)
             
             # Спуфинг уже применён в BrowserAutomation.__init__
             # через apply_pre_navigation_spoofing
