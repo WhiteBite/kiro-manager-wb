@@ -666,8 +666,13 @@ export const profiles = `
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 2px solid var(--border);
+    border: 2px solid #666;
+    background: transparent;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .profile-card-radio:hover .radio-dot {
+    border-color: var(--accent);
   }
   .radio-dot.checked {
     border-color: var(--accent);

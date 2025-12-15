@@ -124,73 +124,12 @@
         "kiroAccountSwitcher.autoreg.headless": {
           "type": "boolean",
           "default": false,
-          "description": "Run browser in headless mode during auto-registration (hide browser window)"
+          "description": "Run browser in headless mode"
         },
         "kiroAccountSwitcher.autoreg.spoofing": {
           "type": "boolean",
           "default": true,
-          "description": "Enable browser fingerprint spoofing during registration"
-        },
-        "kiroAccountSwitcher.autoreg.autoInject": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically inject token to Kiro after registration"
-        },
-        "kiroAccountSwitcher.autoreg.emailDomain": {
-          "type": "string",
-          "default": "",
-          "description": "Email domain for auto-registration (set in IMAP profile)"
-        },
-        "kiroAccountSwitcher.imap.server": {
-          "type": "string",
-          "default": "",
-          "description": "IMAP server address (e.g., imap.gmail.com)",
-          "order": 10
-        },
-        "kiroAccountSwitcher.imap.user": {
-          "type": "string",
-          "default": "",
-          "description": "IMAP username/email",
-          "order": 11
-        },
-        "kiroAccountSwitcher.imap.password": {
-          "type": "string",
-          "default": "",
-          "description": "IMAP password or app password",
-          "order": 12
-        },
-        "kiroAccountSwitcher.imap.port": {
-          "type": "number",
-          "default": 993,
-          "description": "IMAP port (usually 993 for SSL)",
-          "order": 13
-        },
-        "kiroAccountSwitcher.email.strategy": {
-          "type": "string",
-          "default": "catch_all",
-          "enum": [
-            "single",
-            "plus_alias",
-            "catch_all",
-            "pool"
-          ],
-          "enumDescriptions": [
-            "Single Email - use IMAP email directly (one account per email)",
-            "Plus Alias - user+random@domain (Gmail, Outlook support)",
-            "Catch-All - random emails on your domain (requires catch-all)",
-            "Email Pool - use a list of your emails"
-          ],
-          "description": "Email generation strategy for auto-registration",
-          "order": 14
-        },
-        "kiroAccountSwitcher.email.pool": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "description": "List of emails for pool strategy",
-          "order": 15
+          "description": "Enable browser fingerprint spoofing"
         },
         "kiroAccountSwitcher.debug.verbose": {
           "type": "boolean",
@@ -200,12 +139,12 @@
         "kiroAccountSwitcher.debug.screenshotsOnError": {
           "type": "boolean",
           "default": true,
-          "description": "Save screenshots when errors occur during registration"
+          "description": "Save screenshots on errors"
         },
         "kiroAccountSwitcher.autoreg.deviceFlow": {
           "type": "boolean",
           "default": false,
-          "description": "Use Device Flow authentication instead of local callback server"
+          "description": "Use Device Flow authentication"
         }
       }
     }
@@ -216,7 +155,9 @@
     "lint": "tsc --noEmit",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "package": "npm run build && npx vsce package --no-dependencies"
+    "package": "npm run build && npx vsce package --no-dependencies",
+    "build:standalone": "npx ts-node scripts/build-standalone.ts",
+    "build:all": "npm run build && npm run build:standalone"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
@@ -230,6 +171,7 @@
     "esbuild": "^0.20.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   }
 }

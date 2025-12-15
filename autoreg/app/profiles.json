@@ -1,0 +1,29 @@
+{
+  "profiles": [
+    {
+      "id": "5eb3aa87-81d1-45b5-8f65-19a36099152f",
+      "name": "GMX Pool Test",
+      "imap": {
+        "server": "imap.gmx.com",
+        "user": "edwardporter0563@gmx.com",
+        "password": "9JtH#N8Zgk4",
+        "port": 993
+      },
+      "strategy": {
+        "type": "pool",
+        "emails": [
+          {
+            "email": "edwardporter0563@gmx.com",
+            "password": "9JtH#N8Zgk4",
+            "status": "pending"
+          }
+        ]
+      },
+      "stats": {
+        "registered": 0,
+        "failed": 0
+      }
+    }
+  ],
+  "activeProfileId": "5eb3aa87-81d1-45b5-8f65-19a36099152f"
+}

@@ -123,31 +123,34 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const spoofing = config.get<boolean>('autoreg.spoofing', true);
   const deviceFlow = config.get<boolean>('autoreg.deviceFlow', false);
 
-  // Get IMAP settings from active profile or fallback to old settings
+  // Get IMAP settings from active profile ONLY (no fallback to VS Code settings)
   const profileProvider = ImapProfileProvider.getInstance(context);
+  await profileProvider.load(); // Ensure latest data is loaded
   const activeProfile = profileProvider.getActive();
-  const profileEnv = profileProvider.getActiveProfileEnv();
 
-  // Fallback to old settings if no profile
-  const imapServer = profileEnv.IMAP_SERVER || config.get<string>('imap.server', '');
-  const imapUser = profileEnv.IMAP_USER || config.get<string>('imap.user', '');
-  const imapPassword = profileEnv.IMAP_PASSWORD || config.get<string>('imap.password', '');
-  const emailDomain = profileEnv.EMAIL_DOMAIN || config.get<string>('autoreg.emailDomain', '');
-  const emailStrategy = profileEnv.EMAIL_STRATEGY || 'single';
-  const emailPool = profileEnv.EMAIL_POOL || '';
-  const profileId = profileEnv.PROFILE_ID || '';
-
-  if (!imapServer || !imapUser || !imapPassword) {
+  if (!activeProfile) {
     const result = await vscode.window.showWarningMessage(
-      'IMAP settings not configured. Configure a profile first.',
+      'No IMAP profile configured. Create a profile first.',
       'Open Settings', 'Cancel'
     );
     if (result === 'Open Settings') {
-      // Open webview and show profiles panel
-      vscode.commands.executeCommand('workbench.action.openSettings', 'kiroAccountSwitcher.imap');
+      vscode.commands.executeCommand('kiroAccountSwitcher.focus');
     }
     return;
   }
+
+  const profileEnv = profileProvider.getActiveProfileEnv();
+  provider.addLog(`Active profile: ${activeProfile.name} (${activeProfile.id})`);
+  provider.addLog(`Strategy: ${activeProfile.strategy.type}`);
+  provider.addLog(`IMAP: ${activeProfile.imap.user}@${activeProfile.imap.server}`);
+
+  const imapServer = profileEnv.IMAP_SERVER;
+  const imapUser = profileEnv.IMAP_USER;
+  const imapPassword = profileEnv.IMAP_PASSWORD;
+  const emailDomain = profileEnv.EMAIL_DOMAIN || '';
+  const emailStrategy = profileEnv.EMAIL_STRATEGY;
+  const emailPool = profileEnv.EMAIL_POOL || '';
+  const profileId = profileEnv.PROFILE_ID;
 
   const pythonCmd = getPythonCommand();
   provider.addLog(`Platform: ${process.platform}`);

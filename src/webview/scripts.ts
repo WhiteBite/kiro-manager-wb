@@ -657,7 +657,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     function pasteEmails() {
       navigator.clipboard.readText().then(text => {
         // Support formats: email, email:password, one per line or separated by newlines
-        const lines = text.split(/[\r\n]+/).filter(e => e.includes('@'));
+        const lines = text.split(new RegExp('[\\\\r\\\\n]+')).filter(e => e.includes('@'));
         lines.forEach(line => {
           const trimmed = line.trim();
           // Parse email:password format
@@ -907,5 +907,62 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       // Load patch status on init
       vscode.postMessage({ command: 'getPatchStatus' });
     });
+    
+    // Export functions to window for onclick handlers
+    window.openSettings = openSettings;
+    window.closeSettings = closeSettings;
+    window.toggleLogs = toggleLogs;
+    window.clearConsole = clearConsole;
+    window.copyLogs = copyLogs;
+    window.toggleAutoSwitch = toggleAutoSwitch;
+    window.toggleSetting = toggleSetting;
+    window.toggleSpoofing = toggleSpoofing;
+    window.changeLanguage = changeLanguage;
+    window.checkUpdates = checkUpdates;
+    window.exportAllAccounts = exportAllAccounts;
+    window.importAccounts = importAccounts;
+    window.confirmResetMachineId = confirmResetMachineId;
+    window.confirmPatchKiro = confirmPatchKiro;
+    window.confirmUnpatchKiro = confirmUnpatchKiro;
+    window.generateNewMachineId = generateNewMachineId;
+    window.openProfilesPanel = openProfilesPanel;
+    window.closeProfilesPanel = closeProfilesPanel;
+    window.createProfile = createProfile;
+    window.editProfile = editProfile;
+    window.deleteProfile = deleteProfile;
+    window.selectProfile = selectProfile;
+    window.closeProfileEditor = closeProfileEditor;
+    window.selectStrategy = selectStrategy;
+    window.onEmailInput = onEmailInput;
+    window.testImapConnection = testImapConnection;
+    window.addEmailToPool = addEmailToPool;
+    window.removeEmailFromPool = removeEmailFromPool;
+    window.importEmailsFromFile = importEmailsFromFile;
+    window.pasteEmails = pasteEmails;
+    window.saveProfile = saveProfile;
+    window.togglePasswordVisibility = togglePasswordVisibility;
+    window.switchAccount = switchAccount;
+    window.refreshToken = refreshToken;
+    window.confirmDelete = confirmDelete;
+    window.copyToken = copyToken;
+    window.startAutoReg = startAutoReg;
+    window.stopAutoReg = stopAutoReg;
+    window.togglePauseAutoReg = togglePauseAutoReg;
+    window.openSsoModal = openSsoModal;
+    window.closeSsoModal = closeSsoModal;
+    window.importSsoToken = importSsoToken;
+    window.refreshAllExpired = refreshAllExpired;
+    window.confirmDeleteExhausted = confirmDeleteExhausted;
+    window.confirmDeleteBanned = confirmDeleteBanned;
+    window.showToast = showToast;
+    window.dialogAction = dialogAction;
+    window.closeDialog = closeDialog;
+    window.searchAccounts = searchAccounts;
+    window.clearSearch = clearSearch;
+    window.refresh = refresh;
+    window.refreshUsage = refreshUsage;
+    window.openUpdateUrl = openUpdateUrl;
+    window.openVsCodeSettings = openVsCodeSettings;
+    window.renderActiveProfile = renderActiveProfile;
   `;
 }

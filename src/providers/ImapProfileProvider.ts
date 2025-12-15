@@ -113,16 +113,7 @@ export class ImapProfileProvider {
    * Setup bidirectional sync with VS Code settings
    */
   private _setupSettingsSync(): void {
-    // Listen for VS Code settings changes
-    this._configChangeDisposable = vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (this._syncingToSettings) return; // Prevent loop
-
-      if (e.affectsConfiguration('kiroAccountSwitcher.imap') ||
-        e.affectsConfiguration('kiroAccountSwitcher.email') ||
-        e.affectsConfiguration('kiroAccountSwitcher.autoreg.emailDomain')) {
-        await this._syncFromSettings();
-      }
-    });
+    // Settings sync disabled - profiles are managed via UI only
   }
 
   dispose(): void {
@@ -180,9 +171,7 @@ export class ImapProfileProvider {
       Buffer.from(JSON.stringify(data, null, 2))
     );
 
-    // Sync active profile to VS Code settings
-    await this._syncToSettings();
-
+    // No longer sync to VS Code settings - profiles are standalone
     this._onDidChange.fire();
   }
 
@@ -235,6 +224,10 @@ export class ImapProfileProvider {
    * Called when user changes settings via VS Code UI
    */
   private async _syncFromSettings(): Promise<void> {
+    // Disabled: profiles should be managed via UI only, not synced from settings
+    // This was causing profiles to be overwritten
+    return;
+
     if (this._syncingToSettings) return;
     this._syncingFromSettings = true;
 

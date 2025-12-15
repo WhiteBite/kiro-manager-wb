@@ -502,6 +502,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   }
 
   async handleMessage(msg: any) {
+    console.log('[Webview] Received message:', msg.command, msg);
     // Import handlers dynamically to avoid circular deps
     const { handleWebviewMessage } = await import('../commands/webview-handler');
     await handleWebviewMessage(this, msg);
@@ -876,6 +877,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   }
 
   async createProfile(profileData: Partial<ImapProfile>) {
+    this.addLog(`Creating profile: ${JSON.stringify(profileData)}`);
     const provider = this.getProfileProvider();
 
     try {
@@ -886,7 +888,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
         status: 'active'
       });
 
-      this.addLog(`✓ Created profile: ${profile.name}`);
+      this.addLog(`✓ Created profile: ${profile.name} (${profile.id})`);
       vscode.window.showInformationMessage(`Profile "${profile.name}" created`);
       await this.loadProfiles();
     } catch (err) {
@@ -938,6 +940,11 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       const profile = provider.getById(profileId);
       if (profile) {
         this.addLog(`✓ Active profile: ${profile.name}`);
+        // Update settings view with new active profile
+        this._view?.webview.postMessage({
+          type: 'activeProfileLoaded',
+          profile
+        });
       }
       await this.loadProfiles();
     } catch (err) {

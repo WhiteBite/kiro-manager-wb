@@ -69,24 +69,41 @@ if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
-@app.get("/", response_class=FileResponse)
+@app.get("/")
 async def root():
-    """Serve main UI"""
+    """Serve main UI with no-cache headers"""
+    from fastapi.responses import HTMLResponse
     index_file = get_static_dir() / "index.html"
-    return FileResponse(index_file)
+    content = index_file.read_text(encoding='utf-8')
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket for real-time logs and status updates"""
+    from app.websocket import handle_command
+    import json
+    
     await ws_manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive, receive any client messages
+            # Receive and handle commands from frontend
             data = await websocket.receive_text()
-            # Echo back or handle commands
-            if data == "ping":
-                await websocket.send_text("pong")
+            try:
+                msg = json.loads(data)
+                command = msg.get("command", "")
+                await handle_command(command, msg, websocket)
+            except json.JSONDecodeError:
+                # Legacy ping support
+                if data == "ping":
+                    await websocket.send_text("pong")
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
 
