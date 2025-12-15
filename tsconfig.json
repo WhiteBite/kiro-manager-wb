@@ -3,7 +3,9 @@
     "module": "commonjs",
     "target": "ES2020",
     "outDir": "dist",
-    "lib": ["ES2020"],
+    "lib": [
+      "ES2020"
+    ],
     "sourceMap": true,
     "rootDir": "src",
     "strict": true,
@@ -12,5 +14,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "scripts"
+  ]
 }
