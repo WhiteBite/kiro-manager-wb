@@ -622,9 +622,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
       case 'spoofing':
         await config.update('autoreg.spoofing', value, vscode.ConfigurationTarget.Global);
         break;
+      case 'deviceFlow':
+        await config.update('autoreg.deviceFlow', value, vscode.ConfigurationTarget.Global);
+        break;
     }
-
-    this.refresh();
+    // Don't call refresh() - it resets the view to main page
+    // Settings are saved, UI state is already updated by the toggle
   }
 
   setLanguage(lang: Language) {
