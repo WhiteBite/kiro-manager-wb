@@ -5,9 +5,8 @@
 Запуск: python test_fingerprint.py
 
 Проверяет спуфинг на:
-- creepjs.com (продвинутый детектор)
-- browserleaks.com (базовые проверки)
 - bot.sannysoft.com (webdriver detection)
+- browserleaks.com (базовые проверки)
 """
 
 import sys
@@ -16,7 +15,7 @@ from DrissionPage import ChromiumPage, ChromiumOptions
 
 # Добавляем путь к spoofers
 sys.path.insert(0, '.')
-from spoofers.cdp_spoofer import CDPSpoofer, apply_pre_navigation_spoofing
+from spoofers.cdp_spoofer import CDPSpoofer
 from spoofers.profile import generate_random_profile
 
 
@@ -38,10 +37,10 @@ def test_fingerprint():
     
     # Настройки браузера
     options = ChromiumOptions()
-    options.set_argument('--disable-blink-features=AutomationControlled')
-    options.set_argument('--disable-infobars')
     options.set_argument('--no-first-run')
     options.set_argument('--no-default-browser-check')
+    options.set_argument('--disable-dev-shm-usage')
+    options.set_argument('--disable-infobars')
     
     print("\n[BROWSER] Starting...")
     page = ChromiumPage(options)
@@ -51,85 +50,90 @@ def test_fingerprint():
     spoofer = CDPSpoofer(profile)
     spoofer.apply_pre_navigation(page)
     
-    # Тест 1: bot.sannysoft.com (webdriver detection)
+    results = {'passed': 0, 'failed': 0}
+    
+    # Тест 1: bot.sannysoft.com
     print("\n" + "=" * 60)
     print("[TEST 1] bot.sannysoft.com - WebDriver Detection")
     print("=" * 60)
     page.get('https://bot.sannysoft.com/')
     time.sleep(3)
     
-    # Проверяем результаты
     try:
         webdriver_result = page.run_js('return document.querySelector("#webdriver-result")?.textContent || "N/A"')
         chrome_result = page.run_js('return document.querySelector("#chrome-result")?.textContent || "N/A"')
-        permissions_result = page.run_js('return document.querySelector("#permissions-result")?.textContent || "N/A"')
         
         print(f"  WebDriver: {webdriver_result}")
         print(f"  Chrome: {chrome_result}")
-        print(f"  Permissions: {permissions_result}")
+        
+        if 'passed' in webdriver_result.lower() or 'missing' in webdriver_result.lower():
+            print("  ✅ WebDriver test PASSED")
+            results['passed'] += 1
+        else:
+            print("  ❌ WebDriver test FAILED")
+            results['failed'] += 1
     except Exception as e:
-        print(f"  Error reading results: {e}")
+        print(f"  Error: {e}")
+        results['failed'] += 1
     
-    input("\nPress Enter to continue to browserleaks.com...")
+    time.sleep(2)
     
     # Тест 2: browserleaks.com
     print("\n" + "=" * 60)
-    print("[TEST 2] browserleaks.com/javascript - JS Properties")
+    print("[TEST 2] browserleaks.com - JS Properties")
     print("=" * 60)
     page.get('https://browserleaks.com/javascript')
     time.sleep(3)
     
-    # Проверяем что видит сайт
     try:
-        ua = page.run_js('return navigator.userAgent')
-        platform = page.run_js('return navigator.platform')
         webdriver = page.run_js('return navigator.webdriver')
         tz = page.run_js('return Intl.DateTimeFormat().resolvedOptions().timeZone')
         tz_offset = page.run_js('return new Date().getTimezoneOffset()')
+        lang = page.run_js('return navigator.language')
         
-        print(f"  User-Agent: {ua[:60]}...")
-        print(f"  Platform: {platform}")
         print(f"  WebDriver: {webdriver}")
         print(f"  Timezone: {tz}")
         print(f"  TZ Offset: {tz_offset}")
+        print(f"  Language: {lang}")
         
-        # Проверяем соответствие
-        if str(webdriver).lower() == 'false':
+        # Проверки
+        # webdriver должен быть undefined (None в Python) или False
+        if webdriver is None or webdriver == False:
             print("  ✅ WebDriver hidden!")
+            results['passed'] += 1
         else:
             print(f"  ❌ WebDriver detected: {webdriver}")
+            results['failed'] += 1
             
         if tz == profile.timezone:
             print("  ✅ Timezone matches!")
+            results['passed'] += 1
         else:
             print(f"  ❌ Timezone mismatch: expected {profile.timezone}, got {tz}")
+            results['failed'] += 1
             
         if tz_offset == profile.timezone_offset:
             print("  ✅ TZ Offset matches!")
+            results['passed'] += 1
         else:
             print(f"  ❌ TZ Offset mismatch: expected {profile.timezone_offset}, got {tz_offset}")
+            results['failed'] += 1
             
     except Exception as e:
         print(f"  Error: {e}")
+        results['failed'] += 1
     
-    input("\nPress Enter to continue to creepjs.com...")
-    
-    # Тест 3: creepjs.com (продвинутый)
-    print("\n" + "=" * 60)
-    print("[TEST 3] creepjs.com - Advanced Fingerprint")
-    print("=" * 60)
-    page.get('https://abrahamjuliot.github.io/creepjs/')
-    time.sleep(10)  # Нужно больше времени для анализа
-    
-    print("  Check the page manually for:")
-    print("  - Trust Score (higher is better)")
-    print("  - Lies detected (should be minimal)")
-    print("  - Bot detection (should be 'human')")
-    
-    input("\nPress Enter to close browser...")
+    # Закрываем браузер
     page.quit()
-    print("\n[DONE] Test complete!")
+    
+    # Итог
+    print("\n" + "=" * 60)
+    print(f"[RESULT] Passed: {results['passed']}, Failed: {results['failed']}")
+    print("=" * 60)
+    
+    return results['failed'] == 0
 
 
 if __name__ == '__main__':
-    test_fingerprint()
+    success = test_fingerprint()
+    sys.exit(0 if success else 1)

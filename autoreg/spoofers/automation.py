@@ -20,23 +20,9 @@ class AutomationSpoofModule(BaseSpoofModule):
     'use strict';
     
     // ============================================
-    // WEBDRIVER FLAG (критично!)
+    // WEBDRIVER FLAG - handled by Proxy in cdp_spoofer.py
     // ============================================
-    // Должен быть false, не undefined - undefined подозрительно
-    Object.defineProperty(navigator, 'webdriver', {
-        get: () => false,
-        configurable: true
-    });
-    
-    // Также удаляем из prototype
-    try {
-        delete Navigator.prototype.webdriver;
-    } catch(e) {}
-    
-    Object.defineProperty(Navigator.prototype, 'webdriver', {
-        get: () => false,
-        configurable: true
-    });
+    // НЕ трогаем webdriver здесь - Proxy уже установлен
     
     // ============================================
     // AUTOMATION PROPERTIES
