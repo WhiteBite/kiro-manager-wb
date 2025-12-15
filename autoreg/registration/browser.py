@@ -187,8 +187,13 @@ class BrowserAutomation:
             co.set_argument('--no-sandbox')
             co.set_argument('--disable-dev-shm-usage')
         
-        # Реалистичный user-agent
-        co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        # Скрываем automation infobars
+        co.set_argument('--disable-infobars')
+        co.set_argument('--no-first-run')
+        co.set_argument('--no-default-browser-check')
+        
+        # НЕ используем --disable-blink-features=AutomationControlled
+        # Он показывает предупреждение которое палит автоматизацию!
         
         # Размер окна
         co.set_argument('--window-size=1280,900')

@@ -63,6 +63,35 @@ class CDPSpoofer:
         js_parts = [
             "// === AWS FWCIM Bypass - Auto-generated ===",
             "'use strict';",
+            "",
+            "// === WEBDRIVER PROXY (must be first!) ===",
+            """
+(function() {
+    // Proxy для полного скрытия webdriver
+    const originalNavigator = window.navigator;
+    const navigatorProxy = new Proxy(originalNavigator, {
+        has: function(target, prop) {
+            if (prop === 'webdriver') return false;
+            return prop in target;
+        },
+        get: function(target, prop) {
+            if (prop === 'webdriver') return undefined;
+            const value = target[prop];
+            if (typeof value === 'function') {
+                return value.bind(target);
+            }
+            return value;
+        }
+    });
+    
+    try {
+        Object.defineProperty(window, 'navigator', {
+            get: () => navigatorProxy,
+            configurable: true
+        });
+    } catch(e) {}
+})();
+""",
         ]
         
         for module in self._modules:
@@ -88,6 +117,35 @@ class CDPSpoofer:
         p = self.profile
         
         print("[SPOOF] Applying CDP-based spoofing...")
+        
+        # 0. Отключаем webdriver через Proxy (КРИТИЧНО!)
+        try:
+            page.run_cdp('Page.addScriptToEvaluateOnNewDocument', source='''
+                const originalNavigator = window.navigator;
+                const navigatorProxy = new Proxy(originalNavigator, {
+                    has: function(target, prop) {
+                        if (prop === 'webdriver') return false;
+                        return prop in target;
+                    },
+                    get: function(target, prop) {
+                        if (prop === 'webdriver') return undefined;
+                        const value = target[prop];
+                        if (typeof value === 'function') {
+                            return value.bind(target);
+                        }
+                        return value;
+                    }
+                });
+                Object.defineProperty(window, 'navigator', {
+                    get: () => navigatorProxy,
+                    configurable: true
+                });
+            ''')
+            results['webdriver_hide'] = True
+            print("   [OK] WebDriver flag hidden via CDP")
+        except Exception as e:
+            results['webdriver_hide'] = False
+            print(f"   [FAIL] WebDriver hide: {e}")
         
         # 1. User-Agent через CDP
         try:
@@ -185,6 +243,37 @@ class CDPSpoofer:
         success = True
         
         print("[SPOOF] Applying pre-navigation spoofing...")
+        
+        # 0. Отключаем webdriver через Proxy (КРИТИЧНО!)
+        # Proxy нужен чтобы 'webdriver' in navigator возвращал false
+        try:
+            page.run_cdp('Page.addScriptToEvaluateOnNewDocument', source='''
+                // Используем Proxy чтобы полностью скрыть webdriver
+                const originalNavigator = window.navigator;
+                const navigatorProxy = new Proxy(originalNavigator, {
+                    has: function(target, prop) {
+                        if (prop === 'webdriver') return false;
+                        return prop in target;
+                    },
+                    get: function(target, prop) {
+                        if (prop === 'webdriver') return undefined;
+                        const value = target[prop];
+                        if (typeof value === 'function') {
+                            return value.bind(target);
+                        }
+                        return value;
+                    }
+                });
+                
+                Object.defineProperty(window, 'navigator', {
+                    get: () => navigatorProxy,
+                    configurable: true
+                });
+            ''')
+            print("   [OK] WebDriver hidden")
+        except Exception as e:
+            print(f"   [WARN] WebDriver hide: {e}")
+            success = False
         
         # CDP настройки
         try:
