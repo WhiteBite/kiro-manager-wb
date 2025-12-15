@@ -5,14 +5,15 @@
 export const base = `
   /* Reset */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; background-color: #1e1e1e; }
   
   body {
-    font-family: var(--vscode-font-family);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     font-size: 12px;
     line-height: 1.4;
-    color: var(--fg);
-    background: var(--bg);
+    color: var(--fg, #cccccc);
+    background: var(--bg, #1e1e1e);
+    background-color: #1e1e1e;
     display: flex;
     flex-direction: column;
   }

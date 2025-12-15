@@ -141,21 +141,37 @@ class AWSRegistration:
             # Для pool стратегии с разными паролями - переподключаем IMAP
             if email_result.imap_password:
                 print(f"[EMAIL] Pool mode: switching IMAP credentials")
-                if self.mail_handler:
-                    self.mail_handler.reconnect(
-                        new_email=email_result.imap_lookup_email,
-                        new_password=email_result.imap_password
-                    )
-                else:
-                    # Создаём новый handler с credentials из пула
-                    from .mail_handler import IMAPMailHandler, get_imap_settings
-                    settings = get_imap_settings()
-                    self.mail_handler = IMAPMailHandler(
-                        imap_host=settings['host'],
-                        imap_email=email_result.imap_lookup_email,
-                        imap_password=email_result.imap_password
-                    )
-                    self.mail_handler.connect()
+                from .mail_handler import IMAPMailHandler, get_imap_settings
+                settings = get_imap_settings()
+                
+                # Try to connect with pool credentials
+                max_retries = len(generator.config.email_pool)
+                connected = False
+                
+                for attempt in range(max_retries):
+                    try:
+                        if self.mail_handler:
+                            self.mail_handler.disconnect()
+                        
+                        self.mail_handler = IMAPMailHandler(
+                            imap_host=settings['host'],
+                            imap_email=email_result.imap_lookup_email,
+                            imap_password=email_result.imap_password
+                        )
+                        if self.mail_handler.connect():
+                            connected = True
+                            break
+                    except Exception as e:
+                        print(f"[!] IMAP auth failed for {email_result.imap_lookup_email}: {e}")
+                    
+                    # Try next email from pool
+                    if attempt < max_retries - 1:
+                        print(f"[EMAIL] Trying next email from pool...")
+                        email_result = generator.generate()
+                        print(f"[EMAIL] Switched to: {email_result.registration_email}")
+                
+                if not connected:
+                    raise ValueError("All pool emails failed IMAP authentication")
             
             # Вызываем основной метод регистрации
             result = self.register_single(
