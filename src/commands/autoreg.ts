@@ -10,6 +10,7 @@ import * as os from 'os';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
 import { ImapProfileProvider } from '../providers/ImapProfileProvider';
 import { autoregProcess } from '../process-manager';
+import { PythonEnvManager } from '../utils/python-env';
 
 // Get autoreg directory
 export function getAutoregDir(context: vscode.ExtensionContext): string {
@@ -53,7 +54,18 @@ function copyRecursive(src: string, dst: string) {
   }
 }
 
+// Cache for PythonEnvManager instances
+const envManagerCache = new Map<string, PythonEnvManager>();
+
+function getEnvManager(autoregDir: string): PythonEnvManager {
+  if (!envManagerCache.has(autoregDir)) {
+    envManagerCache.set(autoregDir, new PythonEnvManager(autoregDir));
+  }
+  return envManagerCache.get(autoregDir)!;
+}
+
 export function getPythonCommand(): string {
+  // Legacy function for backward compatibility
   const { spawnSync } = require('child_process');
   const py3 = spawnSync('python3', ['--version'], { encoding: 'utf8' });
   if (py3.status === 0) return 'python3';
@@ -62,51 +74,20 @@ export function getPythonCommand(): string {
   return 'python';
 }
 
-function getPipCommand(): string {
-  const { spawnSync } = require('child_process');
-  const pip3 = spawnSync('pip3', ['--version'], { encoding: 'utf8' });
-  if (pip3.status === 0) return 'pip3';
-  return 'pip';
-}
+async function setupPythonEnv(autoregDir: string, provider: KiroAccountsProvider): Promise<PythonEnvManager | null> {
+  const envManager = getEnvManager(autoregDir);
 
-async function installDependencies(autoregDir: string, provider: KiroAccountsProvider): Promise<boolean> {
-  const { spawnSync } = require('child_process');
-  const isWindows = process.platform === 'win32';
+  provider.setStatus('{"step":0,"totalSteps":8,"stepName":"Setup","detail":"Setting up Python environment..."}');
 
-  const requirementsPath = path.join(autoregDir, 'requirements.txt');
-  if (fs.existsSync(requirementsPath)) {
-    provider.addLog('Installing Python dependencies...');
-    provider.setStatus('{"step":0,"totalSteps":8,"stepName":"Setup","detail":"Installing Python deps..."}');
+  const result = await envManager.setup((msg) => provider.addLog(msg));
 
-    const pipCmd = getPipCommand();
-    provider.addLog(`Using: ${pipCmd} install -r requirements.txt`);
-
-    const pipResult = spawnSync(pipCmd, ['install', '-r', requirementsPath, '--user', '--quiet'], {
-      cwd: autoregDir,
-      encoding: 'utf8',
-      timeout: 180000,
-      shell: isWindows
-    });
-
-    if (pipResult.status === 0) {
-      provider.addLog('✓ Python dependencies installed');
-    } else {
-      provider.addLog('Retrying without --user flag...');
-      const pipRetry = spawnSync(pipCmd, ['install', '-r', requirementsPath, '--quiet'], {
-        cwd: autoregDir,
-        encoding: 'utf8',
-        timeout: 180000,
-        shell: isWindows
-      });
-      if (pipRetry.status !== 0) {
-        provider.addLog(`✗ pip install failed: ${pipRetry.stderr || pipRetry.error?.message}`);
-        return false;
-      }
-      provider.addLog('✓ Python dependencies installed (system-wide)');
-    }
+  if (!result.success) {
+    provider.addLog(`❌ ${result.error}`);
+    provider.setStatus('');
+    return null;
   }
 
-  return true;
+  return envManager;
 }
 
 export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
@@ -152,45 +133,26 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const emailPool = profileEnv.EMAIL_POOL || '';
   const profileId = profileEnv.PROFILE_ID;
 
-  const pythonCmd = getPythonCommand();
   provider.addLog(`Platform: ${process.platform}`);
-  provider.addLog(`Python command: ${pythonCmd}`);
 
-  const { spawnSync, spawn } = require('child_process');
-  const pyCheck = spawnSync(pythonCmd, ['--version'], { encoding: 'utf8', shell: process.platform === 'win32' });
-  if (pyCheck.status !== 0) {
-    provider.addLog(`✗ Python not found: ${pyCheck.stderr || pyCheck.error}`);
-    provider.setStatus('✗ Python not found. Install Python 3.10+');
+  // Setup Python virtual environment
+  const envManager = await setupPythonEnv(autoregDir, provider);
+  if (!envManager) {
+    provider.setStatus('❌ Python setup failed. Install Python 3.8+');
     return;
   }
-  provider.addLog(`✓ ${pyCheck.stdout?.trim() || 'Python OK'}`);
 
-  const depsInstalledFlag = path.join(autoregDir, '.deps_installed');
-  if (!fs.existsSync(depsInstalledFlag)) {
-    provider.addLog('First run - installing dependencies...');
-    const installed = await installDependencies(autoregDir, provider);
-    if (installed) {
-      fs.writeFileSync(depsInstalledFlag, new Date().toISOString());
-      provider.addLog('✓ Dependencies installed');
-    } else {
-      provider.addLog('✗ Failed to install dependencies');
-      provider.setStatus('✗ Failed to install dependencies. Check console.');
-      return;
-    }
-  }
+  const pythonPath = envManager.getPythonPath();
+  provider.addLog(`✓ Using venv Python: ${pythonPath}`);
 
   provider.setStatus('{"step":1,"totalSteps":8,"stepName":"Starting","detail":"Initializing..."}');
 
-  // -u flag disables Python output buffering for real-time logs
-  // Use register_auto for non-interactive mode with JSON progress output
-  const args = ['-u', '-m', 'registration.register_auto'];
-  if (headless) args.push('--headless');
-  if (deviceFlow) args.push('--device-flow');
+  // Args for register_auto module
+  const scriptArgs = ['-m', 'registration.register_auto'];
+  if (headless) scriptArgs.push('--headless');
+  if (deviceFlow) scriptArgs.push('--device-flow');
 
-  const env = {
-    ...process.env,
-    PYTHONUNBUFFERED: '1',  // Also set env var for unbuffered output
-    PYTHONIOENCODING: 'utf-8',  // Fix encoding for Windows (cp1251 doesn't support emoji)
+  const env: Record<string, string> = {
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
@@ -204,13 +166,9 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
 
   provider.addLog(`Starting autoreg...`);
   provider.addLog(`Working dir: ${autoregDir}`);
-  provider.addLog(`Python: ${pythonCmd}`);
   provider.addLog(`Profile: ${activeProfile?.name || 'Legacy settings'}`);
   provider.addLog(`Strategy: ${emailStrategy}`);
-  provider.addLog(`Headless mode: ${headless ? 'ON' : 'OFF'}`);
-  provider.addLog(`Spoofing mode: ${spoofing ? 'ON' : 'OFF'}`);
-  provider.addLog(`Device Flow: ${deviceFlow ? 'ON' : 'OFF'}`);
-  provider.addLog(`Command: ${pythonCmd} ${args.join(' ')}`);
+  provider.addLog(`Headless: ${headless ? 'ON' : 'OFF'}, Spoofing: ${spoofing ? 'ON' : 'OFF'}, DeviceFlow: ${deviceFlow ? 'ON' : 'OFF'}`);
 
   // Use ProcessManager for better control
   autoregProcess.removeAllListeners();
@@ -271,7 +229,17 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     provider.refresh();
   });
 
-  autoregProcess.start(pythonCmd, args, { cwd: autoregDir, env });
+  // Start with venv Python
+  autoregProcess.start(pythonPath, ['-u', ...scriptArgs], {
+    cwd: autoregDir,
+    env: {
+      ...process.env,
+      ...env,
+      VIRTUAL_ENV: path.join(autoregDir, '.venv'),
+      PYTHONUNBUFFERED: '1',
+      PYTHONIOENCODING: 'utf-8'
+    }
+  });
 }
 
 function parseProgressLine(line: string, provider: KiroAccountsProvider) {
@@ -311,19 +279,21 @@ export async function patchKiro(context: vscode.ExtensionContext, provider: Kiro
 
   provider.addLog('🔧 Patching Kiro...');
 
-  const pythonCmd = getPythonCommand();
-  const { spawnSync } = require('child_process');
+  const envManager = getEnvManager(autoregDir);
+
+  // Ensure venv is set up
+  if (!envManager.isVenvValid()) {
+    const result = await envManager.setup((msg) => provider.addLog(msg));
+    if (!result.success) {
+      provider.addLog(`❌ ${result.error}`);
+      return;
+    }
+  }
 
   const args = ['cli.py', 'patch', 'apply', '--skip-check'];
   if (force) args.push('--force');
 
-  const result = spawnSync(pythonCmd, args, {
-    cwd: autoregDir,
-    encoding: 'utf8',
-    timeout: 30000,
-    shell: process.platform === 'win32',
-    env: { ...process.env, PYTHONPATH: autoregDir }
-  });
+  const result = envManager.runScriptSync(args);
 
   if (result.stdout) {
     result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
@@ -360,18 +330,9 @@ export async function unpatchKiro(context: vscode.ExtensionContext, provider: Ki
 
   provider.addLog('🔧 Removing Kiro patch...');
 
-  const pythonCmd = getPythonCommand();
-  const { spawnSync } = require('child_process');
-
+  const envManager = getEnvManager(autoregDir);
   const args = ['cli.py', 'patch', 'remove', '--skip-check'];
-
-  const result = spawnSync(pythonCmd, args, {
-    cwd: autoregDir,
-    encoding: 'utf8',
-    timeout: 30000,
-    shell: process.platform === 'win32',
-    env: { ...process.env, PYTHONPATH: autoregDir }
-  });
+  const result = envManager.runScriptSync(args);
 
   if (result.stdout) {
     result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
@@ -400,18 +361,9 @@ export async function generateMachineId(context: vscode.ExtensionContext, provid
 
   provider.addLog('🔄 Generating new Machine ID...');
 
-  const pythonCmd = getPythonCommand();
-  const { spawnSync } = require('child_process');
-
+  const envManager = getEnvManager(autoregDir);
   const args = ['cli.py', 'patch', 'generate-id'];
-
-  const result = spawnSync(pythonCmd, args, {
-    cwd: autoregDir,
-    encoding: 'utf8',
-    timeout: 30000,
-    shell: process.platform === 'win32',
-    env: { ...process.env, PYTHONPATH: autoregDir }
-  });
+  const result = envManager.runScriptSync(args);
 
   if (result.stdout) {
     result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
@@ -463,15 +415,32 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
     return { isPatched: false, error: 'Patcher service not found' };
   }
 
-  const pythonCmd = getPythonCommand();
-  const { spawnSync } = require('child_process');
-
   // Use dedicated script file to avoid inline Python issues on Windows
   const scriptPath = path.join(autoregDir, 'scripts', 'patch_status.py');
 
   if (!fs.existsSync(scriptPath)) {
     return { isPatched: false, error: 'patch_status.py not found' };
   }
+
+  const envManager = getEnvManager(autoregDir);
+
+  // For patch status check, we can use system Python if venv not ready
+  // This allows checking status before full setup
+  if (envManager.isVenvValid()) {
+    const result = envManager.runScriptSync([scriptPath], { timeout: 10000 });
+    if (result.status === 0 && result.stdout) {
+      try {
+        return JSON.parse(result.stdout.trim());
+      } catch {
+        return { isPatched: false, error: 'Failed to parse status' };
+      }
+    }
+    return { isPatched: false, error: result.stderr || 'Unknown error' };
+  }
+
+  // Fallback to system Python for initial check
+  const { spawnSync } = require('child_process');
+  const pythonCmd = getPythonCommand();
 
   const result = spawnSync(pythonCmd, [scriptPath], {
     cwd: autoregDir,
@@ -503,18 +472,9 @@ export async function resetMachineId(context: vscode.ExtensionContext, provider:
 
   provider.addLog('🔄 Resetting Machine ID...');
 
-  const pythonCmd = getPythonCommand();
-  const { spawnSync } = require('child_process');
-
+  const envManager = getEnvManager(autoregDir);
   const args = ['cli.py', 'machine', 'reset'];
-
-  const result = spawnSync(pythonCmd, args, {
-    cwd: autoregDir,
-    encoding: 'utf8',
-    timeout: 30000,
-    shell: process.platform === 'win32',
-    env: { ...process.env, PYTHONPATH: autoregDir }
-  });
+  const result = envManager.runScriptSync(args);
 
   if (result.stdout) {
     result.stdout.split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
@@ -535,9 +495,6 @@ export async function resetMachineId(context: vscode.ExtensionContext, provider:
     vscode.window.showInformationMessage('Machine ID reset! Restart Kiro for changes to take effect.');
   } else {
     provider.addLog(`❌ Machine ID reset failed (code ${result.status})`);
-    if (result.error) {
-      provider.addLog(`Error: ${result.error.message}`);
-    }
     vscode.window.showErrorMessage('Machine ID reset failed. Check console for details.');
   }
 }
@@ -552,45 +509,48 @@ export async function importSsoToken(context: vscode.ExtensionContext, provider:
   provider.addLog('🌐 Starting SSO import...');
   provider.setStatus('{"step":1,"totalSteps":3,"stepName":"SSO Import","detail":"Connecting to AWS..."}');
 
-  const pythonCmd = getPythonCommand();
-  const { spawn } = require('child_process');
+  const envManager = getEnvManager(autoregDir);
+
+  // Ensure venv is set up
+  if (!envManager.isVenvValid()) {
+    const result = await envManager.setup((msg) => provider.addLog(msg));
+    if (!result.success) {
+      provider.addLog(`❌ ${result.error}`);
+      provider.setStatus('');
+      return;
+    }
+  }
 
   // Don't use -a flag to avoid overwriting current active token
   const args = ['cli.py', 'sso-import', bearerToken];
 
-  const proc = spawn(pythonCmd, args, {
-    cwd: autoregDir,
-    env: { ...process.env, PYTHONPATH: autoregDir }
-  });
-
-  proc.stdout.on('data', (data: Buffer) => {
-    const line = data.toString().trim();
-    provider.addLog(line);
-  });
-
-  proc.stderr.on('data', (data: Buffer) => {
-    const line = data.toString().trim();
-    if (line && !line.includes('InsecureRequestWarning')) {
-      provider.addLog(`⚠️ ${line}`);
-    }
-  });
-
-  proc.on('close', (code: number) => {
-    if (code === 0) {
-      provider.addLog('✅ SSO import successful!');
+  envManager.runScript(args, {
+    onStdout: (data) => {
+      const line = data.trim();
+      if (line) provider.addLog(line);
+    },
+    onStderr: (data) => {
+      const line = data.trim();
+      if (line && !line.includes('InsecureRequestWarning')) {
+        provider.addLog(`⚠️ ${line}`);
+      }
+    },
+    onClose: (code) => {
+      if (code === 0) {
+        provider.addLog('✅ SSO import successful!');
+        provider.setStatus('');
+        vscode.window.showInformationMessage('Account imported successfully!');
+        provider.refresh();
+      } else {
+        provider.addLog(`❌ SSO import failed (code ${code})`);
+        provider.setStatus('');
+        vscode.window.showErrorMessage('SSO import failed. Check console for details.');
+      }
+    },
+    onError: (err) => {
+      provider.addLog(`❌ Error: ${err.message}`);
       provider.setStatus('');
-      vscode.window.showInformationMessage('Account imported successfully!');
-      provider.refresh();
-    } else {
-      provider.addLog(`❌ SSO import failed (code ${code})`);
-      provider.setStatus('');
-      vscode.window.showErrorMessage('SSO import failed. Check console for details.');
+      vscode.window.showErrorMessage(`SSO import error: ${err.message}`);
     }
-  });
-
-  proc.on('error', (err: Error) => {
-    provider.addLog(`❌ Error: ${err.message}`);
-    provider.setStatus('');
-    vscode.window.showErrorMessage(`SSO import error: ${err.message}`);
   });
 }
