@@ -273,4 +273,15 @@ export const ru: Translations = {
   importAccountsDesc: 'Импорт аккаунтов из файла экспорта',
   exportSelected: 'Экспорт выбранных',
   exportAll: 'Экспорт всех',
+
+  // Selection Mode (Bulk Actions)
+  selectMode: 'Выбрать',
+  selected: 'выбрано',
+  selectAll: 'Выбрать все',
+  deselectAll: 'Снять выбор',
+  refreshSelected: 'Обновить токены',
+  deleteSelected: 'Удалить выбранные',
+  deleteSelectedConfirm: 'Удалить {count} выбранных аккаунтов?',
+  selectedAccountsDeleted: '{count} аккаунтов удалено',
+  refreshingTokens: 'Обновляем токены...',
 };

@@ -369,6 +369,81 @@
   .hero-usage {
     color: var(--muted);
   }
+  
+  /* === Step Indicators (Registration Progress) === */
+  .step-indicators {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 12px 0;
+    padding: 8px 4px;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius-md);
+  }
+  .step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    min-width: 36px;
+  }
+  .step-icon {
+    font-size: 14px;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+  }
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    opacity: 0.3;
+    transition: all 0.3s ease;
+  }
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--muted);
+    opacity: 0.2;
+    min-width: 8px;
+    max-width: 20px;
+  }
+  .step-indicator.done .step-icon { opacity: 1; }
+  .step-indicator.done .step-dot { 
+    background: var(--accent); 
+    opacity: 1;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .step-indicator.active .step-icon { 
+    opacity: 1; 
+    animation: stepPulse 1s ease-in-out infinite;
+  }
+  .step-indicator.active .step-dot { 
+    background: var(--accent); 
+    opacity: 1;
+    animation: stepGlow 1s ease-in-out infinite;
+  }
+  .step-indicator.error .step-icon { opacity: 1; }
+  .step-indicator.error .step-dot { 
+    background: var(--danger); 
+    opacity: 1;
+    animation: stepError 0.5s ease-in-out infinite;
+  }
+  @keyframes stepPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+  @keyframes stepGlow {
+    0%, 100% { box-shadow: 0 0 4px var(--accent-glow); }
+    50% { box-shadow: 0 0 12px var(--accent-glow); }
+  }
+  @keyframes stepError {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
   .hero-percent {
     font-weight: 700;
     color: var(--accent);
@@ -551,6 +626,98 @@
     color: var(--danger);
   }
   .account-btn svg { width: 12px; height: 12px; }
+
+  /* === Account Checkbox (Selection Mode) === */
+  .account-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+    cursor: pointer;
+  }
+  .account-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
+  .account-checkbox .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--muted);
+    border-radius: 3px;
+    background: transparent;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .account-checkbox:hover .checkmark {
+    border-color: var(--accent);
+  }
+  .account-checkbox input:checked ~ .checkmark {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .account-checkbox input:checked ~ .checkmark::after {
+    content: '✓';
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .account.selected {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+  }
+
+  /* === Bulk Actions Bar === */
+  .bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-top: 8px;
+    background: linear-gradient(135deg, var(--accent-dim) 0%, rgba(63,182,139,0.05) 100%);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+  }
+  .bulk-actions-bar.hidden {
+    display: none;
+  }
+  .bulk-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .bulk-count {
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .bulk-buttons {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  #selectModeBtn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 
   /* === Empty State === */
   .empty-state {
@@ -2550,12 +2717,26 @@
       </button>
     
         <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
+        <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="Select" id="selectModeBtn">☑️</button>
         <button class="btn btn-secondary btn-icon" onclick="refresh()" title="Reload accounts and update token status"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 2v5h-5l1.8-1.8A4.5 4.5 0 1 0 12.5 8h1a5.5 5.5 0 1 1-1.6-3.9L13.5 2z"/></svg></button>
       </div>
       <div class="search-wrapper">
         <span class="search-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l4 4 1.4-1.4-4-4zM6 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg></span>
         <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..." oninput="searchAccounts(this.value)">
         <button class="search-clear" onclick="clearSearch()">×</button>
+      </div>
+      <div class="bulk-actions-bar hidden" id="bulkActionsBar">
+        <div class="bulk-info">
+          <span class="bulk-count" id="bulkCount">0</span> selected
+        </div>
+        <div class="bulk-buttons">
+          <button class="btn btn-secondary btn-sm" onclick="selectAllAccounts()">☑️</button>
+          <button class="btn btn-secondary btn-sm" onclick="deselectAllAccounts()">☐</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportSelectedAccounts()">📤</button>
+          <button class="btn btn-secondary btn-sm" onclick="refreshSelectedTokens()">🔄</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSelectedAccounts()">🗑️</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="toggleSelectionMode()">✕</button>
       </div>
     </div>
   
@@ -2963,7 +3144,7 @@
     // Standalone Web App Script
     // Auto-generated from VS Code extension components
     
-    const T = {"kiroAccounts":"Kiro Accounts","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Reg","autoRegTip":"Create new AWS Builder ID automatically","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","step":"Step","connected":"Connected","confirm":"Confirm","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patch":"Patch","removePatch":"Remove","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All"};
+    const T = {"kiroAccounts":"Kiro Accounts","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Reg","autoRegTip":"Create new AWS Builder ID automatically","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","step":"Step","connected":"Connected","confirm":"Confirm","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patch":"Patch","removePatch":"Remove","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All","selectMode":"Select","selected":"selected","selectAll":"Select All","deselectAll":"Deselect All","refreshSelected":"Refresh Tokens","deleteSelected":"Delete Selected","deleteSelectedConfirm":"Delete {count} selected accounts?","selectedAccountsDeleted":"{count} accounts deleted","refreshingTokens":"Refreshing tokens..."};
     
     // WebSocket connection
     let ws = null;
@@ -3097,6 +3278,19 @@
       if (pendingAction?.type === 'delete') {
         sendCommand('deleteAccount', { email: pendingAction.filename });
         showToast(T.accountDeleted, 'success');
+      } else if (pendingAction?.type === 'deleteExhausted') {
+        sendCommand('deleteExhaustedAccounts');
+        showToast(T.badAccountsDeleted || 'Bad accounts deleted', 'success');
+      } else if (pendingAction?.type === 'deleteBanned') {
+        sendCommand('deleteBannedAccounts');
+        showToast(T.bannedAccountsDeleted || 'Banned accounts deleted', 'success');
+      } else if (pendingAction?.type === 'deleteSelected') {
+        sendCommand('deleteSelectedAccounts', { filenames: pendingAction.filenames });
+        showToast((T.selectedAccountsDeleted || '{count} accounts deleted').replace('{count}', pendingAction.filenames.length), 'success');
+        selectionMode = false;
+        selectedAccounts.clear();
+        const bar = document.getElementById('bulkActionsBar');
+        if (bar) bar.classList.add('hidden');
       }
       closeDialog();
     }
@@ -3605,6 +3799,100 @@
       sendCommand('importAccounts');
     }
     
+    // === Selection Mode (Bulk Actions) ===
+    
+    let selectionMode = false;
+    let selectedAccounts = new Set();
+    
+    function toggleSelectionMode() {
+      selectionMode = !selectionMode;
+      selectedAccounts.clear();
+      
+      // Toggle bulk actions bar visibility
+      const bar = document.getElementById('bulkActionsBar');
+      const selectBtn = document.getElementById('selectModeBtn');
+      if (bar) bar.classList.toggle('hidden', !selectionMode);
+      if (selectBtn) selectBtn.classList.toggle('active', selectionMode);
+      
+      // Toggle checkbox visibility - add/remove checkboxes dynamically
+      document.querySelectorAll('.account').forEach(card => {
+        let checkbox = card.querySelector('.account-checkbox');
+        if (selectionMode) {
+          if (!checkbox) {
+            const filename = card.dataset.filename;
+            checkbox = document.createElement('label');
+            checkbox.className = 'account-checkbox';
+            checkbox.onclick = (e) => e.stopPropagation();
+            checkbox.innerHTML = '<input type="checkbox" data-filename="' + filename + '" onchange="toggleAccountSelection(\'' + filename + '\', this.checked)"><span class="checkmark"></span>';
+            card.insertBefore(checkbox, card.firstChild);
+          }
+        } else {
+          if (checkbox) checkbox.remove();
+          card.classList.remove('selected');
+        }
+      });
+      
+      updateBulkActionsBar();
+    }
+    
+    function toggleAccountSelection(filename, checked) {
+      if (checked) {
+        selectedAccounts.add(filename);
+      } else {
+        selectedAccounts.delete(filename);
+      }
+      
+      const card = document.querySelector('.account[data-filename="' + filename + '"]');
+      if (card) card.classList.toggle('selected', checked);
+      
+      updateBulkActionsBar();
+    }
+    
+    function selectAllAccounts() {
+      document.querySelectorAll('.account-checkbox input').forEach(cb => {
+        cb.checked = true;
+        const filename = cb.dataset.filename;
+        if (filename) selectedAccounts.add(filename);
+      });
+      document.querySelectorAll('.account').forEach(card => card.classList.add('selected'));
+      updateBulkActionsBar();
+    }
+    
+    function deselectAllAccounts() {
+      document.querySelectorAll('.account-checkbox input').forEach(cb => {
+        cb.checked = false;
+      });
+      document.querySelectorAll('.account').forEach(card => card.classList.remove('selected'));
+      selectedAccounts.clear();
+      updateBulkActionsBar();
+    }
+    
+    function updateBulkActionsBar() {
+      const countEl = document.getElementById('bulkCount');
+      if (countEl) {
+        countEl.textContent = selectedAccounts.size.toString();
+      }
+    }
+    
+    function exportSelectedAccounts() {
+      if (selectedAccounts.size === 0) return;
+      sendCommand('exportSelectedAccounts', { filenames: Array.from(selectedAccounts) });
+    }
+    
+    function refreshSelectedTokens() {
+      if (selectedAccounts.size === 0) return;
+      sendCommand('refreshSelectedTokens', { filenames: Array.from(selectedAccounts) });
+      showToast(T.refreshingTokens || 'Refreshing tokens...', 'success');
+    }
+    
+    function deleteSelectedAccounts() {
+      if (selectedAccounts.size === 0) return;
+      pendingAction = { type: 'deleteSelected', filenames: Array.from(selectedAccounts) };
+      document.getElementById('dialogTitle').textContent = T.deleteTitle;
+      document.getElementById('dialogText').textContent = (T.deleteSelectedConfirm || 'Delete {count} selected accounts?').replace('{count}', selectedAccounts.size);
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
     // Export to window
     window.openSettings = openSettings;
     window.closeSettings = closeSettings;
@@ -3647,6 +3935,13 @@
     window.exportAllAccounts = exportAllAccounts;
     window.importAccounts = importAccounts;
     window.renderActiveProfile = renderActiveProfile;
+    window.toggleSelectionMode = toggleSelectionMode;
+    window.toggleAccountSelection = toggleAccountSelection;
+    window.selectAllAccounts = selectAllAccounts;
+    window.deselectAllAccounts = deselectAllAccounts;
+    window.exportSelectedAccounts = exportSelectedAccounts;
+    window.refreshSelectedTokens = refreshSelectedTokens;
+    window.deleteSelectedAccounts = deleteSelectedAccounts;
   </script>
 </body>
 </html>
