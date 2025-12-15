@@ -22,8 +22,19 @@ class AutomationSpoofModule(BaseSpoofModule):
     // ============================================
     // WEBDRIVER FLAG (критично!)
     // ============================================
+    // Должен быть false, не undefined - undefined подозрительно
     Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined,
+        get: () => false,
+        configurable: true
+    });
+    
+    // Также удаляем из prototype
+    try {
+        delete Navigator.prototype.webdriver;
+    } catch(e) {}
+    
+    Object.defineProperty(Navigator.prototype, 'webdriver', {
+        get: () => false,
         configurable: true
     });
     

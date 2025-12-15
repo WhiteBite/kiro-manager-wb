@@ -21,11 +21,13 @@ from .webrtc import WebRTCSpoofModule
 from .fonts import FontsSpoofModule
 from .sensors import SensorsSpoofModule
 from .geolocation import GeolocationSpoofModule
+from .cdp_hide import CDPHideSpoofModule
 
 
 # Все JS-модули в порядке применения
 JS_MODULES = [
     AutomationSpoofModule,   # Сначала скрываем автоматизацию
+    CDPHideSpoofModule,      # Скрываем следы CDP
     NavigatorSpoofModule,    # Navigator properties
     ScreenSpoofModule,       # Screen properties
     WebGLSpoofModule,        # WebGL vendor/renderer
