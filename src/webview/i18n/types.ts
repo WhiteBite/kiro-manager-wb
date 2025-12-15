@@ -330,4 +330,17 @@ export interface Translations {
   exportSelected: string;
   exportAll: string;
   poolEmpty: string;
+
+  // ============================================
+  // Selection Mode (Bulk Actions)
+  // ============================================
+  selectMode: string;
+  selected: string;
+  selectAll: string;
+  deselectAll: string;
+  refreshSelected: string;
+  deleteSelected: string;
+  deleteSelectedConfirm: string;
+  selectedAccountsDeleted: string;
+  refreshingTokens: string;
 }

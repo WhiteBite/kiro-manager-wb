@@ -77,6 +77,81 @@ export const layout = `
   .hero-usage {
     color: var(--muted);
   }
+  
+  /* === Step Indicators (Registration Progress) === */
+  .step-indicators {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 12px 0;
+    padding: 8px 4px;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius-md);
+  }
+  .step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    min-width: 36px;
+  }
+  .step-icon {
+    font-size: 14px;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+  }
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    opacity: 0.3;
+    transition: all 0.3s ease;
+  }
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--muted);
+    opacity: 0.2;
+    min-width: 8px;
+    max-width: 20px;
+  }
+  .step-indicator.done .step-icon { opacity: 1; }
+  .step-indicator.done .step-dot { 
+    background: var(--accent); 
+    opacity: 1;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .step-indicator.active .step-icon { 
+    opacity: 1; 
+    animation: stepPulse 1s ease-in-out infinite;
+  }
+  .step-indicator.active .step-dot { 
+    background: var(--accent); 
+    opacity: 1;
+    animation: stepGlow 1s ease-in-out infinite;
+  }
+  .step-indicator.error .step-icon { opacity: 1; }
+  .step-indicator.error .step-dot { 
+    background: var(--danger); 
+    opacity: 1;
+    animation: stepError 0.5s ease-in-out infinite;
+  }
+  @keyframes stepPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+  @keyframes stepGlow {
+    0%, 100% { box-shadow: 0 0 4px var(--accent-glow); }
+    50% { box-shadow: 0 0 12px var(--accent-glow); }
+  }
+  @keyframes stepError {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
   .hero-percent {
     font-weight: 700;
     color: var(--accent);
@@ -259,6 +334,98 @@ export const layout = `
     color: var(--danger);
   }
   .account-btn svg { width: 12px; height: 12px; }
+
+  /* === Account Checkbox (Selection Mode) === */
+  .account-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+    cursor: pointer;
+  }
+  .account-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
+  .account-checkbox .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--muted);
+    border-radius: 3px;
+    background: transparent;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .account-checkbox:hover .checkmark {
+    border-color: var(--accent);
+  }
+  .account-checkbox input:checked ~ .checkmark {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .account-checkbox input:checked ~ .checkmark::after {
+    content: '✓';
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .account.selected {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+  }
+
+  /* === Bulk Actions Bar === */
+  .bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-top: 8px;
+    background: linear-gradient(135deg, var(--accent-dim) 0%, rgba(63,182,139,0.05) 100%);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+  }
+  .bulk-actions-bar.hidden {
+    display: none;
+  }
+  .bulk-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .bulk-count {
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .bulk-buttons {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  #selectModeBtn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 
   /* === Empty State === */
   .empty-state {

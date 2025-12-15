@@ -10,9 +10,13 @@ import { Translations } from '../i18n/types';
 export interface AccountListProps {
   accounts: AccountInfo[];
   t: Translations;
+  selectionMode?: boolean;
+  selectedCount?: number;
 }
 
-function renderAccount(acc: AccountInfo, index: number, t: Translations): string {
+
+
+function renderAccount(acc: AccountInfo, index: number, t: Translations, selectionMode: boolean = false): string {
   const email = getAccountEmail(acc);
   const avatar = email.charAt(0).toUpperCase();
   const usage = acc.usage;
@@ -44,8 +48,17 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations): string
   // Ban reason tooltip
   const banTooltip = isBanned && usage?.banReason ? ` title="${escapeHtml(usage.banReason)}"` : '';
 
+  // Checkbox for selection mode
+  const checkbox = selectionMode ? `
+    <label class="account-checkbox" onclick="event.stopPropagation()">
+      <input type="checkbox" data-filename="${escapeHtml(acc.filename)}" onchange="toggleAccountSelection('${escapeHtml(acc.filename)}', this.checked)">
+      <span class="checkmark"></span>
+    </label>
+  ` : '';
+
   return `
-    <div class="${classes}" data-index="${index}" onclick="switchAccount('${escapeHtml(acc.filename)}')"${banTooltip}>
+    <div class="${classes}" data-index="${index}" data-filename="${escapeHtml(acc.filename)}" onclick="switchAccount('${escapeHtml(acc.filename)}')"${banTooltip}>
+      ${checkbox}
       <div class="account-avatar">
         ${avatar}
         <span class="account-status ${statusClass}"></span>
@@ -70,7 +83,7 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations): string
   `;
 }
 
-export function renderAccountList({ accounts, t }: AccountListProps): string {
+export function renderAccountList({ accounts, t, selectionMode = false, selectedCount = 0 }: AccountListProps): string {
   if (accounts.length === 0) {
     return `
       <div class="empty-state">
@@ -112,12 +125,12 @@ export function renderAccountList({ accounts, t }: AccountListProps): string {
 
   if (active.length > 0) {
     html += `<div class="list-group"><span>${t.activeGroup}</span><span class="list-group-count">${active.length}</span></div>`;
-    active.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    active.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
 
   if (ready.length > 0) {
     html += `<div class="list-group"><span>${t.readyGroup}</span><span class="list-group-count">${ready.length}</span></div>`;
-    ready.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    ready.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
 
   if (expired.length > 0) {
@@ -128,7 +141,7 @@ export function renderAccountList({ accounts, t }: AccountListProps): string {
         <span class="list-group-count">${expired.length}</span>
       </div>
     `;
-    expired.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    expired.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
 
   if (exhausted.length > 0) {
@@ -139,7 +152,7 @@ export function renderAccountList({ accounts, t }: AccountListProps): string {
         <span class="list-group-count">${exhausted.length}</span>
       </div>
     `;
-    exhausted.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    exhausted.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
 
   // Banned accounts - separate group with skull icon
@@ -151,7 +164,7 @@ export function renderAccountList({ accounts, t }: AccountListProps): string {
         <span class="list-group-count">${banned.length}</span>
       </div>
     `;
-    banned.forEach(acc => { html += renderAccount(acc, globalIndex++, t); });
+    banned.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
 
   return html;

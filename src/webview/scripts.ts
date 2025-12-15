@@ -318,6 +318,11 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       } else if (pendingAction?.type === 'deleteBanned') {
         vscode.postMessage({ command: 'deleteBannedAccounts' });
         showToast(T.bannedAccountsDeleted || 'Banned accounts deleted', 'success');
+      } else if (pendingAction?.type === 'deleteSelected') {
+        vscode.postMessage({ command: 'deleteSelectedAccounts', filenames: pendingAction.filenames });
+        showToast((T.selectedAccountsDeleted || '{count} accounts deleted').replace('{count}', pendingAction.filenames.length), 'success');
+        selectionMode = false;
+        selectedAccounts.clear();
       } else if (pendingAction?.type === 'resetMachineId') {
         vscode.postMessage({ command: 'resetMachineId' });
         showToast(T.resettingMachineId, 'success');
@@ -897,6 +902,101 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       showToast(T.emailsImported.replace('{count}', emails.length), 'success');
     }
     
+    // === Selection Mode (Bulk Actions) ===
+    
+    let selectionMode = false;
+    let selectedAccounts = new Set();
+    
+    function toggleSelectionMode() {
+      selectionMode = !selectionMode;
+      selectedAccounts.clear();
+      
+      // Toggle bulk actions bar visibility
+      const bar = document.getElementById('bulkActionsBar');
+      const selectBtn = document.getElementById('selectModeBtn');
+      if (bar) bar.classList.toggle('hidden', !selectionMode);
+      if (selectBtn) selectBtn.classList.toggle('active', selectionMode);
+      
+      // Toggle checkbox visibility - add/remove checkboxes dynamically
+      document.querySelectorAll('.account').forEach(card => {
+        let checkbox = card.querySelector('.account-checkbox');
+        if (selectionMode) {
+          if (!checkbox) {
+            const filename = card.dataset.filename;
+            checkbox = document.createElement('label');
+            checkbox.className = 'account-checkbox';
+            checkbox.onclick = (e) => e.stopPropagation();
+            checkbox.innerHTML = '<input type="checkbox" data-filename="' + filename + '" onchange="toggleAccountSelection(\\'' + filename + '\\', this.checked)"><span class="checkmark"></span>';
+            card.insertBefore(checkbox, card.firstChild);
+          }
+        } else {
+          if (checkbox) checkbox.remove();
+          card.classList.remove('selected');
+        }
+      });
+      
+      updateBulkActionsBar();
+    }
+    
+    function toggleAccountSelection(filename, checked) {
+      if (checked) {
+        selectedAccounts.add(filename);
+      } else {
+        selectedAccounts.delete(filename);
+      }
+      
+      // Update visual state
+      const card = document.querySelector('.account[data-filename="' + filename + '"]');
+      if (card) card.classList.toggle('selected', checked);
+      
+      updateBulkActionsBar();
+    }
+    
+    function selectAllAccounts() {
+      document.querySelectorAll('.account-checkbox input').forEach(cb => {
+        cb.checked = true;
+        const filename = cb.dataset.filename;
+        if (filename) selectedAccounts.add(filename);
+      });
+      document.querySelectorAll('.account').forEach(card => card.classList.add('selected'));
+      updateBulkActionsBar();
+    }
+    
+    function deselectAllAccounts() {
+      document.querySelectorAll('.account-checkbox input').forEach(cb => {
+        cb.checked = false;
+      });
+      document.querySelectorAll('.account').forEach(card => card.classList.remove('selected'));
+      selectedAccounts.clear();
+      updateBulkActionsBar();
+    }
+    
+    function updateBulkActionsBar() {
+      const countEl = document.getElementById('bulkCount');
+      if (countEl) {
+        countEl.textContent = selectedAccounts.size.toString();
+      }
+    }
+    
+    function exportSelectedAccounts() {
+      if (selectedAccounts.size === 0) return;
+      vscode.postMessage({ command: 'exportSelectedAccounts', filenames: Array.from(selectedAccounts) });
+    }
+    
+    function refreshSelectedTokens() {
+      if (selectedAccounts.size === 0) return;
+      vscode.postMessage({ command: 'refreshSelectedTokens', filenames: Array.from(selectedAccounts) });
+      showToast(T.refreshingTokens || 'Refreshing tokens...', 'success');
+    }
+    
+    function deleteSelectedAccounts() {
+      if (selectedAccounts.size === 0) return;
+      pendingAction = { type: 'deleteSelected', filenames: Array.from(selectedAccounts) };
+      document.getElementById('dialogTitle').textContent = T.deleteTitle;
+      document.getElementById('dialogText').textContent = (T.deleteSelectedConfirm || 'Delete {count} selected accounts?').replace('{count}', selectedAccounts.size);
+      document.getElementById('dialogOverlay').classList.add('visible');
+    }
+    
     // === Init ===
     
     document.addEventListener('DOMContentLoaded', () => {
@@ -964,5 +1064,12 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     window.openUpdateUrl = openUpdateUrl;
     window.openVsCodeSettings = openVsCodeSettings;
     window.renderActiveProfile = renderActiveProfile;
+    window.toggleSelectionMode = toggleSelectionMode;
+    window.toggleAccountSelection = toggleAccountSelection;
+    window.selectAllAccounts = selectAllAccounts;
+    window.deselectAllAccounts = deselectAllAccounts;
+    window.exportSelectedAccounts = exportSelectedAccounts;
+    window.refreshSelectedTokens = refreshSelectedTokens;
+    window.deleteSelectedAccounts = deleteSelectedAccounts;
   `;
 }

@@ -273,4 +273,15 @@ export const es: Translations = {
   importAccountsDesc: 'Import accounts from file',
   exportSelected: 'Export Selected',
   exportAll: 'Export All',
+
+  // Selection Mode (Bulk Actions)
+  selectMode: 'Select',
+  selected: 'selected',
+  selectAll: 'Select All',
+  deselectAll: 'Deselect All',
+  refreshSelected: 'Refresh Tokens',
+  deleteSelected: 'Delete Selected',
+  deleteSelectedConfirm: 'Delete {count} selected accounts?',
+  selectedAccountsDeleted: '{count} accounts deleted',
+  refreshingTokens: 'Refreshing tokens...',
 };
