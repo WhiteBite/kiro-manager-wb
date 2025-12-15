@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
@@ -157,7 +157,12 @@
     "test:watch": "jest --watch",
     "package": "npm run build && npx vsce package --no-dependencies",
     "build:standalone": "npx ts-node scripts/build-standalone.ts",
-    "build:all": "npm run build && npm run build:standalone"
+    "build:all": "npm run build && npm run build:standalone",
+    "version:bump": "npx ts-node scripts/bump-version.ts",
+    "release": "npx ts-node scripts/release.ts",
+    "release:patch": "npx ts-node scripts/release.ts patch",
+    "release:minor": "npx ts-node scripts/release.ts minor",
+    "release:major": "npx ts-node scripts/release.ts major"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
