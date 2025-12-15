@@ -8,13 +8,15 @@ import random
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .ip_timezone import detect_ip_geo, get_system_timezone, IPGeoData
+
 
 @dataclass
 class SpoofProfile:
     """Профиль для спуфинга - все параметры в одном месте"""
     
-    # Browser
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    # Browser - актуальная версия Chrome (декабрь 2024)
+    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     platform: str = "Win32"
     vendor: str = "Google Inc."
     
@@ -57,38 +59,47 @@ class SpoofProfile:
 
 
 # Предустановленные профили для разных локаций
+# ВАЖНО: timezone_offset - это минуты ЗАПАДНЕЕ UTC (положительное = запад)
+# getTimezoneOffset() возвращает положительное для западных таймзон
 PROFILES = {
     'new_york': SpoofProfile(
         timezone='America/New_York',
-        timezone_offset=300,
+        timezone_offset=300,  # UTC-5 = +300 минут
         locale='en-US',
         latitude=40.7128,
         longitude=-74.0060,
     ),
     'los_angeles': SpoofProfile(
         timezone='America/Los_Angeles',
-        timezone_offset=480,
+        timezone_offset=480,  # UTC-8 = +480 минут
         locale='en-US',
         latitude=34.0522,
         longitude=-118.2437,
     ),
+    'chicago': SpoofProfile(
+        timezone='America/Chicago',
+        timezone_offset=360,  # UTC-6 = +360 минут
+        locale='en-US',
+        latitude=41.8781,
+        longitude=-87.6298,
+    ),
     'london': SpoofProfile(
         timezone='Europe/London',
-        timezone_offset=0,
+        timezone_offset=0,  # UTC+0 = 0 минут
         locale='en-GB',
         latitude=51.5074,
         longitude=-0.1278,
     ),
     'berlin': SpoofProfile(
         timezone='Europe/Berlin',
-        timezone_offset=-60,
+        timezone_offset=-60,  # UTC+1 = -60 минут (зима)
         locale='de-DE',
         latitude=52.5200,
         longitude=13.4050,
     ),
     'tokyo': SpoofProfile(
         timezone='Asia/Tokyo',
-        timezone_offset=-540,
+        timezone_offset=-540,  # UTC+9 = -540 минут
         locale='ja-JP',
         latitude=35.6762,
         longitude=139.6503,
@@ -96,17 +107,22 @@ PROFILES = {
 }
 
 
-def generate_random_profile() -> SpoofProfile:
-    """Генерирует случайный консистентный профиль"""
-    # Используем только английские профили чтобы AWS показывал английский UI
-    english_profiles = ['new_york', 'los_angeles', 'london']
-    base = PROFILES[random.choice(english_profiles)]
+def generate_profile_from_ip() -> Optional[SpoofProfile]:
+    """
+    Генерирует профиль на основе IP геолокации.
+    
+    Timezone и координаты берутся из IP, остальное рандомизируется.
+    Это важно чтобы timezone совпадал с IP!
+    """
+    geo = detect_ip_geo()
+    if not geo:
+        return None
+    
+    print(f"[PROFILE] Detected IP geo: {geo.city}, {geo.country} ({geo.timezone})")
     
     # Случайное разрешение экрана
     resolutions = [(1920, 1080), (1366, 768), (1536, 864), (1440, 900), (1280, 720)]
     screen_width, screen_height = random.choice(resolutions)
-    
-    # availHeight меньше height (taskbar)
     taskbar_height = random.choice([40, 48, 30])
     
     # Случайный WebGL
@@ -118,8 +134,75 @@ def generate_random_profile() -> SpoofProfile:
     ]
     webgl_vendor, webgl_renderer = random.choice(webgl_configs)
     
+    # Актуальные версии Chrome
+    chrome_versions = ['131.0.0.0', '130.0.0.0', '129.0.0.0']
+    chrome_version = random.choice(chrome_versions)
+    user_agent = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36"
+    
     return SpoofProfile(
-        user_agent=base.user_agent,
+        user_agent=user_agent,
+        platform="Win32",
+        vendor="Google Inc.",
+        screen_width=screen_width,
+        screen_height=screen_height,
+        avail_width=screen_width,
+        avail_height=screen_height - taskbar_height,
+        color_depth=24,
+        pixel_ratio=random.choice([1.0, 1.25, 1.5]),
+        hardware_concurrency=random.choice([4, 6, 8, 12]),
+        device_memory=random.choice([4, 8, 16]),
+        max_touch_points=0,
+        webgl_vendor=webgl_vendor,
+        webgl_renderer=webgl_renderer,
+        timezone=geo.timezone,
+        timezone_offset=geo.timezone_offset,
+        locale=geo.locale,
+        latitude=geo.latitude + random.uniform(-0.05, 0.05),
+        longitude=geo.longitude + random.uniform(-0.05, 0.05),
+        accuracy=random.uniform(20, 100),
+    )
+
+
+def generate_random_profile() -> SpoofProfile:
+    """
+    Генерирует профиль спуфинга.
+    
+    Приоритет:
+    1. По IP геолокации (timezone совпадает с IP)
+    2. Fallback на случайный US профиль
+    """
+    # Сначала пробуем по IP
+    profile = generate_profile_from_ip()
+    if profile:
+        return profile
+    
+    print("[PROFILE] IP geo failed, using random US profile")
+    
+    # Fallback на случайный US профиль
+    us_profiles = ['new_york', 'los_angeles', 'chicago']
+    base = PROFILES[random.choice(us_profiles)]
+    
+    # Случайное разрешение экрана
+    resolutions = [(1920, 1080), (1366, 768), (1536, 864), (1440, 900), (1280, 720)]
+    screen_width, screen_height = random.choice(resolutions)
+    taskbar_height = random.choice([40, 48, 30])
+    
+    # Случайный WebGL
+    webgl_configs = [
+        ("Google Inc. (NVIDIA)", "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+        ("Google Inc. (NVIDIA)", "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+        ("Google Inc. (AMD)", "ANGLE (AMD, AMD Radeon RX 580 Series Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+        ("Google Inc. (Intel)", "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+    ]
+    webgl_vendor, webgl_renderer = random.choice(webgl_configs)
+    
+    # Актуальные версии Chrome
+    chrome_versions = ['131.0.0.0', '130.0.0.0', '129.0.0.0']
+    chrome_version = random.choice(chrome_versions)
+    user_agent = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36"
+    
+    return SpoofProfile(
+        user_agent=user_agent,
         platform=base.platform,
         vendor=base.vendor,
         screen_width=screen_width,
@@ -136,7 +219,7 @@ def generate_random_profile() -> SpoofProfile:
         timezone=base.timezone,
         timezone_offset=base.timezone_offset,
         locale=base.locale,
-        latitude=base.latitude + random.uniform(-0.01, 0.01),
-        longitude=base.longitude + random.uniform(-0.01, 0.01),
+        latitude=base.latitude + random.uniform(-0.05, 0.05),
+        longitude=base.longitude + random.uniform(-0.05, 0.05),
         accuracy=random.uniform(20, 100),
     )
