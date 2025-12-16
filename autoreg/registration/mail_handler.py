@@ -138,15 +138,23 @@ class IMAPMailHandler:
                 # Переподключаемся к INBOX (обновляет список писем)
                 self.imap.select('INBOX')
                 
-                # Ищем ВСЕ последние письма (IMAP SEARCH ненадёжен для catch-all)
-                status, messages = self.imap.search(None, 'ALL')
+                # Ищем письма СТРОГО по TO (точный поиск для catch-all)
+                status, messages = self.imap.search(None, 'TO', target_email)
+                
+                if status != 'OK' or not messages[0]:
+                    # Fallback: ищем по части email (без домена)
+                    email_user = target_email.split('@')[0]
+                    status, messages = self.imap.search(None, 'TO', email_user)
+                
                 if status != 'OK' or not messages[0]:
                     poll_count += 1
-                    time.sleep(random.uniform(2.0, 4.0))
+                    wait_time = random.uniform(2.0, 4.0)
+                    if poll_count % 5 == 0:
+                        safe_print(f"   No emails for {target_email}, waiting... ({int(time.time() - start_time)}s)")
+                    time.sleep(wait_time)
                     continue
                 
-                # Берём последние 100 писем
-                email_ids = messages[0].split()[-100:]
+                email_ids = messages[0].split()
                 
                 # Debug: показываем сколько писем нашли
                 new_ids = [eid for eid in email_ids if eid not in checked_ids]
