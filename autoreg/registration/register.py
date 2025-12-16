@@ -340,22 +340,17 @@ class AWSRegistration:
             
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
-            # Человек сначала осматривает страницу
-            self._simulate_page_arrival()
+            self._human_delay(0.5, 1.5)  # Небольшая пауза
             self.browser.enter_email(email)
-            # Микро-движения после ввода (проверяет что ввёл)
-            self._simulate_after_input()
+            self._human_delay(0.3, 0.8)
             self.browser.click_continue()
             
-            # Пауза между шагами (ждём загрузки + "осматриваемся")
-            self._human_delay(1.5, 3.0)
+            # Пауза между шагами
+            self._human_delay(1.0, 2.0)
             
             # ШАГ 4: Вводим имя
             print(f"[4/8] Entering name: {name}")
-            # Осматриваем новую страницу
-            self._simulate_page_arrival()
-            # Иногда отвлекаемся
-            self._simulate_distraction()
+            self._human_delay(0.5, 1.5)
             self.browser.enter_name(name)
             
             # Пауза между шагами
@@ -370,8 +365,7 @@ class AWSRegistration:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}
             
             print(f"[5/8] Entering code: {code}")
-            # Человек переключается между почтой и браузером - это занимает время
-            self._simulate_checking_email()
+            self._human_delay(1.0, 2.0)  # Пауза перед вводом кода
             self.browser.enter_verification_code(code)
             
             # Пауза между шагами
@@ -379,8 +373,7 @@ class AWSRegistration:
             
             # ШАГ 6: Вводим пароль
             print(f"[6/8] Setting password...")
-            # Осматриваем страницу пароля
-            self._simulate_page_arrival()
+            self._human_delay(0.5, 1.5)
             self.browser.enter_password(password)
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
