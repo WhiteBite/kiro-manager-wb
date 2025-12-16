@@ -126,6 +126,11 @@ class IMAPMailHandler:
         checked_ids = set()  # Уже проверенные письма
         poll_count = 0
         
+        # Нормализуем target email для сравнения
+        target_lower = target_email.lower().strip()
+        # Для plus alias: user+tag@domain -> ищем и user+tag@domain и user@domain
+        target_base = target_lower.split('+')[0] + '@' + target_lower.split('@')[1] if '+' in target_lower else None
+        
         safe_print(f"[MAIL] Waiting for email to {target_email}...")
         
         while time.time() - start_time < timeout:
@@ -133,25 +138,28 @@ class IMAPMailHandler:
                 # Переподключаемся к INBOX (обновляет список писем)
                 self.imap.select('INBOX')
                 
-                # Ищем письма ТОЛЬКО от AWS с кодом верификации
-                # Используем IMAP SEARCH для фильтрации на сервере
-                search_criteria = '(FROM "signin.aws" SUBJECT "Verify")'
-                status, messages = self.imap.search(None, search_criteria)
-                
-                if status != 'OK' or not messages[0]:
-                    # Fallback - ищем все от AWS
-                    status, messages = self.imap.search(None, '(FROM "aws")')
-                
+                # Ищем ВСЕ последние письма (IMAP SEARCH ненадёжен для catch-all)
+                status, messages = self.imap.search(None, 'ALL')
                 if status != 'OK' or not messages[0]:
                     poll_count += 1
-                    wait_time = random.uniform(2.5, 4.5)  # Случайная задержка
-                    if poll_count % 5 == 0:
-                        safe_print(f"   Waiting... ({int(time.time() - start_time)}s)")
-                    time.sleep(wait_time)
+                    time.sleep(random.uniform(2.0, 4.0))
                     continue
                 
-                # Берём только последние 10 писем от AWS
-                email_ids = messages[0].split()[-10:]
+                # Берём последние 100 писем
+                email_ids = messages[0].split()[-100:]
+                
+                # Debug: показываем сколько писем нашли
+                new_ids = [eid for eid in email_ids if eid not in checked_ids]
+                if new_ids and poll_count % 3 == 0:
+                    safe_print(f"   Found {len(new_ids)} new emails to check ({int(time.time() - start_time)}s)")
+                
+                if not email_ids:
+                    poll_count += 1
+                    wait_time = random.uniform(2.0, 4.0)
+                    if poll_count % 5 == 0:
+                        safe_print(f"   No emails found, waiting... ({int(time.time() - start_time)}s)")
+                    time.sleep(wait_time)
+                    continue
                 
                 for email_id in reversed(email_ids):
                     # Пропускаем уже проверенные
@@ -167,18 +175,34 @@ class IMAPMailHandler:
                     
                     header_msg = email.message_from_bytes(header_data[0][1])
                     msg_to = header_msg.get('To', '').lower()
-                    
-                    # Строгая проверка - письмо должно быть ТОЧНО для нашего email
-                    if target_email.lower() not in msg_to:
-                        continue
-                    
-                    # Проверяем что это от AWS signin
                     sender = header_msg.get('From', '').lower()
-                    if 'signin.aws' not in sender and 'amazonaws' not in sender:
+                    subject = header_msg.get('Subject', '')
+                    
+                    # Debug: показываем что проверяем
+                    safe_print(f"   [D] Checking: from={sender[:35]}, to={msg_to[:35]}")
+                    
+                    # Проверяем отправителя (AWS) - СНАЧАЛА
+                    is_aws = any(x in sender for x in ['signin.aws', 'amazonaws', 'aws.amazon', 'aws'])
+                    if not is_aws:
                         continue
                     
-                    subject = header_msg.get('Subject', '')
-                    safe_print(f"   Found email: {subject[:50]}...")
+                    # Проверка получателя - СТРОГОЕ совпадение
+                    to_match = False
+                    
+                    # Вариант 1: точное совпадение email
+                    if target_lower in msg_to:
+                        to_match = True
+                    # Вариант 2: для plus alias (user+tag@domain -> user@domain)
+                    elif target_base and target_base in msg_to:
+                        to_match = True
+                    
+                    # НЕ используем fallback по домену - это берёт чужие письма!
+                    
+                    if not to_match:
+                        safe_print(f"   [S] Skipping: to={msg_to[:50]} (looking for {target_lower})")
+                        continue
+                    
+                    safe_print(f"   [OK] Found matching email: {subject[:50]}...")
                     
                     # Теперь получаем полное письмо для извлечения кода
                     status, msg_data = self.imap.fetch(email_id, '(RFC822)')
@@ -194,9 +218,9 @@ class IMAPMailHandler:
                         safe_print(f"[OK] Verification code found: {code}")
                         return code
                 
-                # Человекоподобная задержка между проверками
+                # Задержка между проверками
                 poll_count += 1
-                wait_time = random.uniform(2.0, 5.0)
+                wait_time = random.uniform(2.0, 4.0)
                 if poll_count % 3 == 0:
                     safe_print(f"   Checking mail... ({int(time.time() - start_time)}s)")
                 time.sleep(wait_time)
