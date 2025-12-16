@@ -2,7 +2,7 @@
   "name": "kiro-account-switcher",
   "displayName": "Kiro Account Switcher",
   "description": "Switch between multiple Kiro accounts with beautiful UI",
-  "version": "6.1.4",
+  "version": "6.1.5",
   "publisher": "kiro-batch-login",
   "icon": "images/icon.png",
   "repository": {
