@@ -1379,6 +1379,45 @@ class BrowserAutomation:
     def current_url(self) -> str:
         return self.page.url
     
+    def prewarm(self):
+        """
+        Прогрев браузера - посещаем несколько сайтов перед AWS.
+        Создаёт реальную историю и выглядит естественнее.
+        """
+        print("[W] Warming up browser...")
+        
+        # Сайты для прогрева (быстрые, популярные)
+        warmup_sites = [
+            'https://www.google.com',
+            'https://github.com',
+        ]
+        
+        # Выбираем 1-2 случайных сайта
+        sites_to_visit = random.sample(warmup_sites, k=random.randint(1, 2))
+        
+        for site in sites_to_visit:
+            try:
+                print(f"   Visiting {site}...")
+                self.page.get(site)
+                
+                # Ждём загрузку
+                try:
+                    self.page.wait.doc_loaded(timeout=5)
+                except:
+                    pass
+                
+                # Имитируем просмотр (1-3 сек)
+                self._behavior.simulate_page_reading(self.page, duration=random.uniform(1.0, 3.0))
+                
+                # Случайный скролл
+                if random.random() < 0.5:
+                    self._behavior.scroll_page(self, direction='down', amount=random.randint(100, 300))
+                
+            except Exception as e:
+                print(f"   [!] Warmup failed for {site}: {e}")
+        
+        print("   [OK] Browser warmed up")
+    
     def navigate(self, url: str):
         """Переход по URL."""
         print(f"[>] Opening page...")
