@@ -40,6 +40,12 @@ from .webrtc import WebRTCSpoofModule
 from .fonts import FontsSpoofModule
 from .sensors import SensorsSpoofModule
 from .geolocation import GeolocationSpoofModule
+from .cdp_hide import CDPHideSpoofModule
+from .client_hints import ClientHintsSpoofModule
+from .performance import PerformanceSpoofModule
+from .math import MathSpoofModule
+from .history import HistorySpoofModule
+from .capabilities import CapabilitiesSpoofModule
 
 # CDP Spoofer (main entry point)
 from .cdp_spoofer import (
@@ -52,9 +58,10 @@ from .cdp_spoofer import (
 from .behavior import BehaviorSpoofModule
 
 
-# Все JS-модули
+# Все JS-модули (19 модулей)
 ALL_JS_MODULES = [
     AutomationSpoofModule,
+    CDPHideSpoofModule,
     NavigatorSpoofModule,
     ScreenSpoofModule,
     WebGLSpoofModule,
@@ -67,6 +74,11 @@ ALL_JS_MODULES = [
     FontsSpoofModule,
     SensorsSpoofModule,
     GeolocationSpoofModule,
+    ClientHintsSpoofModule,
+    PerformanceSpoofModule,
+    MathSpoofModule,
+    HistorySpoofModule,
+    CapabilitiesSpoofModule,
 ]
 
 

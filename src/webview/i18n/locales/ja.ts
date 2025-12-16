@@ -173,6 +173,7 @@ export const ja: Translations = {
   strategyPoolFromFile: 'ファイルから',
   strategyPoolPaste: 'Paste',
   poolEmpty: 'Add at least one email to pool',
+  emailsAdded: '{count}件のメール追加',
   example: '例',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const ja: Translations = {
   deleteSelectedConfirm: 'Delete {count} selected accounts?',
   selectedAccountsDeleted: '{count} accounts deleted',
   refreshingTokens: 'Refreshing tokens...',
+  checkHealth: 'ヘルスチェック',
+  checkingHealth: 'アカウントの状態を確認中...',
+
+  // Hero Profile Display
+  ready: '準備完了',
+  clickToConfigure: 'クリックして設定',
 };

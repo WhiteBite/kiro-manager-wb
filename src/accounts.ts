@@ -218,34 +218,47 @@ export async function switchToAccount(accountName: string, returnDetails?: boole
     return fail({ success: false, errorMessage: 'Account not found' });
   }
 
-  // Smart refresh logic (like Kiro):
-  // 1. If token needs refresh (expires within 10 min) - try to refresh
-  // 2. If refresh fails but token is not truly invalid (within 3 min grace) - still use it
-  // 3. Only fail if token is truly invalid AND refresh failed
+  // ALWAYS try to refresh before switching to verify account is not banned
+  // This prevents switching to banned accounts
+  const hasCredentials = !!(account.tokenData._clientId && account.tokenData._clientSecret && account.tokenData.refreshToken);
 
-  const needsRefresh = tokenNeedsRefresh(account.tokenData);
-  const trulyInvalid = isTokenTrulyInvalid(account.tokenData);
-
-  if (needsRefresh) {
-    // Try to refresh proactively
+  if (hasCredentials) {
     const refreshResult = await refreshAccountToken(accountName, true);
 
     if (refreshResult.success) {
       // Refresh succeeded - reload token data
       account.tokenData = JSON.parse(fs.readFileSync(account.path, 'utf8'));
-    } else if (trulyInvalid) {
-      // Refresh failed AND token is truly invalid (past 3 min grace period)
-      // Cannot proceed - return error
+    } else if (refreshResult.isBanned) {
+      // Account is BANNED - do NOT switch to it!
+      vscode.window.showErrorMessage(`⛔ Cannot switch to "${accountName}" - account is BANNED`);
+      return fail({
+        success: false,
+        error: refreshResult.error,
+        errorMessage: 'Account is banned',
+        isBanned: true
+      });
+    } else if (refreshResult.error === 'InvalidGrantException') {
+      // Refresh token expired - account unusable
+      vscode.window.showErrorMessage(`🔄 Cannot switch to "${accountName}" - session expired`);
       return fail({
         success: false,
         error: refreshResult.error,
         errorMessage: refreshResult.errorMessage,
-        isBanned: refreshResult.isBanned
+        isBanned: false
       });
     } else {
-      // Refresh failed BUT token might still work (within grace period)
-      // Log warning but proceed with existing token
-      console.warn(`[switchToAccount] Refresh failed for ${accountName}, but token may still be valid (grace period)`);
+      // Other error (network, rate limit) - try to use existing token if not expired
+      const trulyInvalid = isTokenTrulyInvalid(account.tokenData);
+      if (trulyInvalid) {
+        return fail({
+          success: false,
+          error: refreshResult.error,
+          errorMessage: refreshResult.errorMessage,
+          isBanned: refreshResult.isBanned
+        });
+      }
+      // Token might still work - proceed with warning
+      console.warn(`[switchToAccount] Refresh failed for ${accountName}, using existing token`);
     }
   }
 
@@ -273,6 +286,7 @@ async function writeKiroToken(tokenData: TokenData): Promise<boolean> {
     const clientIdHash = tokenData.clientIdHash ||
       (tokenData._clientId ? generateClientIdHash(tokenData._clientId) : '');
 
+    // Write main token file
     const kiroToken = {
       accessToken: tokenData.accessToken,
       refreshToken: tokenData.refreshToken,
@@ -284,6 +298,24 @@ async function writeKiroToken(tokenData: TokenData): Promise<boolean> {
     };
 
     fs.writeFileSync(kiroAuthPath, JSON.stringify(kiroToken, null, 2));
+
+    // IMPORTANT: Also write client file so Kiro can refresh the token!
+    // Kiro looks for {clientIdHash}.json to get clientId and clientSecret
+    if (clientIdHash && tokenData._clientId && tokenData._clientSecret) {
+      const clientFilePath = path.join(ssoDir, `${clientIdHash}.json`);
+
+      // Calculate client expiration (90 days from now, like Kiro does)
+      const clientExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+
+      const clientData = {
+        clientId: tokenData._clientId,
+        clientSecret: tokenData._clientSecret,
+        expiresAt: tokenData._clientSecretExpiresAt || clientExpiresAt
+      };
+
+      fs.writeFileSync(clientFilePath, JSON.stringify(clientData, null, 2));
+    }
+
     return true;
   } catch (error) {
     vscode.window.showErrorMessage(`Switch failed: ${error}`);
@@ -333,14 +365,18 @@ export async function refreshAccountToken(accountName: string, returnDetails?: b
 
     if (!result.success) {
       // Show specific error messages based on error type
+      const msg = result.errorMessage || '';
+      const isSessionError = msg.includes('unable to refresh') || msg.includes('session');
+
       if (result.isBanned) {
         vscode.window.showErrorMessage(`⛔ Account "${accountName}" is BANNED/BLOCKED`);
       } else if (result.isInvalidCredentials) {
         vscode.window.showErrorMessage(`🔑 Invalid credentials for "${accountName}" - client may be expired`);
       } else if (result.isRateLimited) {
         vscode.window.showWarningMessage(`⏳ Rate limited - try again later`);
-      } else if (result.error === 'InvalidGrantException') {
-        vscode.window.showErrorMessage(`🔄 Refresh token expired for "${accountName}" - need to re-login`);
+      } else if (result.error === 'InvalidGrantException' || isSessionError) {
+        // "We are unable to refresh your session" = refresh token expired/revoked
+        vscode.window.showErrorMessage(`🔄 Session expired for "${accountName}" - account needs re-registration or is banned`);
       } else if (result.error === 'NetworkError') {
         vscode.window.showErrorMessage(`🌐 Network error - check internet connection`);
       } else {
@@ -412,6 +448,8 @@ export function isBlockedAccessError(error: OIDCErrorType | undefined, message?:
   if (message?.includes('NewUserAccessPausedError')) return true;
   if (message?.includes('account is blocked')) return true;
   if (message?.includes('account is suspended')) return true;
+  // "We are unable to refresh your session" often means account is banned
+  if (message?.includes('unable to refresh') && error === 'InvalidGrantException') return true;
   return false;
 }
 

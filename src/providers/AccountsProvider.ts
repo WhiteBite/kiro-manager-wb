@@ -496,9 +496,36 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
 
     this.refresh();
 
+    // Auto-check health of active account on startup (with delay to not block UI)
+    setTimeout(() => this.checkActiveAccountHealth(), 2000);
+
     webviewView.webview.onDidReceiveMessage(async (msg) => {
       await this.handleMessage(msg);
     });
+  }
+
+  // Check health of currently active account silently
+  async checkActiveAccountHealth() {
+    const activeAccount = this._accounts.find(a => a.isActive);
+    if (!activeAccount) return;
+
+    const { checkAccountHealth } = await import('../accounts');
+    const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
+
+    try {
+      const status = await checkAccountHealth(accountName);
+
+      if (status.isBanned) {
+        this.markAccountAsBanned(activeAccount.filename, status.errorMessage);
+        this.addLog(`⛔ Active account "${accountName}" is BANNED!`);
+        vscode.window.showWarningMessage(`⛔ Active account "${accountName}" is banned. Consider switching to another account.`);
+        this.refresh();
+      } else if (!status.isHealthy && status.error) {
+        this.addLog(`⚠️ Active account issue: ${status.errorMessage || status.error}`);
+      }
+    } catch (e) {
+      // Silent fail - don't block startup
+    }
   }
 
   async handleMessage(msg: any) {
@@ -972,14 +999,86 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   async testImapConnection(params: { server: string; user: string; password: string; port: number }) {
     if (!this._view) return;
 
-    // For now, just show a message - actual IMAP test would require Python
-    this.addLog(`Testing IMAP: ${params.server}:${params.port} as ${params.user}...`);
+    this.addLog(`🔌 Testing IMAP: ${params.server}:${params.port} as ${params.user}...`);
 
-    // TODO: Call Python script to test IMAP connection
-    vscode.window.showInformationMessage(
-      `IMAP test: ${params.server}:${params.port}`,
-      'Connection test requires running auto-reg'
-    );
+    // Send testing status to UI
+    this._view.webview.postMessage({
+      type: 'imapTestResult',
+      status: 'testing',
+      message: 'Connecting...'
+    });
+
+    try {
+      const { spawn } = require('child_process');
+      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+
+      // Python one-liner to test IMAP
+      const pythonCode = `
+import imaplib
+import json
+import sys
+try:
+    server = sys.argv[1]
+    port = int(sys.argv[2])
+    user = sys.argv[3]
+    password = sys.argv[4]
+    imap = imaplib.IMAP4_SSL(server, port)
+    imap.login(user, password)
+    status, folders = imap.list()
+    folder_count = len(folders) if folders else 0
+    imap.logout()
+    print(json.dumps({"success": True, "folders": folder_count}))
+except Exception as e:
+    print(json.dumps({"success": False, "error": str(e)}))
+`;
+
+      const proc = spawn(pythonCmd, ['-c', pythonCode, params.server, params.port.toString(), params.user, params.password]);
+
+      let output = '';
+      proc.stdout.on('data', (data: Buffer) => { output += data.toString(); });
+      proc.stderr.on('data', (data: Buffer) => { output += data.toString(); });
+
+      proc.on('close', (code: number) => {
+        try {
+          const result = JSON.parse(output.trim());
+          if (result.success) {
+            this.addLog(`✅ IMAP connected! Found ${result.folders} folders`);
+            this._view?.webview.postMessage({
+              type: 'imapTestResult',
+              status: 'success',
+              message: `Connected! ${result.folders} folders found`
+            });
+          } else {
+            this.addLog(`❌ IMAP failed: ${result.error}`);
+            this._view?.webview.postMessage({
+              type: 'imapTestResult',
+              status: 'error',
+              message: result.error
+            });
+          }
+        } catch {
+          this.addLog(`❌ IMAP test error: ${output}`);
+          this._view?.webview.postMessage({
+            type: 'imapTestResult',
+            status: 'error',
+            message: output || 'Unknown error'
+          });
+        }
+      });
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        proc.kill();
+      }, 10000);
+
+    } catch (err) {
+      this.addLog(`❌ IMAP test error: ${err}`);
+      this._view?.webview.postMessage({
+        type: 'imapTestResult',
+        status: 'error',
+        message: String(err)
+      });
+    }
   }
 
   async importEmailsFromFile() {
@@ -1019,5 +1118,161 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
         ...status
       });
     }
+  }
+
+  // === Bulk Actions ===
+
+  // Refresh tokens for selected accounts
+  async refreshSelectedTokens(filenames: string[]) {
+    if (!filenames || filenames.length === 0) {
+      vscode.window.showWarningMessage('No accounts selected');
+      return;
+    }
+
+    this.addLog(`🔄 Refreshing ${filenames.length} selected token(s)...`);
+
+    let refreshed = 0;
+    let failed = 0;
+    let banned = 0;
+
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Refreshing ${filenames.length} tokens...`,
+      cancellable: false
+    }, async (progress) => {
+      for (let i = 0; i < filenames.length; i++) {
+        const filename = filenames[i];
+        const account = this._accounts.find(a =>
+          a.filename === filename ||
+          a.tokenData.accountName === filename ||
+          a.filename.includes(filename)
+        );
+
+        if (!account) continue;
+
+        const accountName = account.tokenData.accountName || account.filename;
+
+        progress.report({
+          message: `${i + 1}/${filenames.length}: ${accountName}`,
+          increment: (100 / filenames.length)
+        });
+
+        try {
+          const result = await refreshAccountToken(account.filename, true);
+          if (result.success) {
+            refreshed++;
+            this.addLog(`✓ Refreshed: ${accountName}`);
+          } else {
+            failed++;
+            if (result.isBanned) {
+              banned++;
+              this.markAccountAsBanned(account.filename, result.errorMessage);
+              this.addLog(`⛔ BANNED: ${accountName}`);
+            } else {
+              this.addLog(`✗ Failed: ${accountName} - ${result.errorMessage || result.error}`);
+            }
+          }
+        } catch (err) {
+          failed++;
+          this.addLog(`✗ Error: ${accountName} - ${err}`);
+        }
+      }
+    });
+
+    const message = `Refreshed ${refreshed}/${filenames.length}` +
+      (failed > 0 ? `, ${failed} failed` : '') +
+      (banned > 0 ? ` (${banned} banned)` : '');
+
+    vscode.window.showInformationMessage(message);
+    this.refresh();
+  }
+
+  // Delete selected accounts
+  async deleteSelectedAccounts(filenames: string[]) {
+    if (!filenames || filenames.length === 0) {
+      vscode.window.showWarningMessage('No accounts selected');
+      return;
+    }
+
+    let deleted = 0;
+    for (const filename of filenames) {
+      const account = this._accounts.find(a =>
+        a.filename === filename ||
+        a.tokenData.accountName === filename ||
+        a.filename.includes(filename)
+      );
+
+      if (account && fs.existsSync(account.path)) {
+        try {
+          fs.unlinkSync(account.path);
+          deleted++;
+          const accountName = account.tokenData.accountName || account.filename;
+          this.addLog(`🗑 Deleted: ${accountName}`);
+        } catch (err) {
+          this.addLog(`✗ Failed to delete: ${filename} - ${err}`);
+        }
+      }
+    }
+
+    vscode.window.showInformationMessage(`Deleted ${deleted} account(s)`);
+    this.refresh();
+  }
+
+  // Check health of all accounts (detect bans and issues)
+  async checkAllAccountsHealth() {
+    this.addLog(`🔍 Checking health of ${this._accounts.length} accounts...`);
+
+    let healthy = 0;
+    let banned = 0;
+    let expired = 0;
+    let noCredentials = 0;
+
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Checking ${this._accounts.length} accounts...`,
+      cancellable: true
+    }, async (progress, token) => {
+      const { checkAccountHealth } = await import('../accounts');
+
+      for (let i = 0; i < this._accounts.length; i++) {
+        if (token.isCancellationRequested) break;
+
+        const acc = this._accounts[i];
+        const accountName = acc.tokenData.accountName || acc.filename;
+
+        progress.report({
+          message: `${i + 1}/${this._accounts.length}: ${accountName}`,
+          increment: (100 / this._accounts.length)
+        });
+
+        const status = await checkAccountHealth(accountName);
+
+        if (status.isHealthy) {
+          healthy++;
+          // Clear any previous ban status
+          if (acc.usage) {
+            acc.usage.isBanned = false;
+            acc.usage.banReason = undefined;
+          }
+        } else if (status.isBanned) {
+          banned++;
+          this.markAccountAsBanned(acc.filename, status.errorMessage);
+          this.addLog(`⛔ BANNED: ${accountName}`);
+        } else if (!status.hasCredentials) {
+          noCredentials++;
+        } else if (status.isExpired) {
+          expired++;
+          this.addLog(`⏰ Expired: ${accountName}`);
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 200));
+      }
+    });
+
+    const summary = `Health check: ${healthy} healthy, ${banned} banned, ${expired} expired, ${noCredentials} no credentials`;
+    this.addLog(`✅ ${summary}`);
+    vscode.window.showInformationMessage(summary);
+    this.refresh();
   }
 }

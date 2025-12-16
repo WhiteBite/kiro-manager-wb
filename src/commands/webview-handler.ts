@@ -67,6 +67,11 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await provider.updateSetting(msg.key as string, msg.value as boolean);
       break;
 
+    case 'toggleAutoSwitch':
+      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+      await config.update('autoSwitch.enabled', msg.enabled as boolean, vscode.ConfigurationTarget.Global);
+      break;
+
     case 'clearConsole':
       provider.clearLogs();
       break;
@@ -100,6 +105,8 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await switchToAccount(msg.email as string);
       // Force refresh usage after account switch
       await provider.refreshUsageAfterSwitch();
+      // Check health of newly switched account
+      setTimeout(() => provider.checkActiveAccountHealth(), 1000);
       break;
 
     case 'copyToken':
@@ -238,6 +245,24 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
     case 'getPatchStatus':
       const status = await getPatchStatus(provider.context);
       provider.sendPatchStatus(status);
+      break;
+
+    // === Bulk Actions ===
+
+    case 'refreshSelectedTokens':
+      await provider.refreshSelectedTokens(msg.filenames as string[]);
+      break;
+
+    case 'deleteSelectedAccounts':
+      await provider.deleteSelectedAccounts(msg.filenames as string[]);
+      break;
+
+    case 'exportSelectedAccounts':
+      await provider.exportAccounts(msg.filenames as string[]);
+      break;
+
+    case 'checkAllAccountsHealth':
+      await provider.checkAllAccountsHealth();
       break;
   }
 }

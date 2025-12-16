@@ -330,6 +330,7 @@ export interface Translations {
   exportSelected: string;
   exportAll: string;
   poolEmpty: string;
+  emailsAdded: string;
 
   // ============================================
   // Selection Mode (Bulk Actions)
@@ -343,4 +344,12 @@ export interface Translations {
   deleteSelectedConfirm: string;
   selectedAccountsDeleted: string;
   refreshingTokens: string;
+  checkHealth: string;
+  checkingHealth: string;
+
+  // ============================================
+  // Hero Profile Display
+  // ============================================
+  ready: string;
+  clickToConfigure: string;
 }

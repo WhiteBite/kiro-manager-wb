@@ -173,6 +173,7 @@ export const es: Translations = {
   strategyPoolFromFile: 'Desde archivo',
   strategyPoolPaste: 'Paste',
   poolEmpty: 'Add at least one email to pool',
+  emailsAdded: '{count} emails añadidos',
   example: 'Ejemplo',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const es: Translations = {
   deleteSelectedConfirm: 'Delete {count} selected accounts?',
   selectedAccountsDeleted: '{count} accounts deleted',
   refreshingTokens: 'Refreshing tokens...',
+  checkHealth: 'Verificar salud',
+  checkingHealth: 'Verificando salud de cuentas...',
+
+  // Hero Profile Display
+  ready: 'Listo',
+  clickToConfigure: 'Clic para configurar',
 };

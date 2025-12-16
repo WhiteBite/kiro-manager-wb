@@ -173,6 +173,7 @@ export const ko: Translations = {
   strategyPoolFromFile: '파일에서',
   strategyPoolPaste: 'Paste',
   poolEmpty: 'Add at least one email to pool',
+  emailsAdded: '{count}개 이메일 추가됨',
   example: '예시',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const ko: Translations = {
   deleteSelectedConfirm: 'Delete {count} selected accounts?',
   selectedAccountsDeleted: '{count} accounts deleted',
   refreshingTokens: 'Refreshing tokens...',
+  checkHealth: '상태 확인',
+  checkingHealth: '계정 상태 확인 중...',
+
+  // Hero Profile Display
+  ready: '준비됨',
+  clickToConfigure: '클릭하여 설정',
 };

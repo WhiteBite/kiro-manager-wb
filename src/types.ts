@@ -17,6 +17,7 @@ export interface TokenData {
   email?: string;
   _clientId?: string;
   _clientSecret?: string;
+  _clientSecretExpiresAt?: string; // When client credentials expire (90 days from creation)
   createdAt?: string;
 }
 

@@ -8,8 +8,27 @@ import { escapeHtml, getAccountEmail } from '../helpers';
 import { Translations } from '../i18n/types';
 import { RegProgress } from '../types';
 
+export interface ImapProfile {
+  id: string;
+  name: string;
+  imap?: {
+    server?: string;
+    user?: string;
+    port?: number;
+  };
+  strategy?: {
+    type: 'single' | 'catch_all' | 'pool';
+    emails?: Array<{ email: string; status?: string }>;
+  };
+  stats?: {
+    registered: number;
+    failed: number;
+  };
+}
+
 export interface HeroProps {
   activeAccount?: AccountInfo;
+  activeProfile?: ImapProfile | null;
   usage?: KiroUsageData | null;
   progress: RegProgress | null;
   isRunning: boolean;
@@ -56,7 +75,7 @@ function renderStepIndicators(currentStep: number, totalSteps: number, error?: b
     `;
 }
 
-export function renderHero({ activeAccount, usage, progress, isRunning, t }: HeroProps): string {
+export function renderHero({ activeAccount, activeProfile, usage, progress, isRunning, t }: HeroProps): string {
   // Registration in progress
   if (isRunning && progress) {
     const percent = Math.round((progress.step / progress.totalSteps) * 100);
@@ -81,11 +100,38 @@ export function renderHero({ activeAccount, usage, progress, isRunning, t }: Her
     `;
   }
 
-  // No active account
+  // No active Kiro account - show IMAP profile if available
   if (!activeAccount) {
+    // Show active IMAP profile info
+    if (activeProfile) {
+      const profileName = activeProfile.name || t.unnamed || 'Unnamed';
+      const email = activeProfile.imap?.user || '';
+      const strategyType = activeProfile.strategy?.type || 'single';
+      const strategyIcon = strategyType === 'pool' ? '📦' : strategyType === 'catch_all' ? '🎯' : '📧';
+      const registered = activeProfile.stats?.registered || 0;
+      const failed = activeProfile.stats?.failed || 0;
+
+      return `
+        <div class="hero profile" onclick="openSettings()">
+          <div class="hero-header">
+            <span class="hero-email" title="${escapeHtml(email)}">${strategyIcon} ${escapeHtml(profileName)}</span>
+            <span class="hero-days">${t.ready || 'Ready'}</span>
+          </div>
+          <div class="hero-profile-info">
+            <span class="hero-profile-email">${escapeHtml(email)}</span>
+          </div>
+          <div class="hero-stats">
+            <span class="hero-usage font-mono">✅ ${registered} / ❌ ${failed}</span>
+            <span class="hero-percent">${t.clickToConfigure || 'Click to configure'}</span>
+          </div>
+        </div>
+      `;
+    }
+
     return `
-      <div class="hero empty">
+      <div class="hero empty" onclick="openSettings()">
         <div class="hero-email">${t.noActive}</div>
+        <div class="hero-hint">${t.clickToConfigure || 'Click to configure'}</div>
       </div>
     `;
   }

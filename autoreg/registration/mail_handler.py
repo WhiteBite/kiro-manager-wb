@@ -61,8 +61,8 @@ class IMAPMailHandler:
     def __init__(self, imap_host: str, imap_email: str, imap_password: str):
         """
         Args:
-            imap_host: IMAP сервер (например, imap.yandex.ru)
-            imap_email: Email для подключения (testmail@example.com)
+            imap_host: IMAP сервер (например, imap.gmail.com)
+            imap_email: Email для подключения (your@gmail.com)
             imap_password: Пароль
         """
         self.imap_host = imap_host
@@ -114,7 +114,7 @@ class IMAPMailHandler:
         Получить код верификации из письма
         
         Args:
-            target_email: Email адрес получателя (например, warp_tm42@example.com)
+            target_email: Email адрес получателя (например, user+kiro123@gmail.com)
             timeout: Максимальное время ожидания в секундах
         
         Returns:

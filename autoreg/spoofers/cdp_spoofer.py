@@ -23,6 +23,10 @@ from .sensors import SensorsSpoofModule
 from .geolocation import GeolocationSpoofModule
 from .cdp_hide import CDPHideSpoofModule
 from .client_hints import ClientHintsSpoofModule
+from .performance import PerformanceSpoofModule
+from .math import MathSpoofModule
+from .history import HistorySpoofModule
+from .capabilities import CapabilitiesSpoofModule
 
 
 # Все JS-модули в порядке применения
@@ -42,6 +46,10 @@ JS_MODULES = [
     SensorsSpoofModule,      # Device sensors
     GeolocationSpoofModule,  # Geolocation (JS fallback)
     ClientHintsSpoofModule,  # Client Hints API (userAgentData)
+    PerformanceSpoofModule,  # Performance timing
+    MathSpoofModule,         # Math fingerprint (sin/cos/tan)
+    HistorySpoofModule,      # History length
+    CapabilitiesSpoofModule, # JS/CSS capabilities
 ]
 
 

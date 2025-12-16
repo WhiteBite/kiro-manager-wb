@@ -173,6 +173,7 @@ export const zh: Translations = {
   strategyPoolFromFile: '从文件',
   strategyPoolPaste: 'Paste',
   poolEmpty: 'Add at least one email to pool',
+  emailsAdded: '已添加 {count} 个邮箱',
   example: '示例',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const zh: Translations = {
   deleteSelectedConfirm: 'Delete {count} selected accounts?',
   selectedAccountsDeleted: '{count} accounts deleted',
   refreshingTokens: 'Refreshing tokens...',
+  checkHealth: '检查健康',
+  checkingHealth: '正在检查账户健康...',
+
+  // Hero Profile Display
+  ready: '就绪',
+  clickToConfigure: '点击配置',
 };

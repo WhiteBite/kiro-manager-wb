@@ -26,6 +26,9 @@ class BrowserConfig:
     slow_mo: int = 0
     devtools: bool = False
     screenshots_on_error: bool = True
+    realistic_typing: bool = True  # Реалистичный ввод для обхода FWCIM
+    human_delays: bool = True  # Человеческие задержки между шагами регистрации
+    delay_multiplier: float = 1.0  # Множитель задержек (0.5 = быстрее, 2.0 = медленнее)
 
 
 @dataclass
