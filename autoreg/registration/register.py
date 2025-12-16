@@ -330,6 +330,10 @@ class AWSRegistration:
             # Спуфинг уже применён в BrowserAutomation.__init__
             # через apply_pre_navigation_spoofing
             
+            # Прогрев браузера - создаём реальную историю
+            if self._human_delays:
+                self.browser.prewarm()
+            
             # Открываем OAuth authorize URL (НЕ profile.aws напрямую!)
             print(f"   Opening: {auth_url[:60]}...")
             self.browser.navigate(auth_url)
@@ -340,24 +344,28 @@ class AWSRegistration:
             
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
-            self._human_delay(0.5, 1.5)  # Небольшая пауза
+            # Человек осматривает страницу перед вводом
+            self._simulate_page_arrival()
             self.browser.enter_email(email)
-            self._human_delay(0.3, 0.8)
+            # Проверяет что ввёл
+            self._simulate_after_input()
             self.browser.click_continue()
             
             # Пауза между шагами
-            self._human_delay(1.0, 2.0)
+            self._human_delay(1.5, 3.0)
             
             # ШАГ 4: Вводим имя
             print(f"[4/8] Entering name: {name}")
-            self._human_delay(0.5, 1.5)
+            # Осматриваем новую страницу
+            self._simulate_page_arrival()
+            # Иногда отвлекаемся
+            self._simulate_distraction()
             self.browser.enter_name(name)
             
             # Пауза между шагами
             self._human_delay(2.0, 4.0)
             
             # ШАГ 5: Получаем и вводим код верификации
-            # Используем lookup_email для поиска в IMAP (важно для plus_alias стратегии)
             print(f"[5/8] Waiting for verification code (lookup: {lookup_email})...")
             code = mail_handler.get_verification_code(lookup_email, timeout=TIMEOUTS['verification_code'])
             
@@ -365,7 +373,8 @@ class AWSRegistration:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}
             
             print(f"[5/8] Entering code: {code}")
-            self._human_delay(1.0, 2.0)  # Пауза перед вводом кода
+            # Человек переключается на почту и обратно
+            self._simulate_checking_email()
             self.browser.enter_verification_code(code)
             
             # Пауза между шагами
@@ -373,7 +382,8 @@ class AWSRegistration:
             
             # ШАГ 6: Вводим пароль
             print(f"[6/8] Setting password...")
-            self._human_delay(0.5, 1.5)
+            # Осматриваем страницу пароля
+            self._simulate_page_arrival()
             self.browser.enter_password(password)
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
