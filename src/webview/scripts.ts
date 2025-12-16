@@ -303,6 +303,11 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       vscode.postMessage({ command: 'refreshAllExpired' });
     }
     
+    function checkAllAccountsHealth() {
+      vscode.postMessage({ command: 'checkAllAccountsHealth' });
+      showToast(T.checkingHealth || 'Checking accounts health...', 'success');
+    }
+    
     function closeDialog() {
       document.getElementById('dialogOverlay').classList.remove('visible');
       pendingAction = null;
@@ -410,8 +415,42 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         case 'patchStatus':
           updatePatchStatus(msg);
           break;
+        case 'imapTestResult':
+          updateImapTestResult(msg);
+          break;
       }
     });
+    
+    function updateImapTestResult(result) {
+      const btn = document.getElementById('testConnectionBtn');
+      if (!btn) return;
+      
+      if (result.status === 'testing') {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ ' + (T.testing || 'Testing...');
+        btn.className = 'btn btn-secondary';
+      } else if (result.status === 'success') {
+        btn.disabled = false;
+        btn.innerHTML = '✅ ' + (T.connected || 'Connected!');
+        btn.className = 'btn btn-success';
+        showToast(result.message, 'success');
+        // Reset after 3 seconds
+        setTimeout(() => {
+          btn.innerHTML = '🔌 ' + T.testConnection;
+          btn.className = 'btn btn-secondary';
+        }, 3000);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '❌ ' + (T.failed || 'Failed');
+        btn.className = 'btn btn-danger';
+        showToast(result.message, 'error');
+        // Reset after 3 seconds
+        setTimeout(() => {
+          btn.innerHTML = '🔌 ' + T.testConnection;
+          btn.className = 'btn btn-secondary';
+        }, 3000);
+      }
+    }
     
     function updatePatchStatus(status) {
       const patchBtn = document.getElementById('patchKiroBtn');
@@ -647,48 +686,94 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       list.innerHTML = currentPoolEmails.map((item, i) => {
         const email = item.email || item;
         const hasPassword = item.password ? ' 🔑' : '';
-        return '<div class="pool-item pending" data-index="' + i + '">' +
-          '<span class="pool-status">⬜</span>' +
+        const status = item.status || 'pending';
+        const statusIcon = status === 'used' ? '✅' : status === 'failed' ? '❌' : '⬜';
+        const statusClass = status === 'used' ? 'used' : status === 'failed' ? 'failed' : 'pending';
+        const errorTip = item.error ? ' title="' + item.error + '"' : '';
+        return '<div class="pool-item ' + statusClass + '" data-index="' + i + '"' + errorTip + '>' +
+          '<span class="pool-status">' + statusIcon + '</span>' +
           '<span class="pool-email">' + email + hasPassword + '</span>' +
-          '<button class="pool-remove" onclick="removeEmailFromPool(' + i + ')">✕</button>' +
+          (status === 'pending' ? '<button class="pool-remove" onclick="removeEmailFromPool(' + i + ')">✕</button>' : '') +
         '</div>';
       }).join('');
+      
+      // Show pool stats
+      const used = currentPoolEmails.filter(e => e.status === 'used').length;
+      const failed = currentPoolEmails.filter(e => e.status === 'failed').length;
+      const pending = currentPoolEmails.length - used - failed;
+      const statsEl = document.getElementById('poolStats');
+      if (statsEl) {
+        statsEl.innerHTML = '<span class="pool-stat success">' + used + ' ✅</span> ' +
+          '<span class="pool-stat danger">' + failed + ' ❌</span> ' +
+          '<span class="pool-stat">' + pending + ' ⬜</span>';
+      }
     }
     
     function importEmailsFromFile() {
       vscode.postMessage({ command: 'importEmailsFromFile' });
     }
     
-    function pasteEmails() {
-      navigator.clipboard.readText().then(text => {
-        // Support formats: email, email:password, one per line or separated by newlines
-        const lines = text.split(new RegExp('[\\\\r\\\\n]+')).filter(e => e.includes('@'));
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          // Parse email:password format
-          let email, password;
-          if (trimmed.includes(':') && trimmed.indexOf(':') > trimmed.indexOf('@')) {
-            const colonPos = trimmed.lastIndexOf(':');
-            const atPos = trimmed.indexOf('@');
-            if (colonPos > atPos) {
-              email = trimmed.substring(0, colonPos);
-              password = trimmed.substring(colonPos + 1);
-            } else {
-              email = trimmed;
-            }
+    function parseAndAddEmails(text) {
+      // Support formats: email, email:password, one per line or separated by newlines
+      const lines = text.split(new RegExp('[\\\\r\\\\n]+')).filter(e => e.includes('@'));
+      let added = 0;
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        // Parse email:password format
+        let email, password;
+        if (trimmed.includes(':') && trimmed.indexOf(':') > trimmed.indexOf('@')) {
+          const colonPos = trimmed.lastIndexOf(':');
+          const atPos = trimmed.indexOf('@');
+          if (colonPos > atPos) {
+            email = trimmed.substring(0, colonPos);
+            password = trimmed.substring(colonPos + 1);
           } else {
             email = trimmed;
           }
-          
-          const existing = currentPoolEmails.find(e => e.email?.toLowerCase() === email.toLowerCase() || e === email.toLowerCase());
-          if (!existing) {
-            currentPoolEmails.push(password ? { email, password } : { email });
-          }
-        });
+        } else {
+          email = trimmed;
+        }
+        
+        const existing = currentPoolEmails.find(e => e.email?.toLowerCase() === email.toLowerCase() || e === email.toLowerCase());
+        if (!existing) {
+          currentPoolEmails.push(password ? { email, password } : { email });
+          added++;
+        }
+      });
+      return added;
+    }
+    
+    function pasteEmails() {
+      navigator.clipboard.readText().then(text => {
+        const added = parseAndAddEmails(text);
         renderPoolList();
+        if (added > 0) {
+          showToast((T.emailsAdded || '{count} emails added').replace('{count}', added), 'success');
+        }
       }).catch(() => {
         showToast(T.clipboardError, 'error');
       });
+    }
+    
+    function handlePoolPaste(event) {
+      const text = (event.clipboardData || window.clipboardData)?.getData('text');
+      if (!text) return;
+      
+      // Check if pasted text contains multiple lines or email:password format
+      const hasMultipleLines = text.includes('\\n') || text.includes('\\r');
+      const hasEmailPassword = text.includes('@') && text.includes(':') && text.indexOf(':') > text.indexOf('@');
+      
+      if (hasMultipleLines || hasEmailPassword) {
+        event.preventDefault();
+        const added = parseAndAddEmails(text);
+        renderPoolList();
+        if (added > 0) {
+          showToast((T.emailsAdded || '{count} emails added').replace('{count}', added), 'success');
+        }
+        // Clear input
+        event.target.value = '';
+      }
+      // If single email without password - let default paste behavior work
     }
     
     function saveProfile() {
@@ -847,7 +932,13 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       }
       
       if (strategyType === 'pool' && profile.strategy?.emails) {
-        currentPoolEmails = profile.strategy.emails.map(e => e.email);
+        // Keep full email objects with status
+        currentPoolEmails = profile.strategy.emails.map(e => ({
+          email: e.email,
+          password: e.password,
+          status: e.status || 'pending',
+          error: e.error
+        }));
         renderPoolList();
       }
       
@@ -1039,6 +1130,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     window.removeEmailFromPool = removeEmailFromPool;
     window.importEmailsFromFile = importEmailsFromFile;
     window.pasteEmails = pasteEmails;
+    window.handlePoolPaste = handlePoolPaste;
     window.saveProfile = saveProfile;
     window.togglePasswordVisibility = togglePasswordVisibility;
     window.switchAccount = switchAccount;
@@ -1054,6 +1146,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     window.refreshAllExpired = refreshAllExpired;
     window.confirmDeleteExhausted = confirmDeleteExhausted;
     window.confirmDeleteBanned = confirmDeleteBanned;
+    window.checkAllAccountsHealth = checkAllAccountsHealth;
     window.showToast = showToast;
     window.dialogAction = dialogAction;
     window.closeDialog = closeDialog;

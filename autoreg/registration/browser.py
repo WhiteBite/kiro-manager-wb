@@ -195,6 +195,10 @@ class BrowserAutomation:
         co.set_argument('--no-first-run')
         co.set_argument('--no-default-browser-check')
         
+        # Force English language to avoid Chinese error messages
+        co.set_argument('--lang=en-US')
+        co.set_argument('--accept-lang=en-US,en')
+        
         # НЕ используем --disable-blink-features=AutomationControlled
         # Он показывает предупреждение которое палит автоматизацию!
         
@@ -272,9 +276,17 @@ class BrowserAutomation:
         # Инициализируем модуль человеческого поведения
         self._behavior = BehaviorSpoofModule()
         
-        # Настраиваем параметры поведения для более быстрой работы
-        self._behavior.typing_delay_range = (0.03, 0.08)
-        self._behavior.action_delay_range = (0.1, 0.3)
+        # Настройка реалистичного ввода (по умолчанию включено для обхода FWCIM)
+        self._realistic_typing = browser_settings.get('realistic_typing', True)
+        
+        if self._realistic_typing:
+            # Реалистичные задержки для обхода поведенческого анализа
+            print("   [B] Realistic typing enabled (slower but safer)")
+        else:
+            # Быстрые задержки для скорости
+            self._behavior.typing_delay_range = (0.03, 0.08)
+            self._behavior.action_delay_range = (0.1, 0.3)
+            print("   [B] Fast typing mode (faster but may be detected)")
         
         # Включаем перехват сетевых запросов
         self._setup_network_logging()
@@ -465,7 +477,7 @@ class BrowserAutomation:
     # HUMAN-LIKE INPUT (Обход поведенческого анализа AWS FWCIM)
     # ========================================================================
     
-    def human_type(self, element, text: str, click_first: bool = True, fast: bool = True):
+    def human_type(self, element, text: str, click_first: bool = True, fast: bool = None, field_type: str = 'default'):
         """
         Вводит текст с человеческими задержками.
         
@@ -473,9 +485,13 @@ class BrowserAutomation:
             element: Элемент для ввода
             text: Текст для ввода
             click_first: Кликнуть на элемент перед вводом
-            fast: Быстрый режим - использует execCommand вместо посимвольного ввода
+            fast: Быстрый режим (None = использовать настройку realistic_typing)
+            field_type: Тип поля для BehaviorSpoofModule ('email', 'password', 'name', 'code')
         """
-        if fast:
+        # Определяем режим: если fast не указан, используем настройку
+        use_fast = fast if fast is not None else not self._realistic_typing
+        
+        if use_fast:
             # Быстрый режим: execCommand для совместимости с React
             if click_first:
                 element.click()
@@ -492,8 +508,8 @@ class BrowserAutomation:
             
             self._behavior.human_delay(0.03, 0.08)
         else:
-            # Медленный режим: посимвольный ввод с человеческими задержками
-            self._behavior.human_type(element, text, clear_first=click_first)
+            # Реалистичный режим: посимвольный ввод с человеческими задержками
+            self._behavior.human_type(element, text, clear_first=click_first, field_type=field_type)
     
     def human_click(self, element, with_delay: bool = True):
         """
@@ -819,8 +835,8 @@ class BrowserAutomation:
             self.screenshot("error_no_email")
             raise Exception("Email field not found")
         
-        # Быстрый ввод email
-        self.human_type(email_input, email)
+        # Ввод email (быстрый - email обычно знаем наизусть)
+        self.human_type(email_input, email, field_type='email')
         return True
     
     def _debug_inputs(self):
@@ -929,18 +945,12 @@ class BrowserAutomation:
             print("   [X] Name field not found!")
             return False
         
-        # Быстрый ввод имени
-        self.page.run_js('''
-            const input = arguments[0];
-            const name = arguments[1];
-            input.focus();
-            input.value = '';
-            input.select();
-            document.execCommand('insertText', false, name);
-            input.dispatchEvent(new Event('blur', { bubbles: true }));
-        ''', name_input, name)
+        # Ввод имени с человеческим поведением
+        self.human_type(name_input, name, field_type='name')
         
-        time.sleep(0.2)  # Минимальная пауза для React
+        # Blur для React
+        self.page.run_js('arguments[0].dispatchEvent(new Event("blur", { bubbles: true }));', name_input)
+        time.sleep(0.1)
         
         # Кликаем Continue
         print("   [->] Clicking Continue...")
@@ -1005,16 +1015,10 @@ class BrowserAutomation:
         if not code_input:
             raise Exception("Verification code field not found")
         
-        # Быстрый ввод кода
-        self.page.run_js('''
-            const input = arguments[0];
-            const code = arguments[1];
-            input.focus();
-            input.value = '';
-            document.execCommand('insertText', false, code);
-        ''', code_input, code)
+        # Ввод кода верификации (медленно - смотрим на код в письме)
+        self.human_type(code_input, code, field_type='code')
         
-        time.sleep(0.15)  # Минимальная пауза для React
+        time.sleep(0.1)
         print(f"   Entered code: '{code_input.attr('value') or ''}'")
         
         # Кликаем Continue/Verify с retry
@@ -1109,23 +1113,14 @@ class BrowserAutomation:
             self.screenshot("error_no_password")
             return False
         
-        # Быстрый ввод пароля через JS
-        def fast_input(element, text):
-            self.page.run_js('''
-                const input = arguments[0];
-                const text = arguments[1];
-                input.focus();
-                input.value = '';
-                document.execCommand('insertText', false, text);
-            ''', element, text)
-        
+        # Ввод пароля с человеческим поведением (медленно - вспоминаем пароль)
         print("   Entering password...")
-        fast_input(pwd1, password)
+        self.human_type(pwd1, password, field_type='password')
         
         if pwd2:
-            time.sleep(0.1)
+            self._behavior.human_delay(0.2, 0.4)  # Пауза перед повторным вводом
             print("   Confirming password...")
-            fast_input(pwd2, password)
+            self.human_type(pwd2, password, field_type='password')
         
         time.sleep(0.15)
         print("[->] Clicking Continue...")

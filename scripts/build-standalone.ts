@@ -42,6 +42,7 @@ function generateStandaloneScript(): string {
         reconnectAttempts = 0;
         sendCommand('refresh');
         sendCommand('getPatchStatus');
+        sendCommand('getActiveProfile');
       };
       
       ws.onmessage = (event) => {
@@ -426,16 +427,61 @@ function generateStandaloneScript(): string {
       sendCommand('setActiveProfile', { profileId });
     }
     
+    // Store current active profile for Hero display
+    let currentActiveProfile = null;
+    
     function renderActiveProfile(profile) {
+      currentActiveProfile = profile;
+      
+      // Update Settings panel
       const container = document.getElementById('activeProfileContent');
-      if (!container) return;
+      if (container) {
+        if (!profile) {
+          container.innerHTML = '<div class="active-profile-empty"><span class="empty-icon">📧</span><span class="empty-text">' + T.noProfileConfigured + '</span><button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">' + T.configure + '</button></div>';
+        } else {
+          container.innerHTML = '<div class="active-profile-info"><div class="active-profile-name">' + (profile.name || T.unnamed) + '</div><div class="active-profile-email">' + (profile.imap?.user || '') + '</div></div>';
+        }
+      }
+      
+      // Update Hero section to show profile info
+      updateHeroWithProfile(profile);
+    }
+    
+    function updateHeroWithProfile(profile) {
+      const hero = document.querySelector('.hero');
+      if (!hero) return;
+      
+      // Don't update if registration is running (hero shows progress)
+      if (hero.classList.contains('progress')) return;
       
       if (!profile) {
-        container.innerHTML = '<div class="active-profile-empty"><span class="empty-icon">📧</span><span class="empty-text">' + T.noProfileConfigured + '</span><button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">' + T.configure + '</button></div>';
+        hero.className = 'hero empty';
+        hero.setAttribute('onclick', 'openSettings()');
+        hero.innerHTML = '<div class="hero-email">' + T.noActive + '</div><div class="hero-hint">' + (T.clickToConfigure || 'Click to configure') + '</div>';
         return;
       }
       
-      container.innerHTML = '<div class="active-profile-info"><div class="active-profile-name">' + (profile.name || T.unnamed) + '</div><div class="active-profile-email">' + (profile.imap?.user || '') + '</div></div>';
+      const profileName = profile.name || T.unnamed || 'Unnamed';
+      const email = profile.imap?.user || '';
+      const strategyType = profile.strategy?.type || 'single';
+      const strategyIcon = strategyType === 'pool' ? '📦' : strategyType === 'catch_all' ? '🎯' : '📧';
+      const registered = profile.stats?.registered || 0;
+      const failed = profile.stats?.failed || 0;
+      
+      hero.className = 'hero profile';
+      hero.setAttribute('onclick', 'openSettings()');
+      hero.innerHTML = 
+        '<div class="hero-header">' +
+          '<span class="hero-email" title="' + email + '">' + strategyIcon + ' ' + profileName + '</span>' +
+          '<span class="hero-days">' + (T.ready || 'Ready') + '</span>' +
+        '</div>' +
+        '<div class="hero-profile-info">' +
+          '<span class="hero-profile-email">' + email + '</span>' +
+        '</div>' +
+        '<div class="hero-stats">' +
+          '<span class="hero-usage font-mono">✅ ' + registered + ' / ❌ ' + failed + '</span>' +
+          '<span class="hero-percent">' + (T.clickToConfigure || 'Click to configure') + '</span>' +
+        '</div>';
     }
     
     function updatePatchStatus(status) {
@@ -674,6 +720,11 @@ function generateStandaloneScript(): string {
       sendCommand('refreshAllExpired');
     }
     
+    function checkAllAccountsHealth() {
+      sendCommand('checkAllAccountsHealth');
+      showToast(T.checkingHealth || 'Checking accounts health...', 'success');
+    }
+    
     function exportAllAccounts() {
       sendCommand('exportAccounts');
     }
@@ -814,6 +865,7 @@ function generateStandaloneScript(): string {
     window.onEmailInput = onEmailInput;
     window.confirmDeleteExhausted = confirmDeleteExhausted;
     window.confirmDeleteBanned = confirmDeleteBanned;
+    window.checkAllAccountsHealth = checkAllAccountsHealth;
     window.refreshAllExpired = refreshAllExpired;
     window.exportAllAccounts = exportAllAccounts;
     window.importAccounts = importAccounts;
@@ -842,7 +894,7 @@ function generateStandaloneHtml(): string {
 <body data-lang="en">
   <div class="app">
     ${renderHeader({ validCount: 0, totalCount: 0, t })}
-    ${renderHero({ activeAccount: undefined, usage: null, progress: null, isRunning: false, t })}
+    ${renderHero({ activeAccount: undefined, activeProfile: null, usage: null, progress: null, isRunning: false, t })}
     ${renderToolbar({ isRunning: false, t })}
     
     <div class="list" id="accountList">

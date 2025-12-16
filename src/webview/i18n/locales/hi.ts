@@ -173,6 +173,7 @@ export const hi: Translations = {
   strategyPoolFromFile: 'फ़ाइल से',
   strategyPoolPaste: 'Paste',
   poolEmpty: 'Add at least one email to pool',
+  emailsAdded: '{count} ईमेल जोड़े गए',
   example: 'उदाहरण',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const hi: Translations = {
   deleteSelectedConfirm: 'Delete {count} selected accounts?',
   selectedAccountsDeleted: '{count} accounts deleted',
   refreshingTokens: 'Refreshing tokens...',
+  checkHealth: 'स्वास्थ्य जांचें',
+  checkingHealth: 'खातों की स्थिति जांच रहे हैं...',
+
+  // Hero Profile Display
+  ready: 'तैयार',
+  clickToConfigure: 'कॉन्फ़िगर करने के लिए क्लिक करें',
 };

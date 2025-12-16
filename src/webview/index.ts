@@ -26,6 +26,24 @@ export { RegProgress, AutoRegSettings };
 export type { Language } from './i18n';
 export { getTranslations } from './i18n';
 
+export interface ImapProfile {
+  id: string;
+  name: string;
+  imap?: {
+    server?: string;
+    user?: string;
+    port?: number;
+  };
+  strategy?: {
+    type: 'single' | 'catch_all' | 'pool';
+    emails?: Array<{ email: string; status?: string }>;
+  };
+  stats?: {
+    registered: number;
+    failed: number;
+  };
+}
+
 export interface WebviewProps {
   accounts: AccountInfo[];
   autoSwitchEnabled: boolean;
@@ -37,6 +55,7 @@ export interface WebviewProps {
   version?: string;
   language?: Language;
   availableUpdate?: { version: string; url: string } | null;
+  activeProfile?: ImapProfile | null;
 }
 
 // Parse registration status
@@ -126,7 +145,7 @@ export function generateWebviewHtml(
   <div class="app">
     ${renderHeader({ validCount, totalCount: accounts.length, t })}
     ${renderUpdateBanner(props.availableUpdate, t)}
-    ${renderHero({ activeAccount, usage: props.kiroUsage, progress, isRunning, t })}
+    ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
     ${renderToolbar({ isRunning, t })}
     
     <div class="list" id="accountList">

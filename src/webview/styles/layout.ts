@@ -21,9 +21,32 @@ export const layout = `
   .hero.empty {
     background: var(--glass-bg);
     border-color: var(--glass-border);
-    cursor: default;
+    cursor: pointer;
     text-align: center;
     padding: 20px;
+  }
+  .hero.empty .hero-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .hero.profile {
+    background: linear-gradient(135deg, rgba(100,149,237,0.1) 0%, rgba(100,149,237,0.03) 100%);
+    border-color: rgba(100,149,237,0.25);
+  }
+  .hero.profile:hover {
+    border-color: rgba(100,149,237,0.4);
+    box-shadow: 0 4px 20px rgba(100,149,237,0.15);
+  }
+  .hero-profile-info {
+    margin-bottom: 8px;
+  }
+  .hero-profile-email {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .hero.progress {
     background: linear-gradient(135deg, rgba(63,182,139,0.08) 0%, transparent 100%);

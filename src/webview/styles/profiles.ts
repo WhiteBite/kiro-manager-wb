@@ -392,14 +392,31 @@ export const profiles = `
     border-bottom: none;
   }
   .pool-item.used {
-    opacity: 0.5;
-    background: rgba(63,182,139,0.05);
+    opacity: 0.6;
+    background: rgba(63,182,139,0.1);
   }
   .pool-item.failed {
     background: var(--danger-dim);
   }
   .pool-status {
     font-size: 12px;
+  }
+  .pool-stats {
+    display: flex;
+    gap: 12px;
+    padding: 8px 10px;
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .pool-stat {
+    color: var(--muted);
+  }
+  .pool-stat.success {
+    color: var(--success);
+  }
+  .pool-stat.danger {
+    color: var(--danger);
   }
   .pool-email {
     flex: 1;

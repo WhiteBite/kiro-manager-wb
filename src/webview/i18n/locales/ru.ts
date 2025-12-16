@@ -173,6 +173,7 @@ export const ru: Translations = {
   strategyPoolFromFile: 'Из файла',
   strategyPoolPaste: 'Вставить',
   poolEmpty: 'Добавьте хотя бы один email в пул',
+  emailsAdded: '{count} email добавлено',
   example: 'Пример',
 
   // Strategy Features
@@ -284,4 +285,10 @@ export const ru: Translations = {
   deleteSelectedConfirm: 'Удалить {count} выбранных аккаунтов?',
   selectedAccountsDeleted: '{count} аккаунтов удалено',
   refreshingTokens: 'Обновляем токены...',
+  checkHealth: 'Проверить здоровье',
+  checkingHealth: 'Проверяем здоровье аккаунтов...',
+
+  // Hero Profile Display
+  ready: 'Готов',
+  clickToConfigure: 'Нажмите для настройки',
 };

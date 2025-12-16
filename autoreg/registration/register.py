@@ -20,6 +20,7 @@ AWS Builder ID Auto-Registration with OAuth PKCE Flow
 import argparse
 import time
 import re
+import random
 import threading
 import functools
 from typing import List, Optional
@@ -101,6 +102,71 @@ class AWSRegistration:
         self.mail_handler = None
         self.oauth = None
         self.email_generator = None
+        
+        # Загружаем настройки задержек
+        from core.config import get_config
+        config = get_config()
+        self._human_delays = config.browser.human_delays
+        self._delay_multiplier = config.browser.delay_multiplier
+    
+    def _human_delay(self, min_sec: float, max_sec: float):
+        """Человеческая задержка с учётом настроек"""
+        if not self._human_delays:
+            return
+        delay = random.uniform(min_sec, max_sec) * self._delay_multiplier
+        time.sleep(delay)
+    
+    def _simulate_page_arrival(self):
+        """Симулирует поведение при загрузке новой страницы"""
+        if not self._human_delays or not self.browser:
+            return
+        try:
+            behavior = self.browser._behavior
+            # Осматриваем страницу (движения мыши, небольшой скролл)
+            behavior.simulate_page_reading(self.browser.page, duration=random.uniform(1.5, 3.0) * self._delay_multiplier)
+            # Колебание перед формой
+            behavior.simulate_form_hesitation(self.browser.page)
+        except Exception:
+            self._human_delay(1.0, 2.5)
+    
+    def _simulate_after_input(self):
+        """Симулирует проверку введённых данных"""
+        if not self._human_delays or not self.browser:
+            return
+        try:
+            behavior = self.browser._behavior
+            # Микро-движения (проверяем что ввели)
+            behavior.random_micro_movements(self.browser.page, count=random.randint(2, 5))
+            self._human_delay(0.3, 1.0)
+        except Exception:
+            self._human_delay(0.5, 1.5)
+    
+    def _simulate_checking_email(self):
+        """Симулирует переключение на почту и обратно"""
+        if not self._human_delays:
+            self._human_delay(1.0, 2.0)
+            return
+        # Человек переключается на почту, ищет письмо, копирует код
+        # Это занимает 3-8 секунд
+        delay = random.uniform(3.0, 8.0) * self._delay_multiplier
+        time.sleep(delay)
+        
+        # После возврата в браузер - небольшая пауза
+        if self.browser:
+            try:
+                self.browser._behavior.random_micro_movements(self.browser.page, count=2)
+            except:
+                pass
+    
+    def _simulate_distraction(self):
+        """Симулирует случайное отвлечение (с низкой вероятностью)"""
+        if not self._human_delays or not self.browser:
+            return
+        try:
+            # 15% шанс отвлечься
+            self.browser._behavior.simulate_distraction(self.browser.page, probability=0.15)
+        except Exception:
+            pass
     
     def _init_mail(self, email_domain: str = None):
         """Initialize mail handler from environment settings"""
@@ -274,14 +340,26 @@ class AWSRegistration:
             
             # ШАГ 3: Вводим email
             print(f"[3/8] Entering email: {email}")
+            # Человек сначала осматривает страницу
+            self._simulate_page_arrival()
             self.browser.enter_email(email)
-            self.browser.simulate_human_activity()  # Имитация человека
+            # Микро-движения после ввода (проверяет что ввёл)
+            self._simulate_after_input()
             self.browser.click_continue()
+            
+            # Пауза между шагами (ждём загрузки + "осматриваемся")
+            self._human_delay(1.5, 3.0)
             
             # ШАГ 4: Вводим имя
             print(f"[4/8] Entering name: {name}")
-            self.browser.simulate_human_activity()  # Имитация человека
+            # Осматриваем новую страницу
+            self._simulate_page_arrival()
+            # Иногда отвлекаемся
+            self._simulate_distraction()
             self.browser.enter_name(name)
+            
+            # Пауза между шагами
+            self._human_delay(2.0, 4.0)
             
             # ШАГ 5: Получаем и вводим код верификации
             # Используем lookup_email для поиска в IMAP (важно для plus_alias стратегии)
@@ -292,12 +370,17 @@ class AWSRegistration:
                 return {'email': email, 'success': False, 'error': 'Verification code not received'}
             
             print(f"[5/8] Entering code: {code}")
-            self.browser.simulate_human_activity()  # Имитация человека
+            # Человек переключается между почтой и браузером - это занимает время
+            self._simulate_checking_email()
             self.browser.enter_verification_code(code)
+            
+            # Пауза между шагами
+            self._human_delay(2.0, 4.0)
             
             # ШАГ 6: Вводим пароль
             print(f"[6/8] Setting password...")
-            self.browser.simulate_human_activity()  # Имитация человека
+            # Осматриваем страницу пароля
+            self._simulate_page_arrival()
             self.browser.enter_password(password)
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"

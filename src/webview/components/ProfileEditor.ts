@@ -80,9 +80,10 @@ function renderStrategySelector(t: Translations): string {
     <div class="strategy-config" id="poolConfig" style="display: none;">
       <div class="config-hint">${t.strategyPoolHint}</div>
       <div class="email-pool-editor">
+        <div class="pool-stats" id="poolStats"></div>
         <div class="pool-list" id="poolList"></div>
         <div class="pool-add">
-          <input type="email" class="form-input" id="newPoolEmail" placeholder="${t.strategyPoolAdd}" onkeypress="if(event.key==='Enter') addEmailToPool()">
+          <input type="text" class="form-input" id="newPoolEmail" placeholder="${t.strategyPoolAdd}" onkeypress="if(event.key==='Enter') addEmailToPool()" onpaste="handlePoolPaste(event)">
           <button class="btn btn-secondary" onclick="addEmailToPool()">${ICONS.plus}</button>
         </div>
         <div class="pool-actions">
