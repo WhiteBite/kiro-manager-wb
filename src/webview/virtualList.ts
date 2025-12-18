@@ -22,7 +22,7 @@ const DEFAULT_CONFIG: VirtualListConfig = {
   itemHeight: 54, // Optimized card height
   containerHeight: 400,
   overscan: 5, // Increased for smoother scrolling
-  threshold: 30, // Enable at 30+ items (reduced from 50)
+  threshold: 200, // Disabled for grouped lists - enable only for very large lists
 };
 
 export function calculateVirtualList(
@@ -31,7 +31,7 @@ export function calculateVirtualList(
   config: Partial<VirtualListConfig> = {}
 ): VirtualListState {
   const { itemHeight, containerHeight, overscan } = { ...DEFAULT_CONFIG, ...config };
-  
+
   const visibleCount = Math.ceil(containerHeight / itemHeight);
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
   const endIndex = Math.min(totalItems, startIndex + visibleCount + overscan * 2);

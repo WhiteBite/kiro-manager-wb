@@ -300,4 +300,10 @@ export const en: Translations = {
   accounts: 'Accounts',
   profiles: 'Profiles',
   pause: 'Pause',
+
+  // Stats Dashboard
+  statistics: 'Statistics',
+  weeklyUsage: 'Weekly Usage',
+  avgPerAccount: 'Avg per account',
+  accountHealth: 'Account Health',
 };

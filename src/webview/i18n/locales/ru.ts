@@ -300,4 +300,10 @@ export const ru: Translations = {
   accounts: 'Аккаунты',
   profiles: 'Профили',
   pause: 'Пауза',
+
+  // Stats Dashboard
+  statistics: 'Статистика',
+  weeklyUsage: 'За неделю',
+  avgPerAccount: 'Среднее на аккаунт',
+  accountHealth: 'Состояние аккаунтов',
 };

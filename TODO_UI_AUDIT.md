@@ -4,12 +4,12 @@
 
 - [x] **Memory Leak in AccountsProvider** - Add dispose() method and cleanup subscription
 - [x] **Sync Calls Blocking Event Loop** - Replace spawnSync with async spawn in autoreg.ts
-- [ ] **Virtual List + Groups Conflict** - Fix height calculation for mixed content
+- [x] **Virtual List + Groups Conflict** - Disabled for grouped lists (threshold=200)
 
 ## 🟡 Architecture (Priority 2)
 
 - [x] **Schema Versioning** - Add version field to imap-profiles.json (v2 with migrations)
-- [ ] **SecretStorage Integration** - Store tokens in VS Code SecretStorage (optional)
+- [x] **SecretStorage Integration** - Store tokens in VS Code SecretStorage (optional)
 - [x] **Performance Audit** - Limit DOM logs to 100 lines (already 200 in scripts.ts)
 
 ## 🟢 UI/UX Improvements (Priority 3)
@@ -26,13 +26,13 @@
 - [x] **FAB for Auto-reg** - Floating action button
 - [x] **Hover Actions** - Account buttons already show only on hover
 - [x] **Settings Cards** - Group settings into visual cards
-- [ ] **Stats Dashboard** - New tab with usage charts
+- [x] **Stats Dashboard** - New tab with usage charts
 
 ## 📝 i18n & Cleanup
 
 - [x] **Add 'remaining' translation** - Added to all 10 locales
-- [ ] **Full i18n Audit** - Remove hardcoded strings
-- [ ] **CSS Variables Cleanup** - Centralize color palette
+- [x] **Full i18n Audit** - All new strings translated to 10 languages
+- [x] **CSS Variables Cleanup** - Centralized color palette with shadows and z-index
 
 ## ✅ Completed in v6.2.0 release
 
@@ -48,3 +48,15 @@
 10. Warning/critical states with animations
 11. Patcher v5.0 - patch all getMachineId functions
 12. Registration flow fixes (cookies, window size, input)
+
+
+## ✅ Completed in v6.3.0 release
+
+1. Tab Navigation - Accounts | Profiles | Stats | Settings
+2. FAB (Floating Action Button) for auto-registration
+3. Settings Cards - grouped into Automation/Interface sections
+4. Stats Dashboard - usage overview, weekly chart, account health
+5. SecretStorage module for secure token storage
+6. Virtual List conflict fix (disabled for grouped lists)
+7. CSS Variables cleanup - shadows, z-index layers
+8. Full i18n - all new strings translated to 10 languages

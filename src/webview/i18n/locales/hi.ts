@@ -300,4 +300,10 @@ export const hi: Translations = {
   accounts: 'खाते',
   profiles: 'प्रोफाइल',
   pause: 'रोकें',
+
+  // Stats Dashboard
+  statistics: 'आंकड़े',
+  weeklyUsage: 'साप्ताहिक उपयोग',
+  avgPerAccount: 'प्रति खाता औसत',
+  accountHealth: 'खाता स्वास्थ्य',
 };

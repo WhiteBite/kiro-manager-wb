@@ -363,4 +363,12 @@ export interface Translations {
   accounts: string;
   profiles: string;
   pause: string;
+
+  // ============================================
+  // Stats Dashboard
+  // ============================================
+  statistics: string;
+  weeklyUsage: string;
+  avgPerAccount: string;
+  accountHealth: string;
 }

@@ -300,4 +300,10 @@ export const ja: Translations = {
   accounts: 'アカウント',
   profiles: 'プロファイル',
   pause: '一時停止',
+
+  // Stats Dashboard
+  statistics: '統計',
+  weeklyUsage: '週間使用量',
+  avgPerAccount: 'アカウント平均',
+  accountHealth: 'アカウント状態',
 };
