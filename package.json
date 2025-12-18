@@ -116,6 +116,13 @@
           "default": 50,
           "description": "Minutes before token expiry to auto-refresh"
         },
+        "kiroAccountSwitcher.autoSwitch.usageThreshold": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 490,
+          "description": "Switch to next account when usage reaches this threshold (requests remaining)"
+        },
         "kiroAccountSwitcher.tokensPath": {
           "type": "string",
           "default": "",

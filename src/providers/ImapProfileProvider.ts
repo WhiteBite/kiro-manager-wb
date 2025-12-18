@@ -134,15 +134,27 @@ export class ImapProfileProvider {
   // CRUD Operations
   // ============================================
 
+  // Current schema version - increment when making breaking changes
+  private static readonly SCHEMA_VERSION = 2;
+
   async load(): Promise<void> {
     try {
       const data = await vscode.workspace.fs.readFile(this.storageUri);
       const parsed: ImapProfilesData = JSON.parse(data.toString());
-      this.profiles = parsed.profiles || [];
-      this.activeProfileId = parsed.activeProfileId;
 
-      // Migration: ensure all profiles have required fields
+      // Schema migration
+      const migratedData = this.migrateSchema(parsed);
+      this.profiles = migratedData.profiles || [];
+      this.activeProfileId = migratedData.activeProfileId;
+
+      // Ensure all profiles have required fields
       this.profiles = this.profiles.map(p => this.migrateProfile(p));
+
+      // Save if migration occurred
+      if (parsed.version !== ImapProfileProvider.SCHEMA_VERSION) {
+        await this.save();
+        console.log(`[ImapProfileProvider] Migrated schema from v${parsed.version || 1} to v${ImapProfileProvider.SCHEMA_VERSION}`);
+      }
     } catch {
       // File doesn't exist or invalid - start fresh
       this.profiles = [];
@@ -153,11 +165,38 @@ export class ImapProfileProvider {
     }
   }
 
+  /**
+   * Migrate schema between versions
+   */
+  private migrateSchema(data: ImapProfilesData): ImapProfilesData {
+    let version = data.version || 1;
+
+    // v1 -> v2: Add stats.successRate field
+    if (version < 2) {
+      data.profiles = data.profiles.map(p => ({
+        ...p,
+        stats: {
+          ...p.stats,
+          successRate: p.stats.registered > 0
+            ? Math.round((p.stats.registered / (p.stats.registered + p.stats.failed)) * 100)
+            : 0
+        }
+      }));
+      version = 2;
+    }
+
+    // Future migrations go here:
+    // if (version < 3) { ... version = 3; }
+
+    data.version = version;
+    return data;
+  }
+
   async save(): Promise<void> {
     const data: ImapProfilesData = {
       profiles: this.profiles,
       activeProfileId: this.activeProfileId,
-      version: 1
+      version: ImapProfileProvider.SCHEMA_VERSION
     };
 
     // Ensure directory exists
