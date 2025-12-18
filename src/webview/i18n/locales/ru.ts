@@ -292,4 +292,12 @@ export const ru: Translations = {
   // Hero Profile Display
   ready: 'Готов',
   clickToConfigure: 'Нажмите для настройки',
+
+  // Settings Cards
+  automation: 'Автоматизация',
+  interface: 'Интерфейс',
+  settings: 'Настройки',
+  accounts: 'Аккаунты',
+  profiles: 'Профили',
+  pause: 'Пауза',
 };

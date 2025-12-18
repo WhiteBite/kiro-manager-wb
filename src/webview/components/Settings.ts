@@ -159,76 +159,95 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
 
   const content = `
     <!-- Active Profile Card -->
-    <div class="active-profile-card" id="activeProfileCard">
-      <div class="active-profile-header">
-        <span class="active-profile-label">${t.activeProfile}</span>
+    <div class="settings-card" id="activeProfileCard">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">📧</span>
+        <span class="settings-card-title">${t.activeProfile}</span>
         <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')">${t.change}</button>
       </div>
       <div class="active-profile-content" id="activeProfileContent">
         <div class="active-profile-empty">
-          <span class="empty-icon">📧</span>
           <span class="empty-text">${t.noProfileConfigured}</span>
           <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">${t.configure}</button>
         </div>
       </div>
     </div>
 
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.autoSwitch}</div>
-        <div class="setting-desc">${t.autoSwitchDesc}</div>
+    <!-- Automation Card -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">⚙️</span>
+        <span class="settings-card-title">${t.automation || 'Automation'}</span>
       </div>
-      <label class="toggle">
-        <input type="checkbox" ${autoSwitchEnabled ? 'checked' : ''} onchange="toggleAutoSwitch(this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
+      <div class="settings-card-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.autoSwitch}</div>
+            <div class="setting-desc">${t.autoSwitchDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${autoSwitchEnabled ? 'checked' : ''} onchange="toggleAutoSwitch(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.headless}</div>
+            <div class="setting-desc">${t.headlessDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.headless ? 'checked' : ''} onchange="toggleSetting('headless', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.deviceFlow}</div>
+            <div class="setting-desc">${t.deviceFlowDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.deviceFlow ? 'checked' : ''} onchange="toggleSetting('deviceFlow', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
     </div>
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.headless}</div>
-        <div class="setting-desc">${t.headlessDesc}</div>
+
+    <!-- Interface Card -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">🎨</span>
+        <span class="settings-card-title">${t.interface || 'Interface'}</span>
       </div>
-      <label class="toggle">
-        <input type="checkbox" ${settings?.headless ? 'checked' : ''} onchange="toggleSetting('headless', this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.verbose}</div>
-        <div class="setting-desc">${t.verboseDesc}</div>
+      <div class="settings-card-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.language}</div>
+            <div class="setting-desc">${t.languageDesc}</div>
+          </div>
+          <select class="select" onchange="changeLanguage(this.value)">${langOptions}</select>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.verbose}</div>
+            <div class="setting-desc">${t.verboseDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.verbose ? 'checked' : ''} onchange="toggleSetting('verbose', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">${t.screenshots}</div>
+            <div class="setting-desc">${t.screenshotsDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.screenshotsOnError ? 'checked' : ''} onchange="toggleSetting('screenshotsOnError', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
-      <label class="toggle">
-        <input type="checkbox" ${settings?.verbose ? 'checked' : ''} onchange="toggleSetting('verbose', this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.screenshots}</div>
-        <div class="setting-desc">${t.screenshotsDesc}</div>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" ${settings?.screenshotsOnError ? 'checked' : ''} onchange="toggleSetting('screenshotsOnError', this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.deviceFlow}</div>
-        <div class="setting-desc">${t.deviceFlowDesc}</div>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" ${settings?.deviceFlow ? 'checked' : ''} onchange="toggleSetting('deviceFlow', this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="setting-row">
-      <div>
-        <div class="setting-label">${t.language}</div>
-        <div class="setting-desc">${t.languageDesc}</div>
-      </div>
-      <select class="select" onchange="changeLanguage(this.value)">${langOptions}</select>
     </div>
 
     ${renderSpoofingSection(settings, t)}

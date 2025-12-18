@@ -292,4 +292,12 @@ export const zh: Translations = {
   // Hero Profile Display
   ready: '就绪',
   clickToConfigure: '点击配置',
+
+  // Settings Cards
+  automation: '自动化',
+  interface: '界面',
+  settings: '设置',
+  accounts: '账户',
+  profiles: '配置文件',
+  pause: '暂停',
 };

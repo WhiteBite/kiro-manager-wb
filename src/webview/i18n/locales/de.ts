@@ -292,4 +292,12 @@ export const de: Translations = {
   // Hero Profile Display
   ready: 'Bereit',
   clickToConfigure: 'Klicken zum Konfigurieren',
+
+  // Settings Cards
+  automation: 'Automatisierung',
+  interface: 'Oberfläche',
+  settings: 'Einstellungen',
+  accounts: 'Konten',
+  profiles: 'Profile',
+  pause: 'Pause',
 };

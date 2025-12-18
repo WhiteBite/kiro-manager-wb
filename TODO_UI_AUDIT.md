@@ -23,9 +23,9 @@
 ## 🔵 Design Polish (Priority 4)
 
 - [x] **Hero Redesign** - Large remaining counter with warning/critical states
-- [ ] **FAB for Auto-reg** - Floating action button
+- [x] **FAB for Auto-reg** - Floating action button
 - [x] **Hover Actions** - Account buttons already show only on hover
-- [ ] **Settings Cards** - Group settings into visual cards
+- [x] **Settings Cards** - Group settings into visual cards
 - [ ] **Stats Dashboard** - New tab with usage charts
 
 ## 📝 i18n & Cleanup

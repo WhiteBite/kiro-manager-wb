@@ -292,4 +292,12 @@ export const ko: Translations = {
   // Hero Profile Display
   ready: '준비됨',
   clickToConfigure: '클릭하여 설정',
+
+  // Settings Cards
+  automation: '자동화',
+  interface: '인터페이스',
+  settings: '설정',
+  accounts: '계정',
+  profiles: '프로필',
+  pause: '일시정지',
 };
