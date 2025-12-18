@@ -15,18 +15,18 @@ export function getKiroAuthTokenPath(): string {
 export function getTokensDir(): string {
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const customPath = config.get<string>('tokensPath', '');
-  
+
   if (customPath && fs.existsSync(customPath)) {
     return customPath;
   }
 
   // ALWAYS use global path - tokens should NOT be project-specific!
   const globalPath = path.join(os.homedir(), '.kiro-batch-login', 'tokens');
-  
+
   if (!fs.existsSync(globalPath)) {
     fs.mkdirSync(globalPath, { recursive: true });
   }
-  
+
   return globalPath;
 }
 
@@ -57,6 +57,8 @@ export interface KiroUsageData {
   expiryDate?: string;
   suspended?: boolean; // Account suspended by AWS
   suspendedReason?: string;
+  isBanned?: boolean;  // Account is banned/blocked (auth error)
+  banReason?: string;  // Reason for ban if known
 }
 
 export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
@@ -64,7 +66,7 @@ export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
     // Cross-platform Kiro DB path
     let dbPath: string;
     const platform = process.platform;
-    
+
     if (platform === 'win32') {
       // Windows: %APPDATA%/Kiro/User/globalStorage/state.vscdb
       dbPath = path.join(
@@ -84,7 +86,7 @@ export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
         'Kiro', 'User', 'globalStorage', 'state.vscdb'
       );
     }
-    
+
     if (!fs.existsSync(dbPath)) {
       console.log('Kiro DB not found at:', dbPath);
       return null;
@@ -95,12 +97,12 @@ export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
     fs.copyFileSync(dbPath, tempDb);
 
     let result: KiroUsageData | null = null;
-    
+
     try {
       // Try better-sqlite3 first (works if native module is properly built)
       const Database = require('better-sqlite3');
       const db = new Database(tempDb, { readonly: true });
-      
+
       try {
         const row = db.prepare("SELECT value FROM ItemTable WHERE key = 'kiro.kiroAgent'").get() as { value: string } | undefined;
         if (row) {
@@ -111,12 +113,12 @@ export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
       }
     } catch (sqliteErr) {
       console.log('better-sqlite3 failed, trying Python fallback:', sqliteErr);
-      
+
       // Fallback to Python script
       result = await getKiroUsageViaPython(tempDb);
     }
-    
-    try { fs.unlinkSync(tempDb); } catch {}
+
+    try { fs.unlinkSync(tempDb); } catch { }
     return result;
   } catch (err) {
     console.error('Failed to read Kiro usage:', err);
@@ -145,7 +147,7 @@ try:
 except Exception as e:
     print('{}')
 `;
-    
+
     // Detect python command (python3 on Linux/Mac, python on Windows)
     let pythonCmd = 'python';
     if (process.platform !== 'win32') {
@@ -154,10 +156,10 @@ except Exception as e:
         pythonCmd = 'python3';
       }
     }
-    
+
     const proc = spawn(pythonCmd, ['-c', pythonCode, dbPath]);
     let output = '';
-    
+
     proc.stdout.on('data', (data: Buffer) => { output += data.toString(); });
     proc.on('close', () => {
       try {
@@ -177,7 +179,7 @@ except Exception as e:
         resolve(null);
       }
     });
-    
+
     proc.on('error', () => resolve(null));
     setTimeout(() => resolve(null), 5000); // Timeout
   });
@@ -187,7 +189,7 @@ function parseKiroUsageData(jsonValue: string): KiroUsageData | null {
   try {
     const data = JSON.parse(jsonValue);
     const usageState = data['kiro.resourceNotifications.usageState'];
-    
+
     // Check for suspended account error
     const errorState = usageState?.error || data['kiro.resourceNotifications.error'];
     if (errorState) {
@@ -204,12 +206,12 @@ function parseKiroUsageData(jsonValue: string): KiroUsageData | null {
         };
       }
     }
-    
+
     if (!usageState?.usageBreakdowns?.[0]?.freeTrialUsage) {
       console.log('No freeTrialUsage found in data');
       return null;
     }
-    
+
     const freeTrialUsage = usageState.usageBreakdowns[0].freeTrialUsage;
     console.log('Found Kiro usage:', freeTrialUsage);
     return {
@@ -234,7 +236,7 @@ export function getCachedAccountUsage(accountName: string): (KiroUsageData & { l
       const data = JSON.parse(fs.readFileSync(usageFile, 'utf8'));
       return data[accountName] || null;
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -245,7 +247,7 @@ export function getAllCachedUsage(): Record<string, KiroUsageData & { lastUpdate
     if (fs.existsSync(usageFile)) {
       return JSON.parse(fs.readFileSync(usageFile, 'utf8'));
     }
-  } catch {}
+  } catch { }
   return {};
 }
 
@@ -257,7 +259,7 @@ export function saveAccountUsage(accountName: string, usage: KiroUsageData): voi
     if (fs.existsSync(usageFile)) {
       data = JSON.parse(fs.readFileSync(usageFile, 'utf8'));
     }
-  } catch {}
+  } catch { }
   data[accountName] = { ...usage, lastUpdated: new Date().toISOString() } as any;
   fs.writeFileSync(usageFile, JSON.stringify(data, null, 2));
 }
@@ -278,7 +280,7 @@ export async function getAccountUsageCached(accountName: string, accessToken: st
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.data;
   }
-  
+
   const usage = await fetchAccountUsage(accessToken);
   if (usage) {
     usageCache.set(accountName, { data: usage, timestamp: Date.now() });
@@ -298,7 +300,7 @@ export function clearUsageCache(accountName?: string): void {
 // Invalidate cached usage data for account (marks as stale)
 export function invalidateAccountUsage(accountName: string): void {
   usageCache.delete(accountName);
-  
+
   // Also clear from file cache
   const usageFile = path.join(getTokensDir(), '..', 'account-usage.json');
   try {
@@ -309,7 +311,7 @@ export function invalidateAccountUsage(accountName: string): void {
         fs.writeFileSync(usageFile, JSON.stringify(data, null, 2));
       }
     }
-  } catch {}
+  } catch { }
 }
 
 // Check if cached usage is stale
@@ -329,6 +331,6 @@ export function isUsageStale(accountName: string): boolean {
         }
       }
     }
-  } catch {}
+  } catch { }
   return true;
 }

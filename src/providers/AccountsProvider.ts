@@ -505,15 +505,17 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   }
 
   // Check health of currently active account silently
+  // Uses CodeWhisperer API to detect bans (OIDC refresh doesn't detect bans!)
   async checkActiveAccountHealth() {
     const activeAccount = this._accounts.find(a => a.isActive);
     if (!activeAccount) return;
 
-    const { checkAccountHealth } = await import('../accounts');
+    // Use checkAccountBanStatus which checks via CodeWhisperer API
+    const { checkAccountBanStatus } = await import('../accounts');
     const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
 
     try {
-      const status = await checkAccountHealth(accountName);
+      const status = await checkAccountBanStatus(accountName);
 
       if (status.isBanned) {
         this.markAccountAsBanned(activeAccount.filename, status.errorMessage);
@@ -603,6 +605,18 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
           banReason: reason
         };
       }
+
+      // PERSIST ban status to disk so it survives refresh/restart
+      const { saveAccountUsage } = require('../utils');
+      saveAccountUsage(accName, {
+        currentUsage: account.usage.currentUsage,
+        usageLimit: account.usage.usageLimit,
+        percentageUsed: account.usage.percentageUsed,
+        daysRemaining: account.usage.daysRemaining,
+        isBanned: true,
+        banReason: reason
+      });
+
       this.addLog(`⛔ Account marked as BANNED: ${accName}`);
       this.refresh();
     }
@@ -1219,6 +1233,7 @@ except Exception as e:
   }
 
   // Check health of all accounts (detect bans and issues)
+  // Uses CodeWhisperer API to detect bans (OIDC refresh doesn't detect bans!)
   async checkAllAccountsHealth() {
     this.addLog(`🔍 Checking health of ${this._accounts.length} accounts...`);
 
@@ -1232,7 +1247,8 @@ except Exception as e:
       title: `Checking ${this._accounts.length} accounts...`,
       cancellable: true
     }, async (progress, token) => {
-      const { checkAccountHealth } = await import('../accounts');
+      // Use checkAccountBanStatus which checks via CodeWhisperer API (not just OIDC)
+      const { checkAccountBanStatus } = await import('../accounts');
 
       for (let i = 0; i < this._accounts.length; i++) {
         if (token.isCancellationRequested) break;
@@ -1245,7 +1261,8 @@ except Exception as e:
           increment: (100 / this._accounts.length)
         });
 
-        const status = await checkAccountHealth(accountName);
+        // checkAccountBanStatus does OIDC refresh + CodeWhisperer API check
+        const status = await checkAccountBanStatus(accountName);
 
         if (status.isHealthy) {
           healthy++;
@@ -1266,7 +1283,7 @@ except Exception as e:
         }
 
         // Small delay to avoid rate limiting
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 300));
       }
     });
 
