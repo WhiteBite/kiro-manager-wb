@@ -1018,4 +1018,239 @@ export const layout = `
   .ban-badge { margin-left: 4px; font-size: 10px; }
   .ban-reason { color: #ff6b6b; font-size: 9px; font-weight: 600; }
   .list-group.banned { color: #ff6b6b; border-color: rgba(139,0,0,0.3); }
+
+  /* === Tab Bar Navigation === */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 8px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .tab-item:hover {
+    background: rgba(128,128,128,0.1);
+    color: var(--fg);
+  }
+  .tab-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .tab-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+  .tab-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .tab-label {
+    display: none;
+  }
+  @media (min-width: 300px) {
+    .tab-label { display: inline; }
+  }
+  .tab-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 10px;
+    background: rgba(128,128,128,0.2);
+    color: var(--muted);
+  }
+  .tab-item.active .tab-badge {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* === Tab Content Panels === */
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+
+  /* === Settings Tab (inline mode) === */
+  .settings-content {
+    padding: 16px 12px;
+    overflow-y: auto;
+    max-height: calc(100vh - 150px);
+  }
+  .settings-footer {
+    padding: 12px 0;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settings-version {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* === Profiles Tab (inline mode) === */
+  .profiles-tab {
+    padding: 12px;
+  }
+  .profiles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .profiles-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .profiles-content {
+    min-height: 100px;
+  }
+  .profiles-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+  }
+  .profiles-empty .empty-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+  }
+  .profiles-empty .empty-text {
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .profiles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .profile-card {
+    padding: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition);
+  }
+  .profile-card:hover {
+    border-color: rgba(63,182,139,0.3);
+  }
+  .profile-card.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .profile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .profile-card-radio {
+    cursor: pointer;
+  }
+  .radio-dot {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+  }
+  .radio-dot.checked {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .radio-dot.checked::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  .profile-card-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .profile-card-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .profile-card-email {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .profile-card-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .profile-card-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .profile-strategy {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .profile-stats {
+    color: var(--muted);
+  }
+  .profiles-add-btn {
+    margin-top: 12px;
+    width: 100%;
+  }
+
+  /* === Profile Editor Form (inline) === */
+  .profile-editor-form {
+    padding: 12px 0;
+  }
+  .profile-editor-form .editor-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .profile-editor-form .editor-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .profile-editor-form .editor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .profile-editor-form .editor-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
 `;

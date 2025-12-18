@@ -7,6 +7,7 @@ import { Translations } from '../i18n/types';
 
 export interface ProfileEditorProps {
   t: Translations;
+  inline?: boolean; // Render for tab navigation (no overlay wrapper)
 }
 
 function renderProfilesPanel(t: Translations): string {
@@ -95,7 +96,94 @@ function renderStrategySelector(t: Translations): string {
   `;
 }
 
-export function renderProfileEditor({ t }: ProfileEditorProps): string {
+function renderProfilesList(t: Translations): string {
+  return `
+    <div class="profiles-list-container" id="profilesListContainer">
+      <div class="profiles-header">
+        <h3 class="profiles-title">${t.emailProfiles}</h3>
+        <button class="btn btn-primary btn-sm" onclick="createProfile()">
+          ${ICONS.plus} ${t.addProfile}
+        </button>
+      </div>
+      <div class="profiles-content" id="profilesContent">
+        <div class="profiles-empty">
+          <div class="empty-icon">📧</div>
+          <div class="empty-text">${t.noProfiles}</div>
+          <button class="btn btn-primary" onclick="createProfile()">
+            ${ICONS.plus} ${t.addProfile}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEditorForm(t: Translations): string {
+  return `
+    <div class="profile-editor-form" id="profileEditorForm" style="display: none;">
+      <div class="editor-header">
+        <button class="btn btn-secondary btn-sm" onclick="closeProfileEditor()">← ${t.back}</button>
+        <span class="editor-title">${t.newProfile}</span>
+      </div>
+      <div class="editor-content">
+        <div class="form-group">
+          <label class="form-label">${t.profileName}</label>
+          <input type="text" class="form-input" id="profileName" placeholder="${t.profileNamePlaceholder}">
+        </div>
+        
+        <div class="form-section" id="imapSection">
+          <div class="form-section-title">IMAP</div>
+          <div class="form-group" id="imapEmailGroup">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="imapUser" placeholder="your@email.com" oninput="onEmailInput(this.value)">
+            <div class="form-hint" id="providerHint"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label class="form-label">${t.server}</label>
+              <input type="text" class="form-input" id="imapServer" placeholder="imap.gmail.com">
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label">${t.port}</label>
+              <input type="number" class="form-input" id="imapPort" value="993">
+            </div>
+          </div>
+          <div class="form-group" id="imapPasswordGroup">
+            <label class="form-label">${t.password}</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="imapPassword" placeholder="••••••••">
+              <button class="password-toggle" onclick="togglePasswordVisibility('imapPassword')">${ICONS.eye || '👁'}</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="testConnectionBtn" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
+        </div>
+        
+        <div class="form-section">
+          <div class="form-section-title">${t.emailStrategy}</div>
+          <div class="form-section-desc">${t.emailStrategyDesc}</div>
+          ${renderStrategySelector(t)}
+        </div>
+      </div>
+      <div class="editor-footer">
+        <button class="btn btn-secondary" onclick="closeProfileEditor()">${t.cancel}</button>
+        <button class="btn btn-primary" onclick="saveProfile()">${t.save}</button>
+      </div>
+    </div>
+  `;
+}
+
+export function renderProfileEditor({ t, inline = false }: ProfileEditorProps): string {
+  if (inline) {
+    // Tab mode: profiles list + inline editor
+    return `
+      <div class="profiles-tab">
+        ${renderProfilesList(t)}
+        ${renderEditorForm(t)}
+      </div>
+    `;
+  }
+
+  // Legacy overlay mode
   return `
     ${renderProfilesPanel(t)}
     

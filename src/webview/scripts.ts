@@ -17,10 +17,36 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     
     ${generateStateScript()}
     
+    // === Tab Navigation ===
+    
+    let currentTab = 'accounts';
+    
+    function switchTab(tabId) {
+      currentTab = tabId;
+      
+      // Update tab buttons
+      document.querySelectorAll('.tab-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === 'tab-' + tabId);
+      });
+      
+      // Load data for specific tabs
+      if (tabId === 'profiles') {
+        vscode.postMessage({ command: 'loadProfiles' });
+        vscode.postMessage({ command: 'getActiveProfile' });
+      } else if (tabId === 'settings') {
+        vscode.postMessage({ command: 'getPatchStatus' });
+      }
+    }
+    
     // === UI Actions ===
     
     function openSettings() {
-      document.getElementById('settingsOverlay')?.classList.add('visible');
+      switchTab('settings');
       // Load active profile when opening settings
       vscode.postMessage({ command: 'getActiveProfile' });
       // Load patch status
@@ -601,33 +627,65 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     let editingProfileId = null;
     
     function openProfilesPanel() {
-      document.getElementById('profilesPanel')?.classList.add('visible');
-      vscode.postMessage({ command: 'loadProfiles' });
+      // For tab navigation - just switch to profiles tab
+      switchTab('profiles');
     }
     
     function closeProfilesPanel() {
-      document.getElementById('profilesPanel')?.classList.remove('visible');
+      // Legacy - switch back to accounts
+      switchTab('accounts');
     }
     
     function createProfile() {
       editingProfileId = null;
       currentPoolEmails = [];
+      
+      // Show editor form, hide list (for inline mode)
+      const listContainer = document.getElementById('profilesListContainer');
+      const editorForm = document.getElementById('profileEditorForm');
+      if (listContainer) listContainer.style.display = 'none';
+      if (editorForm) editorForm.style.display = 'block';
+      
+      // Legacy overlay mode
       document.getElementById('profileEditor')?.classList.add('visible');
+      
       // Reset form
-      document.getElementById('profileName').value = '';
-      document.getElementById('imapUser').value = '';
-      document.getElementById('imapServer').value = '';
-      document.getElementById('imapPort').value = '993';
-      document.getElementById('imapPassword').value = '';
+      const nameEl = document.getElementById('profileName');
+      const userEl = document.getElementById('imapUser');
+      const serverEl = document.getElementById('imapServer');
+      const portEl = document.getElementById('imapPort');
+      const passwordEl = document.getElementById('imapPassword');
+      if (nameEl) nameEl.value = '';
+      if (userEl) userEl.value = '';
+      if (serverEl) serverEl.value = '';
+      if (portEl) portEl.value = '993';
+      if (passwordEl) passwordEl.value = '';
       selectStrategy('single');
+      
+      // Update title
+      const title = document.querySelector('.editor-title');
+      if (title) title.textContent = T.newProfile || 'New Profile';
     }
     
     function editProfile(profileId) {
       editingProfileId = profileId;
       vscode.postMessage({ command: 'getProfile', profileId });
+      
+      // Show editor form, hide list (for inline mode)
+      const listContainer = document.getElementById('profilesListContainer');
+      const editorForm = document.getElementById('profileEditorForm');
+      if (listContainer) listContainer.style.display = 'none';
+      if (editorForm) editorForm.style.display = 'block';
     }
     
     function closeProfileEditor() {
+      // Hide editor form, show list (for inline mode)
+      const listContainer = document.getElementById('profilesListContainer');
+      const editorForm = document.getElementById('profileEditorForm');
+      if (listContainer) listContainer.style.display = 'block';
+      if (editorForm) editorForm.style.display = 'none';
+      
+      // Legacy overlay mode
       document.getElementById('profileEditor')?.classList.remove('visible');
       editingProfileId = null;
     }
@@ -1132,6 +1190,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     });
     
     // Export functions to window for onclick handlers
+    window.switchTab = switchTab;
     window.openSettings = openSettings;
     window.closeSettings = closeSettings;
     window.toggleLogs = toggleLogs;
