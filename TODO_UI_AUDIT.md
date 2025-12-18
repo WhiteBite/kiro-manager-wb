@@ -60,3 +60,14 @@
 6. Virtual List conflict fix (disabled for grouped lists)
 7. CSS Variables cleanup - shadows, z-index layers
 8. Full i18n - all new strings translated to 10 languages
+
+## ✅ Completed in v6.3.2 release
+
+1. Fix "undefined" in TabBar labels (nullish coalescing)
+2. FAB visibility - only on Accounts tab
+3. FAB pulse animation when idle, glow when running
+4. Incremental Hero updates (no full refresh during registration)
+5. Empty search state with "No accounts found" message
+6. Auto-switch threshold input in Settings
+7. Stats skeleton loading state
+8. Console drawer state preserved during updates
