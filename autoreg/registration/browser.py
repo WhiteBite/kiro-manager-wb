@@ -1461,10 +1461,17 @@ class BrowserAutomation:
             'text=Allow',
             'text=Authorize',
             'text=Continue',
+            'text=Accept',  # Новый flow может использовать Accept
+            'text=Confirm',
             'xpath://button[contains(text(), "Allow")]',
             'xpath://button[contains(text(), "Authorize")]',
+            'xpath://button[contains(text(), "Accept")]',
+            'xpath://button[contains(text(), "Confirm")]',
             'css:button.awsui-button-variant-primary',  # AWS UI primary button
             'css:button[class*="primary"]',
+            'css:button[type="submit"]',  # Submit button
+            '@data-testid=confirm-button',
+            '@data-testid=accept-button',
         ]
         
         # Фаза 1: Быстрый поиск по data-testid (0.5 сек макс)

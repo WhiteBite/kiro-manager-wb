@@ -406,7 +406,7 @@ class AWSRegistration:
                     print(f"   [OK] Already redirected to callback!")
                     break
                 
-                # Кнопка Allow access на view.awsapps.com
+                # Кнопка Allow access на view.awsapps.com (старый flow)
                 if 'view.awsapps.com' in current_url:
                     elapsed = time.time() - start_time
                     print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
@@ -423,8 +423,17 @@ class AWSRegistration:
                             print(f"   [!] Failed to click Allow access, retrying...")
                             self.browser.screenshot("error_allow_access_click")
                             time.sleep(1)
+                
+                # Новый flow: awsapps.com/start (без view.)
+                elif 'awsapps.com/start' in current_url and not allow_clicked:
+                    elapsed = time.time() - start_time
+                    print(f"   [OK] Redirected to awsapps.com/start in {elapsed:.2f}s")
+                    self.browser.close_cookie_dialog(force=True)
+                    time.sleep(0.5)
+                    if self.browser.click_allow_access():
+                        allow_clicked = True
                     
-                # Если застряли на signin.aws - пробуем разные действия
+                # Если на signin.aws - это новый flow AWS (декабрь 2024+)
                 elif 'signin.aws' in current_url:
                     elapsed = time.time() - start_time
                     
@@ -435,11 +444,19 @@ class AWSRegistration:
                         print(f"   [!] Stuck on login page, trying to login...")
                         if self.browser.login_with_credentials(email, password):
                             print(f"   [OK] Logged in successfully")
-                    elif '/signup' in current_url and elapsed > 15:
-                        # Застряли на signup - возможно нужно кликнуть Continue
-                        if elapsed < 20 or int(elapsed) % 10 == 0:
-                            print(f"   [!] Stuck on signup page ({elapsed:.0f}s), looking for Continue...")
-                        self.browser._click_if_exists(['text=Continue', '@data-testid=test-primary-button'], timeout=0.5)
+                    elif '/signup' in current_url or '/platform/' in current_url:
+                        # Новый flow: signin.aws/platform/.../signup содержит Allow access
+                        if not allow_clicked:
+                            if elapsed > 3:  # Даём странице загрузиться
+                                if int(elapsed) % 5 == 0:
+                                    print(f"   [...] Looking for Allow access on signin.aws ({elapsed:.0f}s)...")
+                                # Пробуем кликнуть Allow access
+                                if self.browser.click_allow_access():
+                                    allow_clicked = True
+                                    print(f"   [OK] Clicked Allow access on signin.aws")
+                                else:
+                                    # Пробуем Continue как fallback
+                                    self.browser._click_if_exists(['text=Continue', '@data-testid=test-primary-button'], timeout=0.3)
                         # Делаем скриншот один раз для диагностики
                         if elapsed > 30 and elapsed < 32:
                             self.browser.screenshot("debug_stuck_signup")
