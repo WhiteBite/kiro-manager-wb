@@ -300,6 +300,8 @@ export const ja: Translations = {
   // Settings Cards
   automation: '自動化',
   interface: 'インターフェース',
+  autoSwitchThreshold: '切替閾値',
+  autoSwitchThresholdDesc: '残り < この値で切替',
   settings: '設定',
   accounts: 'アカウント',
   profiles: 'プロファイル',

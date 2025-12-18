@@ -300,6 +300,8 @@ export const zh: Translations = {
   // Settings Cards
   automation: '自动化',
   interface: '界面',
+  autoSwitchThreshold: '切换阈值',
+  autoSwitchThresholdDesc: '剩余 < 此值时切换',
   settings: '设置',
   accounts: '账户',
   profiles: '配置文件',

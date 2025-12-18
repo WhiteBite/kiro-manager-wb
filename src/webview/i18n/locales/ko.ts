@@ -300,6 +300,8 @@ export const ko: Translations = {
   // Settings Cards
   automation: '자동화',
   interface: '인터페이스',
+  autoSwitchThreshold: '전환 임계값',
+  autoSwitchThresholdDesc: '남은 양 < 이 값일 때 전환',
   settings: '설정',
   accounts: '계정',
   profiles: '프로필',
