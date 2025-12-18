@@ -5,23 +5,24 @@
 import { Translations } from '../i18n/types';
 import { ICONS } from '../icons';
 
-export type TabId = 'accounts' | 'profiles' | 'settings';
+export type TabId = 'accounts' | 'profiles' | 'stats' | 'settings';
 
 export interface TabBarProps {
-    activeTab: TabId;
-    t: Translations;
-    accountsCount?: number;
-    profilesCount?: number;
+  activeTab: TabId;
+  t: Translations;
+  accountsCount?: number;
+  profilesCount?: number;
 }
 
 export function renderTabBar({ activeTab, t, accountsCount = 0, profilesCount = 0 }: TabBarProps): string {
-    const tabs: Array<{ id: TabId; icon: string; label: string; badge?: number }> = [
-        { id: 'accounts', icon: ICONS.users, label: t.accounts || 'Accounts', badge: accountsCount },
-        { id: 'profiles', icon: '📧', label: t.profiles || 'Profiles', badge: profilesCount },
-        { id: 'settings', icon: ICONS.settings, label: t.settings || 'Settings' }
-    ];
+  const tabs: Array<{ id: TabId; icon: string; label: string; badge?: number }> = [
+    { id: 'accounts', icon: ICONS.users, label: t.accounts || 'Accounts', badge: accountsCount },
+    { id: 'profiles', icon: '📧', label: t.profiles || 'Profiles', badge: profilesCount },
+    { id: 'stats', icon: '📊', label: t.statistics || 'Stats' },
+    { id: 'settings', icon: ICONS.settings, label: t.settings || 'Settings' }
+  ];
 
-    return `
+  return `
     <div class="tab-bar">
       ${tabs.map(tab => `
         <button 

@@ -22,6 +22,7 @@ import { renderModals } from './components/Modals';
 import { renderProfileEditor } from './components/ProfileEditor';
 import { renderTabBar } from './components/TabBar';
 import { renderFAB } from './components/FAB';
+import { renderStats } from './components/Stats';
 
 // Re-exports
 export { RegProgress, AutoRegSettings };
@@ -161,6 +162,11 @@ export function generateWebviewHtml(
     <!-- Profiles Tab -->
     <div class="tab-content" id="tab-profiles">
       ${renderProfileEditor({ t, inline: true })}
+    </div>
+
+    <!-- Stats Tab -->
+    <div class="tab-content" id="tab-stats">
+      ${renderStats({ accounts, t })}
     </div>
 
     <!-- Settings Tab -->

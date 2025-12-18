@@ -300,4 +300,10 @@ export const zh: Translations = {
   accounts: '账户',
   profiles: '配置文件',
   pause: '暂停',
+
+  // Stats Dashboard
+  statistics: '统计',
+  weeklyUsage: '每周使用量',
+  avgPerAccount: '每账户平均',
+  accountHealth: '账户健康',
 };

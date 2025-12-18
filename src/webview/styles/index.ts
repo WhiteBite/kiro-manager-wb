@@ -12,11 +12,11 @@
 import { variables } from './variables';
 import { base } from './base';
 import { components } from './components';
-import { layout, fabStyles, settingsCardStyles } from './layout';
+import { layout, fabStyles, settingsCardStyles, statsStyles } from './layout';
 import { profiles } from './profiles';
 
 // Re-export individual modules for selective imports
-export { variables, base, components, layout, fabStyles, settingsCardStyles, profiles };
+export { variables, base, components, layout, fabStyles, settingsCardStyles, statsStyles, profiles };
 
 /**
  * Get all styles combined
@@ -30,6 +30,7 @@ export function getAllStyles(): string {
     ${layout}
     ${fabStyles}
     ${settingsCardStyles}
+    ${statsStyles}
     ${profiles}
   `;
 }

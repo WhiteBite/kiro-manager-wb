@@ -300,4 +300,10 @@ export const ko: Translations = {
   accounts: '계정',
   profiles: '프로필',
   pause: '일시정지',
+
+  // Stats Dashboard
+  statistics: '통계',
+  weeklyUsage: '주간 사용량',
+  avgPerAccount: '계정당 평균',
+  accountHealth: '계정 상태',
 };

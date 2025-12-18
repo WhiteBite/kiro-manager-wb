@@ -39,5 +39,22 @@ export const variables = `
     /* Transitions */
     --transition: 0.15s ease;
     --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+    
+    /* Z-index layers */
+    --z-base: 1;
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-drawer: 50;
+    --z-fab: 80;
+    --z-overlay: 100;
+    --z-modal: 200;
+    --z-dialog: 300;
+    --z-toast: 400;
   }
 `;

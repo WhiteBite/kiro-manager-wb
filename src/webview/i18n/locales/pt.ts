@@ -300,4 +300,10 @@ export const pt: Translations = {
   accounts: 'Contas',
   profiles: 'Perfis',
   pause: 'Pausar',
+
+  // Stats Dashboard
+  statistics: 'Estatísticas',
+  weeklyUsage: 'Uso semanal',
+  avgPerAccount: 'Média por conta',
+  accountHealth: 'Saúde das contas',
 };
