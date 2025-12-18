@@ -9,6 +9,76 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import { TokenData, AccountInfo, AccountUsage } from './types';
 import { getKiroAuthTokenPath, getTokensDir, loadUsageStats, saveUsageStats, getCachedAccountUsage, saveAccountUsage, KiroUsageData, getAllCachedUsage, isUsageStale, invalidateAccountUsage } from './utils';
+import * as os from 'os';
+
+// ============================================================================
+// Machine ID Rotation (Anti-ban)
+// ============================================================================
+// AWS tracks machineId in telemetry and bans accounts if many use the same ID.
+// We rotate machineId on each account switch to prevent this.
+
+const MACHINE_ID_FILE = path.join(os.homedir(), '.kiro-batch-login', 'machine-id.txt');
+
+/**
+ * Generate a new random machineId (64-char hex like node-machine-id)
+ */
+export function generateMachineId(): string {
+  const randomBytes = crypto.randomBytes(32);
+  return randomBytes.toString('hex');
+}
+
+/**
+ * Get current machineId from file
+ */
+export function getCurrentMachineId(): string | null {
+  try {
+    if (fs.existsSync(MACHINE_ID_FILE)) {
+      return fs.readFileSync(MACHINE_ID_FILE, 'utf8').trim();
+    }
+  } catch { }
+  return null;
+}
+
+/**
+ * Set machineId to file (used by patched Kiro)
+ */
+export function setMachineId(machineId: string): boolean {
+  try {
+    const dir = path.dirname(MACHINE_ID_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(MACHINE_ID_FILE, machineId);
+    return true;
+  } catch (e) {
+    console.error('[MachineId] Failed to write:', e);
+    return false;
+  }
+}
+
+/**
+ * Rotate machineId - generate new one and save to file.
+ * Call this on account switch to prevent AWS from linking accounts.
+ */
+export function rotateMachineId(): string {
+  const newId = generateMachineId();
+  setMachineId(newId);
+  console.log(`[MachineId] Rotated to: ${newId.substring(0, 16)}...`);
+  return newId;
+}
+
+/**
+ * Get or create machineId for an account.
+ * Each account can have its own machineId stored in token file.
+ */
+export function getAccountMachineId(tokenData: TokenData): string {
+  // If account has stored machineId, use it
+  if ((tokenData as any)._machineId) {
+    return (tokenData as any)._machineId;
+  }
+  // Otherwise generate new one
+  return generateMachineId();
+}
 
 export function incrementUsage(accountName: string): void {
   const stats = loadUsageStats();
@@ -56,7 +126,22 @@ export function loadAccounts(): AccountInfo[] {
           usageLimit: cached.usageLimit,
           percentageUsed: cached.percentageUsed,
           daysRemaining: cached.daysRemaining,
-          loading: false
+          loading: false,
+          // Load ban status from cache (persisted by markAccountAsBanned)
+          isBanned: cached.isBanned,
+          banReason: cached.banReason,
+          suspended: cached.suspended
+        };
+      } else if (cached?.isBanned) {
+        // Even if stale, preserve ban status - it's important!
+        usage = {
+          currentUsage: cached.currentUsage ?? -1,
+          usageLimit: cached.usageLimit ?? 500,
+          percentageUsed: cached.percentageUsed ?? 0,
+          daysRemaining: cached.daysRemaining ?? -1,
+          loading: false,
+          isBanned: true,
+          banReason: cached.banReason
         };
       } else {
         // For accounts without cached data, show as "unknown" (not loading)
@@ -226,8 +311,24 @@ export async function switchToAccount(accountName: string, returnDetails?: boole
     const refreshResult = await refreshAccountToken(accountName, true);
 
     if (refreshResult.success) {
-      // Refresh succeeded - reload token data
+      // Refresh succeeded - reload token data and check ban via CodeWhisperer API
       account.tokenData = JSON.parse(fs.readFileSync(account.path, 'utf8'));
+
+      // IMPORTANT: OIDC refresh doesn't detect bans! Check via CodeWhisperer API
+      const banCheck = await checkAccountBanViaAPI(
+        account.tokenData.accessToken!,
+        account.tokenData.region || 'us-east-1'
+      );
+
+      if (banCheck.isBanned) {
+        vscode.window.showErrorMessage(`⛔ Cannot switch to "${accountName}" - account is BANNED (detected via API)`);
+        return fail({
+          success: false,
+          error: 'AccessDeniedException',
+          errorMessage: banCheck.message || 'Account is banned (TEMPORARILY_SUSPENDED)',
+          isBanned: true
+        });
+      }
     } else if (refreshResult.isBanned) {
       // Account is BANNED - do NOT switch to it!
       vscode.window.showErrorMessage(`⛔ Cannot switch to "${accountName}" - account is BANNED`);
@@ -260,6 +361,17 @@ export async function switchToAccount(accountName: string, returnDetails?: boole
       // Token might still work - proceed with warning
       console.warn(`[switchToAccount] Refresh failed for ${accountName}, using existing token`);
     }
+  }
+
+  // ANTI-BAN: Rotate machineId before switching account
+  // This prevents AWS from linking multiple accounts to the same machine
+  const accountMachineId = getAccountMachineId(account.tokenData);
+  setMachineId(accountMachineId);
+
+  // Store machineId in token for consistency
+  if (!(account.tokenData as any)._machineId) {
+    (account.tokenData as any)._machineId = accountMachineId;
+    fs.writeFileSync(account.path, JSON.stringify(account.tokenData, null, 2));
   }
 
   const success = await writeKiroToken(account.tokenData);
@@ -448,6 +560,9 @@ export function isBlockedAccessError(error: OIDCErrorType | undefined, message?:
   if (message?.includes('NewUserAccessPausedError')) return true;
   if (message?.includes('account is blocked')) return true;
   if (message?.includes('account is suspended')) return true;
+  // "We couldn't process your request due to an account issue" - Kiro's ban message
+  if (message?.includes("couldn't process your request")) return true;
+  if (message?.includes('account issue')) return true;
   // "We are unable to refresh your session" often means account is banned
   if (message?.includes('unable to refresh') && error === 'InvalidGrantException') return true;
   return false;
@@ -536,6 +651,201 @@ function refreshOIDCToken(
     req.write(payload);
     req.end();
   });
+}
+
+// ============================================================================
+// CodeWhisperer API Ban Check
+// ============================================================================
+// Kiro detects bans when making requests to CodeWhisperer API, not during OIDC refresh.
+// The API returns AccessDeniedException with reason "TEMPORARILY_SUSPENDED" for banned accounts.
+// Endpoint: https://codewhisperer.{region}.amazonaws.com/getUsageLimits (GET with query params)
+
+export interface BanCheckResult {
+  isBanned: boolean;
+  reason?: string;  // "TEMPORARILY_SUSPENDED", "FEATURE_NOT_SUPPORTED", etc.
+  message?: string;
+  error?: string;
+  usageData?: {
+    currentUsage: number;
+    usageLimit: number;
+    percentageUsed: number;
+    resetDate?: string;
+  };
+}
+
+/**
+ * Check if account is banned by calling CodeWhisperer API (like Kiro does).
+ * This is the REAL ban check - OIDC refresh doesn't detect bans!
+ * 
+ * @param accessToken - Valid OIDC access token
+ * @param region - AWS region (us-east-1 or eu-central-1)
+ * @returns BanCheckResult with ban status and optional usage data
+ */
+export function checkAccountBanViaAPI(
+  accessToken: string,
+  region: string = 'us-east-1'
+): Promise<BanCheckResult> {
+  return new Promise((resolve) => {
+    // CORRECT endpoint: codewhisperer.{region}.amazonaws.com (NOT q.{region}.amazonaws.com!)
+    const hostname = `codewhisperer.${region}.amazonaws.com`;
+    // GET request with query parameters (not POST!)
+    const apiPath = '/getUsageLimits?origin=AI_EDITOR&resourceType=AGENTIC_REQUEST';
+
+    const req = https.request({
+      hostname,
+      path: apiPath,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'User-Agent': 'aws-toolkit-vscode/3.0.0',
+        'Accept': 'application/json',
+        'x-amzn-codewhisperer-optout': 'true'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+
+          if (res.statusCode === 200) {
+            // Success - account is NOT banned, extract usage data
+            const limits = json.limits?.[0] || {};
+            resolve({
+              isBanned: false,
+              usageData: {
+                currentUsage: limits.currentUsage ?? -1,
+                usageLimit: limits.usageLimit ?? 500,
+                percentageUsed: limits.currentUsage && limits.usageLimit
+                  ? Math.round((limits.currentUsage / limits.usageLimit) * 100)
+                  : 0,
+                resetDate: limits.nextDateReset
+              }
+            });
+          } else if (res.statusCode === 403) {
+            // Check for ban reasons
+            const reason = json.reason || '';
+            const message = json.message || json.Message || '';
+
+            if (reason === 'TEMPORARILY_SUSPENDED') {
+              // BANNED!
+              console.error(`[BanCheck] Account is BANNED: ${message}`);
+              resolve({
+                isBanned: true,
+                reason: 'TEMPORARILY_SUSPENDED',
+                message: message || 'Account is temporarily suspended'
+              });
+            } else if (reason === 'FEATURE_NOT_SUPPORTED') {
+              // Not banned, just feature not available
+              resolve({
+                isBanned: false,
+                reason: 'FEATURE_NOT_SUPPORTED',
+                message: 'Usage limits feature not supported for this account'
+              });
+            } else if (message.includes('invalid')) {
+              // Token invalid - might be expired
+              resolve({
+                isBanned: false,
+                error: 'InvalidToken',
+                message: message
+              });
+            } else {
+              // Other 403 - might be banned
+              console.warn(`[BanCheck] 403 with reason: ${reason}, message: ${message}`);
+              resolve({
+                isBanned: reason.includes('SUSPENDED') || message.toLowerCase().includes('suspend'),
+                reason,
+                message,
+                error: 'AccessDeniedException'
+              });
+            }
+          } else {
+            // Other error
+            console.error(`[BanCheck] HTTP ${res.statusCode}: ${data}`);
+            resolve({
+              isBanned: false,
+              error: `HTTP ${res.statusCode}`,
+              message: json.message || json.Message || data
+            });
+          }
+        } catch (parseError) {
+          console.error(`[BanCheck] Parse error: ${parseError}`);
+          resolve({
+            isBanned: false,
+            error: 'ParseError',
+            message: data
+          });
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('[BanCheck] Network error:', err.message);
+      resolve({
+        isBanned: false,
+        error: 'NetworkError',
+        message: err.message
+      });
+    });
+
+    // Timeout after 10 seconds
+    req.setTimeout(10000, () => {
+      req.destroy();
+      resolve({
+        isBanned: false,
+        error: 'Timeout',
+        message: 'Request timed out'
+      });
+    });
+
+    req.end();
+  });
+}
+
+/**
+ * Full account health check including ban detection via CodeWhisperer API.
+ * This is more thorough than checkAccountHealth() which only checks OIDC.
+ * 
+ * @param accountName - Account name or filename
+ * @returns Extended health status with ban info from API
+ */
+export async function checkAccountBanStatus(accountName: string): Promise<AccountHealthStatus & { apiCheckDone: boolean }> {
+  // First do basic health check (OIDC refresh)
+  const basicHealth = await checkAccountHealth(accountName);
+
+  if (!basicHealth.isHealthy || basicHealth.isBanned) {
+    // Already unhealthy or banned via OIDC - no need for API check
+    return { ...basicHealth, apiCheckDone: false };
+  }
+
+  // Account passed OIDC check - now check via CodeWhisperer API
+  const accounts = loadAccounts();
+  const account = accounts.find(a =>
+    a.tokenData.accountName === accountName ||
+    a.filename.includes(accountName)
+  );
+
+  if (!account?.tokenData.accessToken) {
+    return { ...basicHealth, apiCheckDone: false };
+  }
+
+  const banCheck = await checkAccountBanViaAPI(
+    account.tokenData.accessToken,
+    account.tokenData.region || 'us-east-1'
+  );
+
+  if (banCheck.isBanned) {
+    return {
+      ...basicHealth,
+      isHealthy: false,
+      isBanned: true,
+      error: 'AccessDeniedException',
+      errorMessage: banCheck.message || 'Account is banned (TEMPORARILY_SUSPENDED)',
+      apiCheckDone: true
+    };
+  }
+
+  return { ...basicHealth, apiCheckDone: true };
 }
 
 export async function refreshAllAccounts(): Promise<void> {
