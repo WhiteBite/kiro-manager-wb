@@ -20,6 +20,7 @@ import { renderSettings } from './components/Settings';
 import { renderLogs } from './components/Logs';
 import { renderModals } from './components/Modals';
 import { renderProfileEditor } from './components/ProfileEditor';
+import { renderTabBar } from './components/TabBar';
 
 // Re-exports
 export { RegProgress, AutoRegSettings };
@@ -145,17 +146,29 @@ export function generateWebviewHtml(
   <div class="app">
     ${renderHeader({ validCount, totalCount: accounts.length, t })}
     ${renderUpdateBanner(props.availableUpdate, t)}
-    ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
-    ${renderToolbar({ isRunning, t })}
+    ${renderTabBar({ activeTab: 'accounts', t, accountsCount: accounts.length })}
     
-    <div class="list" id="accountList">
-      ${renderAccountList({ accounts, t })}
+    <!-- Accounts Tab -->
+    <div class="tab-content active" id="tab-accounts">
+      ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
+      ${renderToolbar({ isRunning, t })}
+      <div class="list" id="accountList">
+        ${renderAccountList({ accounts, t })}
+      </div>
+    </div>
+
+    <!-- Profiles Tab -->
+    <div class="tab-content" id="tab-profiles">
+      ${renderProfileEditor({ t, inline: true })}
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="tab-settings">
+      ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver, inline: true })}
     </div>
 
     ${renderLogs({ logs: props.consoleLogs, t })}
-    ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver })}
     ${renderModals({ t })}
-    ${renderProfileEditor({ t })}
   </div>
   <script>${script}</script>
 </body>

@@ -14,7 +14,7 @@
 
 ## 🟢 UI/UX Improvements (Priority 3)
 
-- [ ] **Tab Navigation** - Replace overlays with tabs (Accounts | Profiles | Stats | Settings)
+- [x] **Tab Navigation** - Replace overlays with tabs (Accounts | Profiles | Settings)
 - [x] **Skeleton Screens** - Add loading skeletons for account list
 - [x] **Switching Feedback** - Show loader when switching accounts
 - [x] **Contextual Toolbars** - Bulk actions already hidden until selection mode

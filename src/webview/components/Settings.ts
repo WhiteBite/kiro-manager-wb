@@ -13,6 +13,7 @@ export interface SettingsProps {
   lang: Language;
   t: Translations;
   version: string;
+  inline?: boolean; // Render without overlay wrapper (for tab navigation)
 }
 
 function renderSpoofingSection(settings: AutoRegSettings | undefined, t: Translations): string {
@@ -151,99 +152,104 @@ function renderDangerZone(t: Translations): string {
   `;
 }
 
-export function renderSettings({ autoSwitchEnabled, settings, lang, t, version }: SettingsProps): string {
+export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, inline = false }: SettingsProps): string {
   const langOptions = ['en', 'ru', 'zh', 'es', 'pt', 'ja', 'de', 'fr', 'ko', 'hi']
     .map(l => `<option value="${l}" ${l === lang ? 'selected' : ''}>${l.toUpperCase()}</option>`)
     .join('');
 
-  return `
+  const content = `
+    <!-- Active Profile Card -->
+    <div class="active-profile-card" id="activeProfileCard">
+      <div class="active-profile-header">
+        <span class="active-profile-label">${t.activeProfile}</span>
+        <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')">${t.change}</button>
+      </div>
+      <div class="active-profile-content" id="activeProfileContent">
+        <div class="active-profile-empty">
+          <span class="empty-icon">📧</span>
+          <span class="empty-text">${t.noProfileConfigured}</span>
+          <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">${t.configure}</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.autoSwitch}</div>
+        <div class="setting-desc">${t.autoSwitchDesc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${autoSwitchEnabled ? 'checked' : ''} onchange="toggleAutoSwitch(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.headless}</div>
+        <div class="setting-desc">${t.headlessDesc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${settings?.headless ? 'checked' : ''} onchange="toggleSetting('headless', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.verbose}</div>
+        <div class="setting-desc">${t.verboseDesc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${settings?.verbose ? 'checked' : ''} onchange="toggleSetting('verbose', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.screenshots}</div>
+        <div class="setting-desc">${t.screenshotsDesc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${settings?.screenshotsOnError ? 'checked' : ''} onchange="toggleSetting('screenshotsOnError', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.deviceFlow}</div>
+        <div class="setting-desc">${t.deviceFlowDesc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${settings?.deviceFlow ? 'checked' : ''} onchange="toggleSetting('deviceFlow', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${t.language}</div>
+        <div class="setting-desc">${t.languageDesc}</div>
+      </div>
+      <select class="select" onchange="changeLanguage(this.value)">${langOptions}</select>
+    </div>
+
+    ${renderSpoofingSection(settings, t)}
+    ${renderImportExportSection(t)}
+    ${renderDangerZone(t)}
+    
+    <div class="settings-footer">
+      <span class="settings-version">v${version}</span>
+      <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
+      <button class="btn btn-secondary" onclick="checkUpdates()">${t.checkUpdates}</button>
+    </div>
+  `;
+
+  return inline ? `<div class="settings-content">${content}</div>` : `
     <div class="overlay" id="settingsOverlay">
-      <div class="overlay-header">
-        <button class="overlay-back" onclick="closeSettings()">← ${t.back}</button>
-        <span class="overlay-title">${t.settingsTitle}</span>
-      </div>
       <div class="overlay-content">
-        <!-- Active Profile Card -->
-        <div class="active-profile-card" id="activeProfileCard">
-          <div class="active-profile-header">
-            <span class="active-profile-label">${t.activeProfile}</span>
-            <button class="btn btn-secondary btn-sm" onclick="openProfilesPanel()">${t.change}</button>
-          </div>
-          <div class="active-profile-content" id="activeProfileContent">
-            <div class="active-profile-empty">
-              <span class="empty-icon">📧</span>
-              <span class="empty-text">${t.noProfileConfigured}</span>
-              <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">${t.configure}</button>
-            </div>
-          </div>
+        <div class="overlay-header">
+          <button class="overlay-back" onclick="closeSettings()">← ${t.back}</button>
+          <span class="overlay-title">${t.settings}</span>
         </div>
-
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.autoSwitch}</div>
-            <div class="setting-desc">${t.autoSwitchDesc}</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${autoSwitchEnabled ? 'checked' : ''} onchange="toggleAutoSwitch(this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.headless}</div>
-            <div class="setting-desc">${t.headlessDesc}</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${settings?.headless ? 'checked' : ''} onchange="toggleSetting('headless', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.verbose}</div>
-            <div class="setting-desc">${t.verboseDesc}</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${settings?.verbose ? 'checked' : ''} onchange="toggleSetting('verbose', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.screenshots}</div>
-            <div class="setting-desc">${t.screenshotsDesc}</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${settings?.screenshotsOnError ? 'checked' : ''} onchange="toggleSetting('screenshotsOnError', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.deviceFlow}</div>
-            <div class="setting-desc">${t.deviceFlowDesc}</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${settings?.deviceFlow ? 'checked' : ''} onchange="toggleSetting('deviceFlow', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">${t.language}</div>
-            <div class="setting-desc">${t.languageDesc}</div>
-          </div>
-          <select class="select" onchange="changeLanguage(this.value)">${langOptions}</select>
-        </div>
-
-        ${renderSpoofingSection(settings, t)}
-        ${renderImportExportSection(t)}
-        ${renderDangerZone(t)}
-      </div>
-      <div class="overlay-footer">
-        <span class="overlay-version">v${version}</span>
-        <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
-        <button class="btn btn-secondary" onclick="checkUpdates()">${t.checkUpdates}</button>
+        <div class="overlay-body">${content}</div>
       </div>
     </div>
   `;
