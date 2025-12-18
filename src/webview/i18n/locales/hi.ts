@@ -300,6 +300,8 @@ export const hi: Translations = {
   // Settings Cards
   automation: 'स्वचालन',
   interface: 'इंटरफ़ेस',
+  autoSwitchThreshold: 'स्विच सीमा',
+  autoSwitchThresholdDesc: 'शेष < इस मान पर स्विच करें',
   settings: 'सेटिंग्स',
   accounts: 'खाते',
   profiles: 'प्रोफाइल',
