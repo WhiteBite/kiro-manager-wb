@@ -300,6 +300,8 @@ export const de: Translations = {
   // Settings Cards
   automation: 'Automatisierung',
   interface: 'Oberfläche',
+  autoSwitchThreshold: 'Wechselschwelle',
+  autoSwitchThresholdDesc: 'Wechseln wenn verbleibend < dieser Wert',
   settings: 'Einstellungen',
   accounts: 'Konten',
   profiles: 'Profile',
