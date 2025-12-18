@@ -347,7 +347,7 @@ def cmd_patch_status(args):
         return
     
     print(f"\n[V] Kiro Version: {status.kiro_version or 'Unknown'}")
-    print(f"[F] Target File: {status.machine_id_file}")
+    print(f"[F] Target File: {status.extension_js_path}")
     
     if status.is_patched:
         print(f"\n[OK] Status: PATCHED (v{status.patch_version})")
@@ -452,6 +452,45 @@ def cmd_patch_check(args):
             print(f"[OK] Patch is up to date (v{status.patch_version})")
         else:
             print("[INFO] Kiro is not patched")
+
+
+def cmd_patch_restart(args):
+    """Перезапустить Kiro (с сохранением открытых окон)"""
+    service = KiroPatcherService()
+    
+    print("\n" + "="*60)
+    print("[*] Restarting Kiro")
+    print("="*60 + "\n")
+    
+    success, message = service.restart_kiro(preserve_windows=not args.no_preserve)
+    
+    if success:
+        print(f"\n[OK] {message}")
+    else:
+        print(f"\n[X] {message}")
+
+
+def cmd_patch_apply_restart(args):
+    """Применить патч и перезапустить Kiro"""
+    service = KiroPatcherService()
+    
+    print("\n" + "="*60)
+    print("[*] Patching and Restarting Kiro")
+    print("="*60 + "\n")
+    
+    success, message = service.patch_and_restart(force=args.force)
+    
+    if success:
+        print(f"\n[OK] {message}")
+        
+        # Показываем статус
+        status = service.get_status()
+        if status.is_patched:
+            print(f"[V] Patch version: {status.patch_version}")
+        if status.current_machine_id:
+            print(f"[ID] Machine ID: {status.current_machine_id[:32]}...")
+    else:
+        print(f"\n[X] {message}")
 
 
 # =============================================================================
@@ -693,6 +732,14 @@ def main():
     patch_check = patch_sub.add_parser('check', help='Check if patch needs update')
     patch_check.add_argument('--auto-fix', action='store_true', help='Auto re-apply patch if needed')
     patch_check.set_defaults(func=cmd_patch_check)
+    
+    patch_restart = patch_sub.add_parser('restart', help='Restart Kiro (preserves open windows)')
+    patch_restart.add_argument('--no-preserve', action='store_true', help='Do not preserve open windows')
+    patch_restart.set_defaults(func=cmd_patch_restart)
+    
+    patch_apply_restart = patch_sub.add_parser('apply-restart', help='Apply patch and restart Kiro')
+    patch_apply_restart.add_argument('-f', '--force', action='store_true', help='Force re-patch')
+    patch_apply_restart.set_defaults(func=cmd_patch_apply_restart)
     
     # Parse
     args = parser.parse_args()
