@@ -202,6 +202,9 @@ class BrowserAutomation:
         co.set_argument('--lang=en-US')
         co.set_argument('--accept-lang=en-US,en')
         
+        # Set DrissionPage language to English (avoid Chinese error messages)
+        os.environ['DRISSIONPAGE_LANG'] = 'en'
+        
         # НЕ используем --disable-blink-features=AutomationControlled
         # Он показывает предупреждение которое палит автоматизацию!
         
