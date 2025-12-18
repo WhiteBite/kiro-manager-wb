@@ -71,3 +71,12 @@
 6. Auto-switch threshold input in Settings
 7. Stats skeleton loading state
 8. Console drawer state preserved during updates
+
+## ✅ Completed in v6.3.3 release
+
+1. CAPTCHA detection on password page (_check_captcha, _check_captcha_error)
+2. CAPTCHA handling with manual solving support (_handle_captcha)
+3. Debug recorder integration in browser.py (navigate, enter_*, click_allow_access)
+4. Debug session recording with screenshots and HTML (DEBUG_RECORDING=1)
+5. Check Health button already works - uses CodeWhisperer API to detect bans
+6. Ban status persisted to disk via markAccountAsBanned -> saveAccountUsage
