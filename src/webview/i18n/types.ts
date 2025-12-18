@@ -353,4 +353,14 @@ export interface Translations {
   // ============================================
   ready: string;
   clickToConfigure: string;
+
+  // ============================================
+  // Settings Cards
+  // ============================================
+  automation: string;
+  interface: string;
+  settings: string;
+  accounts: string;
+  profiles: string;
+  pause: string;
 }

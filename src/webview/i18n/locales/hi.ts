@@ -292,4 +292,12 @@ export const hi: Translations = {
   // Hero Profile Display
   ready: 'तैयार',
   clickToConfigure: 'कॉन्फ़िगर करने के लिए क्लिक करें',
+
+  // Settings Cards
+  automation: 'स्वचालन',
+  interface: 'इंटरफ़ेस',
+  settings: 'सेटिंग्स',
+  accounts: 'खाते',
+  profiles: 'प्रोफाइल',
+  pause: 'रोकें',
 };

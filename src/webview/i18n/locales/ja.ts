@@ -292,4 +292,12 @@ export const ja: Translations = {
   // Hero Profile Display
   ready: '準備完了',
   clickToConfigure: 'クリックして設定',
+
+  // Settings Cards
+  automation: '自動化',
+  interface: 'インターフェース',
+  settings: '設定',
+  accounts: 'アカウント',
+  profiles: 'プロファイル',
+  pause: '一時停止',
 };
