@@ -1589,28 +1589,29 @@ class BrowserAutomation:
         start_time = time.time()
         max_wait = 5  # Уменьшено с 10 итераций по 0.3с
         
-        # Приоритетные селекторы (самые быстрые первыми)
+        # Приоритетные селекторы - ТОЛЬКО специфичные для Allow access
+        # НЕ используем общие селекторы типа button[type="submit"] - они находят cookie кнопки!
         fast_selectors = [
             '@data-testid=allow-access-button',
             'css:button[data-testid="allow-access-button"]',
-            'css:button[type="submit"]',  # Часто кнопка submit
+            'text=Allow access',  # Точный текст
         ]
         fallback_selectors = [
-            'text=Allow access',
+            # AWS UI специфичные
+            'css:button.awsui_button_vjswe_146je_157',  # AWS UI button class
+            'xpath://button[contains(@class, "awsui") and contains(text(), "Allow")]',
+            # Текстовые селекторы
             'text=Allow',
             'text=Authorize',
-            'text=Continue',
-            'text=Accept',  # Новый flow может использовать Accept
-            'text=Confirm',
+            'xpath://button[contains(text(), "Allow access")]',
             'xpath://button[contains(text(), "Allow")]',
             'xpath://button[contains(text(), "Authorize")]',
-            'xpath://button[contains(text(), "Accept")]',
-            'xpath://button[contains(text(), "Confirm")]',
-            'css:button.awsui-button-variant-primary',  # AWS UI primary button
-            'css:button[class*="primary"]',
-            'css:button[type="submit"]',  # Submit button
+            # Fallback для нового flow
             '@data-testid=confirm-button',
             '@data-testid=accept-button',
+            # Общие селекторы ТОЛЬКО в конце
+            'css:button.awsui-button-variant-primary',
+            'css:button[class*="variant-primary"]',
         ]
         
         # Фаза 1: Быстрый поиск по data-testid (0.5 сек макс)
