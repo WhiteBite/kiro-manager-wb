@@ -116,6 +116,11 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     
     function toggleAutoSwitch(enabled) {
       vscode.postMessage({ command: 'toggleAutoSwitch', enabled });
+      // Show/hide threshold row
+      const thresholdRow = document.getElementById('autoSwitchThresholdRow');
+      if (thresholdRow) {
+        thresholdRow.style.display = enabled ? '' : 'none';
+      }
     }
     
     function toggleSetting(key, value) {

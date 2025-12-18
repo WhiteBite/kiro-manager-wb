@@ -300,6 +300,8 @@ export const ru: Translations = {
   // Settings Cards
   automation: 'Автоматизация',
   interface: 'Интерфейс',
+  autoSwitchThreshold: 'Порог переключения',
+  autoSwitchThresholdDesc: 'Переключать когда осталось меньше',
   settings: 'Настройки',
   accounts: 'Аккаунты',
   profiles: 'Профили',

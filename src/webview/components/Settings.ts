@@ -190,6 +190,16 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div class="setting-row" id="autoSwitchThresholdRow" style="${autoSwitchEnabled ? '' : 'display:none'}">
+          <div>
+            <div class="setting-label">${t.autoSwitchThreshold || 'Switch threshold'}</div>
+            <div class="setting-desc">${t.autoSwitchThresholdDesc || 'Switch when remaining < this value'}</div>
+          </div>
+          <input type="number" class="input-number" id="autoSwitchThreshold" 
+            value="${settings?.autoSwitchThreshold || 10}" 
+            min="1" max="490" step="10"
+            onchange="updateSetting('autoSwitchThreshold', parseInt(this.value))">
+        </div>
         <div class="setting-row">
           <div>
             <div class="setting-label">${t.headless}</div>
