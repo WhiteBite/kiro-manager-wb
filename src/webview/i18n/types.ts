@@ -355,6 +355,12 @@ export interface Translations {
   clickToConfigure: string;
 
   // ============================================
+  // Search
+  // ============================================
+  noAccountsFound: string;
+  clearSearch: string;
+
+  // ============================================
   // Settings Cards
   // ============================================
   automation: string;

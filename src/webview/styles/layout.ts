@@ -1267,6 +1267,12 @@ export const fabStyles = `
     flex-direction: column;
     align-items: flex-end;
     gap: 8px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .fab-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
   }
   .fab {
     width: 48px;
@@ -1298,6 +1304,21 @@ export const fabStyles = `
   .fab-primary:hover {
     background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
   }
+  /* Pulse animation for FAB when idle */
+  .fab-primary.pulse {
+    animation: fabPulse 2s ease-in-out infinite;
+  }
+  .fab-primary.pulse:hover {
+    animation: none;
+  }
+  @keyframes fabPulse {
+    0%, 100% { 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 0 rgba(63,182,139,0.4);
+    }
+    50% { 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 8px rgba(63,182,139,0);
+    }
+  }
   .fab-stop {
     background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
     color: #fff;
@@ -1312,6 +1333,14 @@ export const fabStyles = `
   }
   .fab-container.running {
     gap: 6px;
+  }
+  /* Running state - remove pulse, add glow */
+  .fab-container.running .fab {
+    animation: fabRunningGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes fabRunningGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    50% { box-shadow: 0 4px 24px rgba(229,83,83,0.5); }
   }
   .fab-status {
     display: flex;

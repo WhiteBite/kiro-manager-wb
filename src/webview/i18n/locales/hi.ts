@@ -293,6 +293,10 @@ export const hi: Translations = {
   ready: 'तैयार',
   clickToConfigure: 'कॉन्फ़िगर करने के लिए क्लिक करें',
 
+  // Search
+  noAccountsFound: 'कोई खाता नहीं मिला',
+  clearSearch: 'खोज साफ़ करें',
+
   // Settings Cards
   automation: 'स्वचालन',
   interface: 'इंटरफ़ेस',

@@ -114,6 +114,15 @@ export function renderAccountList({ accounts, t, selectionMode = false, selected
     `;
   }
 
+  // Empty search state (hidden by default, shown via JS when search has no results)
+  const emptySearchHtml = `
+    <div class="empty-state empty-search" id="emptySearchState" style="display: none;">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-text">${t.noAccountsFound || 'No accounts found'}</div>
+      <button class="btn btn-secondary btn-sm" onclick="clearSearch()">${t.clearSearch || 'Clear search'}</button>
+    </div>
+  `;
+
   // Group accounts into 5 categories
   const active: AccountInfo[] = [];
   const ready: AccountInfo[] = [];
@@ -186,6 +195,9 @@ export function renderAccountList({ accounts, t, selectionMode = false, selected
     `;
     banned.forEach(acc => { html += renderAccount(acc, globalIndex++, t, selectionMode); });
   }
+
+  // Add empty search state at the end (hidden by default)
+  html += emptySearchHtml;
 
   return html;
 }

@@ -16,10 +16,10 @@ export interface TabBarProps {
 
 export function renderTabBar({ activeTab, t, accountsCount = 0, profilesCount = 0 }: TabBarProps): string {
   const tabs: Array<{ id: TabId; icon: string; label: string; badge?: number }> = [
-    { id: 'accounts', icon: ICONS.users, label: t.accounts || 'Accounts', badge: accountsCount },
-    { id: 'profiles', icon: '📧', label: t.profiles || 'Profiles', badge: profilesCount },
-    { id: 'stats', icon: '📊', label: t.statistics || 'Stats' },
-    { id: 'settings', icon: ICONS.settings, label: t.settings || 'Settings' }
+    { id: 'accounts', icon: ICONS.users, label: t?.accounts ?? 'Accounts', badge: accountsCount },
+    { id: 'profiles', icon: '📧', label: t?.profiles ?? 'Profiles', badge: profilesCount },
+    { id: 'stats', icon: '📊', label: t?.statistics ?? 'Stats' },
+    { id: 'settings', icon: ICONS.settings, label: t?.settings ?? 'Settings' }
   ];
 
   return `
