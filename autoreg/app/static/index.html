@@ -41,6 +41,23 @@
     /* Transitions */
     --transition: 0.15s ease;
     --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+    
+    /* Z-index layers */
+    --z-base: 1;
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-drawer: 50;
+    --z-fab: 80;
+    --z-overlay: 100;
+    --z-modal: 200;
+    --z-dialog: 300;
+    --z-toast: 400;
   }
 
     
@@ -261,6 +278,30 @@
   }
   .select:hover { border-color: var(--accent); }
 
+  /* === Number Input === */
+  .input-number {
+    width: 70px;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: center;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+  }
+  .input-number:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(63,182,139,0.15);
+  }
+  .input-number::-webkit-inner-spin-button,
+  .input-number::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
   /* === Patch Indicator === */
   .patch-indicator {
     display: inline-flex;
@@ -329,6 +370,44 @@
   .hero.profile:hover {
     border-color: rgba(100,149,237,0.4);
     box-shadow: 0 4px 20px rgba(100,149,237,0.15);
+  }
+  .hero.warning {
+    background: linear-gradient(135deg, rgba(217,163,52,0.15) 0%, rgba(217,163,52,0.05) 100%);
+    border-color: rgba(217,163,52,0.4);
+  }
+  .hero.critical {
+    background: linear-gradient(135deg, rgba(229,83,83,0.15) 0%, rgba(229,83,83,0.05) 100%);
+    border-color: rgba(229,83,83,0.4);
+    animation: criticalPulse 2s ease-in-out infinite;
+  }
+  @keyframes criticalPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229,83,83,0.3); }
+    50% { box-shadow: 0 0 0 4px rgba(229,83,83,0.1); }
+  }
+  .hero-main {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .hero-remaining {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .hero-remaining-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .hero-remaining-value.low { color: var(--accent); }
+  .hero-remaining-value.medium { color: var(--warning); }
+  .hero-remaining-value.high { color: var(--danger); }
+  .hero-remaining-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
   }
   .hero-profile-info {
     margin-bottom: 8px;
@@ -1225,6 +1304,719 @@
   .toast.success { border-color: var(--accent); }
   .toast.error { border-color: var(--danger); }
   .toast.warning { border-color: var(--warning); }
+
+  /* === Skeleton Loading === */
+  .skeleton { pointer-events: none; }
+  .skeleton-pulse {
+    background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.15) 50%, var(--bg-elevated) 75%);
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes skeletonPulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .skeleton-line { height: 12px; border-radius: 4px; margin: 4px 0; }
+  .account.skeleton { opacity: 0.6; }
+  .account.skeleton .account-avatar { background: var(--bg-elevated); }
+
+  /* === Switching State === */
+  .account.switching {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+  }
+  .account.switching::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === Banned Account Styles === */
+  .account.banned {
+    opacity: 0.5;
+    border-color: #8b0000;
+    background: linear-gradient(135deg, rgba(139,0,0,0.1) 0%, transparent 100%);
+  }
+  .account-status.banned { background: #8b0000; }
+  .ban-badge { margin-left: 4px; font-size: 10px; }
+  .ban-reason { color: #ff6b6b; font-size: 9px; font-weight: 600; }
+  .list-group.banned { color: #ff6b6b; border-color: rgba(139,0,0,0.3); }
+
+  /* === Tab Bar Navigation === */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 8px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .tab-item:hover {
+    background: rgba(128,128,128,0.1);
+    color: var(--fg);
+  }
+  .tab-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .tab-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+  .tab-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .tab-label {
+    display: none;
+  }
+  @media (min-width: 300px) {
+    .tab-label { display: inline; }
+  }
+  .tab-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 10px;
+    background: rgba(128,128,128,0.2);
+    color: var(--muted);
+  }
+  .tab-item.active .tab-badge {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* === Tab Content Panels === */
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+
+  /* === Settings Tab (inline mode) === */
+  .settings-content {
+    padding: 16px 12px;
+    overflow-y: auto;
+    max-height: calc(100vh - 150px);
+  }
+  .settings-footer {
+    padding: 12px 0;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settings-version {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* === Profiles Tab (inline mode) === */
+  .profiles-tab {
+    padding: 12px;
+  }
+  .profiles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .profiles-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .profiles-content {
+    min-height: 100px;
+  }
+  .profiles-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+  }
+  .profiles-empty .empty-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+  }
+  .profiles-empty .empty-text {
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .profiles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .profile-card {
+    padding: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition);
+  }
+  .profile-card:hover {
+    border-color: rgba(63,182,139,0.3);
+  }
+  .profile-card.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .profile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .profile-card-radio {
+    cursor: pointer;
+  }
+  .radio-dot {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+  }
+  .radio-dot.checked {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .radio-dot.checked::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  .profile-card-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .profile-card-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .profile-card-email {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .profile-card-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .profile-card-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .profile-strategy {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .profile-stats {
+    color: var(--muted);
+  }
+  .profiles-add-btn {
+    margin-top: 12px;
+    width: 100%;
+  }
+
+  /* === Profile Editor Form (inline) === */
+  .profile-editor-form {
+    padding: 12px 0;
+  }
+  .profile-editor-form .editor-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .profile-editor-form .editor-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .profile-editor-form .editor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .profile-editor-form .editor-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+    
+  /* === Floating Action Button === */
+  .fab-container {
+    position: fixed;
+    bottom: 50px;
+    right: 16px;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .fab-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+  }
+  .fab {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transition: all var(--transition-normal);
+  }
+  .fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  }
+  .fab:active {
+    transform: scale(0.95);
+  }
+  .fab-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .fab-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: #fff;
+  }
+  .fab-primary:hover {
+    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
+  }
+  /* Pulse animation for FAB when idle */
+  .fab-primary.pulse {
+    animation: fabPulse 2s ease-in-out infinite;
+  }
+  .fab-primary.pulse:hover {
+    animation: none;
+  }
+  @keyframes fabPulse {
+    0%, 100% { 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 0 rgba(63,182,139,0.4);
+    }
+    50% { 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 8px rgba(63,182,139,0);
+    }
+  }
+  .fab-stop {
+    background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+  }
+  .fab-pause {
+    background: linear-gradient(135deg, var(--warning) 0%, #d4a84a 100%);
+    color: #1a1a1a;
+    width: 40px;
+    height: 40px;
+  }
+  .fab-container.running {
+    gap: 6px;
+  }
+  /* Running state - remove pulse, add glow */
+  .fab-container.running .fab {
+    animation: fabRunningGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes fabRunningGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    50% { box-shadow: 0 4px 24px rgba(229,83,83,0.5); }
+  }
+  .fab-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .fab-status .spinner {
+    width: 12px;
+    height: 12px;
+  }
+
+    
+  /* === Settings Cards === */
+  .settings-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .settings-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.15);
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-card-icon {
+    font-size: 16px;
+  }
+  .settings-card-title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .settings-card-body {
+    padding: 4px 14px;
+  }
+  .settings-card .setting-row {
+    padding: 10px 0;
+  }
+  .settings-card .setting-row:last-child {
+    border-bottom: none;
+  }
+  
+  /* Active Profile in Card */
+  .settings-card .active-profile-content {
+    padding: 12px 14px;
+  }
+  .settings-card .active-profile-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .settings-card .active-profile-empty .empty-text {
+    flex: 1;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .settings-card .active-profile-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .settings-card .active-profile-avatar {
+    font-size: 24px;
+  }
+  .settings-card .active-profile-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .settings-card .active-profile-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .settings-card .active-profile-email {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .settings-card .active-profile-strategy {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .settings-card .active-profile-stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .settings-card .active-profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .settings-card .active-profile-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .settings-card .active-profile-stat-value.success { color: var(--accent); }
+  .settings-card .active-profile-stat-value.danger { color: var(--danger); }
+  .settings-card .active-profile-stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Spoof Section as Card */
+  .spoof-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .spoof-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.15);
+  }
+  .spoof-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .spoof-icon {
+    font-size: 16px;
+  }
+  .spoof-details {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .spoof-details.hidden {
+    display: none;
+  }
+  .spoof-modules {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .spoof-module {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(0,0,0,0.1);
+    border-radius: var(--radius-sm);
+  }
+  .module-icon {
+    font-size: 14px;
+  }
+  .module-name {
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .module-desc {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .spoof-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(217,163,52,0.1);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    color: var(--warning);
+  }
+
+    
+  /* === Stats Dashboard === */
+  .stats-dashboard {
+    padding: 12px;
+  }
+  .stats-header {
+    margin-bottom: 16px;
+  }
+  .stats-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  /* Stats Cards Grid */
+  .stats-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    padding: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .stat-card.success { border-color: rgba(63,182,139,0.3); }
+  .stat-card.danger { border-color: rgba(229,83,83,0.3); }
+  .stat-card.warning { border-color: rgba(217,163,52,0.3); }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-card.success .stat-value { color: var(--accent); }
+  .stat-card.danger .stat-value { color: var(--danger); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Stats Sections */
+  .stats-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .stats-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* Usage Overview */
+  .usage-overview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .usage-bar-container {
+    flex: 1;
+    height: 8px;
+    background: rgba(128,128,128,0.2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .usage-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .usage-numbers {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .usage-current { color: var(--accent); }
+  .usage-separator { color: var(--muted); margin: 0 2px; }
+  .usage-limit { color: var(--muted); }
+  .usage-avg {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .usage-avg strong { color: var(--fg); }
+
+  /* Mini Chart */
+  .mini-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+    padding: 4px 0;
+  }
+  .chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim) 100%);
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+    transition: height 0.3s ease;
+  }
+  .chart-bar:hover {
+    background: var(--accent);
+  }
+  .chart-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Health Bars */
+  .health-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .health-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .health-label {
+    font-size: 10px;
+    width: 60px;
+    white-space: nowrap;
+  }
+  .health-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(128,128,128,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .health-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .health-fill.success { background: var(--accent); }
+  .health-fill.danger { background: var(--danger); }
+  .health-fill.warning { background: var(--warning); }
+  .health-percent {
+    font-size: 10px;
+    font-weight: 600;
+    width: 32px;
+    text-align: right;
+  }
 
     
   /* === Profile Section === */
@@ -2752,11 +3544,6 @@
     
     <div class="toolbar">
       <div class="toolbar-buttons">
-        
-      <button class="btn btn-primary" onclick="startAutoReg()">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L4 9h4l-1 6 5-8H8l1-6z"/></svg> Auto-Reg
-      </button>
-    
         <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
         <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="Check Health">🩺</button>
         <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="Select" id="selectModeBtn">☑️</button>
@@ -2805,26 +3592,34 @@
   
     
     <div class="overlay" id="settingsOverlay">
-      <div class="overlay-header">
-        <button class="overlay-back" onclick="closeSettings()">← Back</button>
-        <span class="overlay-title">Settings</span>
-      </div>
       <div class="overlay-content">
-        <!-- Active Profile Card -->
-        <div class="active-profile-card" id="activeProfileCard">
-          <div class="active-profile-header">
-            <span class="active-profile-label">Active Profile</span>
-            <button class="btn btn-secondary btn-sm" onclick="openProfilesPanel()">Change</button>
-          </div>
-          <div class="active-profile-content" id="activeProfileContent">
-            <div class="active-profile-empty">
-              <span class="empty-icon">📧</span>
-              <span class="empty-text">No profile configured</span>
-              <button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">Configure</button>
-            </div>
-          </div>
+        <div class="overlay-header">
+          <button class="overlay-back" onclick="closeSettings()">← Back</button>
+          <span class="overlay-title">Settings</span>
         </div>
+        <div class="overlay-body">
+    <!-- Active Profile Card -->
+    <div class="settings-card" id="activeProfileCard">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">📧</span>
+        <span class="settings-card-title">Active Profile</span>
+        <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')">Change</button>
+      </div>
+      <div class="active-profile-content" id="activeProfileContent">
+        <div class="active-profile-empty">
+          <span class="empty-text">No profile configured</span>
+          <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">Configure</button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Automation Card -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">⚙️</span>
+        <span class="settings-card-title">Automation</span>
+      </div>
+      <div class="settings-card-body">
         <div class="setting-row">
           <div>
             <div class="setting-label">Auto-switch on expiry</div>
@@ -2835,6 +3630,16 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div class="setting-row" id="autoSwitchThresholdRow" style="display:none">
+          <div>
+            <div class="setting-label">Switch threshold</div>
+            <div class="setting-desc">Switch when remaining < this value</div>
+          </div>
+          <input type="number" class="input-number" id="autoSwitchThreshold" 
+            value="10" 
+            min="1" max="490" step="10"
+            onchange="updateSetting('autoSwitchThreshold', parseInt(this.value))">
+        </div>
         <div class="setting-row">
           <div>
             <div class="setting-label">Headless mode</div>
@@ -2844,6 +3649,33 @@
             <input type="checkbox"  onchange="toggleSetting('headless', this.checked)">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Device Flow auth</div>
+            <div class="setting-desc">Use device code instead of local server</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox"  onchange="toggleSetting('deviceFlow', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interface Card -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">🎨</span>
+        <span class="settings-card-title">Interface</span>
+      </div>
+      <div class="settings-card-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Language</div>
+            <div class="setting-desc">Interface language</div>
+          </div>
+          <select class="select" onchange="changeLanguage(this.value)"><option value="en" selected>EN</option><option value="ru" >RU</option><option value="zh" >ZH</option><option value="es" >ES</option><option value="pt" >PT</option><option value="ja" >JA</option><option value="de" >DE</option><option value="fr" >FR</option><option value="ko" >KO</option><option value="hi" >HI</option></select>
         </div>
         <div class="setting-row">
           <div>
@@ -2865,25 +3697,10 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Device Flow auth</div>
-            <div class="setting-desc">Use device code instead of local server</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox"  onchange="toggleSetting('deviceFlow', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Language</div>
-            <div class="setting-desc">Interface language</div>
-          </div>
-          <select class="select" onchange="changeLanguage(this.value)"><option value="en" selected>EN</option><option value="ru" >RU</option><option value="zh" >ZH</option><option value="es" >ES</option><option value="pt" >PT</option><option value="ja" >JA</option><option value="de" >DE</option><option value="fr" >FR</option><option value="ko" >KO</option><option value="hi" >HI</option></select>
-        </div>
+      </div>
+    </div>
 
-        
+    
     <div class="spoof-section">
       <div class="spoof-header">
         <div class="spoof-title">
@@ -2950,7 +3767,7 @@
       </div>
     </div>
   
-        
+    
     <div class="import-export-section">
       <div class="section-header">
         <span class="section-icon">📦</span>
@@ -2967,7 +3784,7 @@
       </div>
     </div>
   
-        
+    
     <div class="danger-zone-section">
       <div class="danger-zone-header">
         <span class="danger-zone-icon">⚠️</span>
@@ -3010,11 +3827,13 @@
       </div>
     </div>
   
-      </div>
-      <div class="overlay-footer">
-        <span class="overlay-version">vstandalone</span>
-        <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
-        <button class="btn btn-secondary" onclick="checkUpdates()">Check Updates</button>
+    
+    <div class="settings-footer">
+      <span class="settings-version">vstandalone</span>
+      <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
+      <button class="btn btn-secondary" onclick="checkUpdates()">Check Updates</button>
+    </div>
+  </div>
       </div>
     </div>
   
@@ -3187,7 +4006,7 @@
     // Standalone Web App Script
     // Auto-generated from VS Code extension components
     
-    const T = {"kiroAccounts":"Kiro Accounts","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Reg","autoRegTip":"Create new AWS Builder ID automatically","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","step":"Step","connected":"Connected","confirm":"Confirm","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patch":"Patch","removePatch":"Remove","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","emailsAdded":"{count} emails added","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All","selectMode":"Select","selected":"selected","selectAll":"Select All","deselectAll":"Deselect All","refreshSelected":"Refresh Tokens","deleteSelected":"Delete Selected","deleteSelectedConfirm":"Delete {count} selected accounts?","selectedAccountsDeleted":"{count} accounts deleted","refreshingTokens":"Refreshing tokens...","checkHealth":"Check Health","checkingHealth":"Checking accounts health...","ready":"Ready","clickToConfigure":"Click to configure"};
+    const T = {"kiroAccounts":"Kiro Accounts","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","remaining":"remaining","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Reg","autoRegTip":"Create new AWS Builder ID automatically","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","step":"Step","connected":"Connected","confirm":"Confirm","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patch":"Patch","removePatch":"Remove","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","emailsAdded":"{count} emails added","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All","selectMode":"Select","selected":"selected","selectAll":"Select All","deselectAll":"Deselect All","refreshSelected":"Refresh Tokens","deleteSelected":"Delete Selected","deleteSelectedConfirm":"Delete {count} selected accounts?","selectedAccountsDeleted":"{count} accounts deleted","refreshingTokens":"Refreshing tokens...","checkHealth":"Check Health","checkingHealth":"Checking accounts health...","ready":"Ready","clickToConfigure":"Click to configure","noAccountsFound":"No accounts found","clearSearch":"Clear search","automation":"Automation","interface":"Interface","autoSwitchThreshold":"Switch threshold","autoSwitchThresholdDesc":"Switch when remaining < this value","settings":"Settings","accounts":"Accounts","profiles":"Profiles","pause":"Pause","statistics":"Statistics","weeklyUsage":"Weekly Usage","avgPerAccount":"Avg per account","accountHealth":"Account Health"};
     
     // WebSocket connection
     let ws = null;
