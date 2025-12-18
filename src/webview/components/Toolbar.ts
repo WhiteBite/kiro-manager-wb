@@ -11,24 +11,9 @@ export interface ToolbarProps {
 }
 
 export function renderToolbar({ isRunning, t }: ToolbarProps): string {
-  const actionButtons = isRunning
-    ? `
-      <button class="btn btn-primary" disabled>
-        <span class="spinner"></span> ${t.running}
-      </button>
-      <button class="btn btn-secondary btn-icon" onclick="togglePauseAutoReg()" title="Pause">⏸</button>
-      <button class="btn btn-danger btn-icon" onclick="stopAutoReg()" title="Stop">⏹</button>
-    `
-    : `
-      <button class="btn btn-primary" onclick="startAutoReg()">
-        ${ICONS.bolt} ${t.autoReg}
-      </button>
-    `;
-
   return `
     <div class="toolbar">
       <div class="toolbar-buttons">
-        ${actionButtons}
         <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
         <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="${t.checkHealth || 'Check Health'}">🩺</button>
         <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="${t.selectMode}" id="selectModeBtn">☑️</button>

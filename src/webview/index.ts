@@ -21,6 +21,7 @@ import { renderLogs } from './components/Logs';
 import { renderModals } from './components/Modals';
 import { renderProfileEditor } from './components/ProfileEditor';
 import { renderTabBar } from './components/TabBar';
+import { renderFAB } from './components/FAB';
 
 // Re-exports
 export { RegProgress, AutoRegSettings };
@@ -167,6 +168,7 @@ export function generateWebviewHtml(
       ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver, inline: true })}
     </div>
 
+    ${renderFAB({ isRunning, t })}
     ${renderLogs({ logs: props.consoleLogs, t })}
     ${renderModals({ t })}
   </div>
