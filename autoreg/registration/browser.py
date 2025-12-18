@@ -1506,33 +1506,71 @@ class BrowserAutomation:
             self.screenshot("error_no_allow_button")
             return False
         
-        # Клик с человеческим поведением
+        # Логируем что нашли
+        try:
+            btn_text = btn.text or btn.attr('value') or 'no text'
+            btn_class = btn.attr('class') or 'no class'
+            print(f"   [DEBUG] Button text: '{btn_text}', class: '{btn_class[:50]}'")
+        except:
+            pass
+        
+        # Ждём пока страница стабилизируется
+        time.sleep(1)
+        
+        # Клик с разными методами
         for attempt in range(3):
             # Проверяем disabled (с защитой от NoneElement)
             try:
                 if btn and btn.attr('disabled'):
-                    self._behavior.human_delay(0.2, 0.4)
+                    print(f"   [!] Button is disabled, waiting...")
+                    time.sleep(1)
+                    # Перезапрашиваем элемент
+                    if btn_selector:
+                        btn = self.page.ele(btn_selector, timeout=0.5)
                     continue
             except:
                 pass
             
             print(f"[UNLOCK] Clicking Allow access (attempt {attempt + 1})...")
             
-            # Клик через behavior
-            self._behavior.human_js_click(self.page, btn)
+            # Метод 1: Прямой клик через DrissionPage
+            try:
+                btn.click()
+                time.sleep(0.5)
+                if '127.0.0.1' in self.page.url:
+                    print("   [OK] Redirected to callback!")
+                    return True
+            except Exception as e:
+                print(f"   [!] Direct click failed: {e}")
             
-            # Проверка редиректа
-            self._behavior.human_delay(0.3, 0.6)
-            if '127.0.0.1' in self.page.url:
-                print("   [OK] Redirected to callback!")
-                return True
+            # Метод 2: JS click
+            try:
+                self.page.run_js('arguments[0].click()', btn)
+                time.sleep(0.5)
+                if '127.0.0.1' in self.page.url:
+                    print("   [OK] Redirected to callback!")
+                    return True
+            except Exception as e:
+                print(f"   [!] JS click failed: {e}")
             
-            # Перезапрашиваем элемент (избегаем stale) используя тот же селектор
+            # Метод 3: Behavior click
+            try:
+                self._behavior.human_js_click(self.page, btn)
+                time.sleep(0.5)
+                if '127.0.0.1' in self.page.url:
+                    print("   [OK] Redirected to callback!")
+                    return True
+            except:
+                pass
+            
+            # Перезапрашиваем элемент (избегаем stale)
             if btn_selector:
                 try:
-                    btn = self.page.ele(btn_selector, timeout=0.3)
+                    btn = self.page.ele(btn_selector, timeout=0.5)
                 except:
                     pass
+            
+            time.sleep(1)
         
         # Последняя проверка
         if '127.0.0.1' in self.page.url:
