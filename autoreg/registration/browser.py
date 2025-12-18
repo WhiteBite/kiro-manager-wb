@@ -22,6 +22,9 @@ from spoof import apply_pre_navigation_spoofing
 from spoofers.behavior import BehaviorSpoofModule
 from spoofers.profile_storage import ProfileStorage
 
+# Debug recorder
+from core.debug_recorder import get_recorder, record
+
 
 def find_chrome_path() -> Optional[str]:
     """Find Chrome/Chromium executable path on different platforms"""
@@ -1296,12 +1299,27 @@ class BrowserAutomation:
             self.human_type(pwd2, password, field_type='password')
         
         time.sleep(0.15)
+        
+        # Проверяем наличие CAPTCHA перед кликом Continue
+        if self._check_captcha():
+            print("   [!] CAPTCHA detected on password page!")
+            self.screenshot("captcha_detected")
+            # Пробуем решить капчу
+            if not self._handle_captcha():
+                print("   [!] CAPTCHA solving failed")
+                return False
+        
         print("[->] Clicking Continue...")
         old_url = self.page.url
         self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
         
-        # Проверяем на ошибку "leaked password"
+        # Проверяем на ошибку "leaked password" или "Invalid captcha"
         time.sleep(0.3)
+        if self._check_captcha_error():
+            print("   [!] Invalid captcha error, retrying...")
+            self.screenshot("captcha_invalid")
+            return False
+        
         if self._check_password_error():
             print("   [!] Password rejected, generating new one...")
             return self.enter_password(self.generate_password(18))
@@ -1311,6 +1329,115 @@ class BrowserAutomation:
         self._log(f"URL after password", self.page.url[:60])
         
         return True
+    
+    def _check_captcha(self) -> bool:
+        """Проверяет наличие CAPTCHA на странице"""
+        captcha_indicators = [
+            'text=Security check',
+            'text=Security Verification',
+            'text=Please click verify',
+            '#captcha',
+            '[data-testid="ams-captcha"]',
+            '.wOjKx2rsiwhq8wvEYj3p',  # AWS captcha container class
+        ]
+        
+        for selector in captcha_indicators:
+            try:
+                if self.page.ele(selector, timeout=0.5):
+                    return True
+            except:
+                pass
+        
+        return False
+    
+    def _check_captcha_error(self) -> bool:
+        """Проверяет наличие ошибки Invalid captcha"""
+        try:
+            if self.page.ele('text=Invalid captcha', timeout=0.5):
+                return True
+        except:
+            pass
+        return False
+    
+    def _handle_captcha(self) -> bool:
+        """
+        Обрабатывает CAPTCHA на странице.
+        AWS использует текстовую капчу которую нужно ввести вручную.
+        
+        Returns:
+            True если капча решена, False если не удалось
+        """
+        print("   [CAPTCHA] Attempting to solve...")
+        
+        # Ищем кнопку Verify для запуска капчи
+        verify_btn = self._find_element([
+            'text=Verify',
+            'xpath://button[contains(text(), "Verify")]',
+            '[data-analytics-funnel-value*="button"]',
+        ], timeout=2)
+        
+        if verify_btn:
+            print("   [CAPTCHA] Clicking Verify button...")
+            self.human_click(verify_btn)
+            time.sleep(2)
+        
+        # Ждём появления капчи (изображение + поле ввода)
+        captcha_input = None
+        for _ in range(10):
+            # Ищем поле ввода капчи
+            captcha_input = self._find_element([
+                '@placeholder=Verification answer',
+                'input[placeholder*="answer" i]',
+                'input[placeholder*="verification" i]',
+            ], timeout=1)
+            
+            if captcha_input:
+                break
+            time.sleep(0.5)
+        
+        if not captcha_input:
+            print("   [CAPTCHA] Input field not found")
+            # Если headless - капчу не решить автоматически
+            if self.headless:
+                print("   [!] Cannot solve CAPTCHA in headless mode!")
+                return False
+            
+            # В GUI режиме ждём пока пользователь решит
+            print("   [CAPTCHA] Waiting for manual solution (60s)...")
+            for i in range(60):
+                time.sleep(1)
+                # Проверяем исчезла ли капча
+                if not self._check_captcha():
+                    print("   [CAPTCHA] Solved manually!")
+                    return True
+            
+            print("   [CAPTCHA] Timeout waiting for manual solution")
+            return False
+        
+        # Если есть поле ввода - это текстовая капча
+        # В headless режиме не можем решить
+        if self.headless:
+            print("   [!] Text CAPTCHA detected - cannot solve in headless mode!")
+            print("   [!] Try running with headless=false")
+            return False
+        
+        # В GUI режиме ждём пока пользователь введёт
+        print("   [CAPTCHA] Text captcha detected - waiting for manual input (60s)...")
+        for i in range(60):
+            time.sleep(1)
+            # Проверяем исчезла ли капча или введён текст
+            if not self._check_captcha():
+                print("   [CAPTCHA] Solved!")
+                return True
+            # Проверяем что пользователь ввёл текст и нажал Submit
+            try:
+                if captcha_input.attr('value'):
+                    print(f"   [CAPTCHA] User entered: {captcha_input.attr('value')}")
+            except:
+                pass
+        
+        print("   [CAPTCHA] Timeout")
+        return False
     
     def _check_password_error(self) -> bool:
         """Проверяет наличие ошибки о слабом/утёкшем пароле"""
