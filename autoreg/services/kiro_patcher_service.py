@@ -1,5 +1,10 @@
 """
 Kiro Patcher Service - патчинг getMachineId() в Kiro IDE
+
+Патчит extension.js чтобы использовать уникальный machineId для каждого аккаунта.
+Это предотвращает баны AWS за использование множества аккаунтов с одного компьютера.
+
+AWS отслеживает machineId в телеметрии и банит если видит много аккаунтов с одного ID.
 """
 
 import os
@@ -26,7 +31,7 @@ class PatchStatus:
     is_patched: bool = False
     kiro_version: Optional[str] = None
     patch_version: Optional[str] = None
-    machine_id_file: Optional[str] = None
+    extension_js_path: Optional[str] = None
     current_machine_id: Optional[str] = None
     backup_exists: bool = False
     backup_path: Optional[str] = None
@@ -43,9 +48,18 @@ class PatchResult:
 
 
 class KiroPatcherService:
-    """Сервис для патчинга Kiro IDE"""
+    """
+    Сервис для патчинга Kiro IDE
     
-    PATCH_VERSION = "1.0.0"
+    Патчит функцию getMachineId() в extension.js чтобы:
+    1. Читать machineId из файла ~/.kiro-batch-login/machine-id.txt
+    2. Если файл не существует - использовать оригинальный machineId
+    
+    Это позволяет менять machineId при переключении аккаунтов,
+    что предотвращает баны AWS за "unusual activity".
+    """
+    
+    PATCH_VERSION = "5.0.0"  # Версия 5 - патчим ВСЕ getMachineId функции
     PATCH_MARKER = "// KIRO_BATCH_LOGIN_PATCH_v"
     
     # Путь к файлу с кастомным machine ID
@@ -73,27 +87,23 @@ class KiroPatcherService:
         return None
     
     @property
-    def machine_id_js_path(self) -> Optional[Path]:
-        """Путь к файлу machine-id-*.js"""
-        if self._machine_id_js:
-            return self._machine_id_js
-        
+    def extension_js_path(self) -> Optional[Path]:
+        """Путь к extension.js - главному файлу Kiro"""
         kiro_path = self.kiro_install_path
         if not kiro_path:
             return None
         
-        # Ищем файл machine-id-*.js
-        shared_dist = kiro_path / 'resources' / 'app' / 'extensions' / 'kiro.kiro-agent' / 'packages' / 'kiro-shared' / 'dist'
+        ext_js = kiro_path / 'resources' / 'app' / 'extensions' / 'kiro.kiro-agent' / 'dist' / 'extension.js'
         
-        if not shared_dist.exists():
-            return None
-        
-        # Ищем файл по паттерну machine-id-*.js
-        for f in shared_dist.glob('machine-id-*.js'):
-            self._machine_id_js = f
-            return f
+        if ext_js.exists():
+            return ext_js
         
         return None
+    
+    @property
+    def machine_id_js_path(self) -> Optional[Path]:
+        """Алиас для совместимости"""
+        return self.extension_js_path
     
     @property
     def custom_id_path(self) -> Path:
@@ -117,13 +127,13 @@ class KiroPatcherService:
         # Получаем версию Kiro
         status.kiro_version = self._get_kiro_version()
         
-        # Проверяем файл machine-id
-        js_path = self.machine_id_js_path
+        # Проверяем extension.js
+        js_path = self.extension_js_path
         if not js_path:
-            status.error = "machine-id-*.js not found"
+            status.error = "extension.js not found"
             return status
         
-        status.machine_id_file = str(js_path)
+        status.extension_js_path = str(js_path)
         
         # Проверяем патч
         content = js_path.read_text(encoding='utf-8')
@@ -164,9 +174,9 @@ class KiroPatcherService:
         if not skip_running_check and self._is_kiro_running():
             return PatchResult(success=False, message="Kiro is running. Please close it first.")
         
-        js_path = self.machine_id_js_path
+        js_path = self.extension_js_path
         if not js_path:
-            return PatchResult(success=False, message="machine-id-*.js not found")
+            return PatchResult(success=False, message="extension.js not found")
         
         # Читаем оригинал
         content = js_path.read_text(encoding='utf-8')
@@ -187,7 +197,7 @@ class KiroPatcherService:
         patched_content = self._apply_patch(content)
         
         if patched_content == content:
-            return PatchResult(success=False, message="Failed to apply patch - pattern not found")
+            return PatchResult(success=False, message="Failed to apply patch - getMachineId() pattern not found")
         
         # Записываем
         js_path.write_text(patched_content, encoding='utf-8')
@@ -198,7 +208,7 @@ class KiroPatcherService:
         
         return PatchResult(
             success=True,
-            message="Kiro patched successfully!",
+            message=f"Kiro patched successfully! MachineId will be read from {self.custom_id_path}",
             backup_path=str(backup_path),
             patched_file=str(js_path)
         )
@@ -208,9 +218,9 @@ class KiroPatcherService:
         if not skip_running_check and self._is_kiro_running():
             return PatchResult(success=False, message="Kiro is running. Please close it first.")
         
-        js_path = self.machine_id_js_path
+        js_path = self.extension_js_path
         if not js_path:
-            return PatchResult(success=False, message="machine-id-*.js not found")
+            return PatchResult(success=False, message="extension.js not found")
         
         backup = self._get_latest_backup()
         if not backup:
@@ -264,50 +274,63 @@ class KiroPatcherService:
         return None
     
     def _apply_patch(self, content: str) -> str:
-        """Применяет патч к содержимому файла"""
-        # Ищем функцию getMachineId
-        # Паттерн: function getMachineId(){...return machineIdSync()...}
+        """
+        Применяет патч к extension.js (версия 5.0 - патчим ВСЕ getMachineId функции)
         
-        # Патч-код который читает из файла
-        patch_code = f'''
-{self.PATCH_MARKER}{self.PATCH_VERSION}
-function getMachineId() {{
+        Kiro использует machineId в нескольких местах:
+        1. getMachineId() - телеметрия
+        2. getMachineId2() - User-Agent заголовок (KiroIDE-0.7.45-{machineId})
+        3. userAttributes() - атрибуты телеметрии
+        
+        Все нужно патчить!
+        """
+        
+        patched = content
+        patches_applied = 0
+        
+        # Код патча для чтения из файла
+        patch_code_template = '''{{
+  // KIRO_BATCH_LOGIN_PATCH_v{version}
   try {{
     const fs = require('fs');
     const path = require('path');
     const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-batch-login', 'machine-id.txt');
     if (fs.existsSync(customIdFile)) {{
       const customId = fs.readFileSync(customIdFile, 'utf8').trim();
-      if (customId && /^[a-f0-9]{{64}}$/i.test(customId)) {{
+      if (customId && customId.length >= 32) {{
         return customId;
       }}
     }}
-  }} catch (e) {{}}
-  return _originalGetMachineId();
-}}
-// END_PATCH
-'''
+  }} catch (_) {{}}
+  // END_PATCH'''
         
-        # Паттерн 1: function getMachineId(){...}
-        pattern1 = r'(function\s+getMachineId\s*\(\s*\)\s*\{[^}]*\})'
+        patch_code = patch_code_template.format(version=self.PATCH_VERSION)
         
-        # Паттерн 2: const getMachineId = () => {...}
-        pattern2 = r'((?:const|let|var)\s+getMachineId\s*=\s*\(\s*\)\s*=>\s*\{[^}]*\})'
+        # === PATCH 1: getMachineId() - основная функция ===
+        pattern1 = r'function getMachineId\(\) \{\s+try \{\s+return \(0, import_node_machine_id\.machineIdSync\)\(\);'
+        if re.search(pattern1, patched) and 'KIRO_BATCH_LOGIN_PATCH' not in patched[:patched.find('getMachineId()') + 500 if 'getMachineId()' in patched else 0]:
+            replacement = f'function getMachineId() {patch_code}\n  try {{\n    return (0, import_node_machine_id.machineIdSync)();'
+            patched = re.sub(pattern1, replacement, patched, count=1)
+            patches_applied += 1
         
-        # Паттерн 3: getMachineId: function(){...}
-        pattern3 = r'(getMachineId\s*:\s*function\s*\(\s*\)\s*\{[^}]*\})'
+        # === PATCH 2: getMachineId2() - используется для User-Agent! ===
+        # Оригинал: function getMachineId2() { try { return (0, import_node_machine_id3.machineIdSync)();
+        pattern2 = r'function getMachineId2\(\) \{\s+try \{\s+return \(0, import_node_machine_id3\.machineIdSync\)\(\);'
+        if re.search(pattern2, patched):
+            replacement = f'function getMachineId2() {patch_code}\n  try {{\n    return (0, import_node_machine_id3.machineIdSync)();'
+            patched = re.sub(pattern2, replacement, patched, count=1)
+            patches_applied += 1
         
-        for pattern in [pattern1, pattern2, pattern3]:
-            match = re.search(pattern, content, re.DOTALL)
-            if match:
-                original_func = match.group(1)
-                # Переименовываем оригинальную функцию
-                renamed = original_func.replace('getMachineId', '_originalGetMachineId', 1)
-                # Вставляем патч после оригинальной функции
-                replacement = renamed + '\n' + patch_code
-                return content.replace(original_func, replacement, 1)
+        # === PATCH 3: userAttributes() - вызывать getMachineId() динамически ===
+        ua_pattern = r'(function userAttributes\(\)\s*\{\s*return\s*\{[^}]*machineId:\s*)MACHINE_ID(\s*\})'
+        if re.search(ua_pattern, patched):
+            patched = re.sub(ua_pattern, r'\1getMachineId()\2', patched)
+            patches_applied += 1
         
-        return content
+        if patches_applied == 0:
+            return content  # Ничего не запатчили
+        
+        return patched
     
     def _create_backup(self, js_path: Path, content: str) -> Path:
         """Создаёт бэкап файла"""
@@ -315,7 +338,7 @@ function getMachineId() {{
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         kiro_version = self._get_kiro_version() or 'unknown'
-        backup_name = f"machine-id_{kiro_version}_{timestamp}.js.bak"
+        backup_name = f"extension_{kiro_version}_{timestamp}.js.bak"
         backup_path = self.backup_dir / backup_name
         
         backup_path.write_text(content, encoding='utf-8')
@@ -325,7 +348,8 @@ function getMachineId() {{
             'original_path': str(js_path),
             'kiro_version': kiro_version,
             'backup_time': datetime.now().isoformat(),
-            'file_hash': hashlib.md5(content.encode()).hexdigest()
+            'file_hash': hashlib.md5(content.encode()).hexdigest(),
+            'file_size': len(content)
         }
         meta_path = backup_path.with_suffix('.json')
         meta_path.write_text(json.dumps(meta, indent=2))
@@ -337,7 +361,10 @@ function getMachineId() {{
         if not self.backup_dir.exists():
             return None
         
-        backups = sorted(self.backup_dir.glob('machine-id_*.js.bak'), reverse=True)
+        # Ищем бэкапы extension.js (новый формат) или machine-id (старый)
+        backups = sorted(self.backup_dir.glob('extension_*.js.bak'), reverse=True)
+        if not backups:
+            backups = sorted(self.backup_dir.glob('machine-id_*.js.bak'), reverse=True)
         return backups[0] if backups else None
     
     def _get_kiro_version(self) -> Optional[str]:
@@ -394,3 +421,187 @@ function getMachineId() {{
                 return True, "Kiro was updated, patch was overwritten"
         
         return False, None
+    
+    def get_open_windows(self) -> list:
+        """
+        Получить список открытых окон Kiro с их рабочими директориями.
+        Kiro сохраняет состояние окон в storage.json
+        """
+        import subprocess
+        windows = []
+        
+        try:
+            # Получаем командные строки всех процессов Kiro
+            if os.name == 'nt':
+                result = subprocess.run(
+                    ['wmic', 'process', 'where', 'name="Kiro.exe"', 'get', 'commandline'],
+                    capture_output=True, text=True
+                )
+                for line in result.stdout.strip().split('\n'):
+                    line = line.strip()
+                    if line and 'Kiro.exe' in line:
+                        # Извлекаем путь к папке из командной строки
+                        # Kiro запускается как: Kiro.exe "path/to/folder"
+                        parts = line.split('"')
+                        for i, part in enumerate(parts):
+                            if i > 0 and part and os.path.isdir(part):
+                                windows.append(part)
+                                break
+        except Exception as e:
+            print(f"[!] Failed to get open windows: {e}")
+        
+        return windows
+    
+    def close_kiro(self, timeout: int = 10) -> bool:
+        """
+        Закрыть все процессы Kiro.
+        
+        Args:
+            timeout: Время ожидания graceful shutdown в секундах
+            
+        Returns:
+            True если все процессы закрыты
+        """
+        import subprocess
+        import time
+        
+        if not self._is_kiro_running():
+            return True
+        
+        try:
+            if os.name == 'nt':
+                # Сначала пробуем graceful shutdown через taskkill без /F
+                subprocess.run(['taskkill', '/IM', 'Kiro.exe'], capture_output=True)
+                
+                # Ждём завершения
+                for _ in range(timeout):
+                    time.sleep(1)
+                    if not self._is_kiro_running():
+                        return True
+                
+                # Если не закрылся - force kill
+                subprocess.run(['taskkill', '/F', '/IM', 'Kiro.exe'], capture_output=True)
+                time.sleep(1)
+                
+                return not self._is_kiro_running()
+            else:
+                subprocess.run(['pkill', '-f', 'Kiro'], capture_output=True)
+                time.sleep(2)
+                if self._is_kiro_running():
+                    subprocess.run(['pkill', '-9', '-f', 'Kiro'], capture_output=True)
+                return not self._is_kiro_running()
+        except Exception as e:
+            print(f"[!] Failed to close Kiro: {e}")
+            return False
+    
+    def start_kiro(self, folders: list = None) -> bool:
+        """
+        Запустить Kiro.
+        
+        Args:
+            folders: Список папок для открытия. Если None - открывает без папки.
+            
+        Returns:
+            True если Kiro запущен
+        """
+        import subprocess
+        
+        kiro_exe = self.kiro_install_path / 'Kiro.exe' if self.kiro_install_path else None
+        
+        if not kiro_exe or not kiro_exe.exists():
+            print("[!] Kiro executable not found")
+            return False
+        
+        try:
+            if folders:
+                # Открываем каждую папку в отдельном окне
+                for folder in folders:
+                    subprocess.Popen([str(kiro_exe), folder], 
+                                   creationflags=subprocess.DETACHED_PROCESS if os.name == 'nt' else 0)
+            else:
+                # Просто запускаем Kiro
+                subprocess.Popen([str(kiro_exe)],
+                               creationflags=subprocess.DETACHED_PROCESS if os.name == 'nt' else 0)
+            return True
+        except Exception as e:
+            print(f"[!] Failed to start Kiro: {e}")
+            return False
+    
+    def restart_kiro(self, preserve_windows: bool = True) -> Tuple[bool, str]:
+        """
+        Перезапустить Kiro с сохранением открытых окон.
+        
+        Args:
+            preserve_windows: Сохранить и восстановить открытые окна
+            
+        Returns:
+            (success, message)
+        """
+        import time
+        
+        # Запоминаем открытые окна
+        windows = []
+        if preserve_windows:
+            windows = self.get_open_windows()
+            if windows:
+                print(f"[*] Found {len(windows)} open window(s)")
+        
+        # Закрываем Kiro
+        print("[*] Closing Kiro...")
+        if not self.close_kiro():
+            return False, "Failed to close Kiro"
+        
+        print("[OK] Kiro closed")
+        time.sleep(1)
+        
+        # Запускаем Kiro
+        print("[*] Starting Kiro...")
+        if windows:
+            if not self.start_kiro(windows):
+                return False, "Failed to start Kiro with windows"
+            return True, f"Kiro restarted with {len(windows)} window(s)"
+        else:
+            if not self.start_kiro():
+                return False, "Failed to start Kiro"
+            return True, "Kiro restarted"
+    
+    def patch_and_restart(self, force: bool = False) -> Tuple[bool, str]:
+        """
+        Применить патч и перезапустить Kiro.
+        Удобная функция для полного цикла патчинга.
+        
+        Returns:
+            (success, message)
+        """
+        import time
+        
+        # Запоминаем окна
+        windows = self.get_open_windows()
+        
+        # Закрываем Kiro
+        print("[*] Closing Kiro for patching...")
+        if not self.close_kiro():
+            return False, "Failed to close Kiro"
+        
+        time.sleep(1)
+        
+        # Патчим
+        print("[*] Applying patch...")
+        result = self.patch(force=force, skip_running_check=True)
+        
+        if not result.success:
+            # Пробуем запустить Kiro обратно даже если патч не удался
+            self.start_kiro(windows if windows else None)
+            return False, f"Patch failed: {result.message}"
+        
+        print(f"[OK] {result.message}")
+        time.sleep(1)
+        
+        # Запускаем Kiro
+        print("[*] Starting Kiro...")
+        if windows:
+            self.start_kiro(windows)
+            return True, f"Patched and restarted with {len(windows)} window(s)"
+        else:
+            self.start_kiro()
+            return True, "Patched and restarted"

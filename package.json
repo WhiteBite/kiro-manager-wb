@@ -145,6 +145,11 @@
           "type": "boolean",
           "default": false,
           "description": "Use Device Flow authentication"
+        },
+        "kiroAccountSwitcher.patch.lastKiroVersion": {
+          "type": "string",
+          "default": "",
+          "description": "Last known Kiro version when patch was applied"
         }
       }
     }
