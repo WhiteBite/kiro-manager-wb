@@ -3,7 +3,7 @@
 ## 🔴 Critical Bugs (Priority 1)
 
 - [x] **Memory Leak in AccountsProvider** - Add dispose() method and cleanup subscription
-- [ ] **Sync Calls Blocking Event Loop** - Replace spawnSync with async spawn in autoreg.ts
+- [x] **Sync Calls Blocking Event Loop** - Replace spawnSync with async spawn in autoreg.ts
 - [ ] **Virtual List + Groups Conflict** - Fix height calculation for mixed content
 
 ## 🟡 Architecture (Priority 2)
@@ -15,8 +15,8 @@
 ## 🟢 UI/UX Improvements (Priority 3)
 
 - [ ] **Tab Navigation** - Replace overlays with tabs (Accounts | Profiles | Stats | Settings)
-- [ ] **Skeleton Screens** - Add loading skeletons for account list
-- [ ] **Switching Feedback** - Show loader when switching accounts
+- [x] **Skeleton Screens** - Add loading skeletons for account list
+- [x] **Switching Feedback** - Show loader when switching accounts
 - [ ] **Contextual Toolbars** - Hide bulk actions until selection mode
 - [ ] **Auto-Switch Rules UI** - Add threshold slider in settings
 
