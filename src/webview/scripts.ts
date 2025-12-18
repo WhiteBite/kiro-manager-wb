@@ -183,6 +183,11 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     }
     
     function switchAccount(filename) {
+      // Add switching state to show loading feedback
+      const accountEl = document.querySelector('.account[data-filename="' + filename + '"]');
+      if (accountEl) {
+        accountEl.classList.add('switching');
+      }
       vscode.postMessage({ command: 'switchAccount', email: filename });
     }
 
