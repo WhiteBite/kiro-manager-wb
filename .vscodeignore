@@ -3,10 +3,37 @@
 node_modules/**
 src/**
 *.ts
-*.map
 .gitignore
 tsconfig.json
 *.vsix
 
-# Include bundled autoreg files
-!autoreg/**
+# Exclude source maps
+**/*.map
+
+# Exclude test and dev files
+tests/**
+jest.config.js
+TODO.txt
+TODO_UI_AUDIT.md
+result.txt
+test_out.txt
+test-*.js
+*.log
+
+# Exclude autoreg completely from VSIX (it's for standalone only)
+autoreg/**
+
+# Exclude scripts (build tools)
+scripts/**
+
+# Exclude record folder
+record/**
+
+# Exclude amz folder (internal analysis)
+amz/**
+
+# Exclude .kiro steering (dev only)
+.kiro/**
+
+# Exclude patch management docs
+PATCH_MANAGEMENT.md
