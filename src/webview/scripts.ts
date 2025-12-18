@@ -394,6 +394,17 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         case 'updateStatus':
           updateStatus(msg.status);
           break;
+        case 'updateAccounts':
+          // Incremental account list update - refresh the page to show new data
+          // This is triggered when accounts change (ban detected, refresh, etc.)
+          vscode.postMessage({ command: 'refresh' });
+          break;
+        case 'updateUsage':
+          // Incremental usage update - refresh hero section
+          if (msg.usage) {
+            updateHeroUsage(msg.usage);
+          }
+          break;
         case 'toast':
           showToast(msg.message, msg.toastType || 'success');
           break;
@@ -420,6 +431,22 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
           break;
       }
     });
+    
+    function updateHeroUsage(usage) {
+      const hero = document.querySelector('.hero');
+      if (!hero || hero.classList.contains('progress')) return;
+      
+      const usageEl = hero.querySelector('.hero-usage');
+      const percentEl = hero.querySelector('.hero-percent');
+      const fillEl = hero.querySelector('.hero-progress-fill');
+      
+      if (usageEl) usageEl.textContent = usage.currentUsage + ' / ' + usage.usageLimit;
+      if (percentEl) percentEl.textContent = usage.percentageUsed + '%';
+      if (fillEl) {
+        fillEl.style.width = usage.percentageUsed + '%';
+        fillEl.className = 'hero-progress-fill ' + (usage.percentageUsed >= 90 ? 'high' : usage.percentageUsed >= 50 ? 'medium' : 'low');
+      }
+    }
     
     function updateImapTestResult(result) {
       const btn = document.getElementById('testConnectionBtn');
