@@ -392,18 +392,28 @@ class AWSRegistration:
             # ОПТИМИЗИРОВАНО: быстрый polling с минимальными задержками
             start_time = time.time()
             allow_clicked = False
+            last_url = ""
             
-            while time.time() - start_time < 60:  # Увеличено - AWS может долго грузить
+            while time.time() - start_time < 90:  # Увеличено - AWS может долго грузить
                 current_url = self.browser.current_url
+                
+                # Логируем изменение URL
+                if current_url != last_url:
+                    print(f"   [URL] {current_url[:70]}...")
+                    last_url = current_url
                 
                 if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
                     print(f"   [OK] Already redirected to callback!")
                     break
                 
-                # Кнопка Allow access только на view.awsapps.com
+                # Кнопка Allow access на view.awsapps.com
                 if 'view.awsapps.com' in current_url:
                     elapsed = time.time() - start_time
                     print(f"   [OK] Redirected to view.awsapps.com in {elapsed:.2f}s")
+                    
+                    # Принимаем cookie если есть
+                    self.browser.close_cookie_dialog(force=True)
+                    time.sleep(0.5)
                     
                     if not allow_clicked:
                         # Кликаем Allow access
@@ -412,23 +422,37 @@ class AWSRegistration:
                         else:
                             print(f"   [!] Failed to click Allow access, retrying...")
                             self.browser.screenshot("error_allow_access_click")
+                            time.sleep(1)
                     
-                # Если застряли на signin.aws/login - пробуем залогиниться
-                elif 'signin.aws' in current_url and '/login' in current_url:
+                # Если застряли на signin.aws - пробуем разные действия
+                elif 'signin.aws' in current_url:
                     elapsed = time.time() - start_time
-                    if elapsed > 10:  # Даём время на автоматический редирект
+                    
+                    # Принимаем cookie
+                    self.browser.close_cookie_dialog(force=True)
+                    
+                    if '/login' in current_url and elapsed > 10:
                         print(f"   [!] Stuck on login page, trying to login...")
-                        if self.browser.login_existing_account(email, password):
+                        if self.browser.login_with_credentials(email, password):
                             print(f"   [OK] Logged in successfully")
-                        else:
-                            print(f"   [...] Still on: {current_url[:60]}...")
+                    elif '/signup' in current_url and elapsed > 15:
+                        # Застряли на signup - возможно нужно кликнуть Continue
+                        if elapsed < 20 or int(elapsed) % 10 == 0:
+                            print(f"   [!] Stuck on signup page ({elapsed:.0f}s), looking for Continue...")
+                        self.browser._click_if_exists(['text=Continue', '@data-testid=test-primary-button'], timeout=0.5)
+                        # Делаем скриншот один раз для диагностики
+                        if elapsed > 30 and elapsed < 32:
+                            self.browser.screenshot("debug_stuck_signup")
                 
-                # Логируем промежуточные URL для диагностики
+                # На profile.aws - ждём редирект
                 elif 'profile.aws' in current_url:
-                    if time.time() - start_time > 5:  # Логируем только если долго
-                        print(f"   [...] Still on: {current_url[:60]}...")
+                    # Принимаем cookie
+                    self.browser.close_cookie_dialog(force=True)
+                    elapsed = time.time() - start_time
+                    if elapsed > 10 and int(elapsed) % 5 == 0:
+                        print(f"   [...] Waiting on profile.aws ({elapsed:.0f}s)...")
                 
-                time.sleep(0.1)
+                time.sleep(0.2)
             
             # ШАГ 8: Ждём callback и обмениваем code на токены
             print(f"[8/8] Waiting for OAuth callback...")
