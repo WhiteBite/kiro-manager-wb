@@ -204,7 +204,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: /tmp/release-files/*
           fail_on_unmatched_files: false
@@ -260,7 +260,7 @@ jobs:
           path: artifacts
 
       - name: Update Latest Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "Latest Build"
@@ -274,6 +274,5 @@ jobs:
             For stable releases with standalone executables, see tagged versions.
           files: artifacts/*.vsix
           prerelease: true
-          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
