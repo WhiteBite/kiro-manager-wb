@@ -41,7 +41,7 @@ async function perfAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
   return result;
 }
 
-export class KiroAccountsProvider implements vscode.WebviewViewProvider {
+export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   private _view?: vscode.WebviewView;
   private _context: vscode.ExtensionContext;
   private _kiroUsage: KiroUsageData | null = null;
@@ -51,6 +51,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
   private _availableUpdate: { version: string; url: string } | null = null;
   private _stateManager: StateManager;
   private _unsubscribe?: () => void;
+  private _disposables: vscode.Disposable[] = [];
 
   // Services
   private _logService: LogService;
@@ -71,6 +72,24 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider {
     this._unsubscribe = this._stateManager.subscribe((update) => {
       this._handleStateUpdate(update);
     });
+  }
+
+  /**
+   * Dispose of resources to prevent memory leaks
+   */
+  dispose(): void {
+    // Unsubscribe from state manager
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = undefined;
+    }
+
+    // Dispose all registered disposables
+    this._disposables.forEach(d => d.dispose());
+    this._disposables = [];
+
+    // Clear view reference
+    this._view = undefined;
   }
 
   // Handle state updates - send incremental updates to webview

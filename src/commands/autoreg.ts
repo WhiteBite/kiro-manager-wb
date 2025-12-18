@@ -64,12 +64,30 @@ function getEnvManager(autoregDir: string): PythonEnvManager {
   return envManagerCache.get(autoregDir)!;
 }
 
-export function getPythonCommand(): string {
-  // Legacy function for backward compatibility
+export async function getPythonCommand(): Promise<string> {
+  // Async version to avoid blocking event loop
+  const { spawn } = require('child_process');
+
+  const checkPython = (cmd: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const proc = spawn(cmd, ['--version'], { shell: true });
+      proc.on('close', (code: number) => resolve(code === 0));
+      proc.on('error', () => resolve(false));
+      setTimeout(() => { proc.kill(); resolve(false); }, 3000);
+    });
+  };
+
+  if (await checkPython('python3')) return 'python3';
+  if (await checkPython('python')) return 'python';
+  return 'python';
+}
+
+// Sync version for backward compatibility (use sparingly!)
+export function getPythonCommandSync(): string {
   const { spawnSync } = require('child_process');
-  const py3 = spawnSync('python3', ['--version'], { encoding: 'utf8' });
+  const py3 = spawnSync('python3', ['--version'], { encoding: 'utf8', timeout: 3000 });
   if (py3.status === 0) return 'python3';
-  const py = spawnSync('python', ['--version'], { encoding: 'utf8' });
+  const py = spawnSync('python', ['--version'], { encoding: 'utf8', timeout: 3000 });
   if (py.status === 0) return 'python';
   return 'python';
 }
@@ -438,25 +456,44 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
     return { isPatched: false, error: result.stderr || 'Unknown error' };
   }
 
-  // Fallback to system Python for initial check
-  const { spawnSync } = require('child_process');
-  const pythonCmd = getPythonCommand();
+  // Fallback to system Python for initial check (async to avoid blocking)
+  const { spawn } = require('child_process');
+  const pythonCmd = await getPythonCommand();
 
-  const result = spawnSync(pythonCmd, [scriptPath], {
-    cwd: autoregDir,
-    encoding: 'utf8',
-    timeout: 10000
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+
+    const proc = spawn(pythonCmd, [scriptPath], {
+      cwd: autoregDir,
+      shell: true
+    });
+
+    proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+    proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+
+    proc.on('close', (code: number) => {
+      if (code === 0 && stdout) {
+        try {
+          resolve(JSON.parse(stdout.trim()));
+        } catch {
+          resolve({ isPatched: false, error: 'Failed to parse status' });
+        }
+      } else {
+        resolve({ isPatched: false, error: stderr || 'Unknown error' });
+      }
+    });
+
+    proc.on('error', (err: Error) => {
+      resolve({ isPatched: false, error: err.message });
+    });
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      proc.kill();
+      resolve({ isPatched: false, error: 'Timeout' });
+    }, 10000);
   });
-
-  if (result.status === 0 && result.stdout) {
-    try {
-      return JSON.parse(result.stdout.trim());
-    } catch {
-      return { isPatched: false, error: 'Failed to parse status' };
-    }
-  }
-
-  return { isPatched: false, error: result.stderr || 'Unknown error' };
 }
 
 /**
