@@ -666,7 +666,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     this.refresh();
   }
 
-  async updateSetting(key: string, value: boolean) {
+  async updateSetting(key: string, value: boolean | number) {
     const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
 
     switch (key) {
@@ -684,6 +684,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         break;
       case 'deviceFlow':
         await config.update('autoreg.deviceFlow', value, vscode.ConfigurationTarget.Global);
+        break;
+      case 'autoSwitchThreshold':
+        await config.update('autoSwitch.usageThreshold', value, vscode.ConfigurationTarget.Global);
         break;
     }
     // Don't call refresh() - it resets the view to main page
@@ -832,7 +835,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       verbose: config.get<boolean>('debug.verbose', false),
       screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true),
       spoofing: config.get<boolean>('autoreg.spoofing', true),
-      deviceFlow: config.get<boolean>('autoreg.deviceFlow', false)
+      deviceFlow: config.get<boolean>('autoreg.deviceFlow', false),
+      autoSwitchThreshold: config.get<number>('autoSwitch.usageThreshold', 50)
     };
 
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({

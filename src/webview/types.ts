@@ -8,6 +8,7 @@ export interface AutoRegSettings {
   screenshotsOnError: boolean;
   spoofing: boolean;
   deviceFlow: boolean;
+  autoSwitchThreshold?: number;
 }
 
 export interface RegProgress {

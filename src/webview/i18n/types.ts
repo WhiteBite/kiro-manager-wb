@@ -365,6 +365,8 @@ export interface Translations {
   // ============================================
   automation: string;
   interface: string;
+  autoSwitchThreshold: string;
+  autoSwitchThresholdDesc: string;
   settings: string;
   accounts: string;
   profiles: string;

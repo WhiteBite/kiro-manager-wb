@@ -7,31 +7,68 @@ import { Translations } from '../i18n/types';
 import { AccountInfo } from '../../types';
 
 export interface StatsProps {
-    accounts: AccountInfo[];
-    t: Translations;
+  accounts: AccountInfo[];
+  t: Translations;
+  loading?: boolean;
 }
 
 interface DailyStats {
-    date: string;
-    usage: number;
-    registrations: number;
+  date: string;
+  usage: number;
+  registrations: number;
 }
 
-export function renderStats({ accounts, t }: StatsProps): string {
-    const totalAccounts = accounts.length;
-    const activeAccounts = accounts.filter(a => !a.isExpired && !a.usage?.isBanned).length;
-    const bannedAccounts = accounts.filter(a => a.usage?.isBanned).length;
-    const expiredAccounts = accounts.filter(a => a.isExpired).length;
+/**
+ * Render skeleton loading state for stats
+ */
+export function renderStatsSkeleton(t: Translations): string {
+  return `
+    <div class="stats-dashboard">
+      <div class="stats-header">
+        <h3 class="stats-title">📊 ${t.statistics || 'Statistics'}</h3>
+      </div>
+      <div class="stats-cards">
+        ${[1, 2, 3, 4].map(() => `
+          <div class="stat-card skeleton">
+            <div class="skeleton-line skeleton-pulse" style="width: 60%; height: 24px; margin: 0 auto 8px;"></div>
+            <div class="skeleton-line skeleton-pulse" style="width: 40%; height: 12px; margin: 0 auto;"></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="stats-section skeleton">
+        <div class="skeleton-line skeleton-pulse" style="width: 30%; height: 12px; margin-bottom: 12px;"></div>
+        <div class="skeleton-line skeleton-pulse" style="width: 100%; height: 8px; border-radius: 4px;"></div>
+      </div>
+      <div class="stats-section skeleton">
+        <div class="skeleton-line skeleton-pulse" style="width: 30%; height: 12px; margin-bottom: 12px;"></div>
+        <div class="mini-chart">
+          ${[30, 45, 60, 80, 55, 40, 25].map(h => `
+            <div class="chart-bar skeleton-pulse" style="height: ${h}%; background: var(--bg-elevated);"></div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-    // Calculate total usage
-    const totalUsage = accounts.reduce((sum, a) => sum + (a.usage?.currentUsage || 0), 0);
-    const totalLimit = accounts.reduce((sum, a) => sum + (a.usage?.usageLimit || 500), 0);
-    const avgUsage = totalAccounts > 0 ? Math.round(totalUsage / totalAccounts) : 0;
+export function renderStats({ accounts, t, loading = false }: StatsProps): string {
+  if (loading) {
+    return renderStatsSkeleton(t);
+  }
+  const totalAccounts = accounts.length;
+  const activeAccounts = accounts.filter(a => !a.isExpired && !a.usage?.isBanned).length;
+  const bannedAccounts = accounts.filter(a => a.usage?.isBanned).length;
+  const expiredAccounts = accounts.filter(a => a.isExpired).length;
 
-    // Generate mini chart data (last 7 days placeholder)
-    const chartBars = generateChartBars();
+  // Calculate total usage
+  const totalUsage = accounts.reduce((sum, a) => sum + (a.usage?.currentUsage || 0), 0);
+  const totalLimit = accounts.reduce((sum, a) => sum + (a.usage?.usageLimit || 500), 0);
+  const avgUsage = totalAccounts > 0 ? Math.round(totalUsage / totalAccounts) : 0;
 
-    return `
+  // Generate mini chart data (last 7 days placeholder)
+  const chartBars = generateChartBars();
+
+  return `
     <div class="stats-dashboard">
       <div class="stats-header">
         <h3 class="stats-title">📊 ${t.statistics || 'Statistics'}</h3>
@@ -124,9 +161,9 @@ export function renderStats({ accounts, t }: StatsProps): string {
 }
 
 function generateChartBars(): string {
-    // Generate placeholder data for 7 days
-    const heights = [30, 45, 60, 80, 55, 40, 25];
-    return heights.map((h, i) => `
+  // Generate placeholder data for 7 days
+  const heights = [30, 45, 60, 80, 55, 40, 25];
+  return heights.map((h, i) => `
     <div class="chart-bar" style="height: ${h}%"></div>
   `).join('');
 }

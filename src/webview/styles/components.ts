@@ -179,6 +179,30 @@ export const components = `
   }
   .select:hover { border-color: var(--accent); }
 
+  /* === Number Input === */
+  .input-number {
+    width: 70px;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: center;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+  }
+  .input-number:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(63,182,139,0.15);
+  }
+  .input-number::-webkit-inner-spin-button,
+  .input-number::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
   /* === Patch Indicator === */
   .patch-indicator {
     display: inline-flex;
