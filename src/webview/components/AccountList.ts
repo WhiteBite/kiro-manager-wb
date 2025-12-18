@@ -83,6 +83,26 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations, selecti
   `;
 }
 
+/**
+ * Render skeleton loading state for account list
+ */
+export function renderAccountListSkeleton(count: number = 3): string {
+  let html = '<div class="account-list-skeleton">';
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="account skeleton">
+        <div class="account-avatar skeleton-pulse"></div>
+        <div class="account-info">
+          <div class="skeleton-line skeleton-pulse" style="width: 70%"></div>
+          <div class="skeleton-line skeleton-pulse" style="width: 40%"></div>
+        </div>
+      </div>
+    `;
+  }
+  html += '</div>';
+  return html;
+}
+
 export function renderAccountList({ accounts, t, selectionMode = false, selectedCount = 0 }: AccountListProps): string {
   if (accounts.length === 0) {
     return `

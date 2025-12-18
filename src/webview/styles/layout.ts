@@ -933,4 +933,51 @@ export const layout = `
   .toast.success { border-color: var(--accent); }
   .toast.error { border-color: var(--danger); }
   .toast.warning { border-color: var(--warning); }
+
+  /* === Skeleton Loading === */
+  .skeleton { pointer-events: none; }
+  .skeleton-pulse {
+    background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.15) 50%, var(--bg-elevated) 75%);
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes skeletonPulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .skeleton-line { height: 12px; border-radius: 4px; margin: 4px 0; }
+  .account.skeleton { opacity: 0.6; }
+  .account.skeleton .account-avatar { background: var(--bg-elevated); }
+
+  /* === Switching State === */
+  .account.switching {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+  }
+  .account.switching::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === Banned Account Styles === */
+  .account.banned {
+    opacity: 0.5;
+    border-color: #8b0000;
+    background: linear-gradient(135deg, rgba(139,0,0,0.1) 0%, transparent 100%);
+  }
+  .account-status.banned { background: #8b0000; }
+  .ban-badge { margin-left: 4px; font-size: 10px; }
+  .ban-reason { color: #ff6b6b; font-size: 9px; font-weight: 600; }
+  .list-group.banned { color: #ff6b6b; border-color: rgba(139,0,0,0.3); }
 `;
