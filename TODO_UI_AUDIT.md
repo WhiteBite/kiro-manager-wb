@@ -22,7 +22,7 @@
 
 ## 🔵 Design Polish (Priority 4)
 
-- [ ] **Hero Redesign** - Radial progress, larger numbers
+- [x] **Hero Redesign** - Large remaining counter with warning/critical states
 - [ ] **FAB for Auto-reg** - Floating action button
 - [x] **Hover Actions** - Account buttons already show only on hover
 - [ ] **Settings Cards** - Group settings into visual cards
@@ -30,16 +30,21 @@
 
 ## 📝 i18n & Cleanup
 
+- [x] **Add 'remaining' translation** - Added to all 10 locales
 - [ ] **Full i18n Audit** - Remove hardcoded strings
 - [ ] **CSS Variables Cleanup** - Centralize color palette
 
-## ✅ Completed in this session
+## ✅ Completed in v6.2.0 release
 
 1. Ban status persistence to disk
 2. Memory leak fix (dispose pattern)
 3. Async spawn instead of spawnSync
 4. Skeleton loading states
 5. Switching feedback (spinner)
-6. Schema versioning for profiles
+6. Schema versioning for profiles (v2)
 7. Auto-switch threshold setting
 8. Webview message handlers for incremental updates
+9. Hero redesign with large remaining counter
+10. Warning/critical states with animations
+11. Patcher v5.0 - patch all getMachineId functions
+12. Registration flow fixes (cookies, window size, input)
