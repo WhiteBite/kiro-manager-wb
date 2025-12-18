@@ -66,12 +66,12 @@ from core.paths import get_paths
 # Селекторы на основе анализа Playwright (декабрь 2025)
 # AWS использует data-testid для стабильных селекторов
 SELECTORS = {
-    'cookie_reject': [
-        'text=Decline',  # Английский - новый UI
-        'text=Отклонить',  # Русский
-        'text=Reject',
-        'xpath://button[contains(text(), "Decline")]',
-        'xpath://button[contains(text(), "Reject")]',
+    'cookie_accept': [
+        'text=Accept',  # Английский
+        'text=Принять',  # Русский
+        'xpath://button[contains(text(), "Accept")]',
+        'xpath://button[contains(text(), "Принять")]',
+        '[data-id="awsccc-cb-btn-accept"]',
     ],
     'email_input': [
         '@placeholder=username@example.com',
@@ -202,8 +202,9 @@ class BrowserAutomation:
         # НЕ используем --disable-blink-features=AutomationControlled
         # Он показывает предупреждение которое палит автоматизацию!
         
-        # Размер окна
-        co.set_argument('--window-size=1280,900')
+        # Размер окна - большое для корректного отображения AWS UI
+        co.set_argument('--window-size=1920,1080')
+        co.set_argument('--start-maximized')
         
         if browser_settings.get('incognito', True):
             co.set_argument('--incognito')
@@ -218,6 +219,19 @@ class BrowserAutomation:
         try:
             self.page = ChromiumPage(co)
             print("[Browser] ChromiumPage initialized successfully")
+            
+            # КРИТИЧНО: Максимизируем окно для корректного отображения AWS UI
+            if not headless:
+                try:
+                    self.page.set.window.max()
+                    print("   [W] Window maximized")
+                except:
+                    # Fallback: устанавливаем большой размер вручную
+                    try:
+                        self.page.set.window.size(1920, 1080)
+                        print("   [W] Window resized to 1920x1080")
+                    except:
+                        pass
         except Exception as e:
             error_msg = str(e).encode('ascii', 'replace').decode('ascii')
             print(f"[Browser] ERROR: Failed to initialize browser: {error_msg}")
@@ -561,17 +575,44 @@ class BrowserAutomation:
         
         return ''.join(password)
     
+    def _accept_cookie_banner(self):
+        """Принимает cookie banner кликом на Accept/Принять."""
+        try:
+            # Кликаем Accept/Принять
+            result = self.page.run_js('''
+                // Пробуем кликнуть кнопку принятия cookie
+                const acceptButtons = [
+                    '[data-id="awsccc-cb-btn-accept"]',
+                    'button[data-id*="accept"]',
+                    '#awsccc-cb-btn-accept'
+                ];
+                for (const sel of acceptButtons) {
+                    const btn = document.querySelector(sel);
+                    if (btn && btn.offsetParent !== null) {
+                        btn.click();
+                        return 'clicked';
+                    }
+                }
+                return 'not_found';
+            ''')
+            if result == 'clicked':
+                print("   [C] Cookie banner accepted")
+                return True
+        except:
+            pass
+        return False
+    
     def _hide_cookie_banner(self):
-        """Мгновенно скрывает cookie banner через CSS (без проверок)."""
+        """Скрывает cookie banner через CSS (fallback если клик не сработал)."""
         try:
             self.page.run_js('''
-                // Скрываем все возможные cookie элементы
+                // Скрываем все возможные cookie элементы через CSS
                 const selectors = [
                     '#awsccc-cb-content',
                     '#awsccc-cb', 
                     '.awsccc-cs-overlay',
-                    '[data-id="awsccc-cb-btn-decline"]',
-                    '.awscc-cookie-banner'
+                    '.awscc-cookie-banner',
+                    '.awsccc-cb-container'
                 ];
                 selectors.forEach(sel => {
                     const el = document.querySelector(sel);
@@ -584,11 +625,16 @@ class BrowserAutomation:
             pass
     
     def close_cookie_dialog(self, force: bool = False):
-        """Закрывает диалог cookie через CSS (самый быстрый и надёжный способ)."""
+        """Принимает или скрывает диалог cookie."""
         if self._cookie_closed and not force:
             return False
         
-        # ОПТИМИЗАЦИЯ: Просто скрываем без проверки - CSS не навредит если баннера нет
+        # Сначала пробуем кликнуть Accept
+        if self._accept_cookie_banner():
+            self._cookie_closed = True
+            return True
+        
+        # Fallback: скрываем через CSS
         self._hide_cookie_banner()
         self._cookie_closed = True
         return True
@@ -835,8 +881,25 @@ class BrowserAutomation:
             self.screenshot("error_no_email")
             raise Exception("Email field not found")
         
-        # Ввод email (быстрый - email обычно знаем наизусть)
-        self.human_type(email_input, email, field_type='email')
+        # КРИТИЧНО: Ввод email через JS без опечаток - email должен быть точным!
+        self.page.run_js('''
+            const input = arguments[0];
+            const email = arguments[1];
+            input.focus();
+            input.value = '';
+            input.select();
+            document.execCommand('insertText', false, email);
+        ''', email_input, email)
+        
+        time.sleep(0.1)
+        # Проверяем что ввелось правильно
+        entered = email_input.attr('value') or ''
+        if entered != email:
+            print(f"   [!] Email mismatch: expected '{email}', got '{entered}'")
+            # Повторная попытка
+            email_input.clear()
+            email_input.input(email)
+        
         return True
     
     def _debug_inputs(self):
@@ -853,15 +916,29 @@ class BrowserAutomation:
         """Нажимает кнопку Continue после email и ждёт страницу имени"""
         print("[->] Clicking Continue...")
         
+        # Запоминаем URL до клика
+        url_before = self.page.url
+        
         # Быстрый клик Continue
         if not self._click_if_exists(SELECTORS['continue_btn'], timeout=1):
             raise Exception("Continue button not found")
         
         # ВАЖНО: Ждём загрузку страницы после клика
         try:
-            self.page.wait.doc_loaded(timeout=5)
+            self.page.wait.doc_loaded(timeout=10)
         except:
             pass
+        
+        # Ждём изменения URL или появления нового контента
+        time.sleep(1)
+        url_after = self.page.url
+        print(f"   [URL] Before: {url_before[:60]}...")
+        print(f"   [URL] After: {url_after[:60]}...")
+        
+        # КРИТИЧНО: Принимаем cookie диалог - он появляется после клика Continue
+        # и перекрывает страницу имени!
+        self.close_cookie_dialog(force=True)
+        time.sleep(0.5)
         
         # Ожидание страницы имени - ищем ТЕКСТ "Enter your name" или placeholder с "Silva"
         print("   [...] Waiting for name page...")
@@ -870,22 +947,55 @@ class BrowserAutomation:
             'text=Enter your name',  # Заголовок страницы
             '@placeholder=Maria José Silva',  # Placeholder поля имени
             'xpath://input[contains(@placeholder, "Silva")]',
+            'xpath://input[@type="text"]',  # Любое текстовое поле
         ]
         
         start_time = time.time()
-        timeout = 10
+        timeout = 20  # Увеличено для медленных соединений
+        cookie_retry = 0
+        last_debug = 0
         
         while time.time() - start_time < timeout:
+            # Периодически пробуем принять cookie (может появиться с задержкой)
+            if cookie_retry < 5 and time.time() - start_time > cookie_retry * 2:
+                self.close_cookie_dialog(force=True)
+                cookie_retry += 1
+            
+            # Debug каждые 5 секунд
+            elapsed = time.time() - start_time
+            if elapsed - last_debug > 5:
+                print(f"   [DEBUG] {elapsed:.0f}s - URL: {self.page.url[:50]}...")
+                # Показываем что есть на странице
+                try:
+                    title = self.page.title
+                    print(f"   [DEBUG] Title: {title}")
+                    # Ищем любые заголовки
+                    h1 = self.page.ele('tag:h1', timeout=0.2)
+                    if h1:
+                        print(f"   [DEBUG] H1: {h1.text[:50] if h1.text else 'empty'}")
+                except:
+                    pass
+                last_debug = elapsed
+            
             for selector in name_page_selectors:
                 try:
-                    if self.page.ele(selector, timeout=0.2):
+                    if self.page.ele(selector, timeout=0.3):
                         elapsed = time.time() - start_time
                         print(f"   [OK] Name page loaded in {elapsed:.2f}s")
                         return True
                 except:
                     pass
         
+        # Финальная отладка перед ошибкой
         print("   [X] FAILED: Name page did not load!")
+        print(f"   [DEBUG] Final URL: {self.page.url}")
+        try:
+            print(f"   [DEBUG] Final Title: {self.page.title}")
+            body_text = self.page.ele('tag:body').text[:200] if self.page.ele('tag:body') else 'no body'
+            print(f"   [DEBUG] Body text: {body_text}")
+        except Exception as e:
+            print(f"   [DEBUG] Error getting page info: {e}")
+        
         self.screenshot("error_no_name_page")
         raise Exception("Name page did not load after email")
     
@@ -896,28 +1006,61 @@ class BrowserAutomation:
         # КРИТИЧНО: Закрываем cookie диалог ПЕРЕД поиском поля
         self._hide_cookie_banner()
         
-        name_input = None
-        start_time = time.time()
+        # ВАЖНО: Проверяем что мы на странице имени, а не email!
+        # Ищем текст "Enter your name" или placeholder с "Silva"
+        on_name_page = False
+        for _ in range(10):
+            try:
+                if self.page.ele('text=Enter your name', timeout=0.3):
+                    on_name_page = True
+                    break
+                if self.page.ele('@placeholder=Maria José Silva', timeout=0.3):
+                    on_name_page = True
+                    break
+            except:
+                pass
+            time.sleep(0.3)
         
-        # ОПТИМИЗАЦИЯ: Сначала пробуем самый быстрый способ - CSS селектор
-        try:
-            # Ищем первый видимый text input на странице (исключая hidden)
-            name_input = self.page.ele('css:input[type="text"]:not([hidden])', timeout=0.3)
-            if name_input:
-                print(f"   Found name field via CSS (fast)")
-        except:
-            pass
-        
-        # Fallback 1: placeholder
-        if not name_input:
-            for placeholder in ['Maria', 'Silva', 'name']:
+        if not on_name_page:
+            print("   [!] WARNING: Not on name page! Current URL:", self.page.url[:60])
+            # Попробуем ещё раз кликнуть Continue и подождать
+            self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
+            time.sleep(2)
+            # Проверяем ещё раз
+            for _ in range(5):
                 try:
-                    name_input = self.page.ele(f'xpath://input[contains(@placeholder, "{placeholder}")]', timeout=0.2)
-                    if name_input:
-                        print(f"   Found name field via placeholder: {placeholder}")
+                    if self.page.ele('@placeholder=Maria José Silva', timeout=0.5):
+                        on_name_page = True
+                        print("   [OK] Now on name page after retry")
                         break
                 except:
                     pass
+                time.sleep(0.5)
+            
+            if not on_name_page:
+                print("   [X] Still not on name page, aborting!")
+                self.screenshot("error_not_on_name_page")
+                raise Exception("Failed to navigate to name page")
+        
+        name_input = None
+        start_time = time.time()
+        
+        # ПРИОРИТЕТ 1: Ищем по placeholder "Maria José Silva" - это точно поле имени
+        try:
+            name_input = self.page.ele('@placeholder=Maria José Silva', timeout=0.5)
+            if name_input:
+                print(f"   Found name field via placeholder (Maria José Silva)")
+        except:
+            pass
+        
+        # Fallback 1: placeholder с "Silva" (уникальный для страницы имени)
+        if not name_input:
+            try:
+                name_input = self.page.ele('xpath://input[contains(@placeholder, "Silva")]', timeout=0.3)
+                if name_input:
+                    print(f"   Found name field via placeholder: Silva")
+            except:
+                pass
         
         # Fallback 2: data-testid
         if not name_input:
@@ -928,12 +1071,12 @@ class BrowserAutomation:
             except:
                 pass
         
-        # Fallback 3: form input
-        if not name_input:
+        # Fallback 3: CSS селектор (ТОЛЬКО если на странице имени!)
+        if not name_input and on_name_page:
             try:
-                name_input = self.page.ele('xpath://form//input[@type="text" or not(@type)]', timeout=0.3)
+                name_input = self.page.ele('css:input[type="text"]:not([hidden])', timeout=0.3)
                 if name_input:
-                    print(f"   Found name field via form xpath")
+                    print(f"   Found name field via CSS (fast)")
             except:
                 pass
         
@@ -945,11 +1088,17 @@ class BrowserAutomation:
             print("   [X] Name field not found!")
             return False
         
-        # Ввод имени с человеческим поведением
-        self.human_type(name_input, name, field_type='name')
+        # КРИТИЧНО: Ввод имени через JS без опечаток
+        self.page.run_js('''
+            const input = arguments[0];
+            const name = arguments[1];
+            input.focus();
+            input.value = '';
+            input.select();
+            document.execCommand('insertText', false, name);
+            input.dispatchEvent(new Event('blur', { bubbles: true }));
+        ''', name_input, name)
         
-        # Blur для React
-        self.page.run_js('arguments[0].dispatchEvent(new Event("blur", { bubbles: true }));', name_input)
         time.sleep(0.1)
         
         # Кликаем Continue
@@ -958,20 +1107,30 @@ class BrowserAutomation:
         
         # ВАЖНО: Ждём загрузку страницы после клика
         try:
-            self.page.wait.doc_loaded(timeout=5)
+            self.page.wait.doc_loaded(timeout=10)
         except:
             pass
+        
+        # Принимаем cookie если появился
+        time.sleep(0.5)
+        self.close_cookie_dialog(force=True)
         
         # Ожидание страницы верификации
         print("   [...] Waiting for verification page...")
         verification_selectors = ['text=Verify your email', 'text=Verification code', '@placeholder=6-digit']
         
         start_time = time.time()
-        timeout = 15
+        timeout = 20
         retry_count = 0
         max_retries = 2
+        cookie_retry = 0
         
         while time.time() - start_time < timeout:
+            # Периодически принимаем cookie
+            if cookie_retry < 5 and time.time() - start_time > cookie_retry * 2:
+                self.close_cookie_dialog(force=True)
+                cookie_retry += 1
+            
             # Проверяем на ошибку AWS
             if self._check_aws_error():
                 self._close_error_modal()
@@ -993,14 +1152,20 @@ class BrowserAutomation:
             
             for selector in verification_selectors:
                 try:
-                    if self.page.ele(selector, timeout=0.2):
+                    if self.page.ele(selector, timeout=0.3):
                         elapsed = time.time() - start_time
                         print(f"   [OK] Verification page loaded in {elapsed:.2f}s")
                         return True
                 except:
                     pass
         
+        # Отладка перед ошибкой
         print("   [X] FAILED: Verification page did not load!")
+        print(f"   [DEBUG] URL: {self.page.url}")
+        try:
+            print(f"   [DEBUG] Title: {self.page.title}")
+        except:
+            pass
         self.screenshot("error_no_verification_page")
         raise Exception("Verification page did not load after entering name")
     
@@ -1015,8 +1180,16 @@ class BrowserAutomation:
         if not code_input:
             raise Exception("Verification code field not found")
         
-        # Ввод кода верификации (медленно - смотрим на код в письме)
-        self.human_type(code_input, code, field_type='code')
+        # КРИТИЧНО: Очищаем поле и вводим код напрямую через JS (без опечаток!)
+        # Код верификации должен быть введён точно
+        self.page.run_js('''
+            const input = arguments[0];
+            const code = arguments[1];
+            input.focus();
+            input.value = '';
+            input.select();
+            document.execCommand('insertText', false, code);
+        ''', code_input, code)
         
         time.sleep(0.1)
         print(f"   Entered code: '{code_input.attr('value') or ''}'")
