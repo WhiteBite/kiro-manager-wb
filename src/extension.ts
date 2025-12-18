@@ -39,7 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
   // Webview provider
   accountsProvider = new KiroAccountsProvider(context);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('kiroAccountsPanel', accountsProvider)
+    vscode.window.registerWebviewViewProvider('kiroAccountsPanel', accountsProvider),
+    accountsProvider // Register for disposal to prevent memory leaks
   );
 
   // Register commands
@@ -59,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
   setupAutoSwitch(context);
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 // Quick switch via command palette
 async function quickSwitch() {
@@ -189,12 +190,12 @@ function setupAutoSwitch(context: vscode.ExtensionContext) {
 async function checkPatchOnStartup(context: vscode.ExtensionContext) {
   try {
     const status = await checkPatchStatus(context);
-    
+
     // If we have a custom machine ID file but patch is not applied, warn user
     if (status.currentMachineId && !status.isPatched && !status.error) {
       const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
       const lastKiroVersion = config.get<string>('patch.lastKiroVersion', '');
-      
+
       // Check if Kiro version changed
       if (status.kiroVersion && status.kiroVersion !== lastKiroVersion) {
         const action = await vscode.window.showWarningMessage(
@@ -202,12 +203,12 @@ async function checkPatchOnStartup(context: vscode.ExtensionContext) {
           'Re-apply Patch',
           'Ignore'
         );
-        
+
         if (action === 'Re-apply Patch') {
           vscode.commands.executeCommand('kiroAccountSwitcher.openSettings');
           // Will show settings where user can click Patch button
         }
-        
+
         // Save current version
         await config.update('patch.lastKiroVersion', status.kiroVersion, vscode.ConfigurationTarget.Global);
       }
