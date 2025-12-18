@@ -380,11 +380,22 @@ class AWSRegistration:
             # Пауза между шагами
             self._human_delay(2.0, 4.0)
             
-            # ШАГ 6: Вводим пароль
+            # ШАГ 6: Вводим пароль (с retry при captcha/password error)
             print(f"[6/8] Setting password...")
             # Осматриваем страницу пароля
             self._simulate_page_arrival()
-            self.browser.enter_password(password)
+            
+            max_password_retries = 3
+            for pwd_attempt in range(max_password_retries):
+                if self.browser.enter_password(password):
+                    break
+                else:
+                    if pwd_attempt < max_password_retries - 1:
+                        print(f"   [R] Password attempt {pwd_attempt + 1} failed, retrying with new password...")
+                        password = self.browser.generate_password(18)
+                        time.sleep(1)
+                    else:
+                        raise Exception("Failed to set password after multiple attempts (captcha or validation error)")
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
             print(f"[7/8] Waiting for Allow access page...")
@@ -506,16 +517,17 @@ class AWSRegistration:
                 if '127.0.0.1' in current_url and 'code=' in current_url:
                     print(f"   Found code in URL, but callback wasn't processed")
                 
-                # Сохраняем аккаунт без токена
+                # Сохраняем аккаунт без токена (для device flow)
                 self.storage.save(email, password, name, None)
                 
+                # БЕЗ токена - это НЕ успех для автоматической регистрации!
                 return {
                     'email': email,
                     'password': password,
                     'name': name,
                     'token_file': None,
-                    'success': True,
-                    'warning': 'Registration complete but token not obtained. Use device code flow.'
+                    'success': False,
+                    'error': 'Registration complete but token not obtained. OAuth callback failed.'
                 }
                 
         except Exception as e:
