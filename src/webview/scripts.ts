@@ -34,6 +34,12 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         content.classList.toggle('active', content.id === 'tab-' + tabId);
       });
       
+      // FAB visibility - only show on accounts tab
+      const fab = document.getElementById('fabContainer');
+      if (fab) {
+        fab.classList.toggle('hidden', tabId !== 'accounts');
+      }
+      
       // Load data for specific tabs
       if (tabId === 'profiles') {
         vscode.postMessage({ command: 'loadProfiles' });
@@ -389,10 +395,32 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     }
     
     function applyFilters() {
+      let visibleCount = 0;
       document.querySelectorAll('.account').forEach(acc => {
         const email = (acc.querySelector('.account-email')?.textContent || '').toLowerCase();
         const match = !searchQuery || email.includes(searchQuery);
         acc.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+      
+      // Show/hide empty search state
+      const emptySearch = document.getElementById('emptySearchState');
+      if (emptySearch) {
+        emptySearch.style.display = (searchQuery && visibleCount === 0) ? 'block' : 'none';
+      }
+      
+      // Hide group headers if all accounts in group are hidden
+      document.querySelectorAll('.list-group').forEach(group => {
+        let nextEl = group.nextElementSibling;
+        let hasVisible = false;
+        while (nextEl && !nextEl.classList.contains('list-group')) {
+          if (nextEl.classList.contains('account') && nextEl.style.display !== 'none') {
+            hasVisible = true;
+            break;
+          }
+          nextEl = nextEl.nextElementSibling;
+        }
+        group.style.display = hasVisible ? '' : 'none';
       });
     }
     
@@ -566,12 +594,19 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     function updateStatus(status) {
       const btn = document.querySelector('.btn-primary');
       const hero = document.querySelector('.hero');
+      const fab = document.getElementById('fabContainer');
       
       if (!status) {
         // Registration finished
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = '⚡ ' + T.autoReg;
+        }
+        // Update FAB state
+        if (fab) {
+          fab.classList.remove('running');
+          const fabBtn = fab.querySelector('.fab-primary');
+          if (fabBtn) fabBtn.classList.add('pulse');
         }
         // Refresh to show new account
         vscode.postMessage({ command: 'refresh' });
@@ -584,11 +619,22 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         btn.innerHTML = '<span class="spinner"></span> ' + T.running;
       }
       
-      // Update hero with progress
+      // Update FAB to running state
+      if (fab) {
+        fab.classList.add('running');
+        const fabBtn = fab.querySelector('.fab-primary');
+        if (fabBtn) fabBtn.classList.remove('pulse');
+      }
+      
+      // Update hero with progress (incremental update, no full refresh)
       try {
         const progress = JSON.parse(status);
         if (progress && hero) {
           const percent = Math.round((progress.step / progress.totalSteps) * 100);
+          const hasError = (progress.detail || '').toLowerCase().includes('error') ||
+                          (progress.detail || '').toLowerCase().includes('fail');
+          
+          // Only update hero content, preserve console drawer state
           hero.className = 'hero progress';
           hero.innerHTML = \`
             <div class="hero-header">
@@ -596,10 +642,10 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
               <span class="hero-step">\${progress.step}/\${progress.totalSteps}</span>
             </div>
             <div class="hero-progress">
-              <div class="hero-progress-fill low" style="width: \${percent}%"></div>
+              <div class="hero-progress-fill \${hasError ? 'high' : 'low'}" style="width: \${percent}%"></div>
             </div>
             <div class="hero-stats">
-              <span class="hero-usage">\${progress.detail || ''}</span>
+              <span class="hero-usage \${hasError ? 'text-danger' : ''}">\${progress.detail || ''}</span>
               <span class="hero-percent">\${percent}%</span>
             </div>
           \`;

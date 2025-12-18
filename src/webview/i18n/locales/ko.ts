@@ -293,6 +293,10 @@ export const ko: Translations = {
   ready: '준비됨',
   clickToConfigure: '클릭하여 설정',
 
+  // Search
+  noAccountsFound: '계정을 찾을 수 없습니다',
+  clearSearch: '검색 지우기',
+
   // Settings Cards
   automation: '자동화',
   interface: '인터페이스',

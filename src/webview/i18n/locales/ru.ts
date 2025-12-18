@@ -293,6 +293,10 @@ export const ru: Translations = {
   ready: 'Готов',
   clickToConfigure: 'Нажмите для настройки',
 
+  // Search
+  noAccountsFound: 'Аккаунты не найдены',
+  clearSearch: 'Очистить поиск',
+
   // Settings Cards
   automation: 'Автоматизация',
   interface: 'Интерфейс',

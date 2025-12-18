@@ -1,19 +1,21 @@
 /**
  * Floating Action Button Component for Auto-Registration
+ * Only visible on Accounts tab
  */
 
 import { ICONS } from '../icons';
 import { Translations } from '../i18n/types';
 
 export interface FABProps {
-    isRunning: boolean;
-    t: Translations;
+  isRunning: boolean;
+  t: Translations;
 }
 
 export function renderFAB({ isRunning, t }: FABProps): string {
-    if (isRunning) {
-        return `
-      <div class="fab-container running">
+  // FAB is hidden by default, shown only on accounts tab via JS
+  if (isRunning) {
+    return `
+      <div class="fab-container running" id="fabContainer">
         <button class="fab fab-stop" onclick="stopAutoReg()" title="${t.stop || 'Stop'}">
           <span class="fab-icon">⏹</span>
         </button>
@@ -26,11 +28,11 @@ export function renderFAB({ isRunning, t }: FABProps): string {
         </div>
       </div>
     `;
-    }
+  }
 
-    return `
-    <div class="fab-container">
-      <button class="fab fab-primary" onclick="startAutoReg()" title="${t.autoReg}">
+  return `
+    <div class="fab-container" id="fabContainer">
+      <button class="fab fab-primary pulse" onclick="startAutoReg()" title="${t.autoReg}">
         <span class="fab-icon">${ICONS.bolt}</span>
       </button>
     </div>

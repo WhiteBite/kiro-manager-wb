@@ -293,6 +293,10 @@ export const pt: Translations = {
   ready: 'Pronto',
   clickToConfigure: 'Clique para configurar',
 
+  // Search
+  noAccountsFound: 'Nenhuma conta encontrada',
+  clearSearch: 'Limpar busca',
+
   // Settings Cards
   automation: 'Automação',
   interface: 'Interface',

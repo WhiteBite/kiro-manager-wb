@@ -293,6 +293,10 @@ export const zh: Translations = {
   ready: '就绪',
   clickToConfigure: '点击配置',
 
+  // Search
+  noAccountsFound: '未找到账户',
+  clearSearch: '清除搜索',
+
   // Settings Cards
   automation: '自动化',
   interface: '界面',

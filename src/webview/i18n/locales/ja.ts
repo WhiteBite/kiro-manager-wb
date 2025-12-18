@@ -293,6 +293,10 @@ export const ja: Translations = {
   ready: '準備完了',
   clickToConfigure: 'クリックして設定',
 
+  // Search
+  noAccountsFound: 'アカウントが見つかりません',
+  clearSearch: '検索をクリア',
+
   // Settings Cards
   automation: '自動化',
   interface: 'インターフェース',
