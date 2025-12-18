@@ -23,7 +23,7 @@ from spoofers.behavior import BehaviorSpoofModule
 from spoofers.profile_storage import ProfileStorage
 
 # Debug recorder
-from core.debug_recorder import get_recorder, record
+from core.debug_recorder import get_recorder, record, init_recorder
 
 
 def find_chrome_path() -> Optional[str]:
@@ -292,6 +292,13 @@ class BrowserAutomation:
         
         # Инициализируем модуль человеческого поведения
         self._behavior = BehaviorSpoofModule()
+        
+        # Инициализируем debug recorder если включен
+        if os.environ.get('DEBUG_RECORDING', '0') == '1':
+            session_name = f"reg_{email.split('@')[0] if email else 'unknown'}_{int(time.time())}"
+            self._recorder = init_recorder(session_name)
+        else:
+            self._recorder = None
         
         # Настройка реалистичного ввода (по умолчанию включено для обхода FWCIM)
         self._realistic_typing = browser_settings.get('realistic_typing', True)
@@ -855,6 +862,7 @@ class BrowserAutomation:
     def enter_email(self, email: str) -> bool:
         """Вводит email. Оптимизировано для скорости."""
         print(f"[M] Entering email: {email}")
+        record('enter_email', {'email': email}, self.page)
         
         # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
@@ -1005,6 +1013,7 @@ class BrowserAutomation:
     def enter_name(self, name: str) -> bool:
         """Вводит имя. Оптимизировано для скорости."""
         print(f"[N] Entering name: {name}")
+        record('enter_name', {'name': name}, self.page)
         
         # КРИТИЧНО: Закрываем cookie диалог ПЕРЕД поиском поля
         self._hide_cookie_banner()
@@ -1175,6 +1184,7 @@ class BrowserAutomation:
     def enter_verification_code(self, code: str) -> bool:
         """Вводит код верификации. Оптимизировано для скорости."""
         print(f"[K] Entering code: {code}")
+        record('enter_code', {'code': code}, self.page)
         
         # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
@@ -1260,6 +1270,7 @@ class BrowserAutomation:
     def enter_password(self, password: str) -> bool:
         """Вводит и подтверждает пароль"""
         print("[KEY] Entering password...")
+        record('enter_password', {'length': len(password)}, self.page)
         
         # Быстрое ожидание контекста
         self.wait_for_page_context('password', timeout=5)
@@ -1566,6 +1577,7 @@ class BrowserAutomation:
         """Нажимает Allow access. ОПТИМИЗИРОВАНО: быстрый поиск и клик."""
         print("[OK] Looking for Allow access button...")
         print(f"   Current URL: {self.page.url[:80]}...")
+        record('click_allow_access', {'url': self.page.url}, self.page)
         
         # Скрываем cookie через CSS (мгновенно, без проверок)
         self._hide_cookie_banner()
@@ -1766,6 +1778,7 @@ class BrowserAutomation:
     def navigate(self, url: str):
         """Переход по URL."""
         print(f"[>] Opening page...")
+        record('navigate', {'url': url}, self.page)
         self.page.get(url)
         
         # Ждём загрузку документа
@@ -1894,6 +1907,13 @@ class BrowserAutomation:
             filename = str(BASE_DIR / f"{name}_{int(time.time())}.png")
             self.page.get_screenshot(path=filename)
             print(f"[SCREENSHOT] Screenshot: {filename}")
+            
+            # Записываем в debug recorder если это ошибка
+            if 'error' in name.lower():
+                recorder = get_recorder()
+                if recorder:
+                    recorder.record_error(name, self.page)
+            
             return filename
         except Exception as e:
             print(f"[!] Screenshot failed: {e}")
@@ -1908,6 +1928,11 @@ class BrowserAutomation:
     
     def close(self):
         """Закрытие браузера"""
+        # Завершаем debug recording
+        recorder = get_recorder()
+        if recorder:
+            recorder.finish()
+        
         try:
             self.page.quit()
         except Exception:
