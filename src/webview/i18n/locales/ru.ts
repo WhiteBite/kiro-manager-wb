@@ -30,6 +30,7 @@ export const ru: Translations = {
   todaysUsage: 'Использование',
   used: 'использовано',
   daysLeft: 'дней осталось',
+  remaining: 'осталось',
   resetsAtMidnight: 'Сброс в полночь',
 
   // Actions
