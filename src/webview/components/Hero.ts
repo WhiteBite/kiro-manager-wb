@@ -141,13 +141,24 @@ export function renderHero({ activeAccount, activeProfile, usage, progress, isRu
   const limit = usage?.usageLimit ?? 500;
   const percent = usage?.percentageUsed ?? 0;
   const daysLeft = usage?.daysRemaining ?? '?';
+  const remaining = limit - current;
   const usageClass = getUsageClass(percent);
 
+  // Warning states
+  const isLow = remaining < 50;
+  const isCritical = remaining < 10;
+
   return `
-    <div class="hero" onclick="refreshUsage()">
+    <div class="hero ${isCritical ? 'critical' : isLow ? 'warning' : ''}" onclick="refreshUsage()">
       <div class="hero-header">
         <span class="hero-email" title="${escapeHtml(email)}">${escapeHtml(email)}</span>
         <span class="hero-days">${daysLeft}${typeof daysLeft === 'number' ? 'd' : ''} ${t.daysLeft}</span>
+      </div>
+      <div class="hero-main">
+        <div class="hero-remaining">
+          <span class="hero-remaining-value ${usageClass}">${remaining.toLocaleString()}</span>
+          <span class="hero-remaining-label">${t.remaining || 'remaining'}</span>
+        </div>
       </div>
       <div class="hero-progress">
         <div class="hero-progress-fill ${usageClass}" style="width: ${Math.min(percent, 100)}%"></div>

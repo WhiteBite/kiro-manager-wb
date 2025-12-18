@@ -43,6 +43,7 @@ export interface Translations {
   todaysUsage: string;
   used: string;
   daysLeft: string;
+  remaining: string;
   resetsAtMidnight: string;
 
   // ============================================

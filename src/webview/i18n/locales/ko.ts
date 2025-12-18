@@ -30,6 +30,7 @@ export const ko: Translations = {
   todaysUsage: '오늘 사용량',
   used: '사용됨',
   daysLeft: '일 남음',
+  remaining: '남음',
   resetsAtMidnight: '자정에 초기화',
 
   // Actions

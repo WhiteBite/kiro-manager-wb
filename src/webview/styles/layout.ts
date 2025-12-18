@@ -38,6 +38,44 @@ export const layout = `
     border-color: rgba(100,149,237,0.4);
     box-shadow: 0 4px 20px rgba(100,149,237,0.15);
   }
+  .hero.warning {
+    background: linear-gradient(135deg, rgba(217,163,52,0.15) 0%, rgba(217,163,52,0.05) 100%);
+    border-color: rgba(217,163,52,0.4);
+  }
+  .hero.critical {
+    background: linear-gradient(135deg, rgba(229,83,83,0.15) 0%, rgba(229,83,83,0.05) 100%);
+    border-color: rgba(229,83,83,0.4);
+    animation: criticalPulse 2s ease-in-out infinite;
+  }
+  @keyframes criticalPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229,83,83,0.3); }
+    50% { box-shadow: 0 0 0 4px rgba(229,83,83,0.1); }
+  }
+  .hero-main {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .hero-remaining {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .hero-remaining-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .hero-remaining-value.low { color: var(--accent); }
+  .hero-remaining-value.medium { color: var(--warning); }
+  .hero-remaining-value.high { color: var(--danger); }
+  .hero-remaining-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
   .hero-profile-info {
     margin-bottom: 8px;
   }
