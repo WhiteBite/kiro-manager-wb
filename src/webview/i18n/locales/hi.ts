@@ -30,6 +30,7 @@ export const hi: Translations = {
   todaysUsage: 'आज का उपयोग',
   used: 'उपयोग किया',
   daysLeft: 'दिन बाकी',
+  remaining: 'शेष',
   resetsAtMidnight: 'आधी रात को रीसेट',
 
   // Actions

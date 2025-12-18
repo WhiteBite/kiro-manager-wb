@@ -30,6 +30,7 @@ export const ja: Translations = {
   todaysUsage: '今日の使用量',
   used: '使用済み',
   daysLeft: '日残り',
+  remaining: '残り',
   resetsAtMidnight: '深夜にリセット',
 
   // Actions

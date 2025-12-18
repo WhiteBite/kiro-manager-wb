@@ -30,6 +30,7 @@ export const zh: Translations = {
   todaysUsage: '今日使用量',
   used: '已使用',
   daysLeft: '天剩余',
+  remaining: '剩余',
   resetsAtMidnight: '午夜重置',
 
   // Actions

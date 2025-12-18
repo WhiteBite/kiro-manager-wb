@@ -30,6 +30,7 @@ export const pt: Translations = {
   todaysUsage: 'Uso de Hoje',
   used: 'usado',
   daysLeft: 'dias restantes',
+  remaining: 'restantes',
   resetsAtMidnight: 'Reinicia à meia-noite',
 
   // Actions
