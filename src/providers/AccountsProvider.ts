@@ -662,8 +662,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         await config.update('debug.screenshotsOnError', !screenshots, vscode.ConfigurationTarget.Global);
         break;
     }
-
-    this.refresh();
+    // Don't call refresh() - it resets the view to main page
   }
 
   async updateSetting(key: string, value: boolean | number) {
