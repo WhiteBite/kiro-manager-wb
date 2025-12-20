@@ -72,6 +72,8 @@ SELECTORS = {
     'cookie_accept': [
         'text=Accept',  # Английский
         'text=Принять',  # Русский
+        'text=Akzeptieren',  # German
+        'text=同意する',  # Japanese
         'xpath://button[contains(text(), "Accept")]',
         'xpath://button[contains(text(), "Принять")]',
         '[data-id="awsccc-cb-btn-accept"]',
@@ -87,6 +89,8 @@ SELECTORS = {
         '@data-testid=signup-next-button',   # Continue на странице имени
         '@data-testid=email-verification-verify-button',  # Continue на странице кода
         'text=Continue',
+        'text=Weiter',  # German
+        'text=続行',  # Japanese
     ],
     'name_input': [
         '@placeholder=Maria José Silva',  # Актуальный placeholder
@@ -94,30 +98,48 @@ SELECTORS = {
         '@data-testid=name-input',
     ],
     'code_input': [
-        '@placeholder=6-digit',  # Актуальный placeholder
+        '@placeholder=6-digit',  # English placeholder
+        '@placeholder=6-stellig',  # German placeholder
+        '@placeholder=6桁',  # Japanese placeholder
         'aria:Verification code',
+        'aria:Verifizierungscode',  # German
+        'aria:確認コード',  # Japanese
+        'css:input[maxlength="6"]',  # Generic 6-digit input
     ],
     'password_input': [
-        '@placeholder=Enter password',  # Актуальный placeholder
+        '@placeholder=Enter password',  # English placeholder
+        '@placeholder=Passwort eingeben',  # German placeholder
+        '@placeholder=パスワードを入力',  # Japanese placeholder
         'aria:Password',
+        'aria:Passwort',  # German
+        'aria:パスワード',  # Japanese
+        'css:input[type="password"]',  # Generic password input
     ],
     'confirm_password': [
-        '@placeholder=Re-enter password',  # Актуальный placeholder
+        '@placeholder=Re-enter password',  # English placeholder
+        '@placeholder=Passwort erneut eingeben',  # German placeholder
+        '@placeholder=パスワードを再入力',  # Japanese placeholder
         'aria:Confirm password',
+        'aria:Passwort bestätigen',  # German
+        'aria:パスワードを確認',  # Japanese
+        'css:input[type="password"]:nth-of-type(2)',  # Second password field
     ],
     'allow_access': [
         'text=Allow access',
+        'text=Zugriff erlauben',  # German
+        'text=アクセスを許可',  # Japanese
         '@data-testid=allow-access-button',
     ],
 }
 
 # Контексты страниц - заголовки для определения текущего шага
+# Поддерживаемые языки: English, German (de-DE), Japanese (ja-JP)
 PAGE_CONTEXTS = {
-    'email': ['Get started', 'Sign in'],
-    'name': ['Enter your name'],
-    'verification': ['Verify your email'],
-    'password': ['Create your password'],
-    'allow_access': ['Allow access', 'Authorization'],
+    'email': ['Get started', 'Sign in', 'Erste Schritte', 'サインイン', '開始する'],
+    'name': ['Enter your name', 'Geben Sie Ihren Namen ein', '名前を入力してください'],
+    'verification': ['Verify your email', 'E-Mail-Adresse bestätigen', 'メールアドレスを確認'],
+    'password': ['Create your password', 'Ihr Passwort erstellen', 'パスワードを作成'],
+    'allow_access': ['Allow access', 'Authorization', 'Zugriff erlauben', 'アクセスを許可', '認可'],
 }
 
 BROWSER_ARGS = [
@@ -1132,7 +1154,28 @@ class BrowserAutomation:
         
         # Ожидание страницы верификации
         print("   [...] Waiting for verification page...")
-        verification_selectors = ['text=Verify your email', 'text=Verification code', '@placeholder=6-digit']
+        verification_selectors = [
+            'text=Verify your email',
+            'text=Verification code', 
+            '@placeholder=6-digit',
+            # German
+            'text=E-Mail-Adresse bestätigen',
+            'text=Verifizierungscode',
+            '@placeholder=6-stellig',
+            # Japanese
+            'text=メールアドレスを確認',
+            'text=確認コード',
+            '@placeholder=6桁',
+            # Spanish
+            'text=Verificar tu correo',
+            'text=Código de verificación',
+            # French
+            'text=Vérifier votre e-mail',
+            'text=Code de vérification',
+            # Generic - input field for 6-digit code
+            'css:input[maxlength="6"]',
+            'css:input[type="text"][placeholder*="6"]',
+        ]
         
         start_time = time.time()
         timeout = 20
@@ -1245,7 +1288,23 @@ class BrowserAutomation:
         
         # Оптимизированное ожидание страницы пароля
         print("   [...] Waiting for password page...")
-        password_selectors = ['text=Create your password', 'text=Set your password', '@placeholder=Enter password']
+        password_selectors = [
+            'text=Create your password',
+            'text=Set your password',
+            '@placeholder=Enter password',
+            # German
+            'text=Ihr Passwort erstellen',
+            '@placeholder=Passwort eingeben',
+            # Japanese
+            'text=パスワードを作成',
+            '@placeholder=パスワードを入力',
+            # Spanish
+            'text=Crea tu contraseña',
+            # French
+            'text=Créer votre mot de passe',
+            # Generic
+            'css:input[type="password"]',
+        ]
         
         start_time = time.time()
         timeout = 15  # Увеличено для надёжности

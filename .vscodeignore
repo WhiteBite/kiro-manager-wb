@@ -20,8 +20,17 @@ test_out.txt
 test-*.js
 *.log
 
-# Exclude autoreg completely from VSIX (it's for standalone only)
-autoreg/**
+# Include autoreg in VSIX (bundled for auto-extraction)
+# Exclude only unnecessary files
+autoreg/__pycache__/**
+autoreg/**/__pycache__/**
+autoreg/*.pyc
+autoreg/**/*.pyc
+autoreg/.env
+autoreg/app/static/index.html
+autoreg/app/profiles.json
+autoreg/venv/**
+autoreg/.venv/**
 
 # Exclude scripts (build tools)
 scripts/**
