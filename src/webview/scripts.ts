@@ -15,6 +15,33 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     const vscode = acquireVsCodeApi();
     let pendingAction = null;
     
+    // Registration step definitions for progress indicators
+    const REG_STEPS = [
+      { id: 'setup', icon: '⚙️', name: 'Setup' },
+      { id: 'email', icon: '📧', name: 'Email' },
+      { id: 'browser', icon: '🌐', name: 'Browser' },
+      { id: 'signup', icon: '📝', name: 'Sign Up' },
+      { id: 'verify', icon: '✉️', name: 'Verify' },
+      { id: 'auth', icon: '🔐', name: 'Auth' },
+      { id: 'token', icon: '🎫', name: 'Token' },
+      { id: 'done', icon: '✅', name: 'Done' }
+    ];
+    
+    function renderStepIndicatorsJS(currentStep, totalSteps, error) {
+      const steps = REG_STEPS.slice(0, totalSteps);
+      const stepsHtml = steps.map((step, i) => {
+        const stepNum = i + 1;
+        let status = 'pending';
+        if (stepNum < currentStep) status = 'done';
+        else if (stepNum === currentStep) status = error ? 'error' : 'active';
+        return '<div class="step-indicator ' + status + '" title="' + step.name + '">' +
+               '<span class="step-icon">' + step.icon + '</span>' +
+               '<span class="step-dot"></span>' +
+               '</div>';
+      }).join('<div class="step-line"></div>');
+      return '<div class="step-indicators">' + stepsHtml + '</div>';
+    }
+    
     ${generateStateScript()}
     
     // === Tab Navigation ===
@@ -459,9 +486,8 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
           updateStatus(msg.status);
           break;
         case 'updateAccounts':
-          // Incremental account list update - refresh the page to show new data
-          // This is triggered when accounts change (ban detected, refresh, etc.)
-          vscode.postMessage({ command: 'refresh' });
+          // Incremental account list update - just update the list without full refresh
+          // Don't send refresh command - it resets the view to main tab
           break;
         case 'updateUsage':
           // Incremental usage update - refresh hero section
@@ -607,11 +633,14 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
           btn.disabled = false;
           btn.innerHTML = '⚡ ' + T.autoReg;
         }
-        // Update FAB state
+        // Update FAB state - restore primary button
         if (fab) {
           fab.classList.remove('running');
-          const fabBtn = fab.querySelector('.fab-primary');
-          if (fabBtn) fabBtn.classList.add('pulse');
+          fab.innerHTML = \`
+            <button class="fab fab-primary pulse" onclick="startAutoReg()" title="\${T.autoReg}">
+              <span class="fab-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L4 9h4l-1 6 5-8H8l1-6z"/></svg></span>
+            </button>
+          \`;
         }
         // Refresh to show new account
         vscode.postMessage({ command: 'refresh' });
@@ -627,8 +656,19 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       // Update FAB to running state
       if (fab) {
         fab.classList.add('running');
-        const fabBtn = fab.querySelector('.fab-primary');
-        if (fabBtn) fabBtn.classList.remove('pulse');
+        // Update FAB content to show stop/pause buttons
+        fab.innerHTML = \`
+          <button class="fab fab-stop" onclick="stopAutoReg()" title="\${T.stop || 'Stop'}">
+            <span class="fab-icon">⏹</span>
+          </button>
+          <button class="fab fab-pause" onclick="togglePauseAutoReg()" title="\${T.pause || 'Pause'}">
+            <span class="fab-icon">⏸</span>
+          </button>
+          <div class="fab-status">
+            <span class="spinner"></span>
+            <span class="fab-status-text">\${T.running}</span>
+          </div>
+        \`;
       }
       
       // Update hero with progress (incremental update, no full refresh)
@@ -646,6 +686,7 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
               <span class="hero-email">\${progress.stepName || ''}</span>
               <span class="hero-step">\${progress.step}/\${progress.totalSteps}</span>
             </div>
+            \${renderStepIndicatorsJS(progress.step, progress.totalSteps, hasError)}
             <div class="hero-progress">
               <div class="hero-progress-fill \${hasError ? 'high' : 'low'}" style="width: \${percent}%"></div>
             </div>

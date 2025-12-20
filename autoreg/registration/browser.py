@@ -1370,6 +1370,31 @@ class BrowserAutomation:
             self._behavior.human_delay(0.2, 0.4)  # Пауза перед повторным вводом
             print("   Confirming password...")
             self.human_type(pwd2, password, field_type='password')
+            
+            # Проверяем что оба пароля одинаковые
+            pwd1_value = pwd1.attr('value') or ''
+            pwd2_value = pwd2.attr('value') or ''
+            
+            if pwd1_value != pwd2_value:
+                print(f"   [!] Password mismatch detected! Clearing and re-entering...")
+                # Очищаем оба поля
+                pwd1.clear()
+                pwd2.clear()
+                time.sleep(0.1)
+                
+                # Вводим заново
+                self.human_type(pwd1, password, field_type='password')
+                self._behavior.human_delay(0.2, 0.4)
+                self.human_type(pwd2, password, field_type='password')
+                
+                # Проверяем ещё раз
+                pwd1_value = pwd1.attr('value') or ''
+                pwd2_value = pwd2.attr('value') or ''
+                if pwd1_value != pwd2_value:
+                    print(f"   [!] Password still mismatched after retry!")
+                    self.screenshot("error_password_mismatch")
+                else:
+                    print(f"   [OK] Passwords match after retry")
         
         time.sleep(0.15)
         

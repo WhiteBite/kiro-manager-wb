@@ -318,7 +318,10 @@ class AWSRegistration:
             if not auth_url:
                 return {'email': email, 'success': False, 'error': 'Failed to start OAuth flow'}
             
-            print(f"   [OK] OAuth started, callback server on port {self.oauth.port}")
+            if self.device_flow:
+                print(f"   [OK] Device flow started")
+            else:
+                print(f"   [OK] OAuth started, callback server on port {self.oauth.port}")
             print(f"   Auth URL: {auth_url[:80]}...")
             
             # ШАГ 2: Открываем браузер с auth_url
