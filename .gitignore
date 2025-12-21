@@ -60,6 +60,11 @@ npm-debug.log*
 autoreg/.env
 autoreg/*.png
 autoreg/*.log
+autoreg/*.har
+
+# Debug sessions (local only)
+autoreg/debug_sessions/
+debug_sessions/
 
 # Test artifacts
 coverage/
