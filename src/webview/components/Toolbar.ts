@@ -17,7 +17,6 @@ export function renderToolbar({ isRunning, t }: ToolbarProps): string {
         <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
         <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="${t.checkHealth || 'Check Health'}">🩺</button>
         <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="${t.selectMode}" id="selectModeBtn">☑️</button>
-        <button class="btn btn-secondary btn-icon" onclick="refresh()" title="${t.refreshTip}">${ICONS.refresh}</button>
       </div>
       <div class="search-wrapper">
         <span class="search-icon">${ICONS.search}</span>

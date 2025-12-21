@@ -10,3 +10,7 @@ export { renderSettings } from './Settings';
 export { renderLogs } from './Logs';
 export { renderModals } from './Modals';
 export { renderProfileEditor } from './ProfileEditor';
+export { renderLLMSettings } from './LLMSettings';
+export { renderTabBar } from './TabBar';
+export { renderAutoRegControls } from './AutoRegControls';
+export { renderStats } from './Stats';
