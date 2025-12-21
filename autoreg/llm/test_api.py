@@ -3,7 +3,7 @@
 Test Kiro LLM API
 
 Usage:
-    python autoreg/api/test_api.py
+    python autoreg/llm/test_api.py
 """
 
 import requests

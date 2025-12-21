@@ -6,9 +6,9 @@ OpenAI-compatible API server that uses Kiro tokens to access Claude via CodeWhis
 Supports token pool rotation, automatic refresh, and ban detection.
 
 Usage:
-    python -m autoreg.api.llm_server
+    python -m autoreg.llm.llm_server
     # or
-    uvicorn autoreg.api.llm_server:app --host 0.0.0.0 --port 8421
+    uvicorn autoreg.llm.llm_server:app --host 0.0.0.0 --port 8421
 
 Endpoints:
     GET  /v1/models              - List available models
@@ -35,8 +35,8 @@ from pydantic import BaseModel, Field
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api.token_pool import TokenPool
-from api.codewhisperer_client import CodeWhispererClient
+from llm.token_pool import TokenPool
+from llm.codewhisperer_client import CodeWhispererClient
 
 # ============================================================================
 # Configuration

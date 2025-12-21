@@ -3,8 +3,8 @@
 Run Kiro LLM API Server
 
 Usage:
-    python -m autoreg.api.run_llm_server
-    python autoreg/api/run_llm_server.py
+    python -m autoreg.llm.run_llm_server
+    python autoreg/llm/run_llm_server.py
     
 Environment variables:
     KIRO_LLM_PORT - Server port (default: 8421)
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def main():
     import uvicorn
-    from autoreg.api.llm_server import app
+    from autoreg.llm.llm_server import app
     
     port = int(os.environ.get("KIRO_LLM_PORT", 8421))
     host = os.environ.get("KIRO_LLM_HOST", "0.0.0.0")
