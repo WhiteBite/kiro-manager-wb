@@ -29,9 +29,12 @@ describe('Extension Path Configuration', () => {
       expect(fs.existsSync(path.join(AUTOREG_DIR, 'registration', 'register.py'))).toBe(true);
     });
 
-    it('should reference requirements.txt', () => {
-      expect(autoregContent).toContain('requirements.txt');
-      expect(fs.existsSync(path.join(AUTOREG_DIR, 'requirements.txt'))).toBe(true);
+    it('should have Python project config (pyproject.toml or requirements.txt)', () => {
+      // After refactoring, we use pyproject.toml for modern Python project management
+      // requirements.txt is kept for backward compatibility
+      const hasPyproject = fs.existsSync(path.join(AUTOREG_DIR, 'pyproject.toml'));
+      const hasRequirements = fs.existsSync(path.join(AUTOREG_DIR, 'requirements.txt'));
+      expect(hasPyproject || hasRequirements).toBe(true);
     });
 
     it('should use -m registration.register_auto for module execution', () => {

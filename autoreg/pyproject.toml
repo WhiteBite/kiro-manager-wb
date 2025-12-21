@@ -1,0 +1,63 @@
+[project]
+name = "kiro-autoreg"
+version = "6.3.7"
+description = "AWS Builder ID auto-registration backend for Kiro Extension"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "WhiteBite"}
+]
+keywords = ["kiro", "aws", "automation", "registration"]
+
+dependencies = [
+    "DrissionPage>=4.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "websockets>=11.0",
+    "imapclient>=2.3.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.0.280",
+    "mypy>=1.4.0",
+]
+
+[project.scripts]
+kiro-autoreg = "cli:main"
+kiro-standalone = "run:main"
+kiro-llm = "llm.run_llm_server:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "registration*", "spoofers*", "services*", "debugger*", "llm*", "app*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["../tests"]

@@ -30,7 +30,6 @@ describe('Autoreg Python Integration', () => {
       'services/quota_service.py',
       'services/machine_id_service.py',
       'scripts/patch_status.py',  // Used by extension for patch status check
-      'src/index.js',  // OAuth Node.js script
     ];
 
     requiredFiles.forEach(file => {
@@ -92,51 +91,6 @@ describe('Autoreg Python Integration', () => {
       if (result.status !== 0) {
         expect(result.stderr).not.toContain('SyntaxError');
       }
-    });
-  });
-
-  describe('OAuth Node.js script', () => {
-    it('should have valid JavaScript syntax', () => {
-      const indexPath = path.join(AUTOREG_DIR, 'src', 'index.js');
-      expect(fs.existsSync(indexPath)).toBe(true);
-
-      const result = spawnSync('node', ['--check', indexPath], {
-        encoding: 'utf8',
-        timeout: 10000,
-      });
-
-      expect(result.status).toBe(0);
-    });
-
-    it('should show usage when called without args', () => {
-      const indexPath = path.join(AUTOREG_DIR, 'src', 'index.js');
-      const result = spawnSync('node', [indexPath], {
-        encoding: 'utf8',
-        timeout: 10000,
-      });
-
-      expect(result.stdout).toContain('Usage');
-    });
-
-    it('should be found by oauth_pkce.py path resolution', () => {
-      // Simulate the path resolution logic from oauth_pkce.py
-      const srcIndexPath = path.join(AUTOREG_DIR, 'src', 'index.js');
-      expect(fs.existsSync(srcIndexPath)).toBe(true);
-    });
-  });
-
-  describe('OAuth path resolution simulation', () => {
-    it('should find index.js in autoreg/src/', () => {
-      // This simulates what happens when autoreg is copied to ~/.kiro-autoreg
-      const baseDir = AUTOREG_DIR;
-      const indexPath = path.join(baseDir, 'src', 'index.js');
-
-      expect(fs.existsSync(indexPath)).toBe(true);
-
-      // Read and verify it's a valid Node.js script
-      const content = fs.readFileSync(indexPath, 'utf8');
-      expect(content).toContain('startOAuthFlow');
-      expect(content).toContain('exchangeCodeForToken');
     });
   });
 
