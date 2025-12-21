@@ -3,8 +3,8 @@
 Quick Chat Test - быстрый тест API
 
 Usage:
-    python autoreg/api/quick_chat.py "твой вопрос"
-    python autoreg/api/quick_chat.py  # интерактивный режим
+    python autoreg/llm/quick_chat.py "твой вопрос"
+    python autoreg/llm/quick_chat.py  # интерактивный режим
 """
 
 import sys
