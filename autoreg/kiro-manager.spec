@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for Kiro Account Manager
+PyInstaller spec file for Kiro Manager WB
 Build: pyinstaller kiro-manager.spec
 """
 

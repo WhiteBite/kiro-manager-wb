@@ -9,7 +9,7 @@ DEV TOOL: Используется для анализа трафика Kiro и 
 2. Установить сертификат: autoreg/scripts/install_mitmproxy_cert.ps1
 3. Запустить: autoreg/scripts/run_kiro_with_proxy.ps1
 
-Логи сохраняются в: ~/.kiro-extension/proxy_logs/
+Логи сохраняются в: ~/.kiro-manager-wb/proxy_logs/
 """
 
 import json
@@ -20,7 +20,7 @@ from pathlib import Path
 from mitmproxy import http, ctx
 
 # Директория для логов
-LOG_DIR = Path.home() / ".kiro-extension" / "proxy_logs"
+LOG_DIR = Path.home() / ".kiro-manager-wb" / "proxy_logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Лог файл

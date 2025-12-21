@@ -118,7 +118,7 @@ User clicks 'Auto Reg' → Webview sends 'startAutoReg'
         3. Fill AWS signup form
         4. Get verification code (mail_handler.py)
         5. Complete OAuth (oauth_device.py)
-        6. Save token to ~/.kiro-extension/tokens/
+        6. Save token to ~/.kiro-manager-wb/tokens/
     → Extension refreshes account list
 ```
 
@@ -138,9 +138,9 @@ User clicks 'Patch Kiro' → Webview sends 'patchKiro'
 
 | File | Purpose |
 |------|---------|
-| `~/.kiro-extension/tokens/` | Saved account tokens |
-| `~/.kiro-extension/machine-id.txt` | Current machine ID |
-| `~/.kiro-extension/profiles/` | IMAP profiles |
+| `~/.kiro-manager-wb/tokens/` | Saved account tokens |
+| `~/.kiro-manager-wb/machine-id.txt` | Current machine ID |
+| `~/.kiro-manager-wb/profiles/` | IMAP profiles |
 | `~/.aws/sso/cache/kiro-auth-token.json` | Active Kiro token |
 | `%APPDATA%/Kiro/.../state.vscdb` | Kiro internal DB |
 

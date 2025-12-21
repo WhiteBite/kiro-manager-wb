@@ -85,7 +85,7 @@ def get_kiro_version() -> str:
 
 def get_custom_machine_id_path() -> Path:
     """Путь к файлу с кастомным Machine ID (создаётся патчером)"""
-    return Path.home() / '.kiro-extension' / 'machine-id.txt'
+    return Path.home() / '.kiro-manager-wb' / 'machine-id.txt'
 
 
 def get_machine_id(use_custom: bool = True) -> str:
@@ -93,7 +93,7 @@ def get_machine_id(use_custom: bool = True) -> str:
     Получает Machine ID.
     
     Приоритет:
-    1. Кастомный ID из ~/.kiro-extension/machine-id.txt (если use_custom=True)
+    1. Кастомный ID из ~/.kiro-manager-wb/machine-id.txt (если use_custom=True)
     2. Системный ID (как node-machine-id):
        - Windows: SHA256 от MachineGuid из реестра
        - Linux: SHA256 от /etc/machine-id

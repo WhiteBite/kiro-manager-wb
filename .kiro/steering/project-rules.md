@@ -35,7 +35,7 @@ npm run release 6.5.0   # конкретная версия
 ## Project Structure
 
 ```
-kiro-extension/
+kiro-manager-wb/
 ├── src/                      # VS Code Extension (TypeScript)
 │   ├── commands/             # Команды расширения
 │   ├── providers/            # Tree providers
@@ -137,7 +137,7 @@ kiro-extension/
 
 ## Data Paths
 
-Все пользовательские данные хранятся в `~/.kiro-extension/`:
+Все пользовательские данные хранятся в `~/.kiro-manager-wb/`:
 - `tokens/` - токены аккаунтов
 - `machine-id.txt` - кастомный machine ID
 - `profiles/` - IMAP профили

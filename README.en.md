@@ -1,9 +1,9 @@
-# ⚡ Kiro Account Switcher
+# ⚡ Kiro Manager WB
 
-[![Build](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml)
-[![Version](https://img.shields.io/github/v/release/WhiteBite/Kiro-auto-reg-extension?label=version)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
-[![License](https://img.shields.io/github/license/WhiteBite/Kiro-auto-reg-extension)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/WhiteBite/Kiro-auto-reg-extension/total)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
+[![Build](https://github.com/WhiteBite/kiro-manager-wb/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/kiro-manager-wb/actions/workflows/build.yml)
+[![Version](https://img.shields.io/github/v/release/WhiteBite/kiro-manager-wb?label=version)](https://github.com/WhiteBite/kiro-manager-wb/releases)
+[![License](https://img.shields.io/github/license/WhiteBite/kiro-manager-wb)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/WhiteBite/kiro-manager-wb/total)](https://github.com/WhiteBite/kiro-manager-wb/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram)](https://t.me/whitebite_devsoft)
 
 [Русский](README.md) | English | [中文](README.zh.md)
@@ -22,268 +22,370 @@ Extension for those who are tired of dealing with Kiro limits.
 
 ---
 
-## What is this
+## 🎯 What is this
 
-Extension for Kiro IDE that allows you to:
+Full-featured account manager for Kiro IDE:
 
-- **Store multiple accounts** and switch between them in one click
-- **See usage** for each account — requests spent, remaining, reset time
-- **Auto-register new accounts** directly from the interface (requires email with IMAP)
-- **Refresh tokens** — manually or automatically before expiration
-- **Export account list** to JSON
-- **Copy tokens and passwords** to clipboard
-
-All this lives in a convenient sidebar panel with a proper UI, not in the console like savages.
+- **Multi-account** — store unlimited accounts, switch in one click
+- **Usage monitoring** — see requests spent, remaining, reset time
+- **Auto-registration** — automatic AWS Builder ID account registration
+- **Machine ID patching** — bypass hardware fingerprint bans
+- **LLM API server** — OpenAI-compatible API using Kiro tokens for Claude
+- **10 languages** — EN, RU, DE, ES, FR, PT, ZH, JA, KO, HI
 
 ---
 
-## How it works
+## 🚀 Quick Start
 
-### Account switching
-
-Kiro stores the auth token in its internal database (`state.vscdb`). The extension:
-
-1. Reads tokens from `~/.kiro-extension/tokens/`
-2. On switch — writes the selected token to Kiro's database
-3. Kiro picks up the new token and works under a different account
-
-No IDE restart needed. Switching takes a couple of seconds.
-
-### Usage tracking
-
-The extension reads usage data from the same Kiro database and shows:
-
-- Current request usage
-- Account limit
-- Usage percentage
-- Time until limit reset
-
-Data is cached locally, so even after switching to another account — you can see stats for all of them.
-
-### Auto-registration
-
-The juiciest part. The extension can automatically:
-
-1. Generate an email on the specified domain
-2. Open a browser (Playwright)
-3. Complete registration on AWS/Kiro
-4. Get verification code from email via IMAP
-5. Enter the code, complete registration
-6. Save the token to the tokens folder
-
-All without human intervention. Well, almost — sometimes there's a captcha.
-
----
-
-## Installation
-
-### From release (recommended)
+### Installation
 
 1. Download `.vsix` from [Releases](../../releases)
-2. Open Kiro
-3. `Ctrl+Shift+P` → `Extensions: Install from VSIX`
-4. Select the downloaded file
-5. Restart Kiro
+2. Open Kiro → `Ctrl+Shift+P` → `Extensions: Install from VSIX`
+3. Select downloaded file
+4. Restart Kiro
 
 ### From source
 
 ```bash
-git clone <repo>
-cd kiro-extension
+git clone https://github.com/WhiteBite/kiro-manager-wb
+cd kiro-manager-wb
 npm install
 npm run package
 ```
 
-You'll get `kiro-account-switcher-X.X.X.vsix` — install as above.
-
 ---
 
-## Configuration
+## 📦 Features
 
-All settings: `Ctrl+,` → search `kiroAccountSwitcher`
+### Account Switching
 
-### Main
+Kiro stores token in `state.vscdb`. The extension:
+1. Reads tokens from `~/.kiro-manager-wb/tokens/`
+2. On switch — writes selected token to Kiro database
+3. Kiro picks up new token without restart
 
-| Setting                      | Description                          | Default                      |
-| ---------------------------- | ------------------------------------ | ---------------------------- |
-| `tokensPath`                 | Path to tokens folder                | `~/.kiro-extension/tokens` |
-| `autoSwitch.enabled`         | Auto-refresh token before expiration | `false`                      |
-| `autoSwitch.intervalMinutes` | Minutes before expiration to refresh | `50`                         |
+### Usage Tracking
 
-### IMAP (for auto-reg)
+Shows for each account:
+- Current usage / limit
+- Usage percentage
+- Time until reset
+- Subscription type (Free/Pro)
 
-| Setting               | Description                      | Example             |
-| --------------------- | -------------------------------- | ------------------- |
-| `imap.server`         | IMAP server address              | `mail.example.com`  |
-| `imap.user`           | Login (usually email)            | `admin@example.com` |
-| `imap.password`       | Password                         | `***`               |
-| `autoreg.emailDomain` | Domain for generating emails     | `example.com`       |
-| `autoreg.headless`    | Hide browser during registration | `false`             |
+### Machine ID Patching
 
-### Debug
+AWS bans by `machineId` if it sees multiple accounts from one computer. Patch allows:
+- Use unique `machineId` for each account
+- Auto-rotate ID on account switch
+- Bypass "unusual activity" bans
 
-| Setting                    | Description                | Default |
-| -------------------------- | -------------------------- | ------- |
-| `debug.verbose`            | Verbose console logs       | `false` |
-| `debug.screenshotsOnError` | Take screenshots on errors | `true`  |
+```bash
+# Apply patch
+python -m autoreg.cli patch apply
 
----
-
-## Token format
-
-Tokens are stored in `~/.kiro-extension/tokens/` as JSON files:
-
-```json
-{
-  "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6...",
-  "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMiOi...",
-  "expiresAt": "2024-12-10T20:00:00.000Z",
-  "accountName": "user@example.com",
-  "email": "user@example.com",
-  "idToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
-}
+# Generate new machine ID
+python -m autoreg.cli patch generate-id
 ```
 
-Filename can be anything, extension `.json`. The extension reads all files from the folder.
-
-You can add tokens manually — just drop a JSON file into the folder and click Refresh.
-
 ---
 
-## Using auto-registration
+## 🤖 Auto-Registration
+
+Automatic AWS Builder ID account registration.
 
 ### Requirements
 
-- Python 3.10+
-- Mail server with IMAP access
-- Domain for emails (catch-all or individual mailboxes)
+- Python 3.11+
+- Chrome/Chromium browser
+- Mail server with IMAP
 
-### First run
+### Email Strategies
 
-1. Configure IMAP in extension settings
-2. Click **Auto-Reg** button in the panel
-3. Wait — on first run, dependencies will be installed:
-   - `playwright` (browser)
-   - `imapclient` (email handling)
-   - and others from `requirements.txt`
-4. Browser will open, registration will proceed
-5. On success — token will appear in the list
+| Strategy | Description | Example |
+|----------|-------------|---------|
+| `single` | One email = one account | `user@gmail.com` |
+| `plus_alias` | Gmail/Outlook aliases | `user+kiro123@gmail.com` |
+| `catch_all` | Catch-all domain | `random123@mydomain.com` |
+| `pool` | Pool of ready emails | List from file/env |
 
-### What can go wrong
+### Configuration
 
-- **Captcha** — sometimes AWS shows captcha. Solve manually or restart.
-- **Email not arriving** — check IMAP settings, look at logs.
-- **Browser not opening** — check Playwright is installed: `playwright install chromium`
-- **Python not found** — make sure `python` or `python3` is in PATH.
+Create `.env` in `autoreg/` folder:
 
-Logs are written to `~/.kiro-extension/autoreg.log` and extension console.
+```env
+# IMAP settings
+IMAP_SERVER=imap.gmail.com
+IMAP_USER=your@gmail.com
+IMAP_PASSWORD=app-password
 
----
+# Email strategy
+EMAIL_STRATEGY=plus_alias
 
-## Commands
+# For catch_all
+EMAIL_DOMAIN=mydomain.com
 
-Available via `Ctrl+Shift+P`:
+# For pool (JSON array)
+EMAIL_POOL=["user1@mail.ru", "user2@mail.ru:password"]
+```
 
-| Command                         | What it does                |
-| ------------------------------- | --------------------------- |
-| `Kiro: Switch Account`          | Quick switch via QuickPick  |
-| `Kiro: List Available Accounts` | Refresh account list        |
-| `Kiro: Import Token from File`  | Import token from JSON file |
-| `Kiro: Show Current Account`    | Show current account        |
-| `Kiro: Sign Out`                | Sign out of current account |
-| `Kiro: Open Account Dashboard`  | Open accounts panel         |
-
----
-
-## Building
-
-### Build requirements
-
-- Node.js 18+
-- npm
-
-### Commands
+### Running
 
 ```bash
-# Install dependencies
-npm install
+cd autoreg
 
-# Build TypeScript
-npm run build
+# Auto-registration (uses configured email strategy)
+python -m registration.register_auto
 
-# Build .vsix package
-npm run package
+# With specific email
+python -m registration.register --email user@domain.com
+
+# Batch registration (5 accounts)
+python -m registration.register --count 5
+
+# Headless mode (no GUI)
+python -m registration.register --email user@domain.com --headless
 ```
 
-### CI/CD
+### Anti-Fingerprint
 
-GitHub Actions is configured in the repository:
+Built-in spoofing system to bypass AWS detection:
 
-- Automatic build on push/PR
-- Release `.vsix` on tag `v*`
+- **Canvas** — canvas fingerprint randomization
+- **WebGL** — vendor/renderer spoofing
+- **Audio** — audio fingerprint modification
+- **Navigator** — userAgent, platform, languages spoofing
+- **Screen** — resolution randomization
+- **Timezone** — IP synchronization
+- **WebRTC** — local IP hiding
+- **Fonts** — font list randomization
+- **Behavior** — human-like typing delays
+
+Spoofing profiles are saved per email — same fingerprint on re-registration.
 
 ---
 
-## Project structure
+## 🌐 LLM API Server
 
+OpenAI-compatible API server using Kiro tokens for Claude.
+
+### Running
+
+```bash
+cd autoreg
+python -m llm.run_llm_server
+# API at http://127.0.0.1:8421
 ```
-kiro-extension/
-├── src/
-│   ├── extension.ts      # Entry point, commands, provider
-│   ├── accounts.ts       # Token and account handling
-│   ├── utils.ts          # Utilities, Kiro DB access
-│   ├── webview.ts        # HTML generation for panel
-│   ├── types.ts          # TypeScript types
-│   └── webview/          # UI components
-├── autoreg/              # Python autoreg scripts
-├── dist/                 # Compiled JS (gitignore)
-├── package.json
-├── tsconfig.json
-└── .vscodeignore
+
+### Usage
+
+```bash
+curl http://127.0.0.1:8421/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+### Available Models
+
+| Model | Credit | Description |
+|-------|--------|-------------|
+| `claude-opus-4.5` | 2.2x | Most capable |
+| `claude-sonnet-4.5` | 1.3x | Latest Sonnet |
+| `claude-sonnet-4` | 1.3x | Hybrid reasoning |
+| `claude-haiku-4.5` | 0.4x | Fast & cheap |
+| `auto` | 1x | Auto-select |
+
+### Endpoints
+
+- `GET /v1/models` — list models
+- `POST /v1/chat/completions` — chat (streaming supported)
+- `GET /health` — health check
+- `GET /pool/status` — token pool status
+- `GET /pool/quotas` — all token quotas
+
+---
+
+## 🖥️ Standalone Web App
+
+Web interface for management without VS Code.
+
+```bash
+cd autoreg
+python run.py
+# Opens http://127.0.0.1:8420
+```
+
+Features:
+- View and switch accounts
+- Real-time quota monitoring
+- Run auto-reg via UI
+- Manage Kiro patch
+- WebSocket for live logs
+
+---
+
+## 🛠️ CLI Reference
+
+```bash
+cd autoreg
+
+# ═══════════════════════════════════════════════════════════════
+# STATUS
+# ═══════════════════════════════════════════════════════════════
+python cli.py status                      # Overall system status
+
+# ═══════════════════════════════════════════════════════════════
+# TOKENS
+# ═══════════════════════════════════════════════════════════════
+python cli.py tokens                      # List tokens (alias for list)
+python cli.py tokens list                 # List all tokens
+python cli.py tokens switch <name>        # Switch to account
+python cli.py tokens switch <name> -r     # Switch with forced refresh
+python cli.py tokens refresh              # Refresh best token
+python cli.py tokens refresh <name>       # Refresh specific token
+python cli.py tokens refresh <name> -a    # Refresh and activate
+
+# ═══════════════════════════════════════════════════════════════
+# QUOTAS
+# ═══════════════════════════════════════════════════════════════
+python cli.py quota                       # Current account quota
+python cli.py quota --all                 # ALL accounts quotas
+python cli.py quota --all --refresh       # All quotas with token refresh
+python cli.py quota --json                # JSON format
+
+# ═══════════════════════════════════════════════════════════════
+# MACHINE ID
+# ═══════════════════════════════════════════════════════════════
+python cli.py machine                     # Machine ID status
+python cli.py machine status              # Detailed status
+python cli.py machine backup              # Backup Kiro telemetry
+python cli.py machine backup -s           # + backup system GUID
+python cli.py machine reset               # Reset all IDs
+python cli.py machine reset -s            # + reset system GUID
+python cli.py machine reset -f            # Skip Kiro running check
+python cli.py machine restore             # Restore from backup
+
+# ═══════════════════════════════════════════════════════════════
+# KIRO PATCHING
+# ═══════════════════════════════════════════════════════════════
+python cli.py patch                       # Patch status
+python cli.py patch status                # Detailed status
+python cli.py patch status --json         # JSON format
+python cli.py patch apply                 # Apply patch
+python cli.py patch apply -f              # Force re-patch
+python cli.py patch remove                # Remove patch (restore original)
+python cli.py patch generate-id           # Generate new Machine ID
+python cli.py patch generate-id <id>      # Set specific ID (64 hex)
+python cli.py patch check                 # Check if patch needs update
+python cli.py patch check --auto-fix      # Auto-update if needed
+python cli.py patch restart               # Restart Kiro (preserves windows)
+python cli.py patch apply-restart         # Patch + restart Kiro
+
+# ═══════════════════════════════════════════════════════════════
+# KIRO IDE
+# ═══════════════════════════════════════════════════════════════
+python cli.py kiro                        # Kiro status
+python cli.py kiro status                 # Detailed status
+python cli.py kiro start                  # Start Kiro
+python cli.py kiro stop                   # Stop Kiro
+python cli.py kiro restart                # Restart Kiro
+python cli.py kiro info                   # Info: version, User-Agent, Machine ID
+python cli.py kiro info --json            # JSON format
+
+# ═══════════════════════════════════════════════════════════════
+# SSO IMPORT (import from browser)
+# ═══════════════════════════════════════════════════════════════
+python cli.py sso-import                  # Interactive import
+python cli.py sso-import <cookie>         # Import from x-amz-sso_authn cookie
+python cli.py sso-import <cookie> -a      # Import and activate in Kiro
+python cli.py sso-import <cookie> -r eu-west-1  # Different region
+
+# ═══════════════════════════════════════════════════════════════
+# LLM API SERVER
+# ═══════════════════════════════════════════════════════════════
+python -m llm.run_llm_server              # Start on :8421
+
+# ═══════════════════════════════════════════════════════════════
+# STANDALONE WEB APP
+# ═══════════════════════════════════════════════════════════════
+python run.py                             # Start on :8420
+
+# ═══════════════════════════════════════════════════════════════
+# DEBUG
+# ═══════════════════════════════════════════════════════════════
+python -m debugger.run                    # Debug registration session
+```
+
+### SSO Import — import existing account
+
+If you already have a logged-in account in browser:
+
+1. Open https://view.awsapps.com/start
+2. DevTools (F12) → Application → Cookies
+3. Copy `x-amz-sso_authn` value
+4. Run:
+```bash
+python cli.py sso-import <copied_value> -a
+```
+
+Token will be imported and activated in Kiro.
+
+---
+
+## 🐛 Troubleshooting
+
+### Auto-reg hangs on captcha
+AWS sometimes shows captcha. Solve manually or restart.
+
+### Browser doesn't open
+```bash
+# Check Chrome
+python -c "from autoreg.registration.browser import find_chrome_path; print(find_chrome_path())"
+```
+
+### Python not found
+Make sure `python` or `python3` is in PATH.
+
+### Token not applying
+Try restarting Kiro. Rare, but happens.
+
+### Ban after registration
+1. Generate new machine ID: `python cli.py patch generate-id`
+2. Use different IP (VPN/proxy)
+3. Wait 24 hours
+
+---
+
+## 📝 Build Commands
+
+```bash
+npm run build              # Build extension
+npm run build:standalone   # Build standalone HTML
+npm run build:all          # Build everything
+npm run package            # Create .vsix
+
+npm run release:patch      # Release patch version (6.1.0 -> 6.1.1)
+npm run release:minor      # Release minor version (6.1.0 -> 6.2.0)
+npm run release:major      # Release major version (6.1.0 -> 7.0.0)
 ```
 
 ---
 
-## Known issues
-
-- **Usage sometimes doesn't update** — click Refresh or wait. Kiro caches data.
-- **Auto-reg hangs on captcha** — AWS sometimes requires captcha. Solve manually or restart.
-- **Linux needs python3** — make sure symlink exists or configure PATH.
-- **Token not applying** — try restarting Kiro. Rare, but happens.
-
----
-
-## FAQ
-
-**Q: Is this legal?**  
-A: This is an educational project. Read the disclaimer above.
-
-**Q: Will I get banned?**  
-A: Possibly. Read the disclaimer above.
-
-**Q: Why Python for auto-reg?**  
-A: Because Playwright in Python is more convenient for this kind of automation, plus there was existing code.
-
-**Q: Can I use it without auto-reg?**  
-A: Yes. Just don't configure IMAP and don't click the button. Account switching works independently.
-
-**Q: How to add an existing account?**  
-A: Log into Kiro, find the token in `state.vscdb`, save as JSON to tokens folder. Or use Import.
-
----
-
-## License
+## 📜 License
 
 MIT. Do whatever you want, but remember the disclaimer.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-Found a bug? Have an idea? Open an issue or PR. Code is ugly in places, but it works.
+Found a bug? Have an idea? Open an issue or PR.
 
 ---
 
-## Contact
+## 📢 Contact
 
-📢 Telegram: [@whitebite_devsoft](https://t.me/whitebite_devsoft)
+Telegram: [@whitebite_devsoft](https://t.me/whitebite_devsoft)

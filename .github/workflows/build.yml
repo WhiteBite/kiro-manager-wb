@@ -209,7 +209,7 @@ jobs:
           files: /tmp/release-files/*
           fail_on_unmatched_files: false
           body: |
-            ## ⚡ Kiro Account Switcher ${{ steps.version.outputs.version }}
+            ## ⚡ Kiro Manager WB ${{ steps.version.outputs.version }}
             
             Расширение для управления аккаунтами Kiro IDE с авторегистрацией.
             
@@ -217,7 +217,7 @@ jobs:
             
             | Platform | File | Description |
             |----------|------|-------------|
-            | 🔌 VS Code / Kiro | `kiro-account-switcher-${{ steps.version.outputs.version }}.vsix` | Расширение (все платформы) |
+            | 🔌 VS Code / Kiro | `kiro-manager-wb-${{ steps.version.outputs.version }}.vsix` | Расширение (все платформы) |
             | 🪟 Windows | `kiro-manager-windows-${{ steps.version.outputs.version }}.exe` | Standalone авторег |
             | 🐧 Linux | `kiro-manager-linux-${{ steps.version.outputs.version }}` | Standalone авторег |
             | 🍎 macOS | `kiro-manager-macos-arm64-${{ steps.version.outputs.version }}` | Standalone авторег (Apple Silicon) |

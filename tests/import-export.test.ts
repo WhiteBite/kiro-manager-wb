@@ -123,10 +123,10 @@ describe('Import/Export Accounts', () => {
     describe('Tokens directory', () => {
         it('should have correct tokens path', () => {
             const homeDir = os.homedir();
-            const tokensDir = path.join(homeDir, '.kiro-extension', 'tokens');
+            const tokensDir = path.join(homeDir, '.kiro-manager-wb', 'tokens');
 
             // Path should be constructable
-            expect(tokensDir).toContain('.kiro-extension');
+            expect(tokensDir).toContain('.kiro-manager-wb');
             expect(tokensDir).toContain('tokens');
         });
     });

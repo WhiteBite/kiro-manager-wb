@@ -1,13 +1,13 @@
 {
-  "name": "kiro-account-switcher",
-  "displayName": "Kiro Account Switcher",
-  "description": "Switch between multiple Kiro accounts with beautiful UI",
+  "name": "kiro-manager-wb",
+  "displayName": "Kiro Manager WB",
+  "description": "Manage multiple Kiro accounts with beautiful UI",
   "version": "6.3.7",
-  "publisher": "kiro-extension",
+  "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/WhiteBite/Kiro-auto-reg-extension"
+    "url": "https://github.com/WhiteBite/kiro-manager-wb"
   },
   "engines": {
     "vscode": "^1.94.1"
@@ -104,7 +104,7 @@
       ]
     },
     "configuration": {
-      "title": "Kiro Account Switcher",
+      "title": "Kiro Manager WB",
       "properties": {
         "kiroAccountSwitcher.autoSwitch.enabled": {
           "type": "boolean",

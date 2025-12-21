@@ -5,7 +5,7 @@
 Патч модифицирует встроенное расширение Kiro (`kiro.kiroAgent`) для поддержки динамической смены `machineId` при переключении аккаунтов.
 
 **Два патча:**
-1. **PATCH 1**: Добавляет проверку файла `~/.kiro-extension/machine-id.txt` в функцию `getMachineId()`
+1. **PATCH 1**: Добавляет проверку файла `~/.kiro-manager-wb/machine-id.txt` в функцию `getMachineId()`
 2. **PATCH 2**: Заменяет статический `MACHINE_ID` на динамический вызов `getMachineId()` в `userAttributes()`
 
 ## Быстрые команды
@@ -28,7 +28,7 @@ python -c "import sys; sys.path.insert(0, 'autoreg'); from services.kiro_patcher
 ## Важно
 
 - **Всегда закрывай Kiro** перед применением/откатом патча
-- **Бэкапы создаются автоматически** в `~/.kiro-extension/backups/kiro-patches/`
+- **Бэкапы создаются автоматически** в `~/.kiro-manager-wb/backups/kiro-patches/`
 - **После обновления Kiro** патч нужно применить заново
 
 ## Если что-то сломалось
@@ -40,7 +40,7 @@ python -c "import sys; sys.path.insert(0, 'autoreg'); from services.kiro_patcher
 
 ## Как работает переключение аккаунтов
 
-1. Расширение записывает новый `machineId` в файл `~/.kiro-extension/machine-id.txt`
+1. Расширение записывает новый `machineId` в файл `~/.kiro-manager-wb/machine-id.txt`
 2. Патч читает этот файл при каждом вызове `getMachineId()`
 3. AWS видит разные `machineId` для разных аккаунтов
 4. Баны за "unusual activity" предотвращены

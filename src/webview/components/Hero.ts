@@ -17,7 +17,7 @@ export interface ImapProfile {
     port?: number;
   };
   strategy?: {
-    type: 'single' | 'catch_all' | 'pool';
+    type: 'single' | 'plus_alias' | 'catch_all' | 'pool';
     emails?: Array<{ email: string; status?: string }>;
   };
   stats?: {

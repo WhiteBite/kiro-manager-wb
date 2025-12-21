@@ -52,7 +52,7 @@ class KiroPatcherService:
     Сервис для патчинга Kiro IDE
     
     Патчит функцию getMachineId() в extension.js чтобы:
-    1. Читать machineId из файла ~/.kiro-extension/machine-id.txt
+    1. Читать machineId из файла ~/.kiro-manager-wb/machine-id.txt
     2. Если файл не существует - использовать оригинальный machineId
     
     Это позволяет менять machineId при переключении аккаунтов,
@@ -63,7 +63,7 @@ class KiroPatcherService:
     PATCH_MARKER = "// KIRO_BATCH_LOGIN_PATCH_v"
     
     # Путь к файлу с кастомным machine ID
-    CUSTOM_ID_FILE = ".kiro-extension/machine-id.txt"
+    CUSTOM_ID_FILE = ".kiro-manager-wb/machine-id.txt"
     
     def __init__(self):
         self.paths = get_paths()
@@ -294,7 +294,7 @@ class KiroPatcherService:
   try {{
     const fs = require('fs');
     const path = require('path');
-    const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-extension', 'machine-id.txt');
+    const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-manager-wb', 'machine-id.txt');
     if (fs.existsSync(customIdFile)) {{
       const customId = fs.readFileSync(customIdFile, 'utf8').trim();
       if (customId && customId.length >= 32) {{

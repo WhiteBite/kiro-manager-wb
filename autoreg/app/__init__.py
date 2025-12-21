@@ -1,5 +1,5 @@
 """
-Kiro Account Manager - Standalone Application
+Kiro Manager WB - Standalone Application
 FastAPI + WebSocket + Modern UI
 """
 
