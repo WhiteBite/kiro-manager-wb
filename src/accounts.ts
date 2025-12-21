@@ -17,7 +17,7 @@ import * as os from 'os';
 // AWS tracks machineId in telemetry and bans accounts if many use the same ID.
 // We rotate machineId on each account switch to prevent this.
 
-const MACHINE_ID_FILE = path.join(os.homedir(), '.kiro-batch-login', 'machine-id.txt');
+const MACHINE_ID_FILE = path.join(os.homedir(), '.kiro-extension', 'machine-id.txt');
 
 /**
  * Generate a new random machineId (64-char hex like node-machine-id)

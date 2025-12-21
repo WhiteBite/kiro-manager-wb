@@ -43,7 +43,7 @@
 
 Kiro хранит токен авторизации в своей внутренней базе (`state.vscdb`). Расширение:
 
-1. Читает токены из папки `~/.kiro-batch-login/tokens/`
+1. Читает токены из папки `~/.kiro-extension/tokens/`
 2. При переключении — записывает выбранный токен в базу Kiro
 3. Kiro подхватывает новый токен и работает под другим аккаунтом
 
@@ -106,7 +106,7 @@ npm run package
 
 | Настройка                    | Описание                                      | По умолчанию                 |
 | ---------------------------- | --------------------------------------------- | ---------------------------- |
-| `tokensPath`                 | Путь к папке с токенами                       | `~/.kiro-batch-login/tokens` |
+| `tokensPath`                 | Путь к папке с токенами                       | `~/.kiro-extension/tokens` |
 | `autoSwitch.enabled`         | Автоматический рефреш токена перед истечением | `false`                      |
 | `autoSwitch.intervalMinutes` | За сколько минут до истечения рефрешить       | `50`                         |
 
@@ -131,7 +131,7 @@ npm run package
 
 ## Формат токенов
 
-Токены хранятся в `~/.kiro-batch-login/tokens/` как JSON файлы:
+Токены хранятся в `~/.kiro-extension/tokens/` как JSON файлы:
 
 ```json
 {
@@ -176,7 +176,7 @@ npm run package
 - **Браузер не открывается** — проверить что Playwright установлен: `playwright install chromium`
 - **Python не найден** — убедиться что `python` или `python3` в PATH.
 
-Логи пишутся в `~/.kiro-batch-login/autoreg.log` и в консоль расширения.
+Логи пишутся в `~/.kiro-extension/autoreg.log` и в консоль расширения.
 
 ---
 

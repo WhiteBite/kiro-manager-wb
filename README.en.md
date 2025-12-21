@@ -43,7 +43,7 @@ All this lives in a convenient sidebar panel with a proper UI, not in the consol
 
 Kiro stores the auth token in its internal database (`state.vscdb`). The extension:
 
-1. Reads tokens from `~/.kiro-batch-login/tokens/`
+1. Reads tokens from `~/.kiro-extension/tokens/`
 2. On switch — writes the selected token to Kiro's database
 3. Kiro picks up the new token and works under a different account
 
@@ -106,7 +106,7 @@ All settings: `Ctrl+,` → search `kiroAccountSwitcher`
 
 | Setting                      | Description                          | Default                      |
 | ---------------------------- | ------------------------------------ | ---------------------------- |
-| `tokensPath`                 | Path to tokens folder                | `~/.kiro-batch-login/tokens` |
+| `tokensPath`                 | Path to tokens folder                | `~/.kiro-extension/tokens` |
 | `autoSwitch.enabled`         | Auto-refresh token before expiration | `false`                      |
 | `autoSwitch.intervalMinutes` | Minutes before expiration to refresh | `50`                         |
 
@@ -131,7 +131,7 @@ All settings: `Ctrl+,` → search `kiroAccountSwitcher`
 
 ## Token format
 
-Tokens are stored in `~/.kiro-batch-login/tokens/` as JSON files:
+Tokens are stored in `~/.kiro-extension/tokens/` as JSON files:
 
 ```json
 {
@@ -176,7 +176,7 @@ You can add tokens manually — just drop a JSON file into the folder and click 
 - **Browser not opening** — check Playwright is installed: `playwright install chromium`
 - **Python not found** — make sure `python` or `python3` is in PATH.
 
-Logs are written to `~/.kiro-batch-login/autoreg.log` and extension console.
+Logs are written to `~/.kiro-extension/autoreg.log` and extension console.
 
 ---
 

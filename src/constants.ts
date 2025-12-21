@@ -29,7 +29,7 @@ export const CONFIG = {
 } as const;
 
 export const PATHS = {
-    LOG_DIR: '.kiro-batch-login',
+    LOG_DIR: '.kiro-extension',
     LOG_FILE: 'autoreg.log',
     AUTOREG_DIR: '.kiro-autoreg',
     PROFILES_FILE: 'imap-profiles.json',
