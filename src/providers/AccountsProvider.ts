@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, deleteAccount, markUsageStale } from '../accounts';
 import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage, clearUsageCache } from '../utils';
-import { generateWebviewHtml } from '../webview';
+import { generateWebviewHtml } from '../webview/index';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
