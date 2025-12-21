@@ -5,7 +5,7 @@
 import { generateStateScript } from './state';
 import { Translations } from './i18n/types';
 
-export function generateWebviewScript(totalAccounts: number, t: Translations): string {
+export function generateWebviewScript(totalAccounts: number, bannedCount: number, t: Translations): string {
   // Serialize translations for client-side use
   const T = JSON.stringify(t);
 
@@ -63,12 +63,15 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       
       // FAB visibility - only show on accounts tab
       const fab = document.getElementById('fabContainer');
-      if (fab) {
-        fab.classList.toggle('hidden', tabId !== 'accounts');
+      if (controls) {
+        controls.style.display = tabId === 'accounts' ? '' : 'none';
       }
       
       // Load data for specific tabs
-      if (tabId === 'profiles') {
+      if (tabId === 'llm') {
+        getLLMSettings();
+        vscode.postMessage({ command: 'getLLMServerStatus' });
+      } else if (tabId === 'profiles') {
         vscode.postMessage({ command: 'loadProfiles' });
         vscode.postMessage({ command: 'getActiveProfile' });
       } else if (tabId === 'settings') {
@@ -225,9 +228,58 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
     function openVsCodeSettings() {
       vscode.postMessage({ command: 'openVsCodeSettings' });
     }
+
+    // === LLM Server ===
+    function getLLMSettings() {
+      vscode.postMessage({ command: 'getLLMSettings' });
+    }
+
+    function saveLLMSettings() {
+      const settings = {
+        baseUrl: document.getElementById('llmBaseUrl')?.value || '',
+        port: document.getElementById('llmPort')?.value || '8421',
+        apiKey: document.getElementById('llmApiKey')?.value || '',
+        model: document.getElementById('llmModel')?.value || 'claude-sonnet-4-20250514',
+      };
+      vscode.postMessage({ command: 'saveLLMSettings', settings });
+      showToast('LLM settings saved', 'success');
+    }
+
+    function startLLMServer() {
+      vscode.postMessage({ command: 'startLLMServer' });
+    }
+
+    function stopLLMServer() {
+      vscode.postMessage({ command: 'stopLLMServer' });
+    }
+
+    function restartLLMServer() {
+      vscode.postMessage({ command: 'restartLLMServer' });
+    }
+
+    function updateLLMServerStatus(status) {
+      const statusEl = document.getElementById('llmServerStatus');
+      if (statusEl) {
+        statusEl.textContent = status.status;
+        statusEl.className = 'patch-status ' + status.status.toLowerCase();
+      }
+    }
+
+    function updateLLMSettings(settings) {
+      const baseUrlEl = document.getElementById('llmBaseUrl');
+      const portEl = document.getElementById('llmPort');
+      const apiKeyEl = document.getElementById('llmApiKey');
+      const modelEl = document.getElementById('llmModel');
+      if (baseUrlEl) baseUrlEl.value = settings.baseUrl || 'http://127.0.0.1';
+      if (portEl) portEl.value = settings.port || '8421';
+      if (apiKeyEl) apiKeyEl.value = settings.apiKey || '';
+      if (modelEl) modelEl.value = settings.model || 'claude-sonnet-4-20250514';
+    }
     
     function startAutoReg() {
-      vscode.postMessage({ command: 'startAutoReg' });
+      const countInput = document.getElementById('regCountInput');
+      const count = countInput ? parseInt(countInput.value, 10) : 1;
+      vscode.postMessage({ command: 'startAutoReg', count: count > 1 ? count : undefined });
     }
     
     function stopAutoReg() {
@@ -327,8 +379,11 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       const content = document.getElementById('logsContent');
       if (!content) return;
       
-      // Open drawer on new log
-      document.getElementById('logsDrawer')?.classList.add('open');
+      // Don't auto-open drawer - let user control it
+      // Only open on errors
+      if (log.includes('ERROR') || log.includes('❌') || log.includes('✗')) {
+        document.getElementById('logsDrawer')?.classList.add('open');
+      }
       
       const line = document.createElement('div');
       line.className = 'log-line';
@@ -345,13 +400,43 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
       updateLogsCount();
     }
 
-    // === Delete Dialog ===
+    // === Delete with Double-Click (no modal) ===
+    
+    let pendingDeleteFilename = null;
+    let pendingDeleteTimeout = null;
     
     function confirmDelete(filename) {
-      pendingAction = { type: 'delete', filename };
-      document.getElementById('dialogTitle').textContent = T.deleteTitle;
-      document.getElementById('dialogText').textContent = T.areYouSure;
-      document.getElementById('dialogOverlay').classList.add('visible');
+      const btn = event?.target?.closest('.account-btn.danger');
+      
+      // If same file clicked again within timeout - delete!
+      if (pendingDeleteFilename === filename && btn) {
+        clearTimeout(pendingDeleteTimeout);
+        pendingDeleteFilename = null;
+        btn.classList.remove('confirm-delete');
+        vscode.postMessage({ command: 'deleteAccount', email: filename });
+        showToast(T.accountDeleted, 'success');
+        return;
+      }
+      
+      // First click - highlight button and wait for second click
+      // Reset any previous pending delete
+      if (pendingDeleteTimeout) {
+        clearTimeout(pendingDeleteTimeout);
+        document.querySelectorAll('.account-btn.danger.confirm-delete').forEach(b => {
+          b.classList.remove('confirm-delete');
+        });
+      }
+      
+      pendingDeleteFilename = filename;
+      if (btn) {
+        btn.classList.add('confirm-delete');
+      }
+      
+      // Reset after 3 seconds
+      pendingDeleteTimeout = setTimeout(() => {
+        pendingDeleteFilename = null;
+        if (btn) btn.classList.remove('confirm-delete');
+      }, 3000);
     }
     
     function confirmDeleteExhausted() {
@@ -510,14 +595,14 @@ export function generateWebviewScript(totalAccounts: number, t: Translations): s
         case 'providerDetected':
           applyProviderHint(msg.hint, msg.recommendedStrategy);
           break;
-        case 'emailsImported':
-          addImportedEmails(msg.emails);
-          break;
         case 'patchStatus':
-          updatePatchStatus(msg);
+          updatePatchStatus(msg.status);
           break;
-        case 'imapTestResult':
-          updateImapTestResult(msg);
+        case 'llmServerStatus':
+          updateLLMServerStatus(msg.status);
+          break;
+        case 'llmSettings':
+          updateLLMSettings(msg.settings);
           break;
       }
     });

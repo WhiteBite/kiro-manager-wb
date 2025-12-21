@@ -190,13 +190,31 @@ export async function loadAccountsWithUsage(): Promise<AccountInfo[]> {
 // Load usage for a single account from cache
 export async function loadSingleAccountUsage(accountName: string): Promise<AccountUsage | null> {
   const cached = getCachedAccountUsage(accountName);
+
+  // ALWAYS preserve ban status even if stale!
+  if (cached?.isBanned) {
+    return {
+      currentUsage: cached.currentUsage ?? -1,
+      usageLimit: cached.usageLimit ?? 500,
+      percentageUsed: cached.percentageUsed ?? 0,
+      daysRemaining: cached.daysRemaining ?? -1,
+      loading: false,
+      isBanned: true,
+      banReason: cached.banReason,
+      suspended: cached.suspended
+    };
+  }
+
   if (cached && !cached.stale) {
     return {
       currentUsage: cached.currentUsage,
       usageLimit: cached.usageLimit,
       percentageUsed: cached.percentageUsed,
       daysRemaining: cached.daysRemaining,
-      loading: false
+      loading: false,
+      isBanned: cached.isBanned,
+      banReason: cached.banReason,
+      suspended: cached.suspended
     };
   }
   // Return unknown state instead of null

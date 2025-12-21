@@ -26,11 +26,17 @@ autoreg/__pycache__/**
 autoreg/**/__pycache__/**
 autoreg/*.pyc
 autoreg/**/*.pyc
+autoreg/**/*.pyo
+autoreg/**/*.png
+autoreg/**/*.spec
 autoreg/.env
 autoreg/app/static/index.html
 autoreg/app/profiles.json
 autoreg/venv/**
 autoreg/.venv/**
+autoreg/**/debug_sessions/**
+autoreg/**/dist/**
+autoreg/**/build/**
 
 # Exclude scripts (build tools)
 scripts/**

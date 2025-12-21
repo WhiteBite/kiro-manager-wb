@@ -22,7 +22,7 @@ export type WebviewCommand =
     | { command: 'refreshAllExpired' }
 
     // Auto-reg
-    | { command: 'startAutoReg' }
+    | { command: 'startAutoReg', count?: number }
     | { command: 'stopAutoReg' }
     | { command: 'togglePauseAutoReg' }
 
@@ -62,6 +62,14 @@ export type WebviewCommand =
     // Console
     | { command: 'clearConsole' }
     | { command: 'copyLogs'; logs: string }
+
+    // LLM Server
+    | { command: 'getLLMSettings' }
+    | { command: 'saveLLMSettings'; settings: Record<string, any> }
+    | { command: 'startLLMServer' }
+    | { command: 'stopLLMServer' }
+    | { command: 'restartLLMServer' }
+    | { command: 'getLLMServerStatus' }
 
     // Other
     | { command: 'openUrl'; url: string }

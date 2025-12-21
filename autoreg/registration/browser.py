@@ -197,8 +197,15 @@ class BrowserAutomation:
         # Настройка браузера
         co = ChromiumOptions()
         
-        # Использовать свободный порт (избегаем конфликта с запущенным Chrome)
-        co.auto_port()
+        # КРИТИЧНО: Уникальная user data directory для каждого экземпляра
+        # Это предотвращает конфликт с уже открытым Chrome
+        import tempfile
+        import uuid
+        
+        temp_profile = os.path.join(tempfile.gettempdir(), f'kiro_chrome_{uuid.uuid4().hex[:8]}')
+        co.set_user_data_path(temp_profile)
+        co.auto_port()  # Автоматически найти свободный порт
+        print(f"[Browser] Using temp profile: {temp_profile}")
         
         # Найти и установить путь к Chrome (критично для Windows)
         chrome_path = find_chrome_path()
@@ -220,6 +227,11 @@ class BrowserAutomation:
         co.set_argument('--no-first-run')
         co.set_argument('--no-default-browser-check')
         
+        # Уменьшаем логи Chrome
+        co.set_argument('--disable-logging')
+        co.set_argument('--log-level=3')  # Только fatal errors
+        # НЕ используем --silent-launch - он ломает запуск Chrome!
+        
         # Force English language to avoid Chinese error messages
         co.set_argument('--lang=en-US')
         co.set_argument('--accept-lang=en-US,en')
@@ -240,12 +252,24 @@ class BrowserAutomation:
         if browser_settings.get('devtools', False):
             co.set_argument('--auto-open-devtools-for-tabs')
         
+        # Proxy support (from environment variables)
+        proxy_url = os.environ.get('HTTPS_PROXY') or os.environ.get('HTTP_PROXY')
+        if proxy_url:
+            # Remove http:// prefix if present for Chrome proxy format
+            proxy_server = proxy_url.replace('http://', '').replace('https://', '')
+            co.set_argument(f'--proxy-server={proxy_server}')
+            # Ignore SSL errors when using proxy (mitmproxy intercepts HTTPS)
+            co.set_argument('--ignore-certificate-errors')
+            co.set_argument('--ignore-ssl-errors')
+            print(f"[Browser] Using proxy: {proxy_server}")
+        
         for arg in BROWSER_ARGS:
             co.set_argument(arg)
         
         print(f"[Browser] Initializing ChromiumPage (headless={headless})...")
         try:
             self.page = ChromiumPage(co)
+            
             print("[Browser] ChromiumPage initialized successfully")
             
             # КРИТИЧНО: Максимизируем окно для корректного отображения AWS UI
@@ -612,18 +636,40 @@ class BrowserAutomation:
     
     def _accept_cookie_banner(self):
         """Принимает cookie banner кликом на Accept/Принять."""
+        # Метод 1: DrissionPage - ищем кнопку Accept напрямую
         try:
-            # Кликаем Accept/Принять
+            # Ищем оранжевую кнопку Accept на profile.aws.amazon.com
+            accept_btn = self.page.ele('text=Accept', timeout=0.5)
+            if accept_btn and accept_btn.tag == 'button':
+                accept_btn.click()
+                print("   [C] Cookie banner accepted (DrissionPage)")
+                return True
+        except:
+            pass
+        
+        # Метод 2: JavaScript для AWS signin cookie banner
+        try:
             result = self.page.run_js('''
-                // Пробуем кликнуть кнопку принятия cookie
+                // AWS signin cookie banner
                 const acceptButtons = [
                     '[data-id="awsccc-cb-btn-accept"]',
                     'button[data-id*="accept"]',
-                    '#awsccc-cb-btn-accept'
+                    '#awsccc-cb-btn-accept',
                 ];
                 for (const sel of acceptButtons) {
-                    const btn = document.querySelector(sel);
-                    if (btn && btn.offsetParent !== null) {
+                    try {
+                        const btn = document.querySelector(sel);
+                        if (btn && btn.offsetParent !== null) {
+                            btn.click();
+                            return 'clicked';
+                        }
+                    } catch(e) {}
+                }
+                // Fallback: ищем кнопку по тексту
+                const allButtons = document.querySelectorAll('button');
+                for (const btn of allButtons) {
+                    const text = btn.textContent.trim();
+                    if ((text === 'Accept' || text === 'Принять') && btn.offsetParent !== null) {
                         btn.click();
                         return 'clicked';
                     }
@@ -631,7 +677,7 @@ class BrowserAutomation:
                 return 'not_found';
             ''')
             if result == 'clicked':
-                print("   [C] Cookie banner accepted")
+                print("   [C] Cookie banner accepted (JS)")
                 return True
         except:
             pass
@@ -887,7 +933,7 @@ class BrowserAutomation:
     def enter_email(self, email: str) -> bool:
         """Вводит email. Оптимизировано для скорости."""
         print(f"[M] Entering email: {email}")
-        record('enter_email', {'email': email}, self.page)
+        record('enter_email', {'email': email}, self.page, screenshot=False)
         
         # Закрываем cookie один раз
         self.close_cookie_dialog(force=True)
@@ -971,10 +1017,31 @@ class BrowserAutomation:
         print(f"   [URL] Before: {url_before[:60]}...")
         print(f"   [URL] After: {url_after[:60]}...")
         
+        # Ждём пока страница profile.aws.amazon.com загрузится
+        # Cookie popup появляется после загрузки
+        if 'profile.aws.amazon.com' in self.page.url:
+            print("   [...] Waiting for profile.aws.amazon.com to load...")
+            for _ in range(10):
+                time.sleep(0.5)
+                # Ищем кнопку Accept которая появится после загрузки
+                try:
+                    accept_btn = self.page.ele('text=Accept', timeout=0.3)
+                    if accept_btn:
+                        print("   [C] Found Accept button, clicking...")
+                        accept_btn.click()
+                        time.sleep(0.5)
+                        break
+                except:
+                    pass
+        
         # КРИТИЧНО: Принимаем cookie диалог - он появляется после клика Continue
-        # и перекрывает страницу имени!
-        self.close_cookie_dialog(force=True)
-        time.sleep(0.5)
+        # и перекрывает страницу имени! Пробуем несколько раз с паузой
+        for attempt in range(3):
+            self._cookie_closed = False  # Сбрасываем флаг чтобы попробовать снова
+            if self.close_cookie_dialog(force=True):
+                time.sleep(0.5)
+                break
+            time.sleep(0.5)
         
         # Ожидание страницы имени - ищем ТЕКСТ "Enter your name" или placeholder с "Silva"
         print("   [...] Waiting for name page...")
@@ -1038,7 +1105,7 @@ class BrowserAutomation:
     def enter_name(self, name: str) -> bool:
         """Вводит имя. Оптимизировано для скорости."""
         print(f"[N] Entering name: {name}")
-        record('enter_name', {'name': name}, self.page)
+        record('enter_name', {'name': name}, self.page, screenshot=False)
         
         # КРИТИЧНО: Закрываем cookie диалог ПЕРЕД поиском поля
         self._hide_cookie_banner()
@@ -1332,7 +1399,9 @@ class BrowserAutomation:
     def enter_password(self, password: str) -> bool:
         """Вводит и подтверждает пароль"""
         print("[KEY] Entering password...")
-        record('enter_password', {'length': len(password)}, self.page)
+        record('enter_password', {'length': len(password)}, self.page, screenshot=False)  # Скриншот отключен - таймаутится
+        
+        step_start = time.time()
         
         # Быстрое ожидание контекста
         self.wait_for_page_context('password', timeout=5)
@@ -1340,7 +1409,7 @@ class BrowserAutomation:
         
         # Ищем password поля
         pwd_fields = self.page.eles('tag:input@@type=password', timeout=3)
-        print(f"   Found {len(pwd_fields)} password fields")
+        print(f"   Found {len(pwd_fields)} password fields ({time.time() - step_start:.1f}s)")
         
         pwd1, pwd2 = None, None
         
@@ -1364,11 +1433,14 @@ class BrowserAutomation:
         
         # Ввод пароля с человеческим поведением (медленно - вспоминаем пароль)
         print("   Entering password...")
+        typing_start = time.time()
         self.human_type(pwd1, password, field_type='password')
+        print(f"   Password entered ({time.time() - typing_start:.1f}s)")
         
         if pwd2:
             self._behavior.human_delay(0.2, 0.4)  # Пауза перед повторным вводом
             print("   Confirming password...")
+            confirm_start = time.time()
             self.human_type(pwd2, password, field_type='password')
             
             # Проверяем что оба пароля одинаковые
@@ -1395,6 +1467,8 @@ class BrowserAutomation:
                     self.screenshot("error_password_mismatch")
                 else:
                     print(f"   [OK] Passwords match after retry")
+            
+            print(f"   Password confirmed ({time.time() - confirm_start:.1f}s)")
         
         time.sleep(0.15)
         
@@ -1402,29 +1476,173 @@ class BrowserAutomation:
         if self._check_captcha():
             print("   [!] CAPTCHA detected on password page!")
             self.screenshot("captcha_detected")
-            # Пробуем решить капчу
-            if not self._handle_captcha():
-                print("   [!] CAPTCHA solving failed")
+            # Ждём ручного решения капчи
+            if not self._handle_captcha(timeout=120):
+                print("   [!] CAPTCHA solving failed or timeout")
                 return False
+            print("   [OK] CAPTCHA solved, continuing...")
         
-        print("[->] Clicking Continue...")
+        print(f"[->] Clicking Continue... (total input time: {time.time() - step_start:.1f}s)")
         old_url = self.page.url
+        click_time = time.time()
         self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
         
-        # Проверяем на ошибку "leaked password" или "Invalid captcha"
-        time.sleep(0.3)
+        # Ждём немного и проверяем результат
+        time.sleep(1)
+        
+        # Проверяем появилась ли капча после клика Continue
+        if self._check_captcha():
+            print("   [!] CAPTCHA appeared after Continue click!")
+            if not self._handle_captcha(timeout=120):
+                print("   [!] CAPTCHA solving failed")
+                return False
+            # После решения капчи кликаем Continue снова
+            print("[->] Clicking Continue after captcha...")
+            self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
+            time.sleep(1)
+        
+        # Проверяем на ошибку "Invalid captcha"
         if self._check_captcha_error():
-            print("   [!] Invalid captcha error, retrying...")
+            print("   [!] Invalid captcha error - captcha was rejected by server")
             self.screenshot("captcha_invalid")
-            return False
+            # Пробуем ещё раз с новой капчей
+            print("   [R] Retrying with new captcha...")
+            time.sleep(1)
+            if self._check_captcha():
+                if not self._handle_captcha(timeout=120):
+                    return False
+                self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
+                time.sleep(1)
+                if self._check_captcha_error():
+                    print("   [!] Captcha rejected again")
+                    return False
         
         if self._check_password_error():
             print("   [!] Password rejected, generating new one...")
             return self.enter_password(self.generate_password(18))
         
-        # Быстрая проверка перехода
-        self.wait_for_url_change(old_url, timeout=3)
-        self._log(f"URL after password", self.page.url[:60])
+        # Ждём перехода - AWS может долго редиректить (показывает "Redirecting...")
+        # Таймаут настраивается в config.timeouts.password_redirect
+        password_redirect_timeout = self.settings.get('timeouts', {}).get('password_redirect', 60)
+        print(f"   [...] Waiting for redirect after password (timeout: {password_redirect_timeout}s)...")
+        
+        # Логируем прогресс ожидания
+        # Ждём редирект на view.awsapps.com или callback URL
+        redirect_start = time.time()
+        last_log = 0
+        last_url = old_url
+        workflow_success_detected = False
+        
+        while time.time() - redirect_start < password_redirect_timeout:
+            current_url = self.page.url
+            
+            # Логируем изменение URL
+            if current_url != last_url:
+                elapsed = time.time() - redirect_start
+                print(f"   [{elapsed:.1f}s] URL: {current_url[:60]}...")
+                last_url = current_url
+            
+            # Успешный редирект на Allow access или callback
+            if 'view.awsapps.com' in current_url or 'awsapps.com/start' in current_url:
+                elapsed = time.time() - redirect_start
+                print(f"   [OK] Redirected to awsapps.com after {elapsed:.1f}s")
+                break
+            
+            if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
+                elapsed = time.time() - redirect_start
+                print(f"   [OK] Redirected to callback after {elapsed:.1f}s")
+                break
+            
+            # КРИТИЧНО: Проверяем cookie workflow-step-id
+            # AWS устанавливает его в "end-of-workflow-success" когда регистрация завершена
+            # но JS на странице может не сработать из-за спуфинга
+            if not workflow_success_detected:
+                try:
+                    workflow_cookie = self.page.run_js('''
+                        const cookies = document.cookie.split(';');
+                        for (const c of cookies) {
+                            const [name, value] = c.trim().split('=');
+                            if (name === 'workflow-step-id') return decodeURIComponent(value);
+                        }
+                        return null;
+                    ''')
+                    
+                    if workflow_cookie == 'end-of-workflow-success':
+                        elapsed = time.time() - redirect_start
+                        print(f"   [!] Cookie 'workflow-step-id=end-of-workflow-success' detected at {elapsed:.1f}s")
+                        print(f"   [!] AWS registration complete but page stuck - forcing navigation...")
+                        workflow_success_detected = True
+                        
+                        # Пробуем найти redirect URL в странице или cookies
+                        redirect_url = self.page.run_js('''
+                            // Ищем redirect URL в meta refresh
+                            const meta = document.querySelector('meta[http-equiv="refresh"]');
+                            if (meta) {
+                                const content = meta.getAttribute('content');
+                                const match = content.match(/url=(.+)/i);
+                                if (match) return match[1];
+                            }
+                            
+                            // Ищем в скриптах
+                            const scripts = document.querySelectorAll('script');
+                            for (const s of scripts) {
+                                const text = s.textContent;
+                                const match = text.match(/window\.location\s*=\s*["']([^"']+)["']/);
+                                if (match) return match[1];
+                            }
+                            
+                            // Ищем ссылку на awsapps
+                            const links = document.querySelectorAll('a[href*="awsapps"]');
+                            if (links.length > 0) return links[0].href;
+                            
+                            return null;
+                        ''')
+                        
+                        if redirect_url:
+                            print(f"   [>] Found redirect URL: {redirect_url[:60]}...")
+                            self.page.get(redirect_url)
+                            time.sleep(1)
+                            continue
+                        
+                        # Если не нашли URL - пробуем стандартный путь
+                        # Получаем workflowResultHandle из URL
+                        import re
+                        result_match = re.search(r'workflowResultHandle=([^&]+)', current_url)
+                        if result_match:
+                            result_handle = result_match.group(1)
+                            # Пробуем перейти на view.awsapps.com напрямую
+                            awsapps_url = f"https://view.awsapps.com/start/#/?workflowResultHandle={result_handle}"
+                            print(f"   [>] Trying direct navigation to awsapps...")
+                            self.page.get(awsapps_url)
+                            time.sleep(2)
+                            continue
+                except Exception as e:
+                    pass
+            
+            # Логируем каждые 10 секунд
+            elapsed = int(time.time() - redirect_start)
+            if elapsed > 0 and elapsed % 10 == 0 and elapsed != last_log:
+                print(f"   [...] Still waiting... ({elapsed}s)")
+                last_log = elapsed
+                
+                # Проверяем текст на странице
+                try:
+                    page_text = self.page.run_js('document.body.innerText.substring(0, 200)')
+                    if 'Redirecting' in page_text:
+                        print(f"   [i] AWS shows 'Redirecting...' - page may be stuck")
+                        
+                        # Если страница застряла на Redirecting больше 15 секунд - пробуем refresh
+                        if elapsed > 15 and not workflow_success_detected:
+                            print(f"   [!] Page stuck on Redirecting, trying page refresh...")
+                            self.page.refresh()
+                            time.sleep(2)
+                except:
+                    pass
+            
+            time.sleep(0.2)
+        
+        total_time = time.time() - step_start
+        self._log(f"URL after password ({total_time:.1f}s total)", self.page.url[:60])
         
         return True
     
@@ -1432,16 +1650,20 @@ class BrowserAutomation:
         """Проверяет наличие CAPTCHA на странице"""
         captcha_indicators = [
             'text=Security check',
-            'text=Security Verification',
+            'text=Security Verification', 
             'text=Please click verify',
+            'text=solve the challenge',  # AWS puzzle captcha
+            'text=Verify you are human',
             '#captcha',
             '[data-testid="ams-captcha"]',
             '.wOjKx2rsiwhq8wvEYj3p',  # AWS captcha container class
+            'canvas',  # Puzzle captcha uses canvas
+            'iframe[src*="captcha"]',
         ]
         
         for selector in captcha_indicators:
             try:
-                if self.page.ele(selector, timeout=0.5):
+                if self.page.ele(selector, timeout=0.3):
                     return True
             except:
                 pass
@@ -1457,84 +1679,74 @@ class BrowserAutomation:
             pass
         return False
     
-    def _handle_captcha(self) -> bool:
+    def _handle_captcha(self, timeout: int = 120) -> bool:
         """
         Обрабатывает CAPTCHA на странице.
-        AWS использует текстовую капчу которую нужно ввести вручную.
+        AWS использует визуальную капчу (puzzle) которую нужно решить вручную.
+        
+        Args:
+            timeout: Время ожидания решения в секундах (по умолчанию 120)
         
         Returns:
             True если капча решена, False если не удалось
         """
-        print("   [CAPTCHA] Attempting to solve...")
+        print("   [CAPTCHA] ========================================")
+        print("   [CAPTCHA] CAPTCHA DETECTED - MANUAL SOLUTION REQUIRED")
+        print("   [CAPTCHA] ========================================")
         
-        # Ищем кнопку Verify для запуска капчи
-        verify_btn = self._find_element([
-            'text=Verify',
-            'xpath://button[contains(text(), "Verify")]',
-            '[data-analytics-funnel-value*="button"]',
-        ], timeout=2)
+        # Делаем скриншот капчи для анализа
+        self.screenshot("captcha_puzzle")
         
-        if verify_btn:
-            print("   [CAPTCHA] Clicking Verify button...")
-            self.human_click(verify_btn)
-            time.sleep(2)
-        
-        # Ждём появления капчи (изображение + поле ввода)
-        captcha_input = None
-        for _ in range(10):
-            # Ищем поле ввода капчи
-            captcha_input = self._find_element([
-                '@placeholder=Verification answer',
-                'input[placeholder*="answer" i]',
-                'input[placeholder*="verification" i]',
-            ], timeout=1)
-            
-            if captcha_input:
-                break
-            time.sleep(0.5)
-        
-        if not captcha_input:
-            print("   [CAPTCHA] Input field not found")
-            # Если headless - капчу не решить автоматически
-            if self.headless:
-                print("   [!] Cannot solve CAPTCHA in headless mode!")
-                return False
-            
-            # В GUI режиме ждём пока пользователь решит
-            print("   [CAPTCHA] Waiting for manual solution (60s)...")
-            for i in range(60):
-                time.sleep(1)
-                # Проверяем исчезла ли капча
-                if not self._check_captcha():
-                    print("   [CAPTCHA] Solved manually!")
-                    return True
-            
-            print("   [CAPTCHA] Timeout waiting for manual solution")
-            return False
-        
-        # Если есть поле ввода - это текстовая капча
-        # В headless режиме не можем решить
+        # Если headless - капчу не решить
         if self.headless:
-            print("   [!] Text CAPTCHA detected - cannot solve in headless mode!")
-            print("   [!] Try running with headless=false")
+            print("   [!] Cannot solve CAPTCHA in headless mode!")
+            print("   [!] Restart with --no-headless flag")
             return False
         
-        # В GUI режиме ждём пока пользователь введёт
-        print("   [CAPTCHA] Text captcha detected - waiting for manual input (60s)...")
-        for i in range(60):
-            time.sleep(1)
-            # Проверяем исчезла ли капча или введён текст
-            if not self._check_captcha():
-                print("   [CAPTCHA] Solved!")
-                return True
-            # Проверяем что пользователь ввёл текст и нажал Submit
+        # Выводим инструкции
+        print(f"   [CAPTCHA] Please solve the captcha in the browser window")
+        print(f"   [CAPTCHA] Waiting up to {timeout} seconds...")
+        print("   [CAPTCHA] ----------------------------------------")
+        
+        # Ждём пока пользователь решит капчу
+        start_time = time.time()
+        last_status = ""
+        
+        while time.time() - start_time < timeout:
+            elapsed = int(time.time() - start_time)
+            
+            # Проверяем Success
             try:
-                if captcha_input.attr('value'):
-                    print(f"   [CAPTCHA] User entered: {captcha_input.attr('value')}")
+                success_elem = self.page.ele('text=Success', timeout=0.3)
+                if success_elem:
+                    print("   [CAPTCHA] [OK] Success detected!")
+                    time.sleep(0.5)
+                    return True
             except:
                 pass
+            
+            # Проверяем что капча исчезла (страница перешла дальше)
+            if not self._check_captcha():
+                # Дополнительная проверка - нет ли ошибки Invalid captcha
+                if not self._check_captcha_error():
+                    print("   [CAPTCHA] [OK] Captcha solved!")
+                    return True
+            
+            # Проверяем ошибку Invalid captcha
+            if self._check_captcha_error():
+                if last_status != "invalid":
+                    print("   [CAPTCHA] [!] Invalid captcha - please try again")
+                    last_status = "invalid"
+            
+            # Выводим статус каждые 10 секунд
+            if elapsed > 0 and elapsed % 10 == 0 and last_status != str(elapsed):
+                remaining = timeout - elapsed
+                print(f"   [CAPTCHA] Waiting... {remaining}s remaining")
+                last_status = str(elapsed)
+            
+            time.sleep(0.5)
         
-        print("   [CAPTCHA] Timeout")
+        print("   [CAPTCHA] [!] Timeout - captcha not solved")
         return False
     
     def _check_password_error(self) -> bool:
