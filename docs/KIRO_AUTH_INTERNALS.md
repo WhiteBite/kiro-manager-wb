@@ -46,7 +46,7 @@ Kiro поддерживает два метода аутентификации:
 
 ## Форматы токенов
 
-### Наш формат (сохраняется в `~/.kiro-batch-login/tokens/`)
+### Наш формат (сохраняется в `~/.kiro-extension/tokens/`)
 
 ```json
 {
@@ -108,7 +108,7 @@ this.authTokenPath = path.join(this.cacheDirectory, "kiro-auth-token.json");
 
 ```
 # Наши токены (хранилище аккаунтов)
-%USERPROFILE%\.kiro-batch-login\tokens\token-BuilderId-IdC-{name}-{timestamp}.json
+%USERPROFILE%\.kiro-extension\tokens\token-BuilderId-IdC-{name}-{timestamp}.json
 
 # Kiro auth token (АКТИВНЫЙ ТОКЕН - куда мы записываем при switch)
 %USERPROFILE%\.aws\sso\cache\kiro-auth-token.json
@@ -117,14 +117,14 @@ this.authTokenPath = path.join(this.cacheDirectory, "kiro-auth-token.json");
 %APPDATA%\Kiro\User\globalStorage\state.vscdb
 
 # Наш usage cache
-%USERPROFILE%\.kiro-batch-login\account-usage.json
+%USERPROFILE%\.kiro-extension\account-usage.json
 ```
 
 ### macOS
 
 ```
 # Наши токены
-~/.kiro-batch-login/tokens/
+~/.kiro-extension/tokens/
 
 # Kiro auth token (АКТИВНЫЙ ТОКЕН)
 ~/.aws/sso/cache/kiro-auth-token.json
@@ -137,7 +137,7 @@ this.authTokenPath = path.join(this.cacheDirectory, "kiro-auth-token.json");
 
 ```
 # Наши токены
-~/.kiro-batch-login/tokens/
+~/.kiro-extension/tokens/
 
 # Kiro auth token (АКТИВНЫЙ ТОКЕН)
 ~/.aws/sso/cache/kiro-auth-token.json
@@ -482,9 +482,9 @@ function getMachineId() {
 ### Файл кастомного Machine ID
 
 ```
-Windows: %USERPROFILE%\.kiro-batch-login\machine-id.txt
-macOS:   ~/.kiro-batch-login/machine-id.txt
-Linux:   ~/.kiro-batch-login/machine-id.txt
+Windows: %USERPROFILE%\.kiro-extension\machine-id.txt
+macOS:   ~/.kiro-extension/machine-id.txt
+Linux:   ~/.kiro-extension/machine-id.txt
 ```
 
 ### User-Agent формат
@@ -646,7 +646,7 @@ Python скрипты через `-c` не работают.
 1. IMAP Profile Setup
    ├── User configures email (Gmail, Yandex, etc.)
    ├── Strategy: single, plus_alias, catch_all, pool
-   └── IMAP credentials saved to ~/.kiro-batch-login/profiles/
+   └── IMAP credentials saved to ~/.kiro-extension/profiles/
 
 2. Browser Automation (DrissionPage)
    ├── Open https://profile.aws.amazon.com/
@@ -677,7 +677,7 @@ Python скрипты через `-c` не работают.
        → Returns accessToken, refreshToken, expiresIn
 
 4. Token Storage
-   ├── Save to ~/.kiro-batch-login/tokens/token-BuilderId-IdC-{name}-{ts}.json
+   ├── Save to ~/.kiro-extension/tokens/token-BuilderId-IdC-{name}-{ts}.json
    └── Optionally activate in Kiro (write to kiro-auth-token.json)
 ```
 

@@ -43,7 +43,7 @@ Kiro IDE 扩展，允许您：
 
 Kiro 将授权令牌存储在其内部数据库（`state.vscdb`）中。扩展：
 
-1. 从 `~/.kiro-batch-login/tokens/` 读取令牌
+1. 从 `~/.kiro-extension/tokens/` 读取令牌
 2. 切换时 — 将选定的令牌写入 Kiro 数据库
 3. Kiro 获取新令牌并在另一个账户下工作
 
@@ -106,7 +106,7 @@ npm run package
 
 | 设置                         | 描述               | 默认值                       |
 | ---------------------------- | ------------------ | ---------------------------- |
-| `tokensPath`                 | 令牌文件夹路径     | `~/.kiro-batch-login/tokens` |
+| `tokensPath`                 | 令牌文件夹路径     | `~/.kiro-extension/tokens` |
 | `autoSwitch.enabled`         | 过期前自动刷新令牌 | `false`                      |
 | `autoSwitch.intervalMinutes` | 过期前多少分钟刷新 | `50`                         |
 
@@ -131,7 +131,7 @@ npm run package
 
 ## 令牌格式
 
-令牌以 JSON 文件形式存储在 `~/.kiro-batch-login/tokens/`：
+令牌以 JSON 文件形式存储在 `~/.kiro-extension/tokens/`：
 
 ```json
 {
@@ -176,7 +176,7 @@ npm run package
 - **浏览器未打开** — 检查 Playwright 是否已安装：`playwright install chromium`
 - **找不到 Python** — 确保 `python` 或 `python3` 在 PATH 中。
 
-日志写入 `~/.kiro-batch-login/autoreg.log` 和扩展控制台。
+日志写入 `~/.kiro-extension/autoreg.log` 和扩展控制台。
 
 ---
 

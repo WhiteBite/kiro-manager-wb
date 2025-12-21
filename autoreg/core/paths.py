@@ -32,9 +32,9 @@ class Paths:
         self.project_dir = self.autoreg_dir.parent
         
         # =====================================================================
-        # User data paths (~/.kiro-batch-login/)
+        # User data paths (~/.kiro-extension/)
         # =====================================================================
-        self.user_data_dir = self.home / '.kiro-batch-login'
+        self.user_data_dir = self.home / '.kiro-extension'
         self.tokens_dir = self.user_data_dir / 'tokens'
         self.backups_dir = self.user_data_dir / 'backups'
         self.logs_dir = self.user_data_dir / 'logs'
