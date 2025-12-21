@@ -21,7 +21,7 @@ export function getTokensDir(): string {
   }
 
   // ALWAYS use global path - tokens should NOT be project-specific!
-  const globalPath = path.join(os.homedir(), '.kiro-extension', 'tokens');
+  const globalPath = path.join(os.homedir(), '.kiro-manager-wb', 'tokens');
 
   if (!fs.existsSync(globalPath)) {
     fs.mkdirSync(globalPath, { recursive: true });

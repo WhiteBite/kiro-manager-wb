@@ -41,7 +41,7 @@ cd autoreg/scripts
 
 ## Логи
 
-Логи сохраняются в: `~/.kiro-extension/proxy_logs/`
+Логи сохраняются в: `~/.kiro-manager-wb/proxy_logs/`
 
 Формат лога:
 ```

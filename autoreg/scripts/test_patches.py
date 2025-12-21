@@ -27,7 +27,7 @@ class IncrementalPatcher(KiroPatcherService):
   try {{
     const fs = require('fs');
     const path = require('path');
-    const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-extension', 'machine-id.txt');
+    const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-manager-wb', 'machine-id.txt');
     if (fs.existsSync(customIdFile)) {{
       const customId = fs.readFileSync(customIdFile, 'utf8').trim();
       if (customId && customId.length >= 32) {{

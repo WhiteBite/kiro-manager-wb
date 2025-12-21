@@ -10,7 +10,7 @@
 #   - mitmproxy установлен (pip install mitmproxy)
 #   - Сертификат mitmproxy установлен (.\install_mitmproxy_cert.ps1)
 #
-# Логи сохраняются в: ~/.kiro-extension/proxy_logs/
+# Логи сохраняются в: ~/.kiro-manager-wb/proxy_logs/
 
 $ErrorActionPreference = "Stop"
 
@@ -119,7 +119,7 @@ Write-Host "    Kiro PID: $($kiroProcess.Id)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "[OK] Kiro started with proxy!" -ForegroundColor Green
 Write-Host ""
-Write-Host "Traffic logs: ~/.kiro-extension/proxy_logs/" -ForegroundColor Yellow
+Write-Host "Traffic logs: ~/.kiro-manager-wb/proxy_logs/" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Press Ctrl+C to stop proxy when done..." -ForegroundColor Gray
 

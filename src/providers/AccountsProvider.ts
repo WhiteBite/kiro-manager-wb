@@ -1421,4 +1421,49 @@ except Exception as e:
     vscode.window.showInformationMessage(summary);
     this.refresh();
   }
+
+  // === LLM Server Methods (stubs for future implementation) ===
+
+  async getLLMSettings(): Promise<void> {
+    // TODO: Implement LLM settings retrieval
+    this._view?.webview.postMessage({
+      type: 'llmSettings',
+      settings: {
+        enabled: false,
+        port: 8421,
+        host: '127.0.0.1'
+      }
+    });
+  }
+
+  async saveLLMSettings(settings: Record<string, unknown>): Promise<void> {
+    // TODO: Implement LLM settings save
+    this.addLog(`LLM settings saved: ${JSON.stringify(settings)}`);
+  }
+
+  async startLLMServer(): Promise<void> {
+    // TODO: Implement LLM server start
+    this.addLog('LLM server start requested (not implemented)');
+  }
+
+  async stopLLMServer(): Promise<void> {
+    // TODO: Implement LLM server stop
+    this.addLog('LLM server stop requested (not implemented)');
+  }
+
+  async restartLLMServer(): Promise<void> {
+    // TODO: Implement LLM server restart
+    this.addLog('LLM server restart requested (not implemented)');
+  }
+
+  async getLLMServerStatus(): Promise<void> {
+    // TODO: Implement LLM server status check
+    this._view?.webview.postMessage({
+      type: 'llmServerStatus',
+      status: {
+        running: false,
+        port: 8421
+      }
+    });
+  }
 }

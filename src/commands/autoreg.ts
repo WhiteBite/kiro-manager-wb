@@ -15,7 +15,7 @@ import { PythonEnvManager } from '../utils/python-env';
 // Get autoreg directory
 export function getAutoregDir(context: vscode.ExtensionContext): string {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-  const workspacePath = path.join(workspaceFolder, 'kiro-extension', 'autoreg');
+  const workspacePath = path.join(workspaceFolder, 'kiro-manager-wb', 'autoreg');
   const homePath = path.join(os.homedir(), '.kiro-autoreg');
   const bundledPath = path.join(context.extensionPath, 'autoreg');
 

@@ -1,9 +1,9 @@
-# ⚡ Kiro Account Switcher
+# ⚡ Kiro Manager WB
 
-[![Build](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/Kiro-auto-reg-extension/actions/workflows/build.yml)
-[![Version](https://img.shields.io/github/v/release/WhiteBite/Kiro-auto-reg-extension?label=version)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
-[![License](https://img.shields.io/github/license/WhiteBite/Kiro-auto-reg-extension)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/WhiteBite/Kiro-auto-reg-extension/total)](https://github.com/WhiteBite/Kiro-auto-reg-extension/releases)
+[![Build](https://github.com/WhiteBite/kiro-manager-wb/actions/workflows/build.yml/badge.svg)](https://github.com/WhiteBite/kiro-manager-wb/actions/workflows/build.yml)
+[![Version](https://img.shields.io/github/v/release/WhiteBite/kiro-manager-wb?label=version)](https://github.com/WhiteBite/kiro-manager-wb/releases)
+[![License](https://img.shields.io/github/license/WhiteBite/kiro-manager-wb)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/WhiteBite/kiro-manager-wb/total)](https://github.com/WhiteBite/kiro-manager-wb/releases)
 [![Telegram](https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram)](https://t.me/whitebite_devsoft)
 
 [Русский](README.md) | [English](README.en.md) | 中文
@@ -22,268 +22,370 @@
 
 ---
 
-## 这是什么
+## 🎯 这是什么
 
-Kiro IDE 扩展，允许您：
+Kiro IDE 的全功能账户管理器：
 
-- **存储多个账户**并一键切换
-- **查看使用情况** — 已用请求数、剩余数量、重置时间
-- **自动注册新账户**（需要支持 IMAP 的邮箱）
-- **刷新令牌** — 手动或在过期前自动刷新
-- **导出账户列表**为 JSON
-- **复制令牌和密码**到剪贴板
-
-所有这些都在一个方便的侧边栏面板中，有正常的 UI，而不是像野蛮人一样在控制台中操作。
+- **多账户** — 存储无限账户，一键切换
+- **使用量监控** — 查看已用请求数、剩余数量、重置时间
+- **自动注册** — 自动注册 AWS Builder ID 账户
+- **Machine ID 补丁** — 绕过硬件指纹封禁
+- **LLM API 服务器** — 使用 Kiro 令牌的 OpenAI 兼容 API
+- **10 种语言** — EN, RU, DE, ES, FR, PT, ZH, JA, KO, HI
 
 ---
 
-## 工作原理
+## 🚀 快速开始
 
-### 账户切换
-
-Kiro 将授权令牌存储在其内部数据库（`state.vscdb`）中。扩展：
-
-1. 从 `~/.kiro-extension/tokens/` 读取令牌
-2. 切换时 — 将选定的令牌写入 Kiro 数据库
-3. Kiro 获取新令牌并在另一个账户下工作
-
-无需重启 IDE。切换只需几秒钟。
-
-### 使用量跟踪
-
-扩展从同一个 Kiro 数据库读取使用数据并显示：
-
-- 当前请求使用量
-- 账户限制
-- 使用百分比
-- 限制重置时间
-
-数据在本地缓存，因此即使切换到另一个账户 — 您也可以看到所有账户的统计信息。
-
-### 自动注册
-
-最精彩的部分。扩展可以自动：
-
-1. 在指定域名上生成邮箱
-2. 打开浏览器（Playwright）
-3. 在 AWS/Kiro 上完成注册
-4. 通过 IMAP 从邮箱获取验证码
-5. 输入验证码，完成注册
-6. 将令牌保存到令牌文件夹
-
-全程无需人工干预。嗯，几乎是 — 有时会有验证码。
-
----
-
-## 安装
-
-### 从发布版安装（推荐）
+### 安装
 
 1. 从 [Releases](../../releases) 下载 `.vsix`
-2. 打开 Kiro
-3. `Ctrl+Shift+P` → `Extensions: Install from VSIX`
-4. 选择下载的文件
-5. 重启 Kiro
+2. 打开 Kiro → `Ctrl+Shift+P` → `Extensions: Install from VSIX`
+3. 选择下载的文件
+4. 重启 Kiro
 
 ### 从源码安装
 
 ```bash
-git clone <repo>
-cd kiro-extension
+git clone https://github.com/WhiteBite/kiro-manager-wb
+cd kiro-manager-wb
 npm install
 npm run package
 ```
 
-您将得到 `kiro-account-switcher-X.X.X.vsix` — 按上述方式安装。
-
 ---
 
-## 配置
+## 📦 功能
 
-所有设置：`Ctrl+,` → 搜索 `kiroAccountSwitcher`
+### 账户切换
 
-### 主要设置
+Kiro 将令牌存储在 `state.vscdb` 中。扩展：
+1. 从 `~/.kiro-manager-wb/tokens/` 读取令牌
+2. 切换时将选定的令牌写入 Kiro 数据库
+3. Kiro 无需重启即可获取新令牌
 
-| 设置                         | 描述               | 默认值                       |
-| ---------------------------- | ------------------ | ---------------------------- |
-| `tokensPath`                 | 令牌文件夹路径     | `~/.kiro-extension/tokens` |
-| `autoSwitch.enabled`         | 过期前自动刷新令牌 | `false`                      |
-| `autoSwitch.intervalMinutes` | 过期前多少分钟刷新 | `50`                         |
+### 使用量跟踪
 
-### IMAP（用于自动注册）
+显示每个账户的：
+- 当前使用量 / 限制
+- 使用百分比
+- 重置时间
+- 订阅类型（Free/Pro）
 
-| 设置                  | 描述                 | 示例                |
-| --------------------- | -------------------- | ------------------- |
-| `imap.server`         | IMAP 服务器地址      | `mail.example.com`  |
-| `imap.user`           | 登录名（通常是邮箱） | `admin@example.com` |
-| `imap.password`       | 密码                 | `***`               |
-| `autoreg.emailDomain` | 生成邮箱的域名       | `example.com`       |
-| `autoreg.headless`    | 注册时隐藏浏览器     | `false`             |
+### Machine ID 补丁
 
-### 调试
+如果 AWS 发现多个账户来自同一台计算机，会按 `machineId` 封禁。补丁允许：
+- 为每个账户使用唯一的 `machineId`
+- 切换账户时自动轮换 ID
+- 绕过"异常活动"封禁
 
-| 设置                       | 描述           | 默认值  |
-| -------------------------- | -------------- | ------- |
-| `debug.verbose`            | 详细控制台日志 | `false` |
-| `debug.screenshotsOnError` | 出错时截图     | `true`  |
+```bash
+# 应用补丁
+python -m autoreg.cli patch apply
 
----
-
-## 令牌格式
-
-令牌以 JSON 文件形式存储在 `~/.kiro-extension/tokens/`：
-
-```json
-{
-  "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6...",
-  "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMiOi...",
-  "expiresAt": "2024-12-10T20:00:00.000Z",
-  "accountName": "user@example.com",
-  "email": "user@example.com",
-  "idToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
-}
+# 生成新的 machine ID
+python -m autoreg.cli patch generate-id
 ```
 
-文件名可以是任意的，扩展名 `.json`。扩展会读取文件夹中的所有文件。
-
-您可以手动添加令牌 — 只需将 JSON 文件放入文件夹并点击刷新。
-
 ---
 
-## 使用自动注册
+## 🤖 自动注册
+
+自动注册 AWS Builder ID 账户。
 
 ### 要求
 
-- Python 3.10+
-- 支持 IMAP 访问的邮件服务器
-- 用于邮箱的域名（catch-all 或单独的邮箱）
+- Python 3.11+
+- Chrome/Chromium 浏览器
+- 支持 IMAP 的邮件服务器
 
-### 首次运行
+### Email 策略
 
-1. 在扩展设置中配置 IMAP
-2. 点击面板中的 **Auto-Reg** 按钮
-3. 等待 — 首次运行时会安装依赖：
-   - `playwright`（浏览器）
-   - `imapclient`（邮件处理）
-   - 以及 `requirements.txt` 中的其他依赖
-4. 浏览器将打开，开始注册
-5. 成功后 — 令牌将出现在列表中
+| 策略 | 描述 | 示例 |
+|------|------|------|
+| `single` | 一个邮箱 = 一个账户 | `user@gmail.com` |
+| `plus_alias` | Gmail/Outlook 别名 | `user+kiro123@gmail.com` |
+| `catch_all` | Catch-all 域名 | `random123@mydomain.com` |
+| `pool` | 预备邮箱池 | 从文件/env 获取列表 |
 
-### 可能出现的问题
+### 配置
 
-- **验证码** — 有时 AWS 会显示验证码。手动解决或重启。
-- **邮件未到达** — 检查 IMAP 设置，查看日志。
-- **浏览器未打开** — 检查 Playwright 是否已安装：`playwright install chromium`
-- **找不到 Python** — 确保 `python` 或 `python3` 在 PATH 中。
+在 `autoreg/` 文件夹中创建 `.env`：
 
-日志写入 `~/.kiro-extension/autoreg.log` 和扩展控制台。
+```env
+# IMAP 设置
+IMAP_SERVER=imap.gmail.com
+IMAP_USER=your@gmail.com
+IMAP_PASSWORD=app-password
 
----
+# Email 策略
+EMAIL_STRATEGY=plus_alias
 
-## 命令
+# 用于 catch_all
+EMAIL_DOMAIN=mydomain.com
 
-通过 `Ctrl+Shift+P` 可用：
+# 用于 pool（JSON 数组）
+EMAIL_POOL=["user1@mail.ru", "user2@mail.ru:password"]
+```
 
-| 命令                            | 功能                    |
-| ------------------------------- | ----------------------- |
-| `Kiro: Switch Account`          | 通过 QuickPick 快速切换 |
-| `Kiro: List Available Accounts` | 刷新账户列表            |
-| `Kiro: Import Token from File`  | 从 JSON 文件导入令牌    |
-| `Kiro: Show Current Account`    | 显示当前账户            |
-| `Kiro: Sign Out`                | 退出当前账户            |
-| `Kiro: Open Account Dashboard`  | 打开账户面板            |
-
----
-
-## 构建
-
-### 构建要求
-
-- Node.js 18+
-- npm
-
-### 命令
+### 运行
 
 ```bash
-# 安装依赖
-npm install
+cd autoreg
 
-# 构建 TypeScript
-npm run build
+# 自动注册（使用配置的 email 策略）
+python -m registration.register_auto
 
-# 构建 .vsix 包
-npm run package
+# 使用特定 email
+python -m registration.register --email user@domain.com
+
+# 批量注册（5 个账户）
+python -m registration.register --count 5
+
+# 无头模式（无 GUI）
+python -m registration.register --email user@domain.com --headless
 ```
 
-### CI/CD
+### 反指纹
 
-仓库中配置了 GitHub Actions：
+内置的伪装系统以绕过 AWS 检测：
 
-- push/PR 时自动构建
-- 创建 `v*` 标签时发布 `.vsix`
+- **Canvas** — canvas 指纹随机化
+- **WebGL** — vendor/renderer 伪装
+- **Audio** — 音频指纹修改
+- **Navigator** — userAgent、platform、languages 伪装
+- **Screen** — 分辨率随机化
+- **Timezone** — IP 同步
+- **WebRTC** — 隐藏本地 IP
+- **Fonts** — 字体列表随机化
+- **Behavior** — 人类般的输入延迟
+
+伪装配置文件按 email 保存——重新注册时使用相同的指纹。
 
 ---
 
-## 项目结构
+## 🌐 LLM API 服务器
 
+使用 Kiro 令牌访问 Claude 的 OpenAI 兼容 API 服务器。
+
+### 运行
+
+```bash
+cd autoreg
+python -m llm.run_llm_server
+# API 在 http://127.0.0.1:8421
 ```
-kiro-extension/
-├── src/
-│   ├── extension.ts      # 入口点、命令、提供者
-│   ├── accounts.ts       # 令牌和账户处理
-│   ├── utils.ts          # 工具函数、Kiro 数据库访问
-│   ├── webview.ts        # 面板 HTML 生成
-│   ├── types.ts          # TypeScript 类型
-│   └── webview/          # UI 组件
-├── autoreg/              # Python 自动注册脚本
-├── dist/                 # 编译后的 JS（gitignore）
-├── package.json
-├── tsconfig.json
-└── .vscodeignore
+
+### 使用
+
+```bash
+curl http://127.0.0.1:8421/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+### 可用模型
+
+| 模型 | Credit | 描述 |
+|------|--------|------|
+| `claude-opus-4.5` | 2.2x | 最强大 |
+| `claude-sonnet-4.5` | 1.3x | 最新 Sonnet |
+| `claude-sonnet-4` | 1.3x | 混合推理 |
+| `claude-haiku-4.5` | 0.4x | 快速便宜 |
+| `auto` | 1x | 自动选择 |
+
+### 端点
+
+- `GET /v1/models` — 模型列表
+- `POST /v1/chat/completions` — 聊天（支持流式）
+- `GET /health` — 健康检查
+- `GET /pool/status` — 令牌池状态
+- `GET /pool/quotas` — 所有令牌配额
+
+---
+
+## 🖥️ 独立 Web 应用
+
+无需 VS Code 的 Web 管理界面。
+
+```bash
+cd autoreg
+python run.py
+# 打开 http://127.0.0.1:8420
+```
+
+功能：
+- 查看和切换账户
+- 实时配额监控
+- 通过 UI 运行自动注册
+- 管理 Kiro 补丁
+- WebSocket 实时日志
+
+---
+
+## 🛠️ CLI 参考
+
+```bash
+cd autoreg
+
+# ═══════════════════════════════════════════════════════════════
+# 状态
+# ═══════════════════════════════════════════════════════════════
+python cli.py status                      # 系统总体状态
+
+# ═══════════════════════════════════════════════════════════════
+# 令牌
+# ═══════════════════════════════════════════════════════════════
+python cli.py tokens                      # 列出令牌（list 的别名）
+python cli.py tokens list                 # 列出所有令牌
+python cli.py tokens switch <name>        # 切换到账户
+python cli.py tokens switch <name> -r     # 强制刷新后切换
+python cli.py tokens refresh              # 刷新最佳令牌
+python cli.py tokens refresh <name>       # 刷新特定令牌
+python cli.py tokens refresh <name> -a    # 刷新并激活
+
+# ═══════════════════════════════════════════════════════════════
+# 配额
+# ═══════════════════════════════════════════════════════════════
+python cli.py quota                       # 当前账户配额
+python cli.py quota --all                 # 所有账户配额
+python cli.py quota --all --refresh       # 刷新令牌后获取所有配额
+python cli.py quota --json                # JSON 格式
+
+# ═══════════════════════════════════════════════════════════════
+# MACHINE ID
+# ═══════════════════════════════════════════════════════════════
+python cli.py machine                     # Machine ID 状态
+python cli.py machine status              # 详细状态
+python cli.py machine backup              # 备份 Kiro 遥测
+python cli.py machine backup -s           # + 备份系统 GUID
+python cli.py machine reset               # 重置所有 ID
+python cli.py machine reset -s            # + 重置系统 GUID
+python cli.py machine reset -f            # 跳过 Kiro 运行检查
+python cli.py machine restore             # 从备份恢复
+
+# ═══════════════════════════════════════════════════════════════
+# KIRO 补丁
+# ═══════════════════════════════════════════════════════════════
+python cli.py patch                       # 补丁状态
+python cli.py patch status                # 详细状态
+python cli.py patch status --json         # JSON 格式
+python cli.py patch apply                 # 应用补丁
+python cli.py patch apply -f              # 强制重新补丁
+python cli.py patch remove                # 移除补丁（恢复原始）
+python cli.py patch generate-id           # 生成新 Machine ID
+python cli.py patch generate-id <id>      # 设置特定 ID（64 位十六进制）
+python cli.py patch check                 # 检查补丁是否需要更新
+python cli.py patch check --auto-fix      # 需要时自动更新
+python cli.py patch restart               # 重启 Kiro（保留窗口）
+python cli.py patch apply-restart         # 补丁 + 重启 Kiro
+
+# ═══════════════════════════════════════════════════════════════
+# KIRO IDE
+# ═══════════════════════════════════════════════════════════════
+python cli.py kiro                        # Kiro 状态
+python cli.py kiro status                 # 详细状态
+python cli.py kiro start                  # 启动 Kiro
+python cli.py kiro stop                   # 停止 Kiro
+python cli.py kiro restart                # 重启 Kiro
+python cli.py kiro info                   # 信息：版本、User-Agent、Machine ID
+python cli.py kiro info --json            # JSON 格式
+
+# ═══════════════════════════════════════════════════════════════
+# SSO 导入（从浏览器导入）
+# ═══════════════════════════════════════════════════════════════
+python cli.py sso-import                  # 交互式导入
+python cli.py sso-import <cookie>         # 从 x-amz-sso_authn cookie 导入
+python cli.py sso-import <cookie> -a      # 导入并在 Kiro 中激活
+python cli.py sso-import <cookie> -r eu-west-1  # 不同区域
+
+# ═══════════════════════════════════════════════════════════════
+# LLM API 服务器
+# ═══════════════════════════════════════════════════════════════
+python -m llm.run_llm_server              # 在 :8421 启动
+
+# ═══════════════════════════════════════════════════════════════
+# 独立 WEB 应用
+# ═══════════════════════════════════════════════════════════════
+python run.py                             # 在 :8420 启动
+
+# ═══════════════════════════════════════════════════════════════
+# 调试
+# ═══════════════════════════════════════════════════════════════
+python -m debugger.run                    # 调试注册会话
+```
+
+### SSO 导入 — 导入现有账户
+
+如果您已经在浏览器中登录了账户：
+
+1. 打开 https://view.awsapps.com/start
+2. DevTools (F12) → Application → Cookies
+3. 复制 `x-amz-sso_authn` 的值
+4. 运行：
+```bash
+python cli.py sso-import <复制的值> -a
+```
+
+令牌将被导入并在 Kiro 中激活。
+
+---
+
+## 🐛 故障排除
+
+### 自动注册卡在验证码
+AWS 有时会显示验证码。手动解决或重启。
+
+### 浏览器不打开
+```bash
+# 检查 Chrome
+python -c "from autoreg.registration.browser import find_chrome_path; print(find_chrome_path())"
+```
+
+### 找不到 Python
+确保 `python` 或 `python3` 在 PATH 中。
+
+### 令牌未应用
+尝试重启 Kiro。罕见，但会发生。
+
+### 注册后被封禁
+1. 生成新的 machine ID：`python cli.py patch generate-id`
+2. 使用不同的 IP（VPN/代理）
+3. 等待 24 小时
+
+---
+
+## 📝 构建命令
+
+```bash
+npm run build              # 构建扩展
+npm run build:standalone   # 构建独立 HTML
+npm run build:all          # 构建所有
+npm run package            # 创建 .vsix
+
+npm run release:patch      # 发布补丁版本 (6.1.0 -> 6.1.1)
+npm run release:minor      # 发布次要版本 (6.1.0 -> 6.2.0)
+npm run release:major      # 发布主要版本 (6.1.0 -> 7.0.0)
 ```
 
 ---
 
-## 已知问题
-
-- **使用量有时不更新** — 点击刷新或等待。Kiro 会缓存数据。
-- **自动注册卡在验证码** — AWS 有时需要验证码。手动解决或重启。
-- **Linux 需要 python3** — 确保符号链接存在或配置 PATH。
-- **令牌未应用** — 尝试重启 Kiro。罕见，但会发生。
-
----
-
-## 常见问题
-
-**问：这合法吗？**  
-答：这是一个教育项目。请阅读上面的免责声明。
-
-**问：我会被封禁吗？**  
-答：可能会。请阅读上面的免责声明。
-
-**问：为什么自动注册用 Python？**  
-答：因为 Python 的 Playwright 更适合这种自动化，而且已经有现成的代码。
-
-**问：可以不用自动注册吗？**  
-答：可以。只需不配置 IMAP，不点击按钮。账户切换独立工作。
-
-**问：如何添加现有账户？**  
-答：登录 Kiro，在 `state.vscdb` 中找到令牌，保存为 JSON 到令牌文件夹。或使用导入功能。
-
----
-
-## 许可证
+## 📜 许可证
 
 MIT。随便用，但记住免责声明。
 
 ---
 
-## 贡献
+## 🤝 贡献
 
-发现 bug？有想法？开 issue 或 PR。代码有些地方很丑，但能用。
+发现 bug？有想法？开 issue 或 PR。
 
 ---
 
-## 联系方式
+## 📢 联系方式
 
-📢 Telegram: [@whitebite_devsoft](https://t.me/whitebite_devsoft)
+Telegram: [@whitebite_devsoft](https://t.me/whitebite_devsoft)

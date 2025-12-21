@@ -13,7 +13,7 @@
 Использование:
     python analyze_kiro_traffic.py [log_file]
     
-Если log_file не указан - берёт последний лог из ~/.kiro-extension/proxy_logs/
+Если log_file не указан - берёт последний лог из ~/.kiro-manager-wb/proxy_logs/
 """
 
 import re
@@ -24,7 +24,7 @@ from collections import defaultdict
 from datetime import datetime
 
 # Директория с логами
-LOG_DIR = Path.home() / ".kiro-extension" / "proxy_logs"
+LOG_DIR = Path.home() / ".kiro-manager-wb" / "proxy_logs"
 
 # Паттерны для поиска идентификаторов
 PATTERNS = {

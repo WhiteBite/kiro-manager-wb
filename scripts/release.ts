@@ -89,7 +89,7 @@ function main(): void {
         console.log(`✅ Pushed to origin`);
 
         console.log(`\n🚀 Release v${newVersion} started!`);
-        console.log(`   Check: https://github.com/WhiteBite/Kiro-auto-reg-extension/actions`);
+        console.log(`   Check: https://github.com/WhiteBite/kiro-manager-wb/actions`);
     } catch (error) {
         console.error('❌ Git operation failed:', error);
         process.exit(1);
