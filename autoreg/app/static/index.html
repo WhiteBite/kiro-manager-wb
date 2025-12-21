@@ -3530,13 +3530,13 @@
         <span class="patch-indicator" id="patchIndicator" title="Kiro Patch"></span>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" onclick="toggleLogs()" title="Console"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1H3v14h10V5l-4-4zm3 13H4V2h4v4h4v8z"/></svg></button>
-        <button class="icon-btn" onclick="openSettings()" title="Configure auto-switch, browser mode, logging"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M9.1 4.4L8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.2.7-2.4.5v1.2l2.4.5.3.8-1.3 2 .8.8 2-1.3.8.3.4 2.3h1.2l.5-2.4.8-.3 2 1.3.8-.8-1.3-2 .3-.8 2.3-.4V7.4l-2.4-.5-.3-.8 1.3-2-.8-.8-2 1.3-.7-.2zM9.4 1l.5 2.4L12 2.1l2 2-1.4 2.1 2.4.4v2.8l-2.4.5L14 12l-2 2-2.1-1.4-.5 2.4H6.6l-.5-2.4L4 13.9l-2-2 1.4-2.1L1 9.4V6.6l2.4-.5L2.1 4l2-2 2.1 1.4.4-2.4h2.8zM8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></button>
+        <button class="icon-btn" data-action="toggleLogs" title="Console"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1H3v14h10V5l-4-4zm3 13H4V2h4v4h4v8z"/></svg></button>
+        <button class="icon-btn" data-action="openSettings" title="Configure auto-switch, browser mode, logging"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M9.1 4.4L8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.2.7-2.4.5v1.2l2.4.5.3.8-1.3 2 .8.8 2-1.3.8.3.4 2.3h1.2l.5-2.4.8-.3 2 1.3.8-.8-1.3-2 .3-.8 2.3-.4V7.4l-2.4-.5-.3-.8 1.3-2-.8-.8-2 1.3-.7-.2zM9.4 1l.5 2.4L12 2.1l2 2-1.4 2.1 2.4.4v2.8l-2.4.5L14 12l-2 2-2.1-1.4-.5 2.4H6.6l-.5-2.4L4 13.9l-2-2 1.4-2.1L1 9.4V6.6l2.4-.5L2.1 4l2-2 2.1 1.4.4-2.4h2.8zM8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></button>
       </div>
     </div>
   
     
-      <div class="hero empty" onclick="openSettings()">
+      <div class="hero empty" data-action="openSettings">
         <div class="hero-email">No active</div>
         <div class="hero-hint">Click to configure</div>
       </div>
@@ -3544,28 +3544,28 @@
     
     <div class="toolbar">
       <div class="toolbar-buttons">
-        <button class="btn btn-secondary" onclick="openSsoModal()" title="SSO Import">🌐</button>
-        <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="Check Health">🩺</button>
-        <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="Select" id="selectModeBtn">☑️</button>
-        <button class="btn btn-secondary btn-icon" onclick="refresh()" title="Reload accounts and update token status"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 2v5h-5l1.8-1.8A4.5 4.5 0 1 0 12.5 8h1a5.5 5.5 0 1 1-1.6-3.9L13.5 2z"/></svg></button>
+        <button class="btn btn-primary" data-action="startAutoReg">⚡ Авторегистрация</button>
+        <button class="btn btn-secondary btn-icon" data-action="checkAllAccountsHealth" title="Check Health">🩺</button>
+        <button class="btn btn-secondary btn-icon" data-action="toggleSelectionMode" title="Select" id="selectModeBtn">☑️</button>
+        <button class="btn btn-secondary btn-icon" data-action="refresh" title="Reload accounts and update token status"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 2v5h-5l1.8-1.8A4.5 4.5 0 1 0 12.5 8h1a5.5 5.5 0 1 1-1.6-3.9L13.5 2z"/></svg></button>
       </div>
       <div class="search-wrapper">
         <span class="search-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l4 4 1.4-1.4-4-4zM6 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg></span>
         <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..." oninput="searchAccounts(this.value)">
-        <button class="search-clear" onclick="clearSearch()">×</button>
+        <button class="search-clear" data-action="clearSearch">×</button>
       </div>
       <div class="bulk-actions-bar hidden" id="bulkActionsBar">
         <div class="bulk-info">
           <span class="bulk-count" id="bulkCount">0</span> selected
         </div>
         <div class="bulk-buttons">
-          <button class="btn btn-secondary btn-sm" onclick="selectAllAccounts()">☑️</button>
-          <button class="btn btn-secondary btn-sm" onclick="deselectAllAccounts()">☐</button>
-          <button class="btn btn-secondary btn-sm" onclick="exportSelectedAccounts()">📤</button>
-          <button class="btn btn-secondary btn-sm" onclick="refreshSelectedTokens()">🔄</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteSelectedAccounts()">🗑️</button>
+          <button class="btn btn-secondary btn-sm" data-action="selectAllAccounts">☑️</button>
+          <button class="btn btn-secondary btn-sm" data-action="deselectAllAccounts">☐</button>
+          <button class="btn btn-secondary btn-sm" data-action="exportSelectedAccounts">📤</button>
+          <button class="btn btn-secondary btn-sm" data-action="refreshSelectedTokens">🔄</button>
+          <button class="btn btn-danger btn-sm" data-action="deleteSelectedAccounts">🗑️</button>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="toggleSelectionMode()">✕</button>
+        <button class="btn btn-secondary btn-sm" data-action="toggleSelectionMode">✕</button>
       </div>
     </div>
   
@@ -3576,7 +3576,7 @@
 
     
     <div class="logs-drawer" id="logsDrawer">
-      <div class="logs-header" onclick="toggleLogs()">
+      <div class="logs-header" data-action="toggleLogs">
         <div class="logs-header-left">
           <span class="logs-title">Console</span>
           <span class="logs-count" id="logsCount">0</span>
@@ -3584,8 +3584,8 @@
         <span class="logs-toggle">▲</span>
       </div>
       <div class="logs-actions">
-        <button class="icon-btn" onclick="clearConsole()" title="Clear console output">🗑</button>
-        <button class="icon-btn" onclick="copyLogs()" title="Copy logs to clipboard">📋</button>
+        <button class="icon-btn" data-action="clearConsole" title="Clear console output">🗑</button>
+        <button class="icon-btn" data-action="copyLogs" title="Copy logs to clipboard">📋</button>
       </div>
       <div class="logs-content" id="logsContent"></div>
     </div>
@@ -3594,7 +3594,7 @@
     <div class="overlay" id="settingsOverlay">
       <div class="overlay-content">
         <div class="overlay-header">
-          <button class="overlay-back" onclick="closeSettings()">← Back</button>
+          <button class="overlay-back" data-action="closeSettings">← Back</button>
           <span class="overlay-title">Settings</span>
         </div>
         <div class="overlay-body">
@@ -3603,12 +3603,12 @@
       <div class="settings-card-header">
         <span class="settings-card-icon">📧</span>
         <span class="settings-card-title">Active Profile</span>
-        <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')">Change</button>
+        <button class="btn btn-secondary btn-sm" data-action="switchTab" data-tab="profiles">Change</button>
       </div>
       <div class="active-profile-content" id="activeProfileContent">
         <div class="active-profile-empty">
           <span class="empty-text">No profile configured</span>
-          <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">Configure</button>
+          <button class="btn btn-primary btn-sm" data-action="switchTab" data-tab="profiles">Configure</button>
         </div>
       </div>
     </div>
@@ -3626,7 +3626,7 @@
             <div class="setting-desc">Automatically switch to next valid account</div>
           </div>
           <label class="toggle">
-            <input type="checkbox"  onchange="toggleAutoSwitch(this.checked)">
+            <input type="checkbox" id="autoSwitchToggle">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -3775,10 +3775,10 @@
       </div>
       <div class="section-desc">Export accounts with tokens for transfer</div>
       <div class="import-export-actions">
-        <button class="btn btn-primary" onclick="exportAllAccounts()">
+        <button class="btn btn-primary" data-action="exportAllAccounts">
           📤 Export All
         </button>
-        <button class="btn btn-secondary" onclick="importAccounts()">
+        <button class="btn btn-secondary" data-action="importAccounts">
           📥 Import Accounts
         </button>
       </div>
@@ -3801,13 +3801,13 @@
           </div>
         </div>
         <div class="danger-zone-actions">
-          <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="Patch Kiro">
+          <button id="patchKiroBtn" class="btn btn-warning" data-action="confirmPatchKiro" title="Patch Kiro">
             🔧 Patch
           </button>
-          <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="Remove Patch">
+          <button id="unpatchKiroBtn" class="btn btn-secondary" data-action="confirmUnpatchKiro" style="display:none" title="Remove Patch">
             ↩️ Remove
           </button>
-          <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="New ID">
+          <button id="generateIdBtn" class="btn btn-secondary" data-action="generateNewMachineId" title="New ID">
             🎲 New ID
           </button>
         </div>
@@ -3818,7 +3818,7 @@
           <div class="danger-zone-label">Reset Machine ID</div>
           <div class="danger-zone-desc">Generate new telemetry IDs for Kiro. Use if account is banned.</div>
         </div>
-        <button class="btn btn-danger" onclick="confirmResetMachineId()" title="Reset machineId, sqmId, devDeviceId and serviceMachineId">
+        <button class="btn btn-danger" data-action="confirmResetMachineId" title="Reset machineId, sqmId, devDeviceId and serviceMachineId">
           🔄 Reset
         </button>
       </div>
@@ -3831,7 +3831,7 @@
     <div class="settings-footer">
       <span class="settings-version">vstandalone</span>
       <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
-      <button class="btn btn-secondary" onclick="checkUpdates()">Check Updates</button>
+      <button class="btn btn-secondary" data-action="checkUpdates">Check Updates</button>
     </div>
   </div>
       </div>
@@ -3839,30 +3839,30 @@
   
     
     
-    <div class="modal-overlay" id="ssoModal" onclick="if(event.target === this) closeSsoModal()">
+    <div class="modal-overlay" id="ssoModal" data-action="closeSsoModalOnOverlayClick">
       <div class="modal">
         <div class="modal-header">
           <span class="modal-title">SSO Import</span>
-          <button class="modal-close" onclick="closeSsoModal()">×</button>
+          <button class="modal-close" data-action="closeSsoModal">×</button>
         </div>
         <div class="modal-body">
           <div class="modal-hint">1. Open view.awsapps.com/start
 2. DevTools → Application → Cookies
 3. Copy x-amz-sso_authn</div>
           <textarea class="modal-textarea" id="ssoTokenInput" placeholder="Paste cookie..."></textarea>
-          <button class="btn btn-primary" style="width:100%" onclick="importSsoToken()">Import</button>
+          <button class="btn btn-primary" style="width:100%" data-action="importSsoToken">Import</button>
         </div>
       </div>
     </div>
   
     
-    <div class="dialog-overlay" id="dialogOverlay" onclick="if(event.target === this) closeDialog()">
+    <div class="dialog-overlay" id="dialogOverlay" data-action="closeDialogOnOverlayClick">
       <div class="dialog">
         <div class="dialog-title" id="dialogTitle">Delete Account</div>
         <div class="dialog-text" id="dialogText">Are you sure you want to delete this account?</div>
         <div class="dialog-actions">
-          <button class="btn btn-secondary" onclick="closeDialog()">Cancel</button>
-          <button class="btn btn-danger" onclick="dialogAction()">Delete</button>
+          <button class="btn btn-secondary" data-action="closeDialog">Cancel</button>
+          <button class="btn btn-danger" data-action="dialogAction">Delete</button>
         </div>
       </div>
     </div>
@@ -3873,14 +3873,14 @@
     
     <div class="profiles-panel" id="profilesPanel">
       <div class="profiles-panel-header">
-        <button class="overlay-back" onclick="closeProfilesPanel()">← Back</button>
+        <button class="overlay-back" data-action="closeProfilesPanel">← Back</button>
         <span class="profiles-panel-title">Email Profiles</span>
       </div>
       <div class="profiles-panel-content" id="profilesContent">
         <div class="profiles-empty">
           <div class="empty-icon">📧</div>
           <div class="empty-text">No profiles configured</div>
-          <button class="btn btn-primary" onclick="createProfile()">
+          <button class="btn btn-primary" data-action="createProfile">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7 7V1h2v6h6v2H9v6H7V9H1V7h6z"/></svg> Add Profile
           </button>
         </div>
@@ -3890,7 +3890,7 @@
     
     <div class="profile-editor" id="profileEditor">
       <div class="editor-header">
-        <button class="overlay-back" onclick="closeProfileEditor()">← Back</button>
+        <button class="overlay-back" data-action="closeProfileEditor">← Back</button>
         <span class="editor-title">New Profile</span>
       </div>
       <div class="editor-content">
@@ -3903,7 +3903,7 @@
           <div class="form-section-title">IMAP</div>
           <div class="form-group" id="imapEmailGroup">
             <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="imapUser" placeholder="your@email.com" oninput="onEmailInput(this.value)">
+            <input type="email" class="form-input" id="imapUser" placeholder="your@email.com" data-action="onEmailInput">
             <div class="form-hint" id="providerHint"></div>
           </div>
           <div class="form-row">
@@ -3920,10 +3920,10 @@
             <label class="form-label">Password</label>
             <div class="password-input-wrapper">
               <input type="password" class="form-input" id="imapPassword" placeholder="••••••••">
-              <button class="password-toggle" onclick="togglePasswordVisibility('imapPassword')"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4C4.5 4 1.6 6.5.5 8c1.1 1.5 4 4 7.5 4s6.4-2.5 7.5-4c-1.1-1.5-4-4-7.5-4zm0 7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></button>
+              <button class="password-toggle" data-action="togglePasswordVisibility" data-target="imapPassword"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4C4.5 4 1.6 6.5.5 8c1.1 1.5 4 4 7.5 4s6.4-2.5 7.5-4c-1.1-1.5-4-4-7.5-4zm0 7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></button>
             </div>
           </div>
-          <button class="btn btn-secondary" id="testConnectionBtn" onclick="testImapConnection()">🔌 Test</button>
+          <button class="btn btn-secondary" id="testConnectionBtn" data-action="testImapConnection">🔌 Test</button>
         </div>
         
         <div class="form-section">
@@ -3931,7 +3931,7 @@
           <div class="form-section-desc">Choose how to generate emails for registration</div>
           
     <div class="strategy-selector">
-      <div class="strategy-option selected" data-strategy="single" onclick="selectStrategy('single')">
+      <div class="strategy-option selected" data-strategy="single" data-action="selectStrategy">
         <div class="strategy-icon">📧</div>
         <div class="strategy-content">
           <div class="strategy-label">Single Email</div>
@@ -3940,7 +3940,7 @@
         </div>
         <div class="strategy-check">✓</div>
       </div>
-      <div class="strategy-option" data-strategy="plus_alias" onclick="selectStrategy('plus_alias')">
+      <div class="strategy-option" data-strategy="plus_alias" data-action="selectStrategy">
         <div class="strategy-icon">➕</div>
         <div class="strategy-content">
           <div class="strategy-label">Plus Alias</div>
@@ -3949,7 +3949,7 @@
         </div>
         <div class="strategy-check">✓</div>
       </div>
-      <div class="strategy-option" data-strategy="catch_all" onclick="selectStrategy('catch_all')">
+      <div class="strategy-option" data-strategy="catch_all" data-action="selectStrategy">
         <div class="strategy-icon">🌐</div>
         <div class="strategy-content">
           <div class="strategy-label">Catch-All Domain</div>
@@ -3958,7 +3958,7 @@
         </div>
         <div class="strategy-check">✓</div>
       </div>
-      <div class="strategy-option" data-strategy="pool" onclick="selectStrategy('pool')">
+      <div class="strategy-option" data-strategy="pool" data-action="selectStrategy">
         <div class="strategy-icon">📋</div>
         <div class="strategy-content">
           <div class="strategy-label">Email Pool</div>
@@ -3983,11 +3983,11 @@
         <div class="pool-list" id="poolList"></div>
         <div class="pool-add">
           <input type="text" class="form-input" id="newPoolEmail" placeholder="email:password or email..." onkeypress="if(event.key==='Enter') addEmailToPool()" onpaste="handlePoolPaste(event)">
-          <button class="btn btn-secondary" onclick="addEmailToPool()"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7 7V1h2v6h6v2H9v6H7V9H1V7h6z"/></svg></button>
+          <button class="btn btn-secondary" data-action="addEmailToPool"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7 7V1h2v6h6v2H9v6H7V9H1V7h6z"/></svg></button>
         </div>
         <div class="pool-actions">
-          <button class="btn btn-secondary" onclick="importEmailsFromFile()">📁 From file</button>
-          <button class="btn btn-secondary" onclick="pasteEmails()">📋 Paste</button>
+          <button class="btn btn-secondary" data-action="importEmailsFromFile">📁 From file</button>
+          <button class="btn btn-secondary" data-action="pasteEmails">📋 Paste</button>
         </div>
       </div>
     </div>
@@ -3995,8 +3995,8 @@
         </div>
       </div>
       <div class="editor-footer">
-        <button class="btn btn-secondary" onclick="closeProfileEditor()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveProfile()">Save</button>
+        <button class="btn btn-secondary" data-action="closeProfileEditor">Cancel</button>
+        <button class="btn btn-primary" data-action="saveProfile">Save</button>
       </div>
     </div>
   
@@ -4249,7 +4249,7 @@
       const name = account.email?.split('@')[0] || account.filename?.replace('.json', '') || 'Unknown';
       const status = account.isExpired ? 'expired' : (account.isActive ? 'active' : 'ready');
       
-      return '<div class="account ' + status + '" onclick="switchAccount(\'' + account.filename + '\')">' +
+      return '<div class="account ' + status + '" data-action="switchAccount" data-filename="' + account.filename + '">' +
         '<div class="account-avatar">' + initial + '</div>' +
         '<div class="account-info">' +
           '<div class="account-email">' + name + '</div>' +
@@ -4259,8 +4259,8 @@
           '</div>' +
         '</div>' +
         '<div class="account-actions">' +
-          '<button class="icon-btn" onclick="event.stopPropagation(); refreshToken(\'' + account.filename + '\')">🔄</button>' +
-          '<button class="icon-btn danger" onclick="event.stopPropagation(); confirmDelete(\'' + account.filename + '\')">🗑️</button>' +
+          '<button class="icon-btn" data-action="refreshToken" data-filename="' + account.filename + '">🔄</button>' +
+          '<button class="icon-btn danger" data-action="confirmDelete" data-filename="' + account.filename + '">🗑️</button>' +
         '</div>' +
       '</div>';
     }
@@ -4378,7 +4378,7 @@
       if (!container) return;
       
       if (!profiles || profiles.length === 0) {
-        container.innerHTML = '<div class="profiles-empty"><div class="empty-icon">📧</div><div class="empty-text">' + T.noProfiles + '</div><button class="btn btn-primary" onclick="createProfile()">+ ' + T.addProfile + '</button></div>';
+        container.innerHTML = '<div class="profiles-empty"><div class="empty-icon">📧</div><div class="empty-text">' + T.noProfiles + '</div><button class="btn btn-primary" data-action="createProfile">+ ' + T.addProfile + '</button></div>';
         return;
       }
       
@@ -4387,7 +4387,7 @@
         const isActive = profile.id === activeId;
         html += '<div class="profile-card ' + (isActive ? 'active' : '') + '">' +
           '<div class="profile-card-header">' +
-            '<div class="profile-card-radio" onclick="selectProfile(\'' + profile.id + '\')">' +
+            '<div class="profile-card-radio" data-action="selectProfile" data-id="' + profile.id + '">' +
               '<span class="radio-dot ' + (isActive ? 'checked' : '') + '"></span>' +
             '</div>' +
             '<div class="profile-card-info">' +
@@ -4398,7 +4398,7 @@
         '</div>';
       });
       html += '</div>';
-      html += '<button class="btn btn-primary profiles-add-btn" onclick="createProfile()">+ ' + T.addProfile + '</button>';
+      html += '<button class="btn btn-primary profiles-add-btn" data-action="createProfile">+ ' + T.addProfile + '</button>';
       container.innerHTML = html;
     }
     
@@ -4416,7 +4416,7 @@
       const container = document.getElementById('activeProfileContent');
       if (container) {
         if (!profile) {
-          container.innerHTML = '<div class="active-profile-empty"><span class="empty-icon">📧</span><span class="empty-text">' + T.noProfileConfigured + '</span><button class="btn btn-primary btn-sm" onclick="openProfilesPanel()">' + T.configure + '</button></div>';
+          container.innerHTML = '<div class="active-profile-empty"><span class="empty-icon">📧</span><span class="empty-text">' + T.noProfileConfigured + '</span><button class="btn btn-primary btn-sm" data-action="openProfilesPanel">' + T.configure + '</button></div>';
         } else {
           container.innerHTML = '<div class="active-profile-info"><div class="active-profile-name">' + (profile.name || T.unnamed) + '</div><div class="active-profile-email">' + (profile.imap?.user || '') + '</div></div>';
         }
@@ -4522,7 +4522,7 @@
       list.innerHTML = currentPoolEmails.map((item, i) => {
         const email = item.email || item;
         const hasPassword = item.password ? ' 🔑' : '';
-        return '<div class="pool-item pending"><span class="pool-status">⬜</span><span class="pool-email">' + email + hasPassword + '</span><button class="pool-remove" onclick="removeEmailFromPool(' + i + ')">✕</button></div>';
+        return '<div class="pool-item pending"><span class="pool-status">⬜</span><span class="pool-email">' + email + hasPassword + '</span><button class="pool-remove" data-action="removeEmailFromPool" data-index="' + i + '">✕</button></div>';
       }).join('');
     }
     
@@ -4857,5 +4857,133 @@
     window.refreshSelectedTokens = refreshSelectedTokens;
     window.deleteSelectedAccounts = deleteSelectedAccounts;
   </script>
-</body>
+<script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const handlers = {
+          'toggleLogsBtn': toggleLogs,
+          'openSettingsHero': openSettings,
+          'startAutoRegBtn': startAutoReg,
+          'checkHealthBtn': checkAllAccountsHealth,
+          'selectModeBtn': toggleSelectionMode,
+          'refreshBtn': refresh,
+          'clearSearchBtn': clearSearch,
+          'selectAllBtn': selectAllAccounts,
+          'deselectAllBtn': deselectAllAccounts,
+          'exportSelectedBtn': exportSelectedAccounts,
+          'refreshSelectedBtn': refreshSelectedTokens,
+          'deleteSelectedBtn': deleteSelectedAccounts,
+          'cancelSelectionBtn': toggleSelectionMode,
+          'logsHeader': toggleLogs,
+          'clearConsoleBtn': clearConsole,
+          'copyLogsBtn': copyLogs,
+          'closeSettingsBtn': closeSettings,
+          'changeProfileBtn': () => switchTab('profiles'),
+          'configureProfileBtn': () => switchTab('profiles'),
+          'exportAllBtn': exportAllAccounts,
+          'importAccountsBtn': importAccounts,
+          'patchKiroBtn': confirmPatchKiro,
+          'unpatchKiroBtn': confirmUnpatchKiro,
+          'generateIdBtn': generateNewMachineId,
+          'resetMachineIdBtn': confirmResetMachineId,
+          'checkUpdatesBtn': checkUpdates,
+          'ssoModal': (e) => { if(e.target.id === 'ssoModal') closeSsoModal(); },
+          'closeSsoModalBtn': closeSsoModal,
+          'importSsoTokenBtn': importSsoToken,
+          'dialogOverlay': (e) => { if(e.target.id === 'dialogOverlay') closeDialog(); },
+          'dialogCancelBtn': closeDialog,
+          'dialogConfirmBtn': dialogAction,
+          'closeProfilesPanelBtn': closeProfilesPanel,
+          'createProfileBtn': createProfile,
+          'closeProfileEditorBtn': closeProfileEditor,
+          'cancelProfileEditBtn': closeProfileEditor,
+          'saveProfileBtn': saveProfile,
+        };
+
+        for (const id in handlers) {
+          const element = document.getElementById(id);
+          if (element) {
+            element.addEventListener('click', handlers[id]);
+          }
+        }
+        
+        document.body.style.display = '';
+      });
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.addEventListener('click', (e) => {
+          let target = e.target;
+          while (target && target !== document.body) {
+            const action = target.getAttribute('data-action');
+            if (action) {
+              handleAction(action, target, e);
+              return;
+            }
+            target = target.parentElement;
+          }
+        });
+
+        function handleAction(action, element, event) {
+          if (['refreshToken', 'confirmDelete'].includes(action)) {
+            event.stopPropagation();
+          }
+
+          const handlers = {
+            'openSettings': openSettings,
+            'startAutoReg': startAutoReg,
+            'checkAllAccountsHealth': checkAllAccountsHealth,
+            'toggleSelectionMode': toggleSelectionMode,
+            'refresh': refresh,
+            'clearSearch': clearSearch,
+            'selectAllAccounts': selectAllAccounts,
+            'deselectAllAccounts': deselectAllAccounts,
+            'exportSelectedAccounts': exportSelectedAccounts,
+            'refreshSelectedTokens': refreshSelectedTokens,
+            'deleteSelectedAccounts': deleteSelectedAccounts,
+            'toggleLogs': toggleLogs,
+            'clearConsole': clearConsole,
+            'copyLogs': copyLogs,
+            'closeSettings': closeSettings,
+            'switchTab': () => switchTab(element.dataset.tab),
+            'exportAllAccounts': exportAllAccounts,
+            'importAccounts': importAccounts,
+            'confirmPatchKiro': confirmPatchKiro,
+            'confirmUnpatchKiro': confirmUnpatchKiro,
+            'generateNewMachineId': generateNewMachineId,
+            'confirmResetMachineId': confirmResetMachineId,
+            'checkUpdates': checkUpdates,
+            'closeSsoModal': closeSsoModal,
+            'importSsoToken': importSsoToken,
+            'closeDialog': closeDialog,
+            'dialogAction': dialogAction,
+            'closeProfilesPanel': closeProfilesPanel,
+            'createProfile': createProfile,
+            'closeProfileEditor': closeProfileEditor,
+            'saveProfile': saveProfile,
+            'switchAccount': () => switchAccount(element.dataset.filename),
+            'refreshToken': () => refreshToken(element.dataset.filename),
+            'confirmDelete': () => confirmDelete(element.dataset.filename),
+            'selectProfile': () => selectProfile(element.dataset.id),
+            'openProfilesPanel': openProfilesPanel,
+            'removeEmailFromPool': () => removeEmailFromPool(parseInt(element.dataset.index)),
+            'togglePasswordVisibility': () => togglePasswordVisibility(element.dataset.target),
+            'testImapConnection': testImapConnection,
+            'selectStrategy': () => selectStrategy(element.dataset.strategy),
+            'addEmailToPool': addEmailToPool,
+            'importEmailsFromFile': importEmailsFromFile,
+            'pasteEmails': pasteEmails,
+            'closeSsoModalOnOverlayClick': (e) => { if(e.target.id === 'ssoModal') closeSsoModal(); },
+            'closeDialogOnOverlayClick': (e) => { if(e.target.id === 'dialogOverlay') closeDialog(); },
+          };
+
+          if (handlers[action]) {
+            handlers[action]();
+          } else {
+            console.warn('No handler for action:', action);
+          }
+        }
+
+        document.body.style.display = '';
+      });
+    </script>
+  </body>
 </html>

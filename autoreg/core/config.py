@@ -53,6 +53,9 @@ class TimeoutsConfig:
     # Новые таймауты для умных ожиданий
     element_poll_interval: float = 0.1  # Интервал проверки элементов
     page_transition: int = 3  # Ожидание перехода между страницами
+    # AWS redirect таймауты (AWS может долго проверять)
+    password_redirect: int = 60  # Ожидание редиректа после ввода пароля (AWS проверяет fingerprint)
+    allow_access_wait: int = 90  # Ожидание страницы Allow access
 
 
 @dataclass

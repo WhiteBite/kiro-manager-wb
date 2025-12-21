@@ -34,8 +34,10 @@ export const hi: Translations = {
   resetsAtMidnight: 'आधी रात को रीसेट',
 
   // Actions
-  autoReg: 'ऑटो-रेग',
-  autoRegTip: 'स्वचालित रूप से नया AWS Builder ID बनाएं',
+  autoReg: 'स्वतः पंजीकरण',
+  autoRegTip: 'स्वतः खाता पंजीकरण प्रारंभ करें',
+  autoRegCountLabel: 'गिनती',
+  autoRegCountPlaceholder: 'खातों की संख्या',
   import: 'आयात',
   importTip: 'JSON फ़ाइल से मौजूदा टोकन आयात करें',
   refresh: 'रीफ्रेश',
@@ -220,6 +222,24 @@ export const hi: Translations = {
   restartAfterReset: 'रीसेट के बाद Kiro को पुनः आरंभ करें',
   resetMachineIdTitle: 'मशीन ID रीसेट करें',
   resetMachineIdConfirm: 'यह Kiro टेलीमेट्री ID रीसेट करेगा। आपको बाद में Kiro पुनः आरंभ करना होगा। जारी रखें?',
+
+  // LLM Settings
+  llmSettings: 'एलएलएम एपीआई',
+  llmBaseUrl: 'बेस यूआरएल',
+  llmPort: 'पोर्ट',
+  llmApiKey: 'एपीआई कुंजी (वैकल्पिक)',
+  llmApiKeyDesc: 'यदि सेट है, तो सभी अनुरोधों में यह कुंजी प्राधिकरण हेडर में शामिल होनी चाहिए।',
+  llmModel: 'डिफ़ॉल्ट मॉडल',
+  llmModelDesc: 'पूर्णता के लिए उपयोग करने वाला डिफ़ॉल्ट चैट मॉडल।',
+  llmServer: 'एलएलएम सर्वर',
+  llmServerDesc: 'स्थानीय OpenAI-संगत सर्वर प्रारंभ या बंद करें।',
+  startServer: 'सर्वर प्रारंभ करें',
+  stopServer: 'सर्वर बंद करें',
+  restartServer: 'सर्वर पुनरारंभ करें',
+  serverStatus: 'सर्वर स्थिति',
+  serverStatusRunning: 'चल रहा है',
+  serverStatusStopped: 'बंद हो गया',
+  serverStatusError: 'त्रुटि',
 
   // Other
   delete: 'हटाएं',

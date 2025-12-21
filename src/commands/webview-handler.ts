@@ -101,13 +101,19 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await provider.openLogFile();
       break;
 
-    case 'switchAccount':
-      await switchToAccount(msg.email as string);
-      // Force refresh usage after account switch
-      await provider.refreshUsageAfterSwitch();
-      // Check health of newly switched account
-      setTimeout(() => provider.checkActiveAccountHealth(), 1000);
+    case 'switchAccount': {
+      const switchResult = await switchToAccount(msg.email as string, true);
+      if (switchResult.isBanned) {
+        // Mark account as banned and update UI
+        provider.markAccountAsBanned(msg.email as string, switchResult.errorMessage);
+      } else if (switchResult.success) {
+        // Force refresh usage after account switch
+        await provider.refreshUsageAfterSwitch();
+        // Check health of newly switched account
+        setTimeout(() => provider.checkActiveAccountHealth(), 1000);
+      }
       break;
+    }
 
     case 'copyToken':
       await provider.copyToken(msg.email as string);
@@ -127,7 +133,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'startAutoReg':
-      await runAutoReg(provider.context, provider);
+      await runAutoReg(provider.context, provider, msg.count as number | undefined);
       break;
 
     case 'importToken':
@@ -263,6 +269,31 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
 
     case 'checkAllAccountsHealth':
       await provider.checkAllAccountsHealth();
+      break;
+
+    // === LLM Server ===
+    case 'getLLMSettings':
+      await provider.getLLMSettings();
+      break;
+
+    case 'saveLLMSettings':
+      await provider.saveLLMSettings(msg.settings as Record<string, any>);
+      break;
+
+    case 'startLLMServer':
+      await provider.startLLMServer();
+      break;
+
+    case 'stopLLMServer':
+      await provider.stopLLMServer();
+      break;
+
+    case 'restartLLMServer':
+      await provider.restartLLMServer();
+      break;
+
+    case 'getLLMServerStatus':
+      await provider.getLLMServerStatus();
       break;
   }
 }

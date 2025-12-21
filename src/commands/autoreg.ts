@@ -19,18 +19,45 @@ export function getAutoregDir(context: vscode.ExtensionContext): string {
   const homePath = path.join(os.homedir(), '.kiro-autoreg');
   const bundledPath = path.join(context.extensionPath, 'autoreg');
 
+  // Priority 1: Workspace path (for development)
   if (fs.existsSync(path.join(workspacePath, 'registration', 'register.py'))) {
     return workspacePath;
   }
 
-  if (fs.existsSync(path.join(homePath, 'registration', 'register.py'))) {
+  // Priority 2: Bundled autoreg - always sync to home path
+  if (fs.existsSync(bundledPath)) {
+    const versionFile = path.join(homePath, '.version');
+    const extensionVersion = context.extension.packageJSON.version;
+    let installedVersion = '';
+
+    try {
+      if (fs.existsSync(versionFile)) {
+        installedVersion = fs.readFileSync(versionFile, 'utf-8').trim();
+      }
+    } catch { }
+
+    const requiredFiles = [
+      path.join(homePath, 'registration', 'register.py'),
+      path.join(homePath, 'spoofers', 'profile_storage.py'),
+    ];
+    const hasAllFiles = requiredFiles.every(f => fs.existsSync(f));
+    const needsSync = installedVersion !== extensionVersion || !hasAllFiles;
+
+    if (needsSync) {
+      const reason = installedVersion !== extensionVersion
+        ? `version ${installedVersion || 'none'} -> ${extensionVersion}`
+        : 'missing required files';
+      console.log(`Updating autoreg (${reason})`);
+      copyRecursive(bundledPath, homePath);
+      fs.writeFileSync(versionFile, extensionVersion);
+      console.log('Autoreg updated to:', homePath);
+    }
+
     return homePath;
   }
 
-  if (fs.existsSync(bundledPath)) {
-    console.log('Extracting bundled autoreg to:', homePath);
-    copyRecursive(bundledPath, homePath);
-    console.log('Extracted files to:', homePath);
+  // Priority 3: Existing home path (legacy)
+  if (fs.existsSync(path.join(homePath, 'registration', 'register.py'))) {
     return homePath;
   }
 
@@ -108,7 +135,7 @@ async function setupPythonEnv(autoregDir: string, provider: KiroAccountsProvider
   return envManager;
 }
 
-export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number) {
   const autoregDir = getAutoregDir(context);
   const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register.py') : '';
 
@@ -146,6 +173,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const imapServer = profileEnv.IMAP_SERVER;
   const imapUser = profileEnv.IMAP_USER;
   const imapPassword = profileEnv.IMAP_PASSWORD;
+  const imapPort = profileEnv.IMAP_PORT || '993';
   const emailDomain = profileEnv.EMAIL_DOMAIN || '';
   const emailStrategy = profileEnv.EMAIL_STRATEGY;
   const emailPool = profileEnv.EMAIL_POOL || '';
@@ -169,17 +197,25 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const scriptArgs = ['-m', 'registration.register_auto'];
   if (headless) scriptArgs.push('--headless');
   if (deviceFlow) scriptArgs.push('--device-flow');
+  if (count && count > 1) {
+    scriptArgs.push('--count', count.toString());
+  }
 
   const env: Record<string, string> = {
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
     IMAP_PASSWORD: imapPassword,
+    IMAP_PORT: imapPort,
     EMAIL_DOMAIN: emailDomain,
     EMAIL_STRATEGY: emailStrategy,
     EMAIL_POOL: emailPool,
     PROFILE_ID: profileId,
     SPOOFING_ENABLED: spoofing ? '1' : '0',
-    DEVICE_FLOW: deviceFlow ? '1' : '0'
+    DEVICE_FLOW: deviceFlow ? '1' : '0',
+    // Pass proxy settings from parent process (for mitmproxy support)
+    ...(process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
+    ...(process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY }),
+    ...(process.env.NODE_TLS_REJECT_UNAUTHORIZED && { NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED })
   };
 
   provider.addLog(`Starting autoreg...`);
@@ -191,11 +227,22 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   // Use ProcessManager for better control
   autoregProcess.removeAllListeners();
 
+  // Track actual registration result from stdout
+  let registrationSuccess = false;
+  let registrationFailed = false;
+
   autoregProcess.on('stdout', (data: string) => {
     const lines = data.split('\n').filter((l: string) => l.trim());
     for (const line of lines) {
       provider.addLog(line);
       parseProgressLine(line, provider);
+
+      // Track actual result from Python output
+      if (line.includes('[OK] SUCCESS')) {
+        registrationSuccess = true;
+      } else if (line.includes('[X] FAILED') || line.includes('[X] ERROR')) {
+        registrationFailed = true;
+      }
 
       // Auto-confirm prompts (y/n, да/нет)
       if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
@@ -215,11 +262,16 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   });
 
   autoregProcess.on('close', (code: number) => {
-    if (code === 0) {
+    // Check actual result, not just exit code
+    if (registrationSuccess && !registrationFailed) {
       provider.addLog('✓ Registration complete');
       vscode.window.showInformationMessage('Account registered successfully!');
-    } else if (code !== null) {
+    } else if (registrationFailed) {
+      provider.addLog('✗ Registration failed');
+      vscode.window.showErrorMessage('Registration failed. Check logs for details.');
+    } else if (code !== 0 && code !== null) {
       provider.addLog(`✗ Process exited with code ${code}`);
+      vscode.window.showErrorMessage(`Registration process failed (exit code ${code})`);
     }
     provider.setStatus('');
     provider.refresh();

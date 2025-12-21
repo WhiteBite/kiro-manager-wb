@@ -35,7 +35,9 @@ export const zh: Translations = {
 
   // Actions
   autoReg: '自动注册',
-  autoRegTip: '自动创建新的 AWS Builder ID',
+  autoRegTip: '开始自动注册账户',
+  autoRegCountLabel: '数量',
+  autoRegCountPlaceholder: '账户数量',
   import: '导入',
   importTip: '从 JSON 文件导入现有令牌',
   refresh: '刷新',
@@ -220,6 +222,24 @@ export const zh: Translations = {
   restartAfterReset: '重置后需要重启Kiro',
   resetMachineIdTitle: '重置机器ID',
   resetMachineIdConfirm: '这将重置 Kiro 遥测 ID。之后需要重启 Kiro。继续？',
+
+  // LLM Settings
+  llmSettings: 'LLM API',
+  llmBaseUrl: '基础 URL',
+  llmPort: '端口',
+  llmApiKey: 'API 密钥 (可选)',
+  llmApiKeyDesc: '如果设置，所有请求必须在 Authorization 标头中包含此密钥。',
+  llmModel: '默认模型',
+  llmModelDesc: '用于补全的默认聊天模型。',
+  llmServer: 'LLM 服务器',
+  llmServerDesc: '启动或停止本地 OpenAI 兼容服务器。',
+  startServer: '启动服务器',
+  stopServer: '停止服务器',
+  restartServer: '重启服务器',
+  serverStatus: '服务器状态',
+  serverStatusRunning: '运行中',
+  serverStatusStopped: '已停止',
+  serverStatusError: '错误',
 
   // Other
   delete: '删除',

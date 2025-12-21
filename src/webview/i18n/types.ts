@@ -51,6 +51,8 @@ export interface Translations {
   // ============================================
   autoReg: string;
   autoRegTip: string;
+  autoRegCountLabel: string;
+  autoRegCountPlaceholder: string;
   import: string;
   importTip: string;
   refresh: string;
@@ -265,6 +267,24 @@ export interface Translations {
   resetMachineIdConfirm: string;
 
   // ============================================
+  // LLM Settings
+  // ============================================
+  llmSettings: string;
+  llmBaseUrl: string;
+  llmPort: string;
+  llmApiKey: string;
+  llmApiKeyDesc: string;
+  llmModel: string;
+  llmModelDesc: string;
+  llmServer: string;
+  llmServerDesc: string;
+  startServer: string;
+  stopServer: string;
+  restartServer: string;
+  serverStatus: string;
+  serverStatusRunning: string;
+  serverStatusStopped: string;
+  serverStatusError: string;
   // Other
   // ============================================
   delete: string;

@@ -34,8 +34,10 @@ export const de: Translations = {
   resetsAtMidnight: 'Setzt um Mitternacht zurück',
 
   // Actions
-  autoReg: 'Auto-Reg',
-  autoRegTip: 'Neue AWS Builder ID automatisch erstellen',
+  autoReg: 'Auto-Registrierung',
+  autoRegTip: 'Automatische Kontoregistrierung starten',
+  autoRegCountLabel: 'Anzahl',
+  autoRegCountPlaceholder: 'Anzahl der Konten',
   import: 'Importieren',
   importTip: 'Vorhandenes Token aus JSON-Datei importieren',
   refresh: 'Aktualisieren',
@@ -220,6 +222,24 @@ export const de: Translations = {
   restartAfterReset: 'Kiro nach dem Zurücksetzen neu starten',
   resetMachineIdTitle: 'Maschinen-ID zurücksetzen',
   resetMachineIdConfirm: 'Dies setzt die Kiro-Telemetrie-IDs zurück. Sie müssen Kiro danach neu starten. Fortfahren?',
+
+  // LLM Settings
+  llmSettings: 'LLM API',
+  llmBaseUrl: 'Basis-URL',
+  llmPort: 'Port',
+  llmApiKey: 'API-Schlüssel (optional)',
+  llmApiKeyDesc: 'Wenn festgelegt, müssen alle Anfragen diesen Schlüssel im Authorization-Header enthalten.',
+  llmModel: 'Standardmodell',
+  llmModelDesc: 'Standard-Chat-Modell für Vervollständigungen.',
+  llmServer: 'LLM-Server',
+  llmServerDesc: 'Lokalen OpenAI-kompatiblen Server starten oder stoppen.',
+  startServer: 'Server starten',
+  stopServer: 'Server stoppen',
+  restartServer: 'Server neu starten',
+  serverStatus: 'Serverstatus',
+  serverStatusRunning: 'Läuft',
+  serverStatusStopped: 'Gestoppt',
+  serverStatusError: 'Fehler',
 
   // Other
   delete: 'Löschen',
