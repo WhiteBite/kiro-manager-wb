@@ -225,16 +225,96 @@ export const layout = `
   .toolbar {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     border-bottom: 1px solid var(--border);
   }
-  .toolbar-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  .toolbar-row {
+    display: flex;
+    align-items: center;
     gap: 6px;
   }
-  .toolbar-buttons .btn-primary { flex: 1; }
+  .toolbar-buttons {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .toolbar-buttons .btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .toolbar-buttons .btn-text {
+    display: none;
+  }
+  @media (min-width: 400px) {
+    .toolbar-buttons .btn-text { display: inline; }
+    .toolbar-buttons .btn { padding: 6px 10px; font-size: 11px; }
+  }
+
+  /* === Search === */
+  .search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .search-input {
+    width: 100%;
+    padding: 6px 28px 6px 28px;
+    font-size: 11px;
+    font-family: inherit;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition);
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(63,182,139,0.15);
+  }
+  .search-input::placeholder {
+    color: var(--muted);
+  }
+  .search-icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  .search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10px;
+    transition: all var(--transition);
+  }
+  .search-clear:hover {
+    background: var(--danger-dim);
+    color: var(--danger);
+  }
+  .search-wrapper:has(.search-input:not(:placeholder-shown)) .search-clear {
+    display: flex;
+  }
 
   /* === Account List === */
   .list {
@@ -1088,35 +1168,37 @@ export const layout = `
   .tab-bar {
     display: flex;
     gap: 2px;
-    padding: 4px 8px;
+    padding: 4px 6px;
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
   }
   .tab-bar::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
   }
   .tab-item {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 8px 10px;
+    padding: 6px 8px;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
     color: var(--muted);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
-    min-width: 40px;
+    min-width: 36px;
+    scroll-snap-align: start;
   }
   .tab-item:hover {
     background: rgba(128,128,128,0.1);
@@ -1125,35 +1207,42 @@ export const layout = `
   .tab-item.active {
     background: var(--accent-dim);
     color: var(--accent);
-    border: 1px solid var(--accent);
+    border-color: var(--accent);
   }
   .tab-icon {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
     flex-shrink: 0;
   }
   .tab-icon svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
   .tab-label {
     display: none;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 60px;
   }
-  /* Show labels when width >= 400px */
-  @media (min-width: 400px) {
+  /* Show labels when width >= 360px */
+  @media (min-width: 360px) {
     .tab-label { display: inline; }
-    .tab-item { padding: 8px 12px; }
+    .tab-item { padding: 6px 10px; font-size: 10px; }
   }
-  /* Wider screens - more padding */
-  @media (min-width: 500px) {
+  /* Wider screens */
+  @media (min-width: 450px) {
+    .tab-item { padding: 8px 14px; gap: 5px; font-size: 11px; }
+    .tab-icon { font-size: 13px; }
+    .tab-label { max-width: none; }
+  }
+  @media (min-width: 550px) {
     .tab-item { padding: 8px 16px; gap: 6px; }
+    .tab-icon { font-size: 14px; }
   }
   .tab-badge {
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 10px;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 8px;
     background: rgba(128,128,128,0.2);
     color: var(--muted);
     flex-shrink: 0;
@@ -1380,62 +1469,64 @@ export const autoRegStyles = `
 
 export const responsiveStyles = `
   /* === Responsive Design === */
-  @media (max-width: 320px) {
-    .header-title {
-      font-size: 13px;
-    }
-    .header-stats {
-      display: none; /* Hide stats on very narrow screens */
-    }
-    .hero {
-      margin: 8px;
-      padding: 10px;
-    }
-    .hero-remaining-value {
-      font-size: 28px;
-    }
-    .account {
-      padding: 8px;
-      gap: 8px;
-    }
-    .account-avatar {
-      width: 32px;
-      height: 32px;
-      font-size: 12px;
-    }
-    .account-actions {
-       opacity: 1; /* Always show actions */
-       gap: 2px;
-    }
-    .account-btn {
-      width: 24px;
-      height: 24px;
-    }
-    .autoreg-controls {
-      padding: 6px 8px;
-    }
-    .autoreg-controls .btn-text {
-      display: none; /* Hide text on buttons */
-    }
-    .autoreg-controls .btn {
-      min-width: 32px; /* Ensure button is square-ish */
-      padding: 0 8px;
-    }
-    .tab-item {
-      padding: 6px 8px;
-    }
-    .tab-label {
-      display: none;
-    }
-    .list {
-      padding: 6px 8px 80px;
-    }
-    .list-group {
-      padding: 6px 2px;
-    }
-    .account-email {
-      font-size: 10px;
-    }
+  
+  /* Very narrow screens (< 300px) */
+  @media (max-width: 299px) {
+    .header { padding: 0 6px; }
+    .header-title { font-size: 12px; }
+    .header-badge { font-size: 9px; padding: 2px 5px; }
+    .hero { margin: 6px; padding: 8px; }
+    .hero-remaining-value { font-size: 24px; }
+    .account { padding: 6px; gap: 6px; }
+    .account-avatar { width: 28px; height: 28px; font-size: 11px; }
+    .account-email { font-size: 9px; }
+    .account-meta { font-size: 8px; gap: 6px; }
+    .account-actions { opacity: 1; }
+    .account-btn { width: 22px; height: 22px; }
+    .tab-item { padding: 5px 6px; min-width: 32px; }
+    .tab-icon { font-size: 11px; }
+    .list { padding: 4px 6px 70px; }
+    .toolbar { padding: 4px 6px; }
+    .toolbar-buttons .btn { padding: 5px 6px; }
+    .spoof-modules { grid-template-columns: 1fr; }
+    .stats-cards { grid-template-columns: 1fr; }
+    .stat-value { font-size: 20px; }
+  }
+  
+  /* Narrow screens (300-359px) */
+  @media (min-width: 300px) and (max-width: 359px) {
+    .header-title { font-size: 13px; }
+    .hero { margin: 8px; padding: 10px; }
+    .hero-remaining-value { font-size: 28px; }
+    .account { padding: 8px; gap: 8px; }
+    .account-avatar { width: 32px; height: 32px; font-size: 12px; }
+    .account-actions { opacity: 1; gap: 2px; }
+    .account-btn { width: 24px; height: 24px; }
+    .tab-item { padding: 6px 8px; }
+    .list { padding: 6px 8px 80px; }
+    .spoof-modules { grid-template-columns: 1fr; }
+  }
+  
+  /* Medium screens (360-449px) */
+  @media (min-width: 360px) and (max-width: 449px) {
+    .account-actions { opacity: 0; }
+    .account:hover .account-actions { opacity: 1; }
+    .spoof-modules { grid-template-columns: repeat(2, 1fr); }
+  }
+  
+  /* Wider screens (450px+) */
+  @media (min-width: 450px) {
+    .hero { margin: 12px; padding: 16px; }
+    .hero-remaining-value { font-size: 36px; }
+    .account { padding: 12px 14px; }
+    .account-avatar { width: 40px; height: 40px; font-size: 14px; }
+    .list { padding: 10px 14px 100px; }
+    .toolbar { padding: 8px 12px; }
+  }
+  
+  /* Touch devices - always show actions */
+  @media (hover: none) {
+    .account-actions { opacity: 1; }
   }
 `;
 
