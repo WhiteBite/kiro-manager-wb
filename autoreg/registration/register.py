@@ -401,14 +401,16 @@ class AWSRegistration:
                         raise Exception("Failed to set password after multiple attempts (captcha or validation error)")
             
             # ШАГ 7: Ждём редирект на view.awsapps.com и кликаем "Allow access"
-            print(f"[7/8] Waiting for Allow access page...")
+            # Таймаут настраивается в config.timeouts.allow_access_wait
+            allow_access_timeout = config.timeouts.allow_access_wait if hasattr(config.timeouts, 'allow_access_wait') else 90
+            print(f"[7/8] Waiting for Allow access page (timeout: {allow_access_timeout}s)...")
             
             # ОПТИМИЗИРОВАНО: быстрый polling с минимальными задержками
             start_time = time.time()
             allow_clicked = False
             last_url = ""
             
-            while time.time() - start_time < 90:  # Увеличено - AWS может долго грузить
+            while time.time() - start_time < allow_access_timeout:
                 current_url = self.browser.current_url
                 
                 # Логируем изменение URL

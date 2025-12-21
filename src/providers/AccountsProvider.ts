@@ -484,21 +484,44 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
         try {
           const result = await refreshAccountToken(acc.filename, true);
-          if (result.success) {
-            refreshed++;
-            this.addLog(`✓ Refreshed: ${accountName}`);
-          } else {
+
+          if (result.isBanned) {
             failed++;
-            if (result.isBanned) {
-              this.markAccountAsBanned(acc.filename, result.errorMessage);
-              this.addLog(`⛔ BANNED: ${accountName}`);
-            } else {
-              this.addLog(`✗ Failed to refresh: ${accountName} - ${result.errorMessage || result.error}`);
+            this.markAccountAsBanned(acc.filename, result.errorMessage);
+            this.addLog(`⛔ BANNED (OIDC): ${accountName}`);
+            continue;
+          }
+
+          if (!result.success) {
+            failed++;
+            this.addLog(`✗ Failed: ${accountName} - ${result.errorMessage || result.error}`);
+            continue;
+          }
+
+          // OIDC succeeded - check via CodeWhisperer API
+          const accounts = loadAccounts();
+          const freshAcc = accounts.find(a => a.filename === acc.filename);
+
+          if (freshAcc?.tokenData.accessToken) {
+            const { checkAccountBanViaAPI } = await import('../accounts');
+            const banCheck = await checkAccountBanViaAPI(
+              freshAcc.tokenData.accessToken,
+              freshAcc.tokenData.region || 'us-east-1'
+            );
+
+            if (banCheck.isBanned) {
+              failed++;
+              this.markAccountAsBanned(acc.filename, banCheck.message);
+              this.addLog(`⛔ BANNED (API): ${accountName}`);
+              continue;
             }
           }
+
+          refreshed++;
+          this.addLog(`✓ Healthy: ${accountName}`);
         } catch (err) {
           failed++;
-          this.addLog(`✗ Error refreshing ${accountName}: ${err}`);
+          this.addLog(`✗ Error: ${accountName} - ${err}`);
         }
       }
     });
@@ -585,60 +608,107 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   async refreshSingleToken(filename: string) {
-    const accountName = filename.replace(/^token-BuilderId-IdC-/, '').replace(/-\d+\.json$/, '').replace(/_/g, ' ');
-    vscode.window.withProgress({
+    const account = this._accounts.find(a => a.filename === filename || a.filename.includes(filename));
+    const accountName = account?.tokenData.accountName || filename.replace(/^token-BuilderId-IdC-/, '').replace(/-\d+\.json$/, '').replace(/_/g, ' ');
+
+    await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Refreshing token for ${accountName}...`,
+      title: `Checking ${accountName}...`,
       cancellable: false
     }, async () => {
       const result = await refreshAccountToken(filename, true);
-      if (result.success) {
-        vscode.window.showInformationMessage(`Token refreshed: ${accountName}`);
-        this.refresh();
-      } else {
-        // If banned, mark the account
-        if (result.isBanned) {
-          this.markAccountAsBanned(filename, result.errorMessage);
-        }
-        // Error message already shown by refreshAccountToken
+
+      if (result.isBanned) {
+        // OIDC detected ban
+        this.markAccountAsBanned(filename, result.errorMessage);
+        this.addLog(`⛔ BANNED (OIDC): ${accountName}`);
+        return;
       }
+
+      if (!result.success) {
+        // Other error - already shown by refreshAccountToken
+        return;
+      }
+
+      // OIDC refresh succeeded - now check via CodeWhisperer API for real ban detection
+      // Reload account to get fresh token
+      const accounts = loadAccounts();
+      const freshAccount = accounts.find(a => a.filename === filename || a.filename.includes(filename));
+
+      if (freshAccount?.tokenData.accessToken) {
+        const { checkAccountBanViaAPI } = await import('../accounts');
+        const banCheck = await checkAccountBanViaAPI(
+          freshAccount.tokenData.accessToken,
+          freshAccount.tokenData.region || 'us-east-1'
+        );
+
+        if (banCheck.isBanned) {
+          this.markAccountAsBanned(filename, banCheck.message || 'TEMPORARILY_SUSPENDED');
+          this.addLog(`⛔ BANNED (API): ${accountName}`);
+          vscode.window.showErrorMessage(`⛔ Account "${accountName}" is BANNED`);
+          this.refresh();
+          return;
+        }
+      }
+
+      // All good!
+      vscode.window.showInformationMessage(`✓ ${accountName} is healthy`);
+      this.addLog(`✓ Healthy: ${accountName}`);
+      this.refresh();
     });
   }
 
   // Mark account as banned in usage cache
-  private markAccountAsBanned(filename: string, reason?: string) {
-    const account = this._accounts.find(a => a.filename === filename);
-    if (account) {
-      const accName = account.tokenData.accountName || filename;
-      // Update usage with banned flag
-      if (account.usage) {
-        account.usage.isBanned = true;
-        account.usage.banReason = reason;
-      } else {
-        account.usage = {
-          currentUsage: -1,
-          usageLimit: 500,
-          percentageUsed: 0,
-          daysRemaining: -1,
-          isBanned: true,
-          banReason: reason
-        };
-      }
+  markAccountAsBanned(identifier: string, reason?: string) {
+    // Find account by filename, accountName, or email
+    const account = this._accounts.find(a =>
+      a.filename === identifier ||
+      a.tokenData.accountName === identifier ||
+      a.tokenData.email === identifier ||
+      a.filename.includes(identifier)
+    );
 
-      // PERSIST ban status to disk so it survives refresh/restart
-      const { saveAccountUsage } = require('../utils');
-      saveAccountUsage(accName, {
-        currentUsage: account.usage.currentUsage,
-        usageLimit: account.usage.usageLimit,
-        percentageUsed: account.usage.percentageUsed,
-        daysRemaining: account.usage.daysRemaining,
+    if (!account) {
+      console.error(`[BAN] Account not found: ${identifier}`);
+      this.addLog(`⚠️ Cannot mark as banned - account not found: ${identifier}`);
+      return;
+    }
+
+    const accName = account.tokenData.accountName || account.tokenData.email || identifier;
+
+    // Update usage with banned flag
+    if (account.usage) {
+      account.usage.isBanned = true;
+      account.usage.banReason = reason;
+    } else {
+      account.usage = {
+        currentUsage: -1,
+        usageLimit: 500,
+        percentageUsed: 0,
+        daysRemaining: -1,
         isBanned: true,
         banReason: reason
-      });
-
-      this.addLog(`⛔ Account marked as BANNED: ${accName}`);
-      this.refresh();
+      };
     }
+
+    // PERSIST ban status to disk so it survives refresh/restart
+    const { saveAccountUsage } = require('../utils');
+    const usageData = {
+      currentUsage: account.usage.currentUsage,
+      usageLimit: account.usage.usageLimit,
+      percentageUsed: account.usage.percentageUsed,
+      daysRemaining: account.usage.daysRemaining,
+      isBanned: true,
+      banReason: reason
+    };
+
+    console.log(`[BAN] Saving ban status for ${accName}:`, usageData);
+    saveAccountUsage(accName, usageData);
+
+    this.addLog(`⛔ Account marked as BANNED: ${accName}`);
+
+    // Force immediate UI update
+    this.renderWebview();
   }
 
   async toggleSetting(setting: string) {
@@ -838,6 +908,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       autoSwitchThreshold: config.get<number>('autoSwitch.usageThreshold', 50)
     };
 
+    // Get active IMAP profile for Hero display
+    const profileProvider = this.getProfileProvider();
+    const activeProfile = profileProvider?.getActive() || null;
+
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({
       accounts: this._accounts,
       autoSwitchEnabled,
@@ -847,7 +921,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       consoleLogs: this.consoleLogs,
       version: this._version,
       language: this._language,
-      availableUpdate: this._availableUpdate
+      availableUpdate: this._availableUpdate,
+      activeProfile
     }));
 
     this._view.webview.html = html;
@@ -1195,19 +1270,43 @@ except Exception as e:
 
         try {
           const result = await refreshAccountToken(account.filename, true);
-          if (result.success) {
-            refreshed++;
-            this.addLog(`✓ Refreshed: ${accountName}`);
-          } else {
+
+          if (result.isBanned) {
             failed++;
-            if (result.isBanned) {
+            banned++;
+            this.markAccountAsBanned(account.filename, result.errorMessage);
+            this.addLog(`⛔ BANNED (OIDC): ${accountName}`);
+            continue;
+          }
+
+          if (!result.success) {
+            failed++;
+            this.addLog(`✗ Failed: ${accountName} - ${result.errorMessage || result.error}`);
+            continue;
+          }
+
+          // OIDC succeeded - check via CodeWhisperer API
+          const accounts = loadAccounts();
+          const freshAcc = accounts.find(a => a.filename === account.filename);
+
+          if (freshAcc?.tokenData.accessToken) {
+            const { checkAccountBanViaAPI } = await import('../accounts');
+            const banCheck = await checkAccountBanViaAPI(
+              freshAcc.tokenData.accessToken,
+              freshAcc.tokenData.region || 'us-east-1'
+            );
+
+            if (banCheck.isBanned) {
+              failed++;
               banned++;
-              this.markAccountAsBanned(account.filename, result.errorMessage);
-              this.addLog(`⛔ BANNED: ${accountName}`);
-            } else {
-              this.addLog(`✗ Failed: ${accountName} - ${result.errorMessage || result.error}`);
+              this.markAccountAsBanned(account.filename, banCheck.message);
+              this.addLog(`⛔ BANNED (API): ${accountName}`);
+              continue;
             }
           }
+
+          refreshed++;
+          this.addLog(`✓ Healthy: ${accountName}`);
         } catch (err) {
           failed++;
           this.addLog(`✗ Error: ${accountName} - ${err}`);
@@ -1215,9 +1314,9 @@ except Exception as e:
       }
     });
 
-    const message = `Refreshed ${refreshed}/${filenames.length}` +
-      (failed > 0 ? `, ${failed} failed` : '') +
-      (banned > 0 ? ` (${banned} banned)` : '');
+    const message = `Checked ${filenames.length}: ${refreshed} healthy` +
+      (banned > 0 ? `, ${banned} banned` : '') +
+      (failed - banned > 0 ? `, ${failed - banned} failed` : '');
 
     vscode.window.showInformationMessage(message);
     this.refresh();
@@ -1288,10 +1387,18 @@ except Exception as e:
 
         if (status.isHealthy) {
           healthy++;
-          // Clear any previous ban status
-          if (acc.usage) {
+          // Clear any previous ban status (both in memory AND on disk)
+          if (acc.usage?.isBanned) {
             acc.usage.isBanned = false;
             acc.usage.banReason = undefined;
+            // PERSIST cleared ban status to disk
+            const { saveAccountUsage } = require('../utils');
+            saveAccountUsage(accountName, {
+              ...acc.usage,
+              isBanned: false,
+              banReason: undefined
+            });
+            this.addLog(`✓ Ban cleared: ${accountName}`);
           }
         } else if (status.isBanned) {
           banned++;

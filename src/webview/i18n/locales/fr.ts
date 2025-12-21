@@ -34,8 +34,10 @@ export const fr: Translations = {
   resetsAtMidnight: 'Réinitialise à minuit',
 
   // Actions
-  autoReg: 'Auto-Reg',
-  autoRegTip: 'Créer automatiquement un nouvel AWS Builder ID',
+  autoReg: 'Auto-Inscription',
+  autoRegTip: 'Démarrer l\'inscription automatique de comptes',
+  autoRegCountLabel: 'Quantité',
+  autoRegCountPlaceholder: 'Nombre de comptes',
   import: 'Importer',
   importTip: 'Importer un token existant depuis un fichier JSON',
   refresh: 'Actualiser',
@@ -220,6 +222,24 @@ export const fr: Translations = {
   restartAfterReset: 'Redémarrer Kiro après la réinitialisation',
   resetMachineIdTitle: 'Réinitialiser Machine ID',
   resetMachineIdConfirm: 'Ceci réinitialisera les IDs de télémétrie Kiro. Vous devrez redémarrer Kiro après. Continuer ?',
+
+  // LLM Settings
+  llmSettings: 'API LLM',
+  llmBaseUrl: 'URL de base',
+  llmPort: 'Port',
+  llmApiKey: 'Clé API (optionnel)',
+  llmApiKeyDesc: 'Si définie, toutes les requêtes doivent inclure cette clé dans l\'en-tête Authorization.',
+  llmModel: 'Modèle par défaut',
+  llmModelDesc: 'Modèle de chat par défaut à utiliser pour les complétions.',
+  llmServer: 'Serveur LLM',
+  llmServerDesc: 'Démarrer ou arrêter le serveur local compatible OpenAI.',
+  startServer: 'Démarrer le serveur',
+  stopServer: 'Arrêter le serveur',
+  restartServer: 'Redémarrer le serveur',
+  serverStatus: 'État du serveur',
+  serverStatusRunning: 'En cours',
+  serverStatusStopped: 'Arrêté',
+  serverStatusError: 'Erreur',
 
   // Other
   delete: 'Supprimer',

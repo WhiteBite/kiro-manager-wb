@@ -137,6 +137,9 @@ export const layout = `
   }
   .hero-usage {
     color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   /* === Step Indicators (Registration Progress) === */
@@ -227,7 +230,8 @@ export const layout = `
     border-bottom: 1px solid var(--border);
   }
   .toolbar-buttons {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 6px;
   }
   .toolbar-buttons .btn-primary { flex: 1; }
@@ -299,51 +303,98 @@ export const layout = `
     padding: 10px 12px;
     margin-bottom: 6px;
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-normal);
   }
   .account:hover {
-    border-color: rgba(63,182,139,0.3);
-    background: linear-gradient(135deg, rgba(63,182,139,0.06) 0%, transparent 100%);
+    border-color: rgba(63,182,139,0.5);
+    background: linear-gradient(135deg, rgba(63,182,139,0.08) 0%, transparent 100%);
     transform: translateY(-1px);
   }
+  /* ACTIVE - яркая зелёная рамка */
   .account.active {
     border-color: var(--accent);
-    background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 100%);
+    border-width: 2px;
+    background: linear-gradient(135deg, rgba(63,182,139,0.15) 0%, rgba(63,182,139,0.05) 100%);
+    box-shadow: 0 0 12px rgba(63,182,139,0.3);
   }
-  .account.expired { opacity: 0.6; border-color: var(--muted); }
-  .account.exhausted { opacity: 0.6; border-color: var(--danger); }
-  .account.suspended { opacity: 0.5; border-color: #8b0000; }
+  /* READY - обычный серый */
+  .account:not(.active):not(.expired):not(.exhausted):not(.suspended):not(.banned) {
+    border-color: var(--border);
+  }
+  /* EXPIRED - жёлтая рамка */
+  .account.expired { 
+    border-color: var(--warning); 
+    background: linear-gradient(135deg, rgba(217,163,52,0.1) 0%, transparent 100%);
+  }
+  /* EXHAUSTED - оранжевая рамка */
+  .account.exhausted { 
+    border-color: #ff6b35;
+    background: linear-gradient(135deg, rgba(255,107,53,0.1) 0%, transparent 100%);
+  }
+  /* SUSPENDED - тёмно-красная */
+  .account.suspended { 
+    border-color: #8b0000;
+    background: linear-gradient(135deg, rgba(139,0,0,0.15) 0%, transparent 100%);
+  }
+  /* BANNED - ЯРКАЯ КРАСНАЯ РАМКА + ПЕРЕЧЁРКНУТЫЙ */
+  .account.banned {
+    border-color: #ff0000 !important;
+    border-width: 2px;
+    background: linear-gradient(135deg, rgba(255,0,0,0.2) 0%, rgba(255,0,0,0.05) 100%) !important;
+    opacity: 0.7;
+    position: relative;
+  }
+  .account.banned::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #ff0000;
+    transform: rotate(-3deg);
+  }
+  .account.banned .account-email {
+    text-decoration: line-through;
+    color: #ff6666;
+  }
   .account-avatar {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     color: #fff;
     flex-shrink: 0;
   }
+  /* Avatar colors by status */
+  .account.expired .account-avatar { background: linear-gradient(135deg, #888 0%, #666 100%); }
+  .account.exhausted .account-avatar { background: linear-gradient(135deg, #ff6b35 0%, #cc5500 100%); }
+  .account.suspended .account-avatar { background: linear-gradient(135deg, #8b0000 0%, #5c0000 100%); }
+  .account.banned .account-avatar { background: linear-gradient(135deg, #ff0000 0%, #aa0000 100%); }
   .account-status {
     position: absolute;
     bottom: -2px;
     right: -2px;
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     border: 2px solid var(--bg);
   }
-  .account-status.active { background: var(--accent); }
-  .account-status.ready { background: #666; }
-  .account-status.expired { background: var(--muted); }
-  .account-status.exhausted { background: var(--danger); }
+  .account-status.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .account-status.ready { background: #888; }
+  .account-status.expired { background: var(--warning); }
+  .account-status.exhausted { background: #ff6b35; }
   .account-status.suspended { background: #8b0000; }
+  .account-status.banned { background: #ff0000; box-shadow: 0 0 6px #ff0000; }
   .account-info { flex: 1; min-width: 0; }
   .account-email {
     font-size: 11px;
@@ -358,6 +409,9 @@ export const layout = `
     margin-top: 3px;
     font-size: 10px;
     color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .account-meta span {
     display: flex;
@@ -393,6 +447,17 @@ export const layout = `
     background: var(--danger-dim);
     border-color: var(--danger);
     color: var(--danger);
+  }
+  /* Double-click delete confirmation state */
+  .account-btn.danger.confirm-delete {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+    animation: pulse-delete 0.5s ease-in-out infinite;
+  }
+  @keyframes pulse-delete {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(239, 83, 80, 0); }
   }
   .account-btn svg { width: 12px; height: 12px; }
 
@@ -1256,110 +1321,102 @@ export const layout = `
 `;
 
 
-export const fabStyles = `
-  /* === Floating Action Button === */
-  .fab-container {
-    position: fixed;
-    bottom: 50px;
-    right: 16px;
-    z-index: 80;
+
+export const autoRegStyles = `
+  /* === Auto-Reg Controls === */
+  .autoreg-controls {
     display: flex;
-    flex-direction: column;
     align-items: flex-end;
     gap: 8px;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
   }
-  .fab-container.hidden {
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.8);
+  .autoreg-controls .form-group {
+    flex: 1;
+    margin-bottom: 0;
   }
-  .fab {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
+  .autoreg-controls .form-group label {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  .autoreg-controls .form-control {
+    height: 30px;
+    min-height: 30px;
+  }
+  .autoreg-controls .btn {
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    transition: all var(--transition-normal);
-  }
-  .fab:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
-  }
-  .fab:active {
-    transform: scale(0.95);
-  }
-  .fab-icon {
-    font-size: 20px;
-    line-height: 1;
-  }
-  .fab-primary {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-    color: #fff;
-  }
-  .fab-primary:hover {
-    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
-  }
-  /* Pulse animation for FAB when idle */
-  .fab-primary.pulse {
-    animation: fabPulse 2s ease-in-out infinite;
-  }
-  .fab-primary.pulse:hover {
-    animation: none;
-  }
-  @keyframes fabPulse {
-    0%, 100% { 
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 0 rgba(63,182,139,0.4);
-    }
-    50% { 
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 8px rgba(63,182,139,0);
-    }
-  }
-  .fab-stop {
-    background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
-    color: #fff;
-    width: 40px;
-    height: 40px;
-  }
-  .fab-pause {
-    background: linear-gradient(135deg, var(--warning) 0%, #d4a84a 100%);
-    color: #1a1a1a;
-    width: 40px;
-    height: 40px;
-  }
-  .fab-container.running {
     gap: 6px;
+    padding: 0 12px;
   }
-  /* Running state - remove pulse, add glow */
-  .fab-container.running .fab {
-    animation: fabRunningGlow 1.5s ease-in-out infinite;
-  }
-  @keyframes fabRunningGlow {
-    0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-    50% { box-shadow: 0 4px 24px rgba(229,83,83,0.5); }
-  }
-  .fab-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    font-size: 10px;
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .fab-status .spinner {
-    width: 12px;
-    height: 12px;
+  .autoreg-controls.running .btn {
+    flex: 1;
   }
 `;
 
+
+export const responsiveStyles = `
+  /* === Responsive Design === */
+  @media (max-width: 320px) {
+    .header-title {
+      font-size: 13px;
+    }
+    .header-stats {
+      display: none; /* Hide stats on very narrow screens */
+    }
+    .hero {
+      margin: 8px;
+      padding: 10px;
+    }
+    .hero-remaining-value {
+      font-size: 28px;
+    }
+    .account {
+      padding: 8px;
+      gap: 8px;
+    }
+    .account-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 12px;
+    }
+    .account-actions {
+       opacity: 1; /* Always show actions */
+       gap: 2px;
+    }
+    .account-btn {
+      width: 24px;
+      height: 24px;
+    }
+    .autoreg-controls {
+      padding: 6px 8px;
+    }
+    .autoreg-controls .btn-text {
+      display: none; /* Hide text on buttons */
+    }
+    .autoreg-controls .btn {
+      min-width: 32px; /* Ensure button is square-ish */
+      padding: 0 8px;
+    }
+    .tab-item {
+      padding: 6px 8px;
+    }
+    .tab-label {
+      display: none;
+    }
+    .list {
+      padding: 6px 8px 80px;
+    }
+    .list-group {
+      padding: 6px 2px;
+    }
+    .account-email {
+      font-size: 10px;
+    }
+  }
+`;
 
 export const settingsCardStyles = `
   /* === Settings Cards === */

@@ -12,6 +12,7 @@ export interface AccountListProps {
   t: Translations;
   selectionMode?: boolean;
   selectedCount?: number;
+  variant?: 'default' | 'banned';
 }
 
 
@@ -103,15 +104,39 @@ export function renderAccountListSkeleton(count: number = 3): string {
   return html;
 }
 
-export function renderAccountList({ accounts, t, selectionMode = false, selectedCount = 0 }: AccountListProps): string {
+export function renderAccountList({ accounts, t, selectionMode = false, selectedCount = 0, variant = 'default' }: AccountListProps): string {
   if (accounts.length === 0) {
+    const emptyIcon = variant === 'banned' ? '⛔' : '📭';
+    const emptyText = variant === 'banned'
+      ? `${t.bannedGroup}: ${t.noAccountsFound || 'No accounts found'}`
+      : t.noAccounts;
+    const emptyAction = variant === 'banned'
+      ? ''
+      : `<button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>`;
+
     return `
       <div class="empty-state">
-        <div class="empty-state-icon">📭</div>
-        <div class="empty-state-text">${t.noAccounts}</div>
-        <button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>
+        <div class="empty-state-icon">${emptyIcon}</div>
+        <div class="empty-state-text">${emptyText}</div>
+        ${emptyAction}
       </div>
     `;
+  }
+
+  if (variant === 'banned') {
+    let html = `
+      <div class="list-group banned">
+        <span>⛔ ${t.bannedGroup}</span>
+        <button class="list-group-action" onclick="confirmDeleteBanned()">${t.deleteAll}</button>
+        <span class="list-group-count">${accounts.length}</span>
+      </div>
+    `;
+
+    accounts.forEach((acc, index) => {
+      html += renderAccount(acc, index, t, selectionMode);
+    });
+
+    return html;
   }
 
   // Empty search state (hidden by default, shown via JS when search has no results)

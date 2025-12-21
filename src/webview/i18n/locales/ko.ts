@@ -35,7 +35,9 @@ export const ko: Translations = {
 
   // Actions
   autoReg: '자동 등록',
-  autoRegTip: '새 AWS Builder ID 자동 생성',
+  autoRegTip: '자동 계정 등록 시작',
+  autoRegCountLabel: '수량',
+  autoRegCountPlaceholder: '계정 수',
   import: '가져오기',
   importTip: 'JSON 파일에서 기존 토큰 가져오기',
   refresh: '새로고침',
@@ -220,6 +222,24 @@ export const ko: Translations = {
   restartAfterReset: '재설정 후 Kiro를 다시 시작하세요',
   resetMachineIdTitle: '머신 ID 재설정',
   resetMachineIdConfirm: 'Kiro 텔레메트리 ID를 재설정합니다. 이후 Kiro를 다시 시작해야 합니다. 계속하시겠습니까?',
+
+  // LLM Settings
+  llmSettings: 'LLM API',
+  llmBaseUrl: '기본 URL',
+  llmPort: '포트',
+  llmApiKey: 'API 키 (선택 사항)',
+  llmApiKeyDesc: '설정된 경우 모든 요청의 Authorization 헤더에 이 키를 포함해야 합니다.',
+  llmModel: '기본 모델',
+  llmModelDesc: '완료에 사용할 기본 채팅 모델.',
+  llmServer: 'LLM 서버',
+  llmServerDesc: '로컬 OpenAI 호환 서버를 시작하거나 중지합니다.',
+  startServer: '서버 시작',
+  stopServer: '서버 중지',
+  restartServer: '서버 다시 시작',
+  serverStatus: '서버 상태',
+  serverStatusRunning: '실행 중',
+  serverStatusStopped: '중지됨',
+  serverStatusError: '오류',
 
   // Other
   delete: '삭제',

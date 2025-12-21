@@ -34,8 +34,10 @@ export const ru: Translations = {
   resetsAtMidnight: 'Сброс в полночь',
 
   // Actions
-  autoReg: 'Авто-рег',
-  autoRegTip: 'Создать новый AWS Builder ID автоматически',
+  autoReg: 'Авторегистрация',
+  autoRegTip: 'Запустить автоматическую регистрацию аккаунтов',
+  autoRegCountLabel: 'Кол-во',
+  autoRegCountPlaceholder: 'Число аккаунтов',
   import: 'Импорт',
   importTip: 'Импортировать токен из JSON файла',
   refresh: 'Обновить',
@@ -220,6 +222,24 @@ export const ru: Translations = {
   restartAfterReset: 'После сброса нужно перезапустить Kiro',
   resetMachineIdTitle: 'Сброс Machine ID',
   resetMachineIdConfirm: 'Это сбросит telemetry ID Kiro. Потребуется перезапуск. Продолжить?',
+
+  // LLM Settings
+  llmSettings: 'LLM API',
+  llmBaseUrl: 'Базовый URL',
+  llmPort: 'Порт',
+  llmApiKey: 'API ключ (опционально)',
+  llmApiKeyDesc: 'Если задан, все запросы должны содержать этот ключ в заголовке Authorization.',
+  llmModel: 'Модель по умолчанию',
+  llmModelDesc: 'Модель чата для использования по умолчанию.',
+  llmServer: 'LLM Сервер',
+  llmServerDesc: 'Запустить или остановить локальный OpenAI-совместимый сервер.',
+  startServer: 'Запустить',
+  stopServer: 'Остановить',
+  restartServer: 'Перезапустить',
+  serverStatus: 'Статус сервера',
+  serverStatusRunning: 'Запущен',
+  serverStatusStopped: 'Остановлен',
+  serverStatusError: 'Ошибка',
 
   // Other
   delete: 'Удалить',

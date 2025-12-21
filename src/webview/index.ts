@@ -20,8 +20,9 @@ import { renderSettings } from './components/Settings';
 import { renderLogs } from './components/Logs';
 import { renderModals } from './components/Modals';
 import { renderProfileEditor } from './components/ProfileEditor';
+import { renderLLMSettings } from './components/LLMSettings';
 import { renderTabBar } from './components/TabBar';
-import { renderFAB } from './components/FAB';
+import { renderAutoRegControls } from './components/AutoRegControls';
 import { renderStats } from './components/Stats';
 
 // Re-exports
@@ -131,11 +132,13 @@ export function generateWebviewHtml(
   const lang = props.language || 'en';
   const t = getTranslations(lang);
   const ver = props.version || 'dev';
-  const activeAccount = accounts.find(a => a.isActive);
+  const bannedAccounts = accounts.filter(a => a.usage?.isBanned);
+  const visibleAccounts = accounts.filter(a => !a.usage?.isBanned);
+  const activeAccount = visibleAccounts.find(a => a.isActive);
   const { progress, isRunning } = parseStatus(props.autoRegStatus);
-  const validCount = accounts.filter(a => !a.isExpired).length;
+  const validCount = visibleAccounts.filter(a => !a.isExpired).length;
 
-  const script = generateWebviewScript(accounts.length, t);
+  const script = generateWebviewScript(visibleAccounts.length, bannedAccounts.length, t);
 
   return `<!DOCTYPE html>
 <html>
@@ -146,16 +149,17 @@ export function generateWebviewHtml(
 </head>
 <body data-lang="${lang}">
   <div class="app">
-    ${renderHeader({ validCount, totalCount: accounts.length, t })}
+    ${renderHeader({ validCount, totalCount: visibleAccounts.length, t })}
     ${renderUpdateBanner(props.availableUpdate, t)}
-    ${renderTabBar({ activeTab: 'accounts', t, accountsCount: accounts.length })}
+    ${renderTabBar({ activeTab: 'accounts', t, accountsCount: visibleAccounts.length, bannedCount: bannedAccounts.length })}
     
     <!-- Accounts Tab -->
     <div class="tab-content active" id="tab-accounts">
       ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
       ${renderToolbar({ isRunning, t })}
+      ${renderAutoRegControls({ isRunning, t })}
       <div class="list" id="accountList">
-        ${renderAccountList({ accounts, t })}
+        ${renderAccountList({ accounts: visibleAccounts, t })}
       </div>
     </div>
 
@@ -169,13 +173,24 @@ export function generateWebviewHtml(
       ${renderStats({ accounts, t })}
     </div>
 
+    <!-- Banned Tab -->
+    <div class="tab-content" id="tab-banned">
+      <div class="list" id="bannedList">
+        ${renderAccountList({ accounts: bannedAccounts, t, variant: 'banned' })}
+      </div>
+    </div>
+
     <!-- Settings Tab -->
     <div class="tab-content" id="tab-settings">
       ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver, inline: true })}
     </div>
 
-    ${renderFAB({ isRunning, t })}
-    ${renderLogs({ logs: props.consoleLogs, t })}
+    <!-- LLM Tab -->
+    <div class="tab-content" id="tab-llm">
+      ${renderLLMSettings({ t })}
+    </div>
+
+        ${renderLogs({ logs: props.consoleLogs, t })}
     ${renderModals({ t })}
   </div>
   <script>${script}</script>
