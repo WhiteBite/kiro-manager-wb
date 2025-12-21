@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from llm.token_pool import TokenPool
 from llm.codewhisperer_client import CodeWhispererClient
+from services.quota_service import QuotaService
 
 # ============================================================================
 # Configuration
@@ -102,6 +103,7 @@ app.add_middleware(
 # Global instances
 token_pool: Optional[TokenPool] = None
 cw_client: Optional[CodeWhispererClient] = None
+quota_service: Optional[QuotaService] = None
 
 # ============================================================================
 # Startup/Shutdown
@@ -109,7 +111,7 @@ cw_client: Optional[CodeWhispererClient] = None
 
 @app.on_event("startup")
 async def startup():
-    global token_pool, cw_client
+    global token_pool, cw_client, quota_service
     
     print("=" * 60)
     print("Kiro LLM API Server Starting...")
@@ -121,6 +123,9 @@ async def startup():
     
     # Initialize CodeWhisperer client
     cw_client = CodeWhispererClient(token_pool)
+    
+    # Initialize quota service
+    quota_service = QuotaService()
     
     print(f"\nServer ready at http://{API_HOST}:{API_PORT}")
     print(f"OpenAI-compatible endpoint: http://{API_HOST}:{API_PORT}/v1/chat/completions")
@@ -343,6 +348,46 @@ async def pool_reload():
     
     count = await token_pool.load_tokens()
     return {"loaded": count}
+
+@app.get("/pool/quotas")
+async def pool_quotas():
+    """Get quota information for all tokens in pool."""
+    if not token_pool or not quota_service:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    quotas = []
+    for token in token_pool.tokens:
+        try:
+            info = quota_service.get_quota(token.access_token, token.auth_method)
+            quota_data = {
+                "account": token.account_name or token.email,
+                "email": info.email,
+                "subscription": info.subscription_type,
+                "days_until_reset": info.days_until_reset,
+                "error": info.error
+            }
+            
+            if info.usage:
+                quota_data.update({
+                    "limit": info.usage.limit,
+                    "used": info.usage.used,
+                    "remaining": info.usage.remaining,
+                    "percent_used": round(info.usage.percent_used, 1),
+                    "total_remaining": info.usage.total_remaining
+                })
+            
+            quotas.append(quota_data)
+        except Exception as e:
+            quotas.append({
+                "account": token.account_name or token.email,
+                "error": str(e)
+            })
+    
+    return {
+        "quotas": quotas,
+        "total_tokens": len(quotas),
+        "total_remaining": sum(q.get("total_remaining", 0) for q in quotas if not q.get("error"))
+    }
 
 # ============================================================================
 # Main
