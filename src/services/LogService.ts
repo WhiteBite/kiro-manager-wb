@@ -21,7 +21,7 @@ export class LogService {
     private _listeners: Set<(log: string) => void> = new Set();
 
     private constructor() {
-        const logDir = path.join(os.homedir(), '.kiro-batch-login');
+        const logDir = path.join(os.homedir(), '.kiro-extension');
         this._logFile = path.join(logDir, 'autoreg.log');
         this._ensureLogDir(logDir);
     }

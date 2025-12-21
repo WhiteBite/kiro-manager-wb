@@ -141,7 +141,7 @@ async function exchangeCodeForToken(code, codeVerifier, clientId) {
 // Get tokens directory
 function getTokensDir() {
   const homeDir = process.env.HOME || process.env.USERPROFILE;
-  const tokensDir = path.join(homeDir, '.kiro-batch-login', 'tokens');
+  const tokensDir = path.join(homeDir, '.kiro-extension', 'tokens');
   
   if (!fs.existsSync(tokensDir)) {
     fs.mkdirSync(tokensDir, { recursive: true });
