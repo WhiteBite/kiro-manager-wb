@@ -1091,14 +1091,22 @@ export const layout = `
     padding: 4px 8px;
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  .tab-bar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
   }
   .tab-item {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 8px 10px;
     background: transparent;
     border: none;
     border-radius: var(--radius-md);
@@ -1107,6 +1115,8 @@ export const layout = `
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition);
+    white-space: nowrap;
+    min-width: 40px;
   }
   .tab-item:hover {
     background: rgba(128,128,128,0.1);
@@ -1115,10 +1125,12 @@ export const layout = `
   .tab-item.active {
     background: var(--accent-dim);
     color: var(--accent);
+    border: 1px solid var(--accent);
   }
   .tab-icon {
     font-size: 14px;
     line-height: 1;
+    flex-shrink: 0;
   }
   .tab-icon svg {
     width: 14px;
@@ -1126,9 +1138,17 @@ export const layout = `
   }
   .tab-label {
     display: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  @media (min-width: 300px) {
+  /* Show labels when width >= 400px */
+  @media (min-width: 400px) {
     .tab-label { display: inline; }
+    .tab-item { padding: 8px 12px; }
+  }
+  /* Wider screens - more padding */
+  @media (min-width: 500px) {
+    .tab-item { padding: 8px 16px; gap: 6px; }
   }
   .tab-badge {
     font-size: 9px;
@@ -1136,6 +1156,7 @@ export const layout = `
     border-radius: 10px;
     background: rgba(128,128,128,0.2);
     color: var(--muted);
+    flex-shrink: 0;
   }
   .tab-item.active .tab-badge {
     background: var(--accent);
@@ -1517,6 +1538,48 @@ export const settingsCardStyles = `
     font-size: 9px;
     color: var(--muted);
     text-transform: uppercase;
+  }
+
+  /* Settings Card Footer */
+  .settings-card-footer {
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.1);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Form Groups for LLM Settings */
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 6px;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--transition);
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .form-control::placeholder {
+    color: var(--muted);
+  }
+  .form-group .setting-desc {
+    margin-top: 4px;
   }
 
   /* Spoof Section as Card */
