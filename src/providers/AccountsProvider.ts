@@ -1468,7 +1468,10 @@ except Exception as e:
       return;
     }
 
-    this.addLog('🚀 Starting LLM server...');
+    this.addLog(`🚀 Starting LLM server from ${autoregPath}...`);
+
+    // Remove old listeners to prevent duplicates
+    llmServerProcess.removeAllListeners();
 
     llmServerProcess.on('stdout', (data: string) => {
       const lines = data.split('\n').filter((l: string) => l.trim());
@@ -1495,7 +1498,9 @@ except Exception as e:
     });
 
     try {
-      llmServerProcess.start(pythonCmd, ['-m', 'autoreg.llm.llm_server'], {
+      // Run llm.llm_server module from autoreg directory
+      // PYTHONPATH should point to autoreg dir so imports like 'from llm import ...' work
+      llmServerProcess.start(pythonCmd, ['-m', 'llm.llm_server'], {
         cwd: autoregPath,
         env: { ...process.env, PYTHONPATH: autoregPath }
       });
@@ -1503,7 +1508,7 @@ except Exception as e:
       // Wait a bit and check if server started
       setTimeout(() => {
         this._checkLLMServerHealth();
-      }, 2000);
+      }, 3000);
     } catch (e) {
       this.addLog(`❌ Failed to start LLM server: ${e}`);
     }
