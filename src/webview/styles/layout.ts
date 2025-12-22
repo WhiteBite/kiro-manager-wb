@@ -3,6 +3,38 @@
  */
 
 export const layout = `
+  /* === Header === */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg);
+    flex-shrink: 0; /* Don't shrink */
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .header-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 10px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 4px;
+  }
+
   /* === Hero Dashboard === */
   .hero {
     margin: 10px 12px;
@@ -12,6 +44,7 @@ export const layout = `
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all var(--transition-normal);
+    flex-shrink: 0; /* Don't shrink */
   }
   .hero:hover {
     border-color: rgba(63,182,139,0.4);
@@ -1177,6 +1210,7 @@ export const layout = `
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-snap-type: x mandatory;
+    flex-shrink: 0; /* Don't shrink */
   }
   .tab-bar::-webkit-scrollbar {
     display: none;
@@ -1255,9 +1289,15 @@ export const layout = `
   /* === Tab Content Panels === */
   .tab-content {
     display: none;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .tab-content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
 
   /* === Settings Tab (inline mode) === */
