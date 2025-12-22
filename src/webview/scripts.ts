@@ -907,10 +907,17 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     }
     
     function testImapConnection() {
-      const server = document.getElementById('imapServer')?.value;
-      const user = document.getElementById('imapUser')?.value;
+      const server = document.getElementById('imapServer')?.value?.trim();
+      const user = document.getElementById('imapUser')?.value?.trim();
       const password = document.getElementById('imapPassword')?.value;
       const port = document.getElementById('imapPort')?.value || '993';
+      
+      // Validate fields before testing
+      if (!server || !user || !password) {
+        showToast(T.fillAllFields || 'Please fill all IMAP fields', 'error');
+        return;
+      }
+      
       vscode.postMessage({ command: 'testImap', server, user, password, port: parseInt(port) });
     }
     
