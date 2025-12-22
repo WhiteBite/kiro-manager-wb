@@ -714,6 +714,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const btn = document.querySelector('.btn-primary');
       const hero = document.querySelector('.hero');
       const fab = document.getElementById('fabContainer');
+      const autoregControls = document.querySelector('.autoreg-controls');
       
       if (!status) {
         // Registration finished
@@ -730,6 +731,19 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
             </button>
           \`;
         }
+        // Restore autoreg controls to idle state
+        if (autoregControls) {
+          autoregControls.classList.remove('running');
+          autoregControls.innerHTML = \`
+            <div class="form-group">
+              <label for="regCountInput">\${T.autoRegCountLabel || 'Count'}</label>
+              <input type="number" id="regCountInput" class="form-control" value="1" min="1" max="100" placeholder="\${T.autoRegCountPlaceholder || '1'}">
+            </div>
+            <button class="btn btn-primary pulse" onclick="startAutoReg()" title="\${T.autoRegTip || T.autoReg}">
+              ▶️ <span class="btn-text">\${T.autoReg}</span>
+            </button>
+          \`;
+        }
         // Refresh to show new account
         vscode.postMessage({ command: 'refresh' });
         return;
@@ -739,6 +753,19 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> ' + T.running;
+      }
+      
+      // Update autoreg controls to running state with stop/pause buttons
+      if (autoregControls) {
+        autoregControls.classList.add('running');
+        autoregControls.innerHTML = \`
+          <button class="btn btn-danger" onclick="stopAutoReg()" title="\${T.stop || 'Stop'}">
+            ⏹ <span class="btn-text">\${T.stop || 'Stop'}</span>
+          </button>
+          <button class="btn btn-secondary" onclick="togglePauseAutoReg()" title="\${T.pause || 'Pause'}">
+            ⏸ <span class="btn-text">\${T.pause || 'Pause'}</span>
+          </button>
+        \`;
       }
       
       // Update FAB to running state
