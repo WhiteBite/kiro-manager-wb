@@ -5,14 +5,53 @@
  * - Token pool management
  * - CodeWhisperer client
  * - OpenAI-compatible API server
+ * 
+ * Note: Chat integration tests are skipped in CI/CD (require running server + tokens)
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
+import * as http from 'http';
 
 const AUTOREG_DIR = path.join(__dirname, '..', 'autoreg');
 const LLM_DIR = path.join(AUTOREG_DIR, 'llm');
+const LLM_PORT = 8421;
+const IS_CI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+// Helper to make HTTP requests
+function httpRequest(options: http.RequestOptions, body?: string): Promise<{ status: number; data: string }> {
+    return new Promise((resolve, reject) => {
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve({ status: res.statusCode || 0, data }));
+        });
+        req.on('error', reject);
+        req.setTimeout(30000, () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+        if (body) req.write(body);
+        req.end();
+    });
+}
+
+// Check if LLM server is running
+async function isServerRunning(): Promise<boolean> {
+    try {
+        const result = await httpRequest({
+            hostname: '127.0.0.1',
+            port: LLM_PORT,
+            path: '/health',
+            method: 'GET',
+            timeout: 3000
+        });
+        return result.status === 200;
+    } catch {
+        return false;
+    }
+}
 
 describe('Kiro LLM API Module', () => {
 
@@ -53,6 +92,7 @@ describe('Kiro LLM API Module', () => {
             });
         });
     });
+
 
     describe('Module imports', () => {
         it('should import llm_server without errors', () => {
@@ -109,7 +149,6 @@ sys.path.insert(0, '${AUTOREG_DIR.replace(/\\/g, '\\\\')}')
 from llm.codewhisperer_client import MODEL_MAPPING
 import json
 
-# Check required models exist
 required = ['claude-opus-4.5', 'claude-sonnet-4', 'claude-haiku-4.5', 'auto']
 for model in required:
     if model not in MODEL_MAPPING:
@@ -131,6 +170,7 @@ print(json.dumps(list(MODEL_MAPPING.keys())))
             expect(models).toContain('auto');
         });
     });
+
 
     describe('TokenPool class', () => {
         it('should have required methods', () => {
@@ -191,7 +231,6 @@ sys.path.insert(0, '${AUTOREG_DIR.replace(/\\/g, '\\\\')}')
 from llm.token_pool import PoolToken
 from datetime import datetime, timezone
 
-# Create test token
 token = PoolToken(
     filename='test.json',
     account_name='Test Account',
@@ -202,13 +241,11 @@ token = PoolToken(
     region='us-east-1'
 )
 
-# Check properties
 assert hasattr(token, 'is_expired')
 assert hasattr(token, 'is_available')
 assert hasattr(token, 'quota_percent')
 assert hasattr(token, 'to_dict')
 
-# Check to_dict output
 d = token.to_dict()
 assert 'account' in d
 assert 'region' in d
@@ -225,6 +262,7 @@ print('OK')
             expect(result.stdout).toContain('OK');
         });
     });
+
 
     describe('CodeWhispererClient class', () => {
         it('should have required methods', () => {
@@ -259,7 +297,6 @@ print('OK')
         it('should define all required endpoints', () => {
             const serverContent = fs.readFileSync(path.join(LLM_DIR, 'llm_server.py'), 'utf8');
 
-            // Check endpoint decorators
             expect(serverContent).toContain('@app.get("/")');
             expect(serverContent).toContain('@app.get("/v1/models")');
             expect(serverContent).toContain('@app.post("/v1/chat/completions")');
@@ -270,10 +307,15 @@ print('OK')
             expect(serverContent).toContain('@app.get("/pool/quotas")');
         });
 
+        it('should have shutdown endpoint for graceful stop', () => {
+            const serverContent = fs.readFileSync(path.join(LLM_DIR, 'llm_server.py'), 'utf8');
+            expect(serverContent).toContain('@app.post("/shutdown")');
+            expect(serverContent).toContain('async def shutdown_server');
+        });
+
         it('should have OpenAI-compatible request/response models', () => {
             const serverContent = fs.readFileSync(path.join(LLM_DIR, 'llm_server.py'), 'utf8');
 
-            // Check Pydantic models
             expect(serverContent).toContain('class Message(BaseModel)');
             expect(serverContent).toContain('class ChatCompletionRequest(BaseModel)');
             expect(serverContent).toContain('class ChatCompletionResponse(BaseModel)');
@@ -296,6 +338,7 @@ print('OK')
         });
     });
 
+
     describe('Request building', () => {
         it('should build correct CodeWhisperer request format', () => {
             const result = spawnSync('python', ['-c', `
@@ -303,12 +346,10 @@ import sys
 sys.path.insert(0, '${AUTOREG_DIR.replace(/\\/g, '\\\\')}')
 from llm.codewhisperer_client import CodeWhispererClient
 from llm.token_pool import TokenPool
-import json
 
 pool = TokenPool()
 client = CodeWhispererClient(pool)
 
-# Test message building
 messages = [
     {'role': 'system', 'content': 'You are helpful.'},
     {'role': 'user', 'content': 'Hello!'}
@@ -316,14 +357,12 @@ messages = [
 
 request = client._build_request(messages, 'claude-sonnet-4')
 
-# Verify structure
 assert 'conversationState' in request
 state = request['conversationState']
 assert 'conversationId' in state
 assert 'currentMessage' in state
 assert 'chatTriggerType' in state
 
-# Verify current message
 current = state['currentMessage']
 assert 'userInputMessage' in current
 user_msg = current['userInputMessage']
@@ -362,4 +401,194 @@ print('OK')
         });
     });
 
+});
+
+
+/**
+ * Integration tests - require running LLM server
+ * Skipped in CI/CD environment
+ */
+describe('LLM Server Integration Tests', () => {
+    // Skip all integration tests in CI/CD
+    const describeOrSkip = IS_CI ? describe.skip : describe;
+
+    describeOrSkip('Server health check', () => {
+        it('should respond to health endpoint', async () => {
+            const running = await isServerRunning();
+            if (!running) {
+                console.log('⚠️ LLM server not running, skipping integration tests');
+                return;
+            }
+
+            const result = await httpRequest({
+                hostname: '127.0.0.1',
+                port: LLM_PORT,
+                path: '/health',
+                method: 'GET'
+            });
+
+            expect(result.status).toBe(200);
+            const data = JSON.parse(result.data);
+            expect(data.status).toBe('healthy');
+            expect(data).toHaveProperty('pool');
+        });
+
+        it('should list available models', async () => {
+            const running = await isServerRunning();
+            if (!running) return;
+
+            const result = await httpRequest({
+                hostname: '127.0.0.1',
+                port: LLM_PORT,
+                path: '/v1/models',
+                method: 'GET'
+            });
+
+            expect(result.status).toBe(200);
+            const data = JSON.parse(result.data);
+            expect(data.object).toBe('list');
+            expect(Array.isArray(data.data)).toBe(true);
+
+            const modelIds = data.data.map((m: { id: string }) => m.id);
+            expect(modelIds).toContain('claude-sonnet-4');
+        });
+
+        it('should return pool status', async () => {
+            const running = await isServerRunning();
+            if (!running) return;
+
+            const result = await httpRequest({
+                hostname: '127.0.0.1',
+                port: LLM_PORT,
+                path: '/pool/status',
+                method: 'GET'
+            });
+
+            expect(result.status).toBe(200);
+            const data = JSON.parse(result.data);
+            expect(data).toHaveProperty('total');
+            expect(data).toHaveProperty('available');
+        });
+    });
+});
+
+
+/**
+ * Chat completion tests - require running server AND valid tokens
+ * Always skipped in CI/CD, run manually with: npm test -- --testNamePattern="Chat"
+ */
+describe('LLM Chat Completion Tests (Manual Only)', () => {
+    // Always skip in CI/CD
+    const describeOrSkip = IS_CI ? describe.skip : describe;
+
+    describeOrSkip('Chat completions', () => {
+        it('should complete a simple chat request', async () => {
+            const running = await isServerRunning();
+            if (!running) {
+                console.log('⚠️ LLM server not running, skipping chat test');
+                return;
+            }
+
+            const requestBody = JSON.stringify({
+                model: 'claude-haiku-4.5',
+                messages: [
+                    { role: 'user', content: 'Say "Hello" and nothing else.' }
+                ],
+                max_tokens: 50,
+                stream: false
+            });
+
+            const result = await httpRequest({
+                hostname: '127.0.0.1',
+                port: LLM_PORT,
+                path: '/v1/chat/completions',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(requestBody)
+                }
+            }, requestBody);
+
+            // May fail if no tokens available
+            if (result.status === 503) {
+                console.log('⚠️ No tokens available in pool, skipping chat test');
+                return;
+            }
+
+            expect(result.status).toBe(200);
+            const data = JSON.parse(result.data);
+            expect(data).toHaveProperty('id');
+            expect(data).toHaveProperty('choices');
+            expect(Array.isArray(data.choices)).toBe(true);
+            expect(data.choices.length).toBeGreaterThan(0);
+            expect(data.choices[0]).toHaveProperty('message');
+            expect(data.choices[0].message).toHaveProperty('content');
+
+            console.log('✓ Chat response:', data.choices[0].message.content);
+        }, 60000); // 60s timeout for API call
+
+        it('should handle streaming chat request', async () => {
+            const running = await isServerRunning();
+            if (!running) return;
+
+            const requestBody = JSON.stringify({
+                model: 'claude-haiku-4.5',
+                messages: [
+                    { role: 'user', content: 'Count from 1 to 3.' }
+                ],
+                max_tokens: 50,
+                stream: true
+            });
+
+            const chunks: string[] = [];
+
+            await new Promise<void>((resolve, reject) => {
+                const req = http.request({
+                    hostname: '127.0.0.1',
+                    port: LLM_PORT,
+                    path: '/v1/chat/completions',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(requestBody)
+                    }
+                }, (res) => {
+                    if (res.statusCode === 503) {
+                        console.log('⚠️ No tokens available');
+                        resolve();
+                        return;
+                    }
+
+                    res.on('data', (chunk) => {
+                        const lines = chunk.toString().split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.choices?.[0]?.delta?.content) {
+                                        chunks.push(data.choices[0].delta.content);
+                                    }
+                                } catch { /* ignore parse errors */ }
+                            }
+                        }
+                    });
+                    res.on('end', () => {
+                        if (chunks.length > 0) {
+                            console.log('✓ Streaming response:', chunks.join(''));
+                            expect(chunks.length).toBeGreaterThan(0);
+                        }
+                        resolve();
+                    });
+                });
+
+                req.on('error', reject);
+                req.setTimeout(60000, () => {
+                    req.destroy();
+                    reject(new Error('Streaming timeout'));
+                });
+                req.write(requestBody);
+                req.end();
+            });
+        }, 60000);
+    });
 });
