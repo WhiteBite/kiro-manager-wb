@@ -219,32 +219,18 @@ print('OK')
     });
 
     it('should have patch_status.py in home directory if autoreg is deployed', () => {
-      // Catches the bug where ~/.kiro-manager-wb is missing scripts/patch_status.py
-      // Also check legacy path for backwards compatibility
+      // Check ~/.kiro-manager-wb for patch_status.py
       const homeAutoregDir = path.join(require('os').homedir(), '.kiro-manager-wb');
-      const legacyAutoregDir = path.join(require('os').homedir(), '.kiro-autoreg');
 
-      // Check which path has the scripts folder with patch_status.py
-      let autoregDir = '';
-      const newScriptPath = path.join(homeAutoregDir, 'scripts', 'patch_status.py');
-      const legacyScriptPath = path.join(legacyAutoregDir, 'scripts', 'patch_status.py');
-
-      if (fs.existsSync(newScriptPath)) {
-        autoregDir = homeAutoregDir;
-      } else if (fs.existsSync(legacyScriptPath)) {
-        autoregDir = legacyAutoregDir;
-        console.log('Using legacy path: ~/.kiro-autoreg');
-      } else {
-        console.log('Skipping: patch_status.py not found in either ~/.kiro-manager-wb or ~/.kiro-autoreg');
+      const scriptPath = path.join(homeAutoregDir, 'scripts', 'patch_status.py');
+      if (!fs.existsSync(scriptPath)) {
+        console.log('Skipping: patch_status.py not found in ~/.kiro-manager-wb');
         return;
       }
 
-      const scriptPath = path.join(autoregDir, 'scripts', 'patch_status.py');
-      expect(fs.existsSync(scriptPath)).toBe(true);
-
       const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
       const result = spawnSync(pythonCmd, [scriptPath], {
-        cwd: autoregDir,
+        cwd: homeAutoregDir,
         encoding: 'utf8',
         timeout: 10000
       });
