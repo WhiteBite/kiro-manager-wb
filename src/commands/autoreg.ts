@@ -16,7 +16,7 @@ import { PythonEnvManager } from '../utils/python-env';
 export function getAutoregDir(context: vscode.ExtensionContext): string {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   const workspacePath = path.join(workspaceFolder, 'kiro-manager-wb', 'autoreg');
-  const homePath = path.join(os.homedir(), '.kiro-autoreg');
+  const homePath = path.join(os.homedir(), '.kiro-manager-wb');
   const bundledPath = path.join(context.extensionPath, 'autoreg');
 
   // Priority 1: Workspace path (for development)
@@ -140,7 +140,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register.py') : '';
 
   if (!finalPath || !fs.existsSync(finalPath)) {
-    vscode.window.showWarningMessage('Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-autoreg/');
+    vscode.window.showWarningMessage('Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-manager-wb/');
     return;
   }
 
@@ -471,7 +471,7 @@ export async function getPatchStatus(context: vscode.ExtensionContext): Promise<
 export async function checkPatchStatus(context: vscode.ExtensionContext): Promise<PatchStatusResult> {
   // Use bundled autoreg from extension, not workspace - ensures kiro_patcher_service exists
   const bundledPath = path.join(context.extensionPath, 'autoreg');
-  const homePath = path.join(os.homedir(), '.kiro-autoreg');
+  const homePath = path.join(os.homedir(), '.kiro-manager-wb');
 
   // Prefer bundled, fallback to home
   let autoregDir = '';

@@ -31,7 +31,7 @@ export const CONFIG = {
 export const PATHS = {
     LOG_DIR: '.kiro-manager-wb',
     LOG_FILE: 'autoreg.log',
-    AUTOREG_DIR: '.kiro-autoreg',
+    AUTOREG_DIR: '.kiro-manager-wb',
     PROFILES_FILE: 'imap-profiles.json',
 } as const;
 

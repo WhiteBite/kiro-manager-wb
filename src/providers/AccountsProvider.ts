@@ -14,6 +14,7 @@ import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
 import { autoregProcess, llmServerProcess } from '../process-manager';
+import { getAutoregDir } from '../commands/autoreg';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 import { ImapProfileProvider } from './ImapProfileProvider';
 import { getLogService, LogService } from '../services/LogService';
@@ -378,7 +379,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private getAutoregDir(): string {
-    const homePath = path.join(os.homedir(), '.kiro-autoreg');
+    const homePath = path.join(os.homedir(), '.kiro-manager-wb');
     return homePath;
   }
 
@@ -1460,7 +1461,7 @@ except Exception as e:
     }
 
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-    const autoregPath = this._getAutoregPath();
+    const autoregPath = getAutoregDir(this._context);
 
     if (!autoregPath) {
       this.addLog('❌ Cannot find autoreg directory');
@@ -1572,9 +1573,9 @@ except Exception as e:
       path: '/health',
       method: 'GET',
       timeout: 3000
-    }, (res: { statusCode: number; on: (event: string, cb: (data?: Buffer) => void) => void }) => {
+    }, (res: { statusCode: number; on: (event: string, cb: (data: Buffer | string) => void) => void }) => {
       let data = '';
-      res.on('data', (chunk: Buffer) => { data += chunk; });
+      res.on('data', (chunk: Buffer | string) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode === 200) {
           this._updateLLMServerStatus(true);
