@@ -1,5 +1,5 @@
 [project]
-name = "kiro-autoreg"
+name = "kiro-manager-wb"
 version = "6.3.7"
 description = "AWS Builder ID auto-registration backend for Kiro Extension"
 readme = "README.md"
@@ -31,7 +31,7 @@ dev = [
 ]
 
 [project.scripts]
-kiro-autoreg = "cli:main"
+kiro-manager = "cli:main"
 kiro-standalone = "run:main"
 kiro-llm = "llm.run_llm_server:main"
 
