@@ -1160,11 +1160,23 @@ except Exception as e:
               message: `Connected! ${result.folders} folders found`
             });
           } else {
+            // Improve error messages for common issues
+            let errorMsg = result.error;
+            if (errorMsg.includes('Empty username or password') || errorMsg.includes('Invalid credentials')) {
+              if (params.server.includes('gmail')) {
+                errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
+              } else {
+                errorMsg = 'Invalid username or password. Check your credentials.';
+              }
+            } else if (errorMsg.includes('AUTHENTICATIONFAILED')) {
+              errorMsg = 'Authentication failed. For Gmail, use App Password instead of regular password.';
+            }
+
             this.addLog(`❌ IMAP failed: ${result.error}`);
             this._view?.webview.postMessage({
               type: 'imapTestResult',
               status: 'error',
-              message: result.error
+              message: errorMsg
             });
           }
         } catch {
