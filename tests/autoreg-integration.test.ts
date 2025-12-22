@@ -7,6 +7,7 @@ import * as path from 'path';
 import { spawnSync } from 'child_process';
 
 const AUTOREG_DIR = path.join(__dirname, '..', 'autoreg');
+const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
 
 describe('Autoreg Python Integration', () => {
 
@@ -17,6 +18,7 @@ describe('Autoreg Python Integration', () => {
       '__init__.py',
       'registration/__init__.py',
       'registration/register.py',
+      'registration/register_auto.py',  // Auto-registration entry point
       'registration/browser.py',
       'registration/mail_handler.py',
       'registration/oauth_pkce.py',
@@ -40,10 +42,65 @@ describe('Autoreg Python Integration', () => {
     });
   });
 
+  describe('Python module execution', () => {
+    it('should run registration.register_auto module from autoreg directory', () => {
+      // This is how the extension runs it
+      const result = spawnSync(pythonCmd, ['-m', 'registration.register_auto', '--help'], {
+        cwd: AUTOREG_DIR,
+        encoding: 'utf8',
+        timeout: 15000,
+        env: { ...process.env, PYTHONPATH: AUTOREG_DIR },
+      });
+
+      // Should either show help or fail gracefully (not ModuleNotFoundError)
+      if (result.status !== 0) {
+        expect(result.stderr).not.toContain('ModuleNotFoundError');
+        expect(result.stderr).not.toContain("No module named 'registration'");
+      }
+    });
+
+    it('should fail with clear error when run from wrong directory', () => {
+      // Running from parent directory without proper PYTHONPATH should fail
+      const parentDir = path.join(AUTOREG_DIR, '..');
+      const result = spawnSync(pythonCmd, ['-m', 'registration.register'], {
+        cwd: parentDir,
+        encoding: 'utf8',
+        timeout: 10000,
+        // No PYTHONPATH - simulates user running from wrong dir
+      });
+
+      // Should fail - this is expected behavior
+      expect(result.status).not.toBe(0);
+    });
+
+    it('should work with PYTHONPATH set to autoreg directory', () => {
+      // This is the recommended way to run from any directory
+      const parentDir = path.join(AUTOREG_DIR, '..');
+      const result = spawnSync(pythonCmd, ['-c', `
+import sys
+sys.path.insert(0, '${AUTOREG_DIR.replace(/\\/g, '\\\\')}')
+from registration import register
+print('OK')
+`], {
+        cwd: parentDir,
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+
+      // May fail due to missing deps, but should not have import errors
+      if (result.status !== 0) {
+        expect(result.stderr).not.toContain("No module named 'registration'");
+      } else {
+        expect(result.stdout).toContain('OK');
+      }
+    });
+  });
+
   describe('Python syntax check', () => {
     const pythonFiles = [
       'cli.py',
       'registration/register.py',
+      'registration/register_auto.py',
       'registration/oauth_pkce.py',
       'core/config.py',
       'services/token_service.py',

@@ -645,10 +645,17 @@ function generateStandaloneScript(): string {
     }
     
     function testImapConnection() {
-      const server = document.getElementById('imapServer')?.value;
-      const user = document.getElementById('imapUser')?.value;
+      const server = document.getElementById('imapServer')?.value?.trim();
+      const user = document.getElementById('imapUser')?.value?.trim();
       const password = document.getElementById('imapPassword')?.value;
       const port = document.getElementById('imapPort')?.value || '993';
+      
+      // Validate fields before testing
+      if (!server || !user || !password) {
+        showToast('Please fill all IMAP fields', 'error');
+        return;
+      }
+      
       sendCommand('testImap', { server, user, password, port: parseInt(port) });
     }
     
