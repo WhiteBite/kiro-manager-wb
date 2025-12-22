@@ -482,6 +482,9 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         showToast((T.selectedAccountsDeleted || '{count} accounts deleted').replace('{count}', pendingAction.filenames.length), 'success');
         selectionMode = false;
         selectedAccounts.clear();
+      } else if (pendingAction?.type === 'deleteProfile') {
+        vscode.postMessage({ command: 'deleteProfile', profileId: pendingAction.profileId });
+        showToast(T.profileDeleted || 'Profile deleted', 'success');
       } else if (pendingAction?.type === 'resetMachineId') {
         vscode.postMessage({ command: 'resetMachineId' });
         showToast(T.resettingMachineId, 'success');
@@ -872,9 +875,11 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     }
     
     function deleteProfile(profileId) {
-      if (confirm(T.deleteProfileConfirm)) {
-        vscode.postMessage({ command: 'deleteProfile', profileId });
-      }
+      // Use custom dialog instead of confirm() which doesn't work in webview
+      pendingAction = { type: 'deleteProfile', profileId };
+      document.getElementById('dialogTitle').textContent = T.deleteTitle || 'Delete';
+      document.getElementById('dialogText').textContent = T.deleteProfileConfirm;
+      document.getElementById('dialogOverlay').classList.add('visible');
     }
     
     function selectStrategy(strategy) {
@@ -1432,5 +1437,21 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     window.exportSelectedAccounts = exportSelectedAccounts;
     window.refreshSelectedTokens = refreshSelectedTokens;
     window.deleteSelectedAccounts = deleteSelectedAccounts;
+    
+    // === Initialization ===
+    // Load profiles after DOM is ready so they're available when user switches to profiles tab
+    document.addEventListener('DOMContentLoaded', function() {
+      // Small delay to ensure webview message handler is ready
+      setTimeout(function() {
+        vscode.postMessage({ command: 'loadProfiles' });
+      }, 100);
+    });
+    
+    // Fallback if DOMContentLoaded already fired
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(function() {
+        vscode.postMessage({ command: 'loadProfiles' });
+      }, 100);
+    }
   `;
 }

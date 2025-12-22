@@ -1443,26 +1443,33 @@ class BrowserAutomation:
             confirm_start = time.time()
             self.human_type(pwd2, password, field_type='password')
             
-            # Проверяем что оба пароля одинаковые
-            pwd1_value = pwd1.attr('value') or ''
-            pwd2_value = pwd2.attr('value') or ''
+            # Проверяем что оба пароля одинаковые через JavaScript
+            time.sleep(0.3)  # Даём время React обновить состояние
+            pwd1_value = self.page.run_js('return arguments[0].value || ""', pwd1)
+            pwd2_value = self.page.run_js('return arguments[0].value || ""', pwd2)
             
-            if pwd1_value != pwd2_value:
+            # Также проверяем наличие ошибки на странице
+            password_error = self._check_password_mismatch_error()
+            
+            if pwd1_value != pwd2_value or password_error:
                 print(f"   [!] Password mismatch detected! Clearing and re-entering...")
-                # Очищаем оба поля
-                pwd1.clear()
-                pwd2.clear()
-                time.sleep(0.1)
+                # Очищаем оба поля через JavaScript
+                self.page.run_js('arguments[0].value = ""; arguments[0].dispatchEvent(new Event("input", {bubbles: true}))', pwd1)
+                self.page.run_js('arguments[0].value = ""; arguments[0].dispatchEvent(new Event("input", {bubbles: true}))', pwd2)
+                time.sleep(0.2)
                 
-                # Вводим заново
-                self.human_type(pwd1, password, field_type='password')
-                self._behavior.human_delay(0.2, 0.4)
-                self.human_type(pwd2, password, field_type='password')
+                # Вводим заново - используем быстрый режим для надёжности
+                self.human_type(pwd1, password, field_type='password', fast=True)
+                self._behavior.human_delay(0.3, 0.5)
+                self.human_type(pwd2, password, field_type='password', fast=True)
                 
                 # Проверяем ещё раз
-                pwd1_value = pwd1.attr('value') or ''
-                pwd2_value = pwd2.attr('value') or ''
-                if pwd1_value != pwd2_value:
+                time.sleep(0.3)
+                pwd1_value = self.page.run_js('return arguments[0].value || ""', pwd1)
+                pwd2_value = self.page.run_js('return arguments[0].value || ""', pwd2)
+                password_error = self._check_password_mismatch_error()
+                
+                if pwd1_value != pwd2_value or password_error:
                     print(f"   [!] Password still mismatched after retry!")
                     self.screenshot("error_password_mismatch")
                 else:
@@ -1762,6 +1769,27 @@ class BrowserAutomation:
         for text in error_texts:
             try:
                 if self.page.ele(f'text={text}', timeout=0.5):
+                    return True
+            except:
+                pass
+        
+        return False
+    
+    def _check_password_mismatch_error(self) -> bool:
+        """Проверяет наличие ошибки о несовпадении паролей"""
+        error_texts = [
+            'Passwords must match',
+            'Passwörter müssen übereinstimmen',  # German
+            'パスワードが一致しません',  # Japanese
+            'Las contraseñas deben coincidir',  # Spanish
+            'Les mots de passe doivent correspondre',  # French
+            'passwords do not match',
+            'password mismatch',
+        ]
+        
+        for text in error_texts:
+            try:
+                if self.page.ele(f'text={text}', timeout=0.3):
                     return True
             except:
                 pass

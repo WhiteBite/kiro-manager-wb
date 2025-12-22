@@ -22,8 +22,7 @@ export const base = `
     display: flex; 
     flex-direction: column; 
     height: 100%; 
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden; /* Don't scroll the whole app */
   }
 
   /* Scrollbar */
