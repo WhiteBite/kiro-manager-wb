@@ -390,6 +390,24 @@ async def pool_quotas():
     }
 
 # ============================================================================
+# Server Control
+# ============================================================================
+
+@app.post("/shutdown")
+async def shutdown_server():
+    """Gracefully shutdown the server."""
+    import signal
+    import os
+    
+    # Schedule shutdown after response is sent
+    async def do_shutdown():
+        await asyncio.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGTERM)
+    
+    asyncio.create_task(do_shutdown())
+    return {"status": "shutting_down"}
+
+# ============================================================================
 # Main
 # ============================================================================
 

@@ -13,7 +13,7 @@ import { generateWebviewHtml } from '../webview/index';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
-import { autoregProcess } from '../process-manager';
+import { autoregProcess, llmServerProcess } from '../process-manager';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 import { ImapProfileProvider } from './ImapProfileProvider';
 import { getLogService, LogService } from '../services/LogService';
@@ -1454,26 +1454,153 @@ except Exception as e:
   }
 
   async startLLMServer(): Promise<void> {
-    // TODO: Implement LLM server start
-    this.addLog('LLM server start requested (not implemented)');
+    if (llmServerProcess.isRunning) {
+      this.addLog('⚠️ LLM server is already running');
+      return;
+    }
+
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const autoregPath = this._getAutoregPath();
+
+    if (!autoregPath) {
+      this.addLog('❌ Cannot find autoreg directory');
+      return;
+    }
+
+    this.addLog('🚀 Starting LLM server...');
+
+    llmServerProcess.on('stdout', (data: string) => {
+      const lines = data.split('\n').filter((l: string) => l.trim());
+      for (const line of lines) {
+        this.addLog(`[LLM] ${line}`);
+      }
+    });
+
+    llmServerProcess.on('stderr', (data: string) => {
+      const lines = data.split('\n').filter((l: string) => l.trim());
+      for (const line of lines) {
+        this.addLog(`[LLM] ${line}`);
+      }
+    });
+
+    llmServerProcess.on('close', (code: number) => {
+      this.addLog(`■ LLM server stopped (code: ${code})`);
+      this._updateLLMServerStatus(false);
+    });
+
+    llmServerProcess.on('error', (err: Error) => {
+      this.addLog(`❌ LLM server error: ${err.message}`);
+      this._updateLLMServerStatus(false);
+    });
+
+    try {
+      llmServerProcess.start(pythonCmd, ['-m', 'autoreg.llm.llm_server'], {
+        cwd: autoregPath,
+        env: { ...process.env, PYTHONPATH: autoregPath }
+      });
+
+      // Wait a bit and check if server started
+      setTimeout(() => {
+        this._checkLLMServerHealth();
+      }, 2000);
+    } catch (e) {
+      this.addLog(`❌ Failed to start LLM server: ${e}`);
+    }
   }
 
   async stopLLMServer(): Promise<void> {
-    // TODO: Implement LLM server stop
-    this.addLog('LLM server stop requested (not implemented)');
+    if (!llmServerProcess.isRunning) {
+      this.addLog('⚠️ LLM server is not running');
+      return;
+    }
+
+    this.addLog('🛑 Stopping LLM server...');
+
+    try {
+      // Try graceful shutdown via API first
+      const http = require('http');
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: 8421,
+        path: '/shutdown',
+        method: 'POST',
+        timeout: 2000
+      }, () => {
+        this.addLog('✓ LLM server shutdown requested');
+      });
+
+      req.on('error', () => {
+        // API not responding, force kill
+        llmServerProcess.stop();
+      });
+
+      req.end();
+
+      // Give it time to shutdown gracefully
+      setTimeout(async () => {
+        if (llmServerProcess.isRunning) {
+          await llmServerProcess.stop();
+        }
+        this._updateLLMServerStatus(false);
+      }, 1500);
+    } catch (e) {
+      await llmServerProcess.stop();
+      this._updateLLMServerStatus(false);
+    }
   }
 
   async restartLLMServer(): Promise<void> {
-    // TODO: Implement LLM server restart
-    this.addLog('LLM server restart requested (not implemented)');
+    this.addLog('🔄 Restarting LLM server...');
+    await this.stopLLMServer();
+
+    // Wait for process to fully stop
+    setTimeout(() => {
+      this.startLLMServer();
+    }, 2000);
   }
 
   async getLLMServerStatus(): Promise<void> {
-    // TODO: Implement LLM server status check
+    await this._checkLLMServerHealth();
+  }
+
+  private async _checkLLMServerHealth(): Promise<void> {
+    const http = require('http');
+
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: 8421,
+      path: '/health',
+      method: 'GET',
+      timeout: 3000
+    }, (res: { statusCode: number; on: (event: string, cb: (data?: Buffer) => void) => void }) => {
+      let data = '';
+      res.on('data', (chunk: Buffer) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          this._updateLLMServerStatus(true);
+        } else {
+          this._updateLLMServerStatus(false);
+        }
+      });
+    });
+
+    req.on('error', () => {
+      this._updateLLMServerStatus(false);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      this._updateLLMServerStatus(false);
+    });
+
+    req.end();
+  }
+
+  private _updateLLMServerStatus(running: boolean): void {
     this._view?.webview.postMessage({
       type: 'llmServerStatus',
       status: {
-        running: false,
+        running,
         port: 8421
       }
     });

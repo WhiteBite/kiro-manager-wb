@@ -40,7 +40,7 @@ export class ProcessManager extends EventEmitter {
     }
 
     const isWindows = process.platform === 'win32';
-    
+
     this._process = spawn(command, args, {
       cwd: options.cwd,
       env: options.env || process.env,
@@ -90,17 +90,17 @@ export class ProcessManager extends EventEmitter {
 
     try {
       const isWindows = process.platform === 'win32';
-      
+
       if (isWindows && this._pid) {
         // Windows: use taskkill to kill process tree
         await this._killWindowsProcess(this._pid);
       } else {
         // Unix: send SIGTERM first, then SIGKILL
         this._process.kill('SIGTERM');
-        
+
         // Give it 2 seconds to terminate gracefully
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         if (this._process && !this._process.killed) {
           this._process.kill('SIGKILL');
         }
@@ -184,3 +184,6 @@ export class ProcessManager extends EventEmitter {
 
 // Singleton instance for autoreg process
 export const autoregProcess = new ProcessManager();
+
+// Singleton instance for LLM server process
+export const llmServerProcess = new ProcessManager();
