@@ -140,6 +140,11 @@ export const ko: Translations = {
   port: '포트',
   password: '비밀번호',
   testConnection: '테스트',
+  proxy: '프록시',
+  proxyEnabled: '프록시 사용',
+  proxyUrl: '프록시 URL',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: '형식: socks5://user:pass@host:port 또는 host:port:user:pass',
   testing: '테스트 중...',
   emailStrategy: '이메일 전략',
   emailStrategyDesc: '등록용 이메일 생성 방법 선택',
@@ -240,6 +245,11 @@ export const ko: Translations = {
   serverStatusRunning: '실행 중',
   serverStatusStopped: '중지됨',
   serverStatusError: '오류',
+
+  // Proxy Settings
+  proxySettings: '프록시',
+  proxySettingsDesc: '프록시 서버를 통해 브라우저 트래픽 라우팅',
+  proxyUrlHint: '형식: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: '삭제',

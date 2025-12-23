@@ -140,6 +140,11 @@ export const zh: Translations = {
   port: '端口',
   password: '密码',
   testConnection: '测试',
+  proxy: '代理',
+  proxyEnabled: '使用代理',
+  proxyUrl: '代理URL',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: '格式: socks5://user:pass@host:port 或 host:port:user:pass',
   testing: '测试中...',
   emailStrategy: '邮箱策略',
   emailStrategyDesc: '选择如何生成注册邮箱',
@@ -240,6 +245,11 @@ export const zh: Translations = {
   serverStatusRunning: '运行中',
   serverStatusStopped: '已停止',
   serverStatusError: '错误',
+
+  // Proxy Settings
+  proxySettings: '代理',
+  proxySettingsDesc: '通过代理服务器路由浏览器流量',
+  proxyUrlHint: '格式: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: '删除',
