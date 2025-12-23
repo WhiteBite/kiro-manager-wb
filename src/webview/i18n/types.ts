@@ -295,9 +295,6 @@ export interface Translations {
   // ============================================
   proxySettings: string;
   proxySettingsDesc: string;
-  proxyEnabled: string;
-  proxyUrl: string;
-  proxyUrlPlaceholder: string;
   proxyUrlHint: string;
 
   // Other

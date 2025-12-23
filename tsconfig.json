@@ -19,6 +19,8 @@
     "dist",
     "tests",
     "scripts",
-    "src/webview/adapters"
+    "src/webview/adapters",
+    "amz",
+    "autoreg"
   ]
 }
