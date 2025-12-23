@@ -140,6 +140,11 @@ export const ru: Translations = {
   port: 'Порт',
   password: 'Пароль',
   testConnection: 'Проверить',
+  proxy: 'Прокси',
+  proxyEnabled: 'Использовать прокси',
+  proxyUrl: 'URL прокси',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: 'Форматы: socks5://user:pass@host:port или host:port:user:pass',
   testing: 'Проверка...',
   emailStrategy: 'Стратегия Email',
   emailStrategyDesc: 'Выберите как генерировать email для регистрации',
@@ -240,6 +245,11 @@ export const ru: Translations = {
   serverStatusRunning: 'Запущен',
   serverStatusStopped: 'Остановлен',
   serverStatusError: 'Ошибка',
+
+  // Proxy Settings
+  proxySettings: 'Прокси',
+  proxySettingsDesc: 'Направлять трафик браузера через прокси-сервер',
+  proxyUrlHint: 'Форматы: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: 'Удалить',

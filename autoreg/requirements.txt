@@ -5,6 +5,10 @@ DrissionPage>=4.0.0
 requests>=2.31.0
 httpx>=0.25.0
 
+# SOCKS proxy support
+pysocks>=1.7.1
+aiohttp-socks>=0.8.0
+
 # Environment variables
 python-dotenv>=1.0.0
 

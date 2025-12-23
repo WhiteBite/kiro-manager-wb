@@ -485,6 +485,7 @@ export class ImapProfileProvider {
       strategy: profile.strategy || { type: 'single' },
       status: profile.status || 'active',
       stats: profile.stats || { registered: 0, failed: 0 },
+      proxy: profile.proxy,  // Preserve proxy settings
       createdAt: profile.createdAt || now,
       updatedAt: profile.updatedAt || now,
       provider: profile.provider

@@ -1027,6 +1027,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         name: profileData.name || 'New Profile',
         imap: profileData.imap || { server: '', user: '', password: '' },
         strategy: profileData.strategy || { type: 'single' },
+        proxy: profileData.proxy,
         status: 'active'
       });
 

@@ -111,6 +111,13 @@ export interface ImapProfile {
   status: 'active' | 'paused' | 'exhausted' | 'error';
   isDefault?: boolean;
 
+  // Proxy settings (optional)
+  proxy?: {
+    enabled: boolean;
+    urls: string[];  // List of proxies for round-robin rotation
+    currentIndex?: number;  // Current position in rotation
+  };
+
   // Statistics
   stats: {
     registered: number;
