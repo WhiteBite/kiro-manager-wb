@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "6.4.0",
+  "version": "6.4.1",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
@@ -152,6 +152,24 @@
           "type": "boolean",
           "default": false,
           "description": "Use Device Flow authentication"
+        },
+        "kiroAccountSwitcher.autoreg.strategy": {
+          "type": "string",
+          "enum": [
+            "webview",
+            "automated"
+          ],
+          "default": "webview",
+          "enumDescriptions": [
+            "WebView (Recommended): Opens real browser, manual input, low ban risk (<10%)",
+            "Automated (Legacy): DrissionPage automation, higher ban risk (40-90%)"
+          ],
+          "description": "Registration strategy - affects ban risk"
+        },
+        "kiroAccountSwitcher.autoreg.deferQuotaCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Do NOT check quota immediately after registration (reduces ban risk)"
         },
         "kiroAccountSwitcher.patch.lastKiroVersion": {
           "type": "string",
