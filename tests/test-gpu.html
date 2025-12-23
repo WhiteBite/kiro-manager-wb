@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>GPU Test</title>
+    <style>
+        body {
+            background: #1e1e1e;
+            color: #fff;
+            font-family: monospace;
+            padding: 20px;
+        }
+
+        .info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .good {
+            color: #4ec9b0;
+        }
+
+        .bad {
+            color: #f48771;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Kiro GPU Test</h1>
+    <div id="results"></div>
+    <script>
+        const results = document.getElementById('results');
+
+        // WebGL test
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        if (gl) {
+            const renderer = gl.getParameter(gl.RENDERER);
+            const vendor = gl.getParameter(gl.VENDOR);
+
+            const isSwiftShader = renderer.includes('SwiftShader') || renderer.includes('Software');
+
+            results.innerHTML = `
+                <div class="info ${isSwiftShader ? 'bad' : 'good'}">
+                    <strong>Renderer:</strong> ${renderer}<br>
+                    <strong>Vendor:</strong> ${vendor}<br>
+                    <strong>Status:</strong> ${isSwiftShader ? '❌ Software rendering (МЕДЛЕННО!)' : '✅ Hardware acceleration'}
+                </div>
+            `;
+        } else {
+            results.innerHTML = '<div class="info bad">❌ WebGL не поддерживается</div>';
+        }
+    </script>
+</body>
+
+</html>
