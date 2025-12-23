@@ -272,10 +272,17 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     }
   });
 
-  autoregProcess.on('close', (code: number) => {
+  autoregProcess.on('close', async (code: number) => {
     // Check actual result, not just exit code
     if (registrationSuccess && !registrationFailed) {
       provider.addLog('✓ Registration complete');
+
+      // Save updated proxy index after successful registration
+      if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+        await profileProvider.update(activeProfile.id, { proxy: activeProfile.proxy });
+        provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
+      }
+
       vscode.window.showInformationMessage('Account registered successfully!');
     } else if (registrationFailed) {
       provider.addLog('✗ Registration failed');
