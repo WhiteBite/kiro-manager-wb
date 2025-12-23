@@ -1,11 +1,14 @@
 /**
  * IMAP Profile Provider
  * Manages IMAP profiles with email strategies
+ * 
+ * Storage: ~/.kiro-manager-wb/profiles.json (independent of VS Code)
  */
 
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import {
   ImapProfile,
   ImapProfilesData,
@@ -14,6 +17,10 @@ import {
   ProviderHint,
   EmailPoolItem
 } from '../types';
+
+// Storage path: ~/.kiro-manager-wb/profiles.json
+const PROFILES_DIR = path.join(os.homedir(), '.kiro-manager-wb');
+const PROFILES_FILE = path.join(PROFILES_DIR, 'profiles.json');
 
 // Known email providers with their capabilities
 const PROVIDER_HINTS: ProviderHint[] = [
@@ -95,29 +102,42 @@ export class ImapProfileProvider {
   private static instance: ImapProfileProvider;
   private profiles: ImapProfile[] = [];
   private activeProfileId?: string;
-  private storageUri: vscode.Uri;
   private _onDidChange = new vscode.EventEmitter<void>();
-  private _syncingToSettings = false;
-  private _syncingFromSettings = false;
-  private _configChangeDisposable?: vscode.Disposable;
+  private _fileWatcher?: fs.FSWatcher;
 
   readonly onDidChange = this._onDidChange.event;
 
   private constructor(private context: vscode.ExtensionContext) {
-    this.storageUri = vscode.Uri.joinPath(context.globalStorageUri, 'imap-profiles.json');
     this.load();
-    this._setupSettingsSync();
+    this._setupFileWatcher();
   }
 
   /**
-   * Setup bidirectional sync with VS Code settings
+   * Watch profiles.json for external changes
    */
-  private _setupSettingsSync(): void {
-    // Settings sync disabled - profiles are managed via UI only
+  private _setupFileWatcher(): void {
+    try {
+      // Ensure directory exists
+      if (!fs.existsSync(PROFILES_DIR)) {
+        fs.mkdirSync(PROFILES_DIR, { recursive: true });
+      }
+
+      // Watch for file changes (e.g., from standalone app)
+      if (fs.existsSync(PROFILES_FILE)) {
+        this._fileWatcher = fs.watch(PROFILES_FILE, (eventType) => {
+          if (eventType === 'change') {
+            console.log('[ImapProfileProvider] profiles.json changed externally, reloading...');
+            this.load();
+          }
+        });
+      }
+    } catch (err) {
+      console.error('[ImapProfileProvider] Failed to setup file watcher:', err);
+    }
   }
 
   dispose(): void {
-    this._configChangeDisposable?.dispose();
+    this._fileWatcher?.close();
   }
 
   static getInstance(context?: vscode.ExtensionContext): ImapProfileProvider {
@@ -139,8 +159,16 @@ export class ImapProfileProvider {
 
   async load(): Promise<void> {
     try {
-      const data = await vscode.workspace.fs.readFile(this.storageUri);
-      const parsed: ImapProfilesData = JSON.parse(data.toString());
+      // Read from ~/.kiro-manager-wb/profiles.json
+      if (!fs.existsSync(PROFILES_FILE)) {
+        // No profiles file - start fresh
+        this.profiles = [];
+        this.activeProfileId = undefined;
+        return;
+      }
+
+      const data = fs.readFileSync(PROFILES_FILE, 'utf-8');
+      const parsed: ImapProfilesData = JSON.parse(data);
 
       // Schema migration
       const migratedData = this.migrateSchema(parsed);
@@ -155,13 +183,13 @@ export class ImapProfileProvider {
         await this.save();
         console.log(`[ImapProfileProvider] Migrated schema from v${parsed.version || 1} to v${ImapProfileProvider.SCHEMA_VERSION}`);
       }
-    } catch {
+
+      this._onDidChange.fire();
+    } catch (err) {
+      console.error('[ImapProfileProvider] Failed to load profiles:', err);
       // File doesn't exist or invalid - start fresh
       this.profiles = [];
       this.activeProfileId = undefined;
-
-      // Migrate from old settings if exist
-      await this.migrateFromOldSettings();
     }
   }
 
@@ -200,85 +228,32 @@ export class ImapProfileProvider {
     };
 
     // Ensure directory exists
-    const dir = vscode.Uri.joinPath(this.context.globalStorageUri);
-    try {
-      await vscode.workspace.fs.createDirectory(dir);
-    } catch { /* ignore if exists */ }
+    if (!fs.existsSync(PROFILES_DIR)) {
+      fs.mkdirSync(PROFILES_DIR, { recursive: true });
+    }
 
-    await vscode.workspace.fs.writeFile(
-      this.storageUri,
-      Buffer.from(JSON.stringify(data, null, 2))
-    );
+    // Write to ~/.kiro-manager-wb/profiles.json
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2), 'utf-8');
 
-    // No longer sync to VS Code settings - profiles are standalone
     this._onDidChange.fire();
   }
 
   // ============================================
-  // Settings Synchronization
+  // Settings Synchronization (REMOVED - profiles are standalone)
   // ============================================
 
   /**
-   * Sync active profile TO VS Code settings
-   * Called when profile is saved/changed
-   */
-  private async _syncToSettings(): Promise<void> {
-    if (this._syncingFromSettings) return;
-    this._syncingToSettings = true;
-
-    try {
-      const profile = this.getActive();
-      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-
-      if (profile) {
-        // Sync IMAP settings
-        await config.update('imap.server', profile.imap.server, vscode.ConfigurationTarget.Global);
-        await config.update('imap.user', profile.imap.user, vscode.ConfigurationTarget.Global);
-        await config.update('imap.password', profile.imap.password, vscode.ConfigurationTarget.Global);
-        await config.update('imap.port', profile.imap.port || 993, vscode.ConfigurationTarget.Global);
-
-        // Sync email strategy
-        await config.update('email.strategy', profile.strategy.type, vscode.ConfigurationTarget.Global);
-
-        // Sync domain for catch_all
-        if (profile.strategy.type === 'catch_all' && profile.strategy.domain) {
-          await config.update('autoreg.emailDomain', profile.strategy.domain, vscode.ConfigurationTarget.Global);
-        }
-
-        // Sync email pool
-        if (profile.strategy.type === 'pool' && profile.strategy.emails) {
-          const emails = profile.strategy.emails.map(e => e.email);
-          await config.update('email.pool', emails, vscode.ConfigurationTarget.Global);
-        }
-      }
-    } catch (err) {
-      console.error('[ImapProfileProvider] Failed to sync to settings:', err);
-    } finally {
-      this._syncingToSettings = false;
-    }
-  }
-
-  /**
-   * Sync FROM VS Code settings to active profile
-   * Called when user changes settings via VS Code UI
-   */
-  private async _syncFromSettings(): Promise<void> {
-    // Disabled: profiles should be managed via UI only, not synced from settings
-    // This was causing profiles to be overwritten
-  }
-
-  /**
-   * Force sync current profile to settings (public method)
+   * @deprecated No longer syncs to VS Code settings
    */
   async syncToSettings(): Promise<void> {
-    await this._syncToSettings();
+    // No-op: profiles are standalone, not synced to VS Code settings
   }
 
   /**
-   * Force sync from settings to profile (public method)
+   * @deprecated No longer syncs from VS Code settings
    */
   async syncFromSettings(): Promise<void> {
-    await this._syncFromSettings();
+    // No-op: profiles are standalone, not synced from VS Code settings
   }
 
   getAll(): ImapProfile[] {
@@ -489,40 +464,6 @@ export class ImapProfileProvider {
       updatedAt: profile.updatedAt || now,
       provider: profile.provider
     };
-  }
-
-  private async migrateFromOldSettings(): Promise<void> {
-    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
-    const server = config.get<string>('imap.server');
-    const user = config.get<string>('imap.user');
-    const password = config.get<string>('imap.password');
-    const domain = config.get<string>('autoreg.emailDomain');
-
-    if (server && user && password) {
-      // Determine strategy based on old settings
-      let strategy: EmailStrategy;
-
-      if (domain && domain !== user.split('@')[1]) {
-        // Different domain = catch_all mode
-        strategy = { type: 'catch_all', domain };
-      } else {
-        // Same domain = detect best strategy
-        const recommended = this.getRecommendedStrategy(user);
-        strategy = { type: recommended };
-        if (recommended === 'catch_all') {
-          strategy.domain = user.split('@')[1];
-        }
-      }
-
-      await this.create({
-        name: 'Migrated Profile',
-        imap: { server, user, password },
-        strategy,
-        status: 'active'
-      });
-
-      console.log('[ImapProfileProvider] Migrated from old settings');
-    }
   }
 
   // ============================================

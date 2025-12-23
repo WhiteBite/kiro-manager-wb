@@ -183,7 +183,7 @@ def run_debug_registration():
             
             # Пробуем получить redirect URL из страницы
             try:
-                redirect_info = session.page.run_js('''
+                redirect_info = session.page.run_js(r'''
                     // Ищем redirect URL в странице
                     const scripts = document.querySelectorAll('script');
                     for (const s of scripts) {

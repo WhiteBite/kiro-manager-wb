@@ -800,6 +800,20 @@ export const profiles = `
     color: var(--accent);
     font-weight: 600;
   }
+  .form-hint .password-hint {
+    display: block;
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .form-hint .password-hint.warning {
+    border-left-color: #f0ad4e;
+    background: rgba(240, 173, 78, 0.1);
+  }
 
   /* === Profiles Panel Overlay === */
   .profiles-panel {

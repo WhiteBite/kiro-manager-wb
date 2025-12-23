@@ -1275,7 +1275,19 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         const aliasSupport = hint.supportsAlias 
           ? '✓ ' + T.strategyPlusAliasName
           : '✗ ' + hint.name + ' ' + T.providerNoAlias;
-        hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\`;
+        
+        // Show App Password hint for providers that require it
+        let passwordHint = '';
+        const providerName = hint.name?.toLowerCase() || '';
+        if (providerName === 'gmail') {
+          passwordHint = '<div class="password-hint warning">⚠️ ' + T.gmailPasswordHint + '</div>';
+        } else if (providerName === 'yandex') {
+          passwordHint = '<div class="password-hint">💡 ' + T.yandexPasswordHint + '</div>';
+        } else if (providerName === 'mail.ru') {
+          passwordHint = '<div class="password-hint">💡 ' + T.mailruPasswordHint + '</div>';
+        }
+        
+        hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\${passwordHint}\`;
         hintEl.style.display = 'block';
       }
       

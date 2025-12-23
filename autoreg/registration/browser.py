@@ -1581,7 +1581,7 @@ class BrowserAutomation:
                         workflow_success_detected = True
                         
                         # Пробуем найти redirect URL в странице или cookies
-                        redirect_url = self.page.run_js('''
+                        redirect_url = self.page.run_js(r'''
                             // Ищем redirect URL в meta refresh
                             const meta = document.querySelector('meta[http-equiv="refresh"]');
                             if (meta) {
