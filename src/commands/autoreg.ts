@@ -201,6 +201,16 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     scriptArgs.push('--count', count.toString());
   }
 
+  // Get proxy from pool with round-robin rotation
+  let currentProxy: string | undefined;
+  if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+    const proxyIndex = activeProfile.proxy.currentIndex || 0;
+    currentProxy = activeProfile.proxy.urls[proxyIndex % activeProfile.proxy.urls.length];
+    // Update index for next registration (will be saved after successful registration)
+    activeProfile.proxy.currentIndex = (proxyIndex + 1) % activeProfile.proxy.urls.length;
+    provider.addLog(`[PROXY] Using proxy ${proxyIndex + 1}/${activeProfile.proxy.urls.length}: ${currentProxy.replace(/:[^:@]+@/, ':***@')}`);
+  }
+
   const env: Record<string, string> = {
     IMAP_SERVER: imapServer,
     IMAP_USER: imapUser,
@@ -212,9 +222,10 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     PROFILE_ID: profileId,
     SPOOFING_ENABLED: spoofing ? '1' : '0',
     DEVICE_FLOW: deviceFlow ? '1' : '0',
-    // Pass proxy settings from parent process (for mitmproxy support)
-    ...(process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
-    ...(process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY }),
+    // Proxy from profile pool (takes priority) or from parent process
+    ...(currentProxy && { HTTPS_PROXY: currentProxy }),
+    ...(!currentProxy && process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
+    ...(!currentProxy && process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY }),
     ...(process.env.NODE_TLS_REJECT_UNAUTHORIZED && { NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED })
   };
 
