@@ -173,6 +173,11 @@ export interface Translations {
   port: string;
   password: string;
   testConnection: string;
+  proxy: string;
+  proxyEnabled: string;
+  proxyUrl: string;
+  proxyUrlPlaceholder: string;
+  proxyHint: string;
   testing: string;
   emailStrategy: string;
   emailStrategyDesc: string;
@@ -285,6 +290,16 @@ export interface Translations {
   serverStatusRunning: string;
   serverStatusStopped: string;
   serverStatusError: string;
+  // ============================================
+  // Proxy Settings
+  // ============================================
+  proxySettings: string;
+  proxySettingsDesc: string;
+  proxyEnabled: string;
+  proxyUrl: string;
+  proxyUrlPlaceholder: string;
+  proxyUrlHint: string;
+
   // Other
   // ============================================
   delete: string;

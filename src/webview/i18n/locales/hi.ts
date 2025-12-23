@@ -140,6 +140,11 @@ export const hi: Translations = {
   port: 'पोर्ट',
   password: 'पासवर्ड',
   testConnection: 'परीक्षण',
+  proxy: 'प्रॉक्सी',
+  proxyEnabled: 'प्रॉक्सी का उपयोग करें',
+  proxyUrl: 'प्रॉक्सी URL',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: 'प्रारूप: socks5://user:pass@host:port या host:port:user:pass',
   testing: 'परीक्षण हो रहा है...',
   emailStrategy: 'ईमेल रणनीति',
   emailStrategyDesc: 'पंजीकरण के लिए ईमेल कैसे जनरेट करें चुनें',
@@ -240,6 +245,11 @@ export const hi: Translations = {
   serverStatusRunning: 'चल रहा है',
   serverStatusStopped: 'बंद हो गया',
   serverStatusError: 'त्रुटि',
+
+  // Proxy Settings
+  proxySettings: 'प्रॉक्सी',
+  proxySettingsDesc: 'प्रॉक्सी सर्वर के माध्यम से ब्राउज़र ट्रैफ़िक रूट करें',
+  proxyUrlHint: 'प्रारूप: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: 'हटाएं',

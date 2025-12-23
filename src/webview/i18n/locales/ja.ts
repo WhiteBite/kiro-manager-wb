@@ -140,6 +140,11 @@ export const ja: Translations = {
   port: 'ポート',
   password: 'パスワード',
   testConnection: 'テスト',
+  proxy: 'プロキシ',
+  proxyEnabled: 'プロキシを使用',
+  proxyUrl: 'プロキシURL',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: '形式: socks5://user:pass@host:port または host:port:user:pass',
   testing: 'テスト中...',
   emailStrategy: 'メール戦略',
   emailStrategyDesc: '登録用メールの生成方法を選択',
@@ -240,6 +245,11 @@ export const ja: Translations = {
   serverStatusRunning: '実行中',
   serverStatusStopped: '停止',
   serverStatusError: 'エラー',
+
+  // Proxy Settings
+  proxySettings: 'プロキシ',
+  proxySettingsDesc: 'プロキシサーバー経由でブラウザトラフィックをルーティング',
+  proxyUrlHint: '形式: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: '削除',

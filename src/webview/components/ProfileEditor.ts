@@ -158,6 +158,23 @@ function renderEditorForm(t: Translations): string {
           <button class="btn btn-secondary" id="testConnectionBtn" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
         </div>
         
+        <div class="form-section" id="proxySection">
+          <div class="form-section-title">${t.proxySettings}</div>
+          <div class="form-section-desc">${t.proxySettingsDesc}</div>
+          <div class="form-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="proxyEnabled" onchange="toggleProxyFields()">
+              <span class="toggle-text">${t.proxyEnabled}</span>
+            </label>
+          </div>
+          <div class="form-group proxy-fields" id="proxyFields" style="display: none;">
+            <label class="form-label">${t.proxyUrl}</label>
+            <textarea class="form-input form-textarea" id="proxyUrls" rows="4" placeholder="${t.proxyUrlPlaceholder}"></textarea>
+            <div class="form-hint">${t.proxyUrlHint}</div>
+            <div class="proxy-stats" id="proxyStats"></div>
+          </div>
+        </div>
+        
         <div class="form-section">
           <div class="form-section-title">${t.emailStrategy}</div>
           <div class="form-section-desc">${t.emailStrategyDesc}</div>
@@ -223,6 +240,23 @@ export function renderProfileEditor({ t, inline = false }: ProfileEditorProps): 
             </div>
           </div>
           <button class="btn btn-secondary" id="testConnectionBtn" onclick="testImapConnection()">🔌 ${t.testConnection}</button>
+        </div>
+        
+        <div class="form-section" id="proxySection">
+          <div class="form-section-title">${t.proxySettings}</div>
+          <div class="form-section-desc">${t.proxySettingsDesc}</div>
+          <div class="form-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="proxyEnabled" onchange="toggleProxyFields()">
+              <span class="toggle-text">${t.proxyEnabled}</span>
+            </label>
+          </div>
+          <div class="form-group proxy-fields" id="proxyFields" style="display: none;">
+            <label class="form-label">${t.proxyUrl}</label>
+            <textarea class="form-input form-textarea" id="proxyUrls" rows="4" placeholder="${t.proxyUrlPlaceholder}"></textarea>
+            <div class="form-hint">${t.proxyUrlHint}</div>
+            <div class="proxy-stats" id="proxyStats"></div>
+          </div>
         </div>
         
         <div class="form-section">

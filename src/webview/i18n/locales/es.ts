@@ -140,6 +140,11 @@ export const es: Translations = {
   port: 'Puerto',
   password: 'Contraseña',
   testConnection: 'Probar',
+  proxy: 'Proxy',
+  proxyEnabled: 'Usar Proxy',
+  proxyUrl: 'URL del Proxy',
+  proxyUrlPlaceholder: 'socks5://user:pass@host:port',
+  proxyHint: 'Formatos: socks5://user:pass@host:port o host:port:user:pass',
   testing: 'Probando...',
   emailStrategy: 'Estrategia de Email',
   emailStrategyDesc: 'Elige cómo generar emails para el registro',
@@ -240,6 +245,11 @@ export const es: Translations = {
   serverStatusRunning: 'En ejecución',
   serverStatusStopped: 'Detenido',
   serverStatusError: 'Error',
+
+  // Proxy Settings
+  proxySettings: 'Proxy',
+  proxySettingsDesc: 'Enrutar tráfico del navegador a través del servidor proxy',
+  proxyUrlHint: 'Formatos: host:port:user:pass, socks5://user:pass@host:port',
 
   // Other
   delete: 'Eliminar',

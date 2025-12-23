@@ -862,11 +862,17 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const serverEl = document.getElementById('imapServer');
       const portEl = document.getElementById('imapPort');
       const passwordEl = document.getElementById('imapPassword');
+      const proxyCheckbox = document.getElementById('proxyEnabled');
+      const proxyUrlsEl = document.getElementById('proxyUrls');
+      const proxyFields = document.getElementById('proxyFields');
       if (nameEl) nameEl.value = '';
       if (userEl) userEl.value = '';
       if (serverEl) serverEl.value = '';
       if (portEl) portEl.value = '993';
       if (passwordEl) passwordEl.value = '';
+      if (proxyCheckbox) proxyCheckbox.checked = false;
+      if (proxyUrlsEl) proxyUrlsEl.value = '';
+      if (proxyFields) proxyFields.style.display = 'none';
       selectStrategy('single');
       
       // Update title
@@ -895,6 +901,14 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       // Legacy overlay mode
       document.getElementById('profileEditor')?.classList.remove('visible');
       editingProfileId = null;
+    }
+    
+    function toggleProxyFields() {
+      const checkbox = document.getElementById('proxyEnabled');
+      const fields = document.getElementById('proxyFields');
+      if (checkbox && fields) {
+        fields.style.display = checkbox.checked ? 'block' : 'none';
+      }
     }
     
     function selectProfile(profileId) {
@@ -1089,6 +1103,12 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const password = document.getElementById('imapPassword')?.value;
       const port = parseInt(document.getElementById('imapPort')?.value) || 993;
       
+      // Proxy settings
+      const proxyEnabled = document.getElementById('proxyEnabled')?.checked || false;
+      const proxyUrlsText = document.getElementById('proxyUrls')?.value?.trim() || '';
+      const proxyUrls = proxyUrlsText.split('\\n').map(u => u.trim()).filter(u => u.length > 0);
+      const proxy = proxyEnabled && proxyUrls.length > 0 ? { enabled: true, urls: proxyUrls, currentIndex: 0 } : undefined;
+      
       const selectedStrategy = document.querySelector('.strategy-option.selected');
       const strategyType = selectedStrategy?.dataset?.strategy || 'single';
       
@@ -1128,7 +1148,8 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
             id: editingProfileId,
             name,
             imap: { server, user: firstEmail, password: firstPassword, port },
-            strategy
+            strategy,
+            proxy
           }
         });
       } else {
@@ -1144,7 +1165,8 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
             id: editingProfileId,
             name,
             imap: { server, user, password, port },
-            strategy
+            strategy,
+            proxy
           }
         });
       }
@@ -1230,6 +1252,23 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       document.getElementById('imapPort').value = profile.imap?.port || 993;
       document.getElementById('imapPassword').value = profile.imap?.password || '';
       
+      // Proxy settings
+      const proxyCheckbox = document.getElementById('proxyEnabled');
+      const proxyUrlsInput = document.getElementById('proxyUrls');
+      const proxyFields = document.getElementById('proxyFields');
+      const proxyStats = document.getElementById('proxyStats');
+      if (proxyCheckbox && proxyUrlsInput) {
+        const hasProxy = profile.proxy?.enabled || false;
+        proxyCheckbox.checked = hasProxy;
+        proxyUrlsInput.value = (profile.proxy?.urls || []).join('\\n');
+        if (proxyFields) {
+          proxyFields.style.display = hasProxy ? 'block' : 'none';
+        }
+        if (proxyStats && profile.proxy?.urls) {
+          proxyStats.textContent = profile.proxy.urls.length + ' proxies';
+        }
+      }
+      
       const strategyType = profile.strategy?.type || 'single';
       selectStrategy(strategyType);
       
@@ -1275,19 +1314,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         const aliasSupport = hint.supportsAlias 
           ? '✓ ' + T.strategyPlusAliasName
           : '✗ ' + hint.name + ' ' + T.providerNoAlias;
-        
-        // Show App Password hint for providers that require it
-        let passwordHint = '';
-        const providerName = hint.name?.toLowerCase() || '';
-        if (providerName === 'gmail') {
-          passwordHint = '<div class="password-hint warning">⚠️ ' + T.gmailPasswordHint + '</div>';
-        } else if (providerName === 'yandex') {
-          passwordHint = '<div class="password-hint">💡 ' + T.yandexPasswordHint + '</div>';
-        } else if (providerName === 'mail.ru') {
-          passwordHint = '<div class="password-hint">💡 ' + T.mailruPasswordHint + '</div>';
-        }
-        
-        hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\${passwordHint}\`;
+        hintEl.innerHTML = \`<span class="provider-name">\${hint.name}</span> · \${aliasSupport}\`;
         hintEl.style.display = 'block';
       }
       
