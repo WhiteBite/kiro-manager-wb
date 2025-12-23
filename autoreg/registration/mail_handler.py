@@ -194,17 +194,29 @@ class IMAPMailHandler:
                     if not is_aws:
                         continue
                     
-                    # Проверка получателя - СТРОГОЕ совпадение
+                    # Проверка получателя
                     to_match = False
                     
                     # Вариант 1: точное совпадение email
                     if target_lower in msg_to:
                         to_match = True
-                    # Вариант 2: для plus alias (user+tag@domain -> user@domain)
+                    # Вариант 2: target содержит +tag, ищем base в msg_to
                     elif target_base and target_base in msg_to:
                         to_match = True
-                    
-                    # НЕ используем fallback по домену - это берёт чужие письма!
+                    # Вариант 3: ОБРАТНЫЙ plus alias - target это base (user@domain),
+                    # а письмо пришло на user+tag@domain
+                    elif '+' in msg_to and '@' in msg_to:
+                        # Извлекаем base из msg_to
+                        try:
+                            at_pos = msg_to.index('@')
+                            user_part = msg_to[:at_pos]
+                            domain_part = msg_to[at_pos:]
+                            if '+' in user_part:
+                                msg_to_base = user_part.split('+')[0] + domain_part
+                                if target_lower == msg_to_base or target_lower in msg_to_base:
+                                    to_match = True
+                        except:
+                            pass
                     
                     if not to_match:
                         safe_print(f"   [S] Skipping: to={msg_to[:50]} (looking for {target_lower})")
