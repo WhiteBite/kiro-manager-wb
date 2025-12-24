@@ -29,6 +29,8 @@ class BrowserConfig:
     realistic_typing: bool = True  # Реалистичный ввод для обхода FWCIM
     human_delays: bool = True  # Человеческие задержки между шагами регистрации
     delay_multiplier: float = 1.0  # Множитель задержек (0.5 = быстрее, 2.0 = медленнее)
+    proxy: Optional[str] = None  # Прокси в формате "http://host:port" или "socks5://host:port"
+    proxy_auth: Optional[tuple[str, str]] = None  # (username, password) для прокси
 
 
 @dataclass

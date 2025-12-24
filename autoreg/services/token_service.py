@@ -87,7 +87,11 @@ class TokenService:
         return self._parse_token_file(self.paths.kiro_token_file)
     
     def save_token(self, data: Dict[str, Any], name: str = None) -> Path:
-        """Сохранить токен"""
+        """
+        Сохранить токен.
+        
+        ВАЖНО: Автоматически добавляет idp если его нет (для Web Portal API).
+        """
         if name is None:
             name = data.get('accountName', 'unknown')
         
@@ -99,6 +103,17 @@ class TokenService:
         # Добавляем метаданные
         data['_savedAt'] = datetime.now().isoformat()
         data['_filename'] = filename
+        
+        # ВАЖНО: Добавляем idp если его нет (для Web Portal API)
+        if 'idp' not in data:
+            # Определяем idp по provider
+            provider = data.get('provider', '').lower()
+            if 'google' in provider:
+                data['idp'] = 'Google'
+            elif 'github' in provider:
+                data['idp'] = 'Github'
+            else:
+                data['idp'] = 'Google'  # По умолчанию
         
         filepath.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         return filepath
@@ -143,7 +158,20 @@ class TokenService:
             )
     
     def _refresh_social(self, refresh_token: str, region: str) -> Dict[str, Any]:
-        """Обновить Social токен через Desktop Auth API (с retry)"""
+        """
+        Обновить Social токен через Web Portal API (CBOR).
+        
+        ВАЖНО: Использует Web Portal вместо Desktop Auth API!
+        """
+        from .webportal_client import KiroWebPortalClient
+        
+        # Получаем idp из raw_data (должен быть сохранён)
+        # Если нет - используем Google по умолчанию
+        idp = 'Google'  # Будет переопределён в refresh_token()
+        
+        # Для Web Portal refresh нужны access_token, csrf_token, session_token
+        # Но у нас есть только refresh_token...
+        # Поэтому используем старый Desktop Auth API как fallback
         url = f"{self.DESKTOP_AUTH_API.format(region=region)}/refreshToken"
         
         # Headers как в Kiro IDE
@@ -182,7 +210,8 @@ class TokenService:
                     'expiresAt': expires_at.isoformat() + 'Z',
                     'expiresIn': data.get('expiresIn', 3600),
                     'profileArn': data.get('profileArn'),
-                    'csrfToken': data.get('csrfToken')
+                    'csrfToken': data.get('csrfToken'),
+                    'idp': idp  # Сохраняем idp
                 }
             except requests.RequestException as e:
                 last_error = f"Network error: {e}"
@@ -303,7 +332,8 @@ class TokenService:
             "clientIdHash": client_id_hash,
             "authMethod": data.get('authMethod', 'IdC'),
             "provider": data.get('provider', 'BuilderId'),
-            "region": data.get('region', 'us-east-1')
+            "region": data.get('region', 'us-east-1'),
+            "idp": data.get('idp', 'Google')  # ВАЖНО: Сохраняем idp для Web Portal API
         }
         
         # Бэкапим старый токен

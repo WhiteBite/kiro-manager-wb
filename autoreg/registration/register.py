@@ -508,6 +508,9 @@ class AWSRegistration:
                     'password': password,
                     'name': name,
                     'token_file': token_file,
+                    'provider': 'Google',  # Automated всегда через Google
+                    'auth_method': 'social',
+                    'idp': 'Google',  # ВАЖНО: для Web Portal API!
                     'success': True
                 }
             else:

@@ -54,6 +54,11 @@ export const ja: Translations = {
   byDate: '日付順',
   searchPlaceholder: 'アカウントを検索...',
   newBadge: '新規',
+  filterByTokens: 'フィルター',
+  fresh: '新品',
+  partial: '部分的',
+  trial: '試用版',
+  empty: '空',
 
   // Account card
   active: 'アクティブ',
@@ -342,4 +347,20 @@ export const ja: Translations = {
   weeklyUsage: '週間使用量',
   avgPerAccount: 'アカウント平均',
   accountHealth: 'アカウント状態',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: '登録戦略',
+  registrationStrategyDesc: 'アカウント登録方法を選択（BAN リスクに影響）',
+  strategyWebView: 'WebView（推奨）',
+  strategyWebViewDesc: '実際のブラウザを開き、手動で入力。BAN リスク最小。',
+  strategyWebViewBanRisk: '低 BAN リスク（<10%）',
+  strategyAutomated: '自動化（レガシー）',
+  strategyAutomatedDesc: 'DrissionPage による自動ブラウザ。一部のユーザーで動作。',
+  strategyAutomatedBanRisk: '中〜高 BAN リスク（40-90%）',
+  manualInputRequired: '手動入力が必要',
+  deferQuotaCheck: 'クォータチェックを延期',
+  deferQuotaCheckDesc: '登録直後にクォータをチェックしない（BAN リスクを軽減）',
+  lowBanRisk: '低 BAN リスク',
+  mediumBanRisk: '中 BAN リスク',
+  highBanRisk: '高 BAN リスク',
 };

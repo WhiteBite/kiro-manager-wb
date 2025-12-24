@@ -223,6 +223,60 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
       </div>
     </div>
 
+    <!-- Registration Strategy Card (Anti-Ban) -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">🛡️</span>
+        <span class="settings-card-title">${t.registrationStrategy}</span>
+      </div>
+      <div class="settings-card-body">
+        <div class="setting-desc" style="margin-bottom: 16px;">${t.registrationStrategyDesc}</div>
+        
+        <!-- WebView Strategy -->
+        <div class="strategy-option ${settings?.strategy === 'webview' || !settings?.strategy ? 'selected' : ''}" onclick="selectStrategy('webview')">
+          <input type="radio" name="strategy" value="webview" ${settings?.strategy === 'webview' || !settings?.strategy ? 'checked' : ''}>
+          <div class="strategy-content">
+            <div class="strategy-header">
+              <strong>${t.strategyWebView}</strong>
+              <span class="badge badge-success">${t.lowBanRisk}</span>
+            </div>
+            <div class="strategy-desc">${t.strategyWebViewDesc}</div>
+            <div class="strategy-meta">
+              <span class="badge badge-warning">${t.manualInputRequired}</span>
+              <span class="strategy-risk">${t.strategyWebViewBanRisk}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Automated Strategy -->
+        <div class="strategy-option ${settings?.strategy === 'automated' ? 'selected' : ''}" onclick="selectStrategy('automated')">
+          <input type="radio" name="strategy" value="automated" ${settings?.strategy === 'automated' ? 'checked' : ''}>
+          <div class="strategy-content">
+            <div class="strategy-header">
+              <strong>${t.strategyAutomated}</strong>
+              <span class="badge badge-danger">${t.mediumBanRisk}</span>
+            </div>
+            <div class="strategy-desc">${t.strategyAutomatedDesc}</div>
+            <div class="strategy-meta">
+              <span class="strategy-risk">${t.strategyAutomatedBanRisk}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Defer Quota Check (only for Automated) -->
+        <div id="deferQuotaCheckOption" class="setting-row" style="margin-top: 16px; ${settings?.strategy === 'automated' ? '' : 'display: none;'}">
+          <div>
+            <div class="setting-label">${t.deferQuotaCheck}</div>
+            <div class="setting-desc">${t.deferQuotaCheckDesc}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" ${settings?.deferQuotaCheck !== false ? 'checked' : ''} onchange="toggleSetting('deferQuotaCheck', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- Interface Card -->
     <div class="settings-card">
       <div class="settings-card-header">

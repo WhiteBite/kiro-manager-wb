@@ -54,6 +54,11 @@ export const hi: Translations = {
   byDate: 'तारीख द्वारा',
   searchPlaceholder: 'खाते खोजें...',
   newBadge: 'नया',
+  filterByTokens: 'फ़िल्टर',
+  fresh: 'नया',
+  partial: 'आंशिक',
+  trial: 'परीक्षण',
+  empty: 'खाली',
 
   // Account card
   active: 'सक्रिय',
@@ -342,4 +347,20 @@ export const hi: Translations = {
   weeklyUsage: 'साप्ताहिक उपयोग',
   avgPerAccount: 'प्रति खाता औसत',
   accountHealth: 'खाता स्वास्थ्य',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'पंजीकरण रणनीति',
+  registrationStrategyDesc: 'खाते पंजीकृत करने का तरीका चुनें (प्रतिबंध जोखिम को प्रभावित करता है)',
+  strategyWebView: 'WebView (अनुशंसित)',
+  strategyWebViewDesc: 'वास्तविक ब्राउज़र खोलता है, मैन्युअल इनपुट। न्यूनतम प्रतिबंध जोखिम।',
+  strategyWebViewBanRisk: 'कम प्रतिबंध जोखिम (<10%)',
+  strategyAutomated: 'स्वचालित (Legacy)',
+  strategyAutomatedDesc: 'DrissionPage के साथ स्वचालित ब्राउज़र। कुछ के लिए काम करता है।',
+  strategyAutomatedBanRisk: 'मध्यम-उच्च प्रतिबंध जोखिम (40-90%)',
+  manualInputRequired: 'मैन्युअल इनपुट आवश्यक',
+  deferQuotaCheck: 'कोटा जांच स्थगित करें',
+  deferQuotaCheckDesc: 'पंजीकरण के तुरंत बाद कोटा जांच न करें (प्रतिबंध जोखिम कम करता है)',
+  lowBanRisk: 'कम प्रतिबंध जोखिम',
+  mediumBanRisk: 'मध्यम प्रतिबंध जोखिम',
+  highBanRisk: 'उच्च प्रतिबंध जोखिम',
 };

@@ -863,6 +863,20 @@ export async function checkAccountBanStatus(accountName: string): Promise<Accoun
     };
   }
 
+  // Account is healthy - include usage data if available
+  if (banCheck.usageData) {
+    return {
+      ...basicHealth,
+      usage: {
+        currentUsage: banCheck.usageData.currentUsage,
+        usageLimit: banCheck.usageData.usageLimit,
+        percentageUsed: banCheck.usageData.percentageUsed,
+        daysRemaining: -1 // Not provided by API
+      },
+      apiCheckDone: true
+    };
+  }
+
   return { ...basicHealth, apiCheckDone: true };
 }
 

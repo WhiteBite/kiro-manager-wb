@@ -157,6 +157,31 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
     
+    function updateSetting(key, value) {
+      vscode.postMessage({ command: 'updateSetting', key, value });
+    }
+    
+    function selectStrategy(strategy) {
+      // Update radio buttons
+      document.querySelectorAll('input[name="strategy"]').forEach(radio => {
+        radio.checked = radio.value === strategy;
+      });
+      
+      // Update selected class
+      document.querySelectorAll('.strategy-option').forEach(option => {
+        option.classList.toggle('selected', option.querySelector('input').value === strategy);
+      });
+      
+      // Show/hide defer quota check option
+      const deferOption = document.getElementById('deferQuotaCheckOption');
+      if (deferOption) {
+        deferOption.style.display = strategy === 'automated' ? '' : 'none';
+      }
+      
+      // Save setting
+      vscode.postMessage({ command: 'updateSetting', key: 'strategy', value: strategy });
+    }
+    
     function toggleSpoofing(enabled) {
       vscode.postMessage({ command: 'updateSetting', key: 'spoofing', value: enabled });
       // Toggle details visibility
@@ -498,9 +523,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       closeDialog();
     }
     
-    // === Search ===
+    // === Search & Filters ===
     
     let searchQuery = '';
+    let tokenFilter = 'all'; // all, fresh, partial, trial, empty
     
     function searchAccounts(query) {
       searchQuery = query.toLowerCase().trim();
@@ -514,11 +540,53 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       applyFilters();
     }
     
+    function filterByTokens(filter) {
+      tokenFilter = filter;
+      
+      // Update button states
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+      
+      applyFilters();
+    }
+    
+    function getAccountTokens(acc) {
+      // Extract remaining tokens from usage text (format: "123/500")
+      const usageText = acc.querySelector('.account-meta span:first-child')?.textContent || '';
+      const match = usageText.match(/(\\d+)\\/(\\d+)/);
+      if (!match) return -1;
+      return parseInt(match[1], 10);
+    }
+    
     function applyFilters() {
       let visibleCount = 0;
       document.querySelectorAll('.account').forEach(acc => {
         const email = (acc.querySelector('.account-email')?.textContent || '').toLowerCase();
-        const match = !searchQuery || email.includes(searchQuery);
+        const searchMatch = !searchQuery || email.includes(searchQuery);
+        
+        // Token filter
+        let tokenMatch = true;
+        if (tokenFilter !== 'all') {
+          const tokens = getAccountTokens(acc);
+          
+          switch (tokenFilter) {
+            case 'fresh':
+              tokenMatch = tokens === 500;
+              break;
+            case 'partial':
+              tokenMatch = tokens > 0 && tokens < 500 && tokens !== 50;
+              break;
+            case 'trial':
+              tokenMatch = tokens === 50;
+              break;
+            case 'empty':
+              tokenMatch = tokens === 0;
+              break;
+          }
+        }
+        
+        const match = searchMatch && tokenMatch;
         acc.style.display = match ? '' : 'none';
         if (match) visibleCount++;
       });
@@ -526,7 +594,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       // Show/hide empty search state
       const emptySearch = document.getElementById('emptySearchState');
       if (emptySearch) {
-        emptySearch.style.display = (searchQuery && visibleCount === 0) ? 'block' : 'none';
+        emptySearch.style.display = ((searchQuery || tokenFilter !== 'all') && visibleCount === 0) ? 'block' : 'none';
       }
       
       // Hide group headers if all accounts in group are hidden
@@ -1510,6 +1578,8 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     window.exportSelectedAccounts = exportSelectedAccounts;
     window.refreshSelectedTokens = refreshSelectedTokens;
     window.deleteSelectedAccounts = deleteSelectedAccounts;
+    window.selectStrategy = selectStrategy;
+    window.updateSetting = updateSetting;
     
     // === Initialization ===
     // Load profiles after DOM is ready so they're available when user switches to profiles tab

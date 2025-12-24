@@ -1,12 +1,15 @@
 """
-Quota Service - мониторинг квот
+Quota Service - мониторинг квот через Web Portal API (CBOR).
+
+ВАЖНО: Использует Web Portal API вместо CodeWhisperer API!
+- Web Portal выглядит как браузер (меньше банов)
+- CBOR протокол (не детектится как API abuse)
+- Cookie-based auth (как настоящий браузер)
 """
 
 import json
-import uuid
-import hashlib
 import time
-import requests
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
@@ -17,13 +20,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.config import get_config
-from core.kiro_config import get_machine_id, get_kiro_user_agent, get_kiro_version
-from core.exceptions import QuotaError, AuthBannedError
+from .webportal_client import KiroWebPortalClient
 
-
-# API Endpoints
-CODEWHISPERER_API = "https://codewhisperer.us-east-1.amazonaws.com"
-DEFAULT_PROFILE_ARN = "arn:aws:codewhisperer:us-east-1:699475941385:profile/EHGA3GRVQMUK"
+logger = logging.getLogger(__name__)
 
 # Retry configuration
 MAX_RETRIES = 3
@@ -94,88 +93,61 @@ class QuotaInfo:
 
 
 class QuotaService:
-    """Сервис для мониторинга квот"""
+    """
+    Сервис для мониторинга квот через Web Portal API (CBOR).
+    
+    ВАЖНО: Использует Web Portal вместо CodeWhisperer API!
+    - Меньше банов (выглядит как браузер)
+    - CBOR протокол (не детектится как bot)
+    - Cookie-based auth
+    """
     
     def __init__(self):
         self.paths = get_paths()
         self.config = get_config()
+        self.client = KiroWebPortalClient()
     
-    def _generate_headers(self, access_token: str, for_idc: bool = False) -> Dict[str, str]:
-        """Генерирует заголовки для API запроса (как в Kiro IDE)"""
-        machine_id = get_machine_id()
-        
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Accept': 'application/json',
-            'User-Agent': get_kiro_user_agent()
-        }
-        
-        if for_idc:
-            kiro_version = get_kiro_version()
-            headers.update({
-                'x-amz-user-agent': f"aws-sdk-js/1.0.0 KiroIDE-{kiro_version}-{machine_id}",
-                'amz-sdk-invocation-id': str(uuid.uuid4()),
-                'amz-sdk-request': 'attempt=1; max=1',
-                'Connection': 'close'  # Важно для IdC!
-            })
-        
-        return headers
-    
-    def get_quota(self, access_token: str, auth_method: str = 'social') -> QuotaInfo:
+    def get_quota(self, access_token: str, idp: str = 'Google') -> QuotaInfo:
         """
-        Получить квоты для токена (с retry механизмом)
+        Получить квоты для токена через Web Portal API (CBOR).
         
         Args:
             access_token: Access token
-            auth_method: 'social' или 'IdC'
+            idp: Identity Provider (Google/Github)
         
         Returns:
             QuotaInfo с информацией о квотах
         """
-        params = {
-            'isEmailRequired': 'true',
-            'origin': 'AI_EDITOR'
-        }
-        
-        # Разные параметры для Social vs IdC (как в kiro-account-manager)
-        if auth_method == 'social':
-            params['profileArn'] = DEFAULT_PROFILE_ARN
-        else:
-            params['resourceType'] = 'AGENTIC_REQUEST'
-        
-        headers = self._generate_headers(access_token, for_idc=(auth_method != 'social'))
-        
         last_error = ""
+        
         for attempt in range(MAX_RETRIES):
             if attempt > 0:
+                logger.info(f"[Quota] Retry {attempt}/{MAX_RETRIES}")
                 time.sleep(RETRY_DELAY_SEC)
             
             try:
-                resp = requests.get(
-                    f"{CODEWHISPERER_API}/getUsageLimits",
-                    params=params,
-                    headers=headers,
-                    timeout=self.config.timeouts.api_request
-                )
+                # Используем Web Portal API вместо CodeWhisperer!
+                response = self.client.get_user_usage_and_limits(access_token, idp)
+                return self._parse_webportal_response(response)
                 
-                if resp.status_code != 200:
-                    # Проверяем на бан (не ретраим)
-                    try:
-                        error_data = resp.json()
-                        if 'reason' in error_data:
-                            return QuotaInfo(error=f"BANNED:{error_data['reason']}")
-                    except:
-                        pass
-                    last_error = f"API error ({resp.status_code})"
-                    continue
+            except ValueError as e:
+                error_msg = str(e)
                 
-                return self._parse_response(resp.json())
+                # Проверяем на бан (не ретраим)
+                if 'BANNED' in error_msg or 'UNAUTHORIZED' in error_msg:
+                    logger.error(f"[Quota] {error_msg}")
+                    return QuotaInfo(error=error_msg)
                 
-            except requests.RequestException as e:
-                last_error = f"Network error: {e}"
+                last_error = error_msg
+                logger.warning(f"[Quota] Attempt {attempt + 1} failed: {error_msg}")
+                continue
+            
+            except Exception as e:
+                last_error = f"Unexpected error: {e}"
+                logger.error(f"[Quota] {last_error}")
                 continue
         
-        return QuotaInfo(error=last_error)
+        return QuotaInfo(error=f"Failed after {MAX_RETRIES} retries: {last_error}")
     
     def get_current_quota(self) -> Optional[QuotaInfo]:
         """Получить квоты для текущего активного аккаунта"""
@@ -185,7 +157,7 @@ class QuotaService:
         try:
             data = json.loads(self.paths.kiro_token_file.read_text())
             access_token = data.get('accessToken')
-            auth_method = data.get('authMethod', 'social')
+            idp = data.get('idp', 'Google')  # ВАЖНО: нужен idp для Web Portal!
             
             if not access_token:
                 return None
@@ -220,13 +192,19 @@ class QuotaService:
                 except:
                     pass
             
-            return self.get_quota(access_token, auth_method)
+            return self.get_quota(access_token, idp)
             
         except Exception as e:
+            logger.error(f"[Quota] Error getting current quota: {e}")
             return QuotaInfo(error=str(e))
     
-    def _parse_response(self, data: Dict) -> QuotaInfo:
-        """Парсит ответ API"""
+    def _parse_webportal_response(self, data: Dict) -> QuotaInfo:
+        """
+        Парсит ответ Web Portal API (CBOR).
+        
+        Формат ответа такой же как у CodeWhisperer API,
+        но приходит через CBOR вместо JSON.
+        """
         info = QuotaInfo(raw_response=data)
         
         # User info
@@ -252,7 +230,7 @@ class QuotaService:
                 resource_type=bd.get('resourceType', '')
             )
             
-            # Next reset (timestamp в секундах, не миллисекундах!)
+            # Next reset (timestamp в секундах)
             if bd.get('nextDateReset'):
                 usage.next_reset = datetime.fromtimestamp(bd['nextDateReset'])
             
@@ -277,6 +255,8 @@ class QuotaService:
                 })
             
             info.usage = usage
+        
+        logger.info(f"[Quota] Parsed: {info.email} - {info.usage.used if info.usage else 0}/{info.usage.limit if info.usage else 0}")
         
         return info
     

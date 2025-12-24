@@ -26,9 +26,20 @@ export function getStyles(): string {
       --transition-fast: 0.12s ease; --transition-normal: 0.2s ease;
       --glass-bg: rgba(255,255,255,0.02); --glass-border: rgba(255,255,255,0.08);
       --fg-color: #cccccc; --bg-color: #1e1e1e; --input-bg: #3c3c3c;
+      
+      /* Fallback aliases for VS Code variables - works in both VS Code and Kiro Desktop */
+      --vscode-foreground: #cccccc;
+      --vscode-sideBar-background: #1e1e1e;
+      --vscode-input-background: #3c3c3c;
+      --vscode-input-foreground: #cccccc;
+      --vscode-dropdown-background: #3c3c3c;
+      --vscode-dropdown-foreground: #cccccc;
+      --vscode-terminal-background: #1e1e1e;
+      --vscode-editorWidget-background: #252526;
+      --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --vscode-editor-font-family: 'Consolas', 'Courier New', monospace;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--vscode-font-family, 'Segoe UI', system-ui, sans-serif); font-size: 12px; line-height: 1.5; color: var(--vscode-foreground, #cccccc); background: var(--vscode-sideBar-background, #1e1e1e); min-height: 100vh; overflow-x: hidden; }
+    /* Note: body styles are in base.ts - don't override here! */
     ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 4px; }
     
     /* Ripple Effect */

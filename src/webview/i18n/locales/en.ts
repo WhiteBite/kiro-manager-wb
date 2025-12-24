@@ -54,6 +54,11 @@ export const en: Translations = {
   byDate: 'By Date',
   searchPlaceholder: 'Search accounts...',
   newBadge: 'NEW',
+  filterByTokens: 'Filter',
+  fresh: 'Fresh',
+  partial: 'Partial',
+  trial: 'Trial',
+  empty: 'Empty',
 
   // Account card
   active: 'Active',
@@ -342,4 +347,20 @@ export const en: Translations = {
   weeklyUsage: 'Weekly Usage',
   avgPerAccount: 'Avg per account',
   accountHealth: 'Account Health',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Registration Strategy',
+  registrationStrategyDesc: 'Choose how to register accounts (affects ban risk)',
+  strategyWebView: 'WebView (Recommended)',
+  strategyWebViewDesc: 'Opens real browser, you enter credentials manually. Minimal ban risk.',
+  strategyWebViewBanRisk: 'Low ban risk (<10%)',
+  strategyAutomated: 'Automated (Legacy)',
+  strategyAutomatedDesc: 'Automated browser with DrissionPage. Works for some users.',
+  strategyAutomatedBanRisk: 'Medium-High ban risk (40-90%)',
+  deferQuotaCheck: 'Defer quota check',
+  deferQuotaCheckDesc: 'Do NOT check quota immediately after registration (reduces ban risk)',
+  manualInputRequired: 'Manual input required',
+  lowBanRisk: 'Low ban risk',
+  mediumBanRisk: 'Medium ban risk',
+  highBanRisk: 'High ban risk',
 };

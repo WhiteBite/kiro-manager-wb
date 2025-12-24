@@ -43,7 +43,11 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations, selecti
         acc.isExpired ? 'expired' :
           acc.isActive ? 'active' : 'ready';
 
-  const usageText = isUnknown ? '?' : hasUsage ? usage!.currentUsage.toLocaleString() : '—';
+  // Show remaining tokens instead of used
+  const remaining = hasUsage && !isUnknown ? (usage!.usageLimit - usage!.currentUsage) : -1;
+  const usageText = isUnknown ? '?' :
+    hasUsage ? `${remaining}/${usage!.usageLimit}` :
+      '—';
   const expiryText = acc.expiresIn || '—';
 
   // Ban reason tooltip

@@ -54,6 +54,11 @@ export const es: Translations = {
   byDate: 'Por Fecha',
   searchPlaceholder: 'Buscar cuentas...',
   newBadge: 'NUEVO',
+  filterByTokens: 'Filtrar',
+  fresh: 'Nuevas',
+  partial: 'Parcial',
+  trial: 'Prueba',
+  empty: 'Vacías',
 
   // Account card
   active: 'Activa',
@@ -342,4 +347,20 @@ export const es: Translations = {
   weeklyUsage: 'Uso semanal',
   avgPerAccount: 'Promedio por cuenta',
   accountHealth: 'Salud de cuentas',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Estrategia de registro',
+  registrationStrategyDesc: 'Elija cómo registrar cuentas (afecta el riesgo de baneo)',
+  strategyWebView: 'WebView (Recomendado)',
+  strategyWebViewDesc: 'Abre navegador real, ingreso manual. Riesgo mínimo de baneo.',
+  strategyWebViewBanRisk: 'Bajo riesgo de baneo (<10%)',
+  strategyAutomated: 'Automatizado (Legacy)',
+  strategyAutomatedDesc: 'Navegador automatizado con DrissionPage. Funciona para algunos.',
+  strategyAutomatedBanRisk: 'Riesgo medio-alto de baneo (40-90%)',
+  manualInputRequired: 'Requiere entrada manual',
+  deferQuotaCheck: 'Diferir verificación de cuota',
+  deferQuotaCheckDesc: 'No verificar cuota inmediatamente después del registro (reduce riesgo de baneo)',
+  lowBanRisk: 'Bajo riesgo de baneo',
+  mediumBanRisk: 'Riesgo medio de baneo',
+  highBanRisk: 'Alto riesgo de baneo',
 };

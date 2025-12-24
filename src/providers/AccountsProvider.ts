@@ -450,13 +450,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
   // Refresh all expired tokens
   async refreshAllExpiredTokens() {
-    // Find expired accounts (token expired but not exhausted/suspended)
+    // Find expired accounts (token expired but not exhausted/suspended/banned)
     const expiredAccounts = this._accounts.filter(acc => {
       const usage = acc.usage;
+      const isBanned = usage?.isBanned === true;
       const isSuspended = usage?.suspended === true;
       const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
-      // Only expired tokens, not exhausted or suspended
-      return acc.isExpired && !isSuspended && !isExhausted;
+      // Only expired tokens, not banned/exhausted/suspended
+      return acc.isExpired && !isBanned && !isSuspended && !isExhausted;
     });
 
     if (expiredAccounts.length === 0) {
@@ -736,7 +737,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     // Don't call refresh() - it resets the view to main page
   }
 
-  async updateSetting(key: string, value: boolean | number) {
+  async updateSetting(key: string, value: boolean | number | string) {
     const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
 
     switch (key) {
@@ -757,6 +758,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         break;
       case 'autoSwitchThreshold':
         await config.update('autoSwitch.usageThreshold', value, vscode.ConfigurationTarget.Global);
+        break;
+      case 'strategy':
+        await config.update('autoreg.strategy', value, vscode.ConfigurationTarget.Global);
+        break;
+      case 'deferQuotaCheck':
+        await config.update('autoreg.deferQuotaCheck', value, vscode.ConfigurationTarget.Global);
         break;
     }
     // Don't call refresh() - it resets the view to main page
@@ -906,7 +913,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       screenshotsOnError: config.get<boolean>('debug.screenshotsOnError', true),
       spoofing: config.get<boolean>('autoreg.spoofing', true),
       deviceFlow: config.get<boolean>('autoreg.deviceFlow', false),
-      autoSwitchThreshold: config.get<number>('autoSwitch.usageThreshold', 50)
+      autoSwitchThreshold: config.get<number>('autoSwitch.usageThreshold', 50),
+      strategy: config.get<'webview' | 'automated'>('autoreg.strategy', 'webview'),
+      deferQuotaCheck: config.get<boolean>('autoreg.deferQuotaCheck', true)
     };
 
     // Get active IMAP profile for Hero display
@@ -1370,7 +1379,20 @@ except Exception as e:
   // Check health of all accounts (detect bans and issues)
   // Uses CodeWhisperer API to detect bans (OIDC refresh doesn't detect bans!)
   async checkAllAccountsHealth() {
-    this.addLog(`🔍 Checking health of ${this._accounts.length} accounts...`);
+    // Filter out banned and exhausted accounts - no point checking them
+    const accountsToCheck = this._accounts.filter(acc => {
+      const usage = acc.usage;
+      const isBanned = usage?.isBanned === true;
+      const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
+      return !isBanned && !isExhausted;
+    });
+
+    if (accountsToCheck.length === 0) {
+      vscode.window.showInformationMessage('No accounts to check (all banned or exhausted)');
+      return;
+    }
+
+    this.addLog(`🔍 Checking health of ${accountsToCheck.length} accounts...`);
 
     let healthy = 0;
     let banned = 0;
@@ -1379,21 +1401,21 @@ except Exception as e:
 
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Checking ${this._accounts.length} accounts...`,
+      title: `Checking ${accountsToCheck.length} accounts...`,
       cancellable: true
     }, async (progress, token) => {
       // Use checkAccountBanStatus which checks via CodeWhisperer API (not just OIDC)
       const { checkAccountBanStatus } = await import('../accounts');
 
-      for (let i = 0; i < this._accounts.length; i++) {
+      for (let i = 0; i < accountsToCheck.length; i++) {
         if (token.isCancellationRequested) break;
 
-        const acc = this._accounts[i];
+        const acc = accountsToCheck[i];
         const accountName = acc.tokenData.accountName || acc.filename;
 
         progress.report({
-          message: `${i + 1}/${this._accounts.length}: ${accountName}`,
-          increment: (100 / this._accounts.length)
+          message: `${i + 1}/${accountsToCheck.length}: ${accountName}`,
+          increment: (100 / accountsToCheck.length)
         });
 
         // checkAccountBanStatus does OIDC refresh + CodeWhisperer API check
@@ -1413,6 +1435,13 @@ except Exception as e:
               banReason: undefined
             });
             this.addLog(`✓ Ban cleared: ${accountName}`);
+          }
+
+          // Update usage after health check
+          if (status.usage) {
+            const { saveAccountUsage } = require('../utils');
+            saveAccountUsage(accountName, status.usage);
+            this.addLog(`📊 Updated usage: ${accountName} - ${status.usage.currentUsage}/${status.usage.usageLimit}`);
           }
         } else if (status.isBanned) {
           banned++;

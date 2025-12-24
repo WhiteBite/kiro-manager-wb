@@ -54,6 +54,11 @@ export const ru: Translations = {
   byDate: 'По дате',
   searchPlaceholder: 'Поиск аккаунтов...',
   newBadge: 'НОВЫЙ',
+  filterByTokens: 'Фильтр',
+  fresh: 'Свежие',
+  partial: 'Частично',
+  trial: 'Пробные',
+  empty: 'Пустые',
 
   // Account card
   active: 'Активен',
@@ -342,4 +347,20 @@ export const ru: Translations = {
   weeklyUsage: 'За неделю',
   avgPerAccount: 'Среднее на аккаунт',
   accountHealth: 'Состояние аккаунтов',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Стратегия регистрации',
+  registrationStrategyDesc: 'Выберите способ регистрации (влияет на риск бана)',
+  strategyWebView: 'WebView (Рекомендуется)',
+  strategyWebViewDesc: 'Открывает реальный браузер, вы вводите данные вручную. Минимальный риск бана.',
+  strategyWebViewBanRisk: 'Низкий риск бана (<10%)',
+  strategyAutomated: 'Автоматическая (Legacy)',
+  strategyAutomatedDesc: 'Автоматизированный браузер через DrissionPage. Работает для некоторых.',
+  strategyAutomatedBanRisk: 'Средний-Высокий риск бана (40-90%)',
+  deferQuotaCheck: 'Отложить проверку квоты',
+  deferQuotaCheckDesc: 'НЕ проверять квоту сразу после регистрации (снижает риск бана)',
+  manualInputRequired: 'Требуется ручной ввод',
+  lowBanRisk: 'Низкий риск бана',
+  mediumBanRisk: 'Средний риск бана',
+  highBanRisk: 'Высокий риск бана',
 };

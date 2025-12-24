@@ -349,6 +349,61 @@ export const layout = `
     display: flex;
   }
 
+  /* === Token Filters === */
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .filter-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .filter-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    font-family: inherit;
+    background: var(--bg-elevated);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .filter-btn:hover {
+    background: var(--input-bg);
+    border-color: var(--accent);
+    color: var(--fg);
+  }
+  .filter-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  
+  /* Responsive filters for narrow screens */
+  @media (max-width: 350px) {
+    .filter-label {
+      width: 100%;
+      margin-bottom: 2px;
+    }
+    .filter-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 6px;
+      font-size: 9px;
+    }
+  }
+
   /* === Account List === */
   .list {
     flex: 1;
@@ -1940,5 +1995,81 @@ export const statsStyles = `
     font-weight: 600;
     width: 32px;
     text-align: right;
+  }
+
+
+  /* === Strategy Selection === */
+  .strategy-option {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 2px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    margin-bottom: 12px;
+  }
+  .strategy-option:hover {
+    border-color: var(--accent);
+    background: var(--glass-bg);
+  }
+  .strategy-option.selected {
+    border-color: var(--accent);
+    background: rgba(63, 182, 139, 0.05);
+  }
+  .strategy-option input[type="radio"] {
+    margin-top: 2px;
+    cursor: pointer;
+  }
+  .strategy-content {
+    flex: 1;
+  }
+  .strategy-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .strategy-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .strategy-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .strategy-risk {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* === Badge === */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+  }
+  .badge-warning {
+    background: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+  }
+  .badge-danger {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+  }
+  .badge-info {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
   }
 `;

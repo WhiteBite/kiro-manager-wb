@@ -54,6 +54,11 @@ export const pt: Translations = {
   byDate: 'Por Data',
   searchPlaceholder: 'Pesquisar contas...',
   newBadge: 'NOVO',
+  filterByTokens: 'Filtrar',
+  fresh: 'Novas',
+  partial: 'Parcial',
+  trial: 'Teste',
+  empty: 'Vazias',
 
   // Account card
   active: 'Ativa',
@@ -342,4 +347,20 @@ export const pt: Translations = {
   weeklyUsage: 'Uso semanal',
   avgPerAccount: 'Média por conta',
   accountHealth: 'Saúde das contas',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Estratégia de registro',
+  registrationStrategyDesc: 'Escolha como registrar contas (afeta risco de banimento)',
+  strategyWebView: 'WebView (Recomendado)',
+  strategyWebViewDesc: 'Abre navegador real, entrada manual. Risco mínimo de banimento.',
+  strategyWebViewBanRisk: 'Baixo risco de banimento (<10%)',
+  strategyAutomated: 'Automatizado (Legacy)',
+  strategyAutomatedDesc: 'Navegador automatizado com DrissionPage. Funciona para alguns.',
+  strategyAutomatedBanRisk: 'Risco médio-alto de banimento (40-90%)',
+  manualInputRequired: 'Entrada manual necessária',
+  deferQuotaCheck: 'Adiar verificação de cota',
+  deferQuotaCheckDesc: 'Não verificar cota imediatamente após registro (reduz risco de banimento)',
+  lowBanRisk: 'Baixo risco de banimento',
+  mediumBanRisk: 'Risco médio de banimento',
+  highBanRisk: 'Alto risco de banimento',
 };

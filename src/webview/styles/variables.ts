@@ -1,6 +1,6 @@
 /**
  * CSS Variables - Design tokens
- * Fixed dark theme - same everywhere (VS Code extension & standalone)
+ * Fixed dark theme - same everywhere (VS Code extension & standalone & Kiro Desktop)
  */
 
 export const variables = `
@@ -56,5 +56,17 @@ export const variables = `
     --z-modal: 200;
     --z-dialog: 300;
     --z-toast: 400;
+    
+    /* VS Code variable fallbacks for Kiro Desktop compatibility */
+    --vscode-foreground: #cccccc;
+    --vscode-sideBar-background: #1e1e1e;
+    --vscode-input-background: #3c3c3c;
+    --vscode-input-foreground: #cccccc;
+    --vscode-dropdown-background: #3c3c3c;
+    --vscode-dropdown-foreground: #cccccc;
+    --vscode-terminal-background: #1e1e1e;
+    --vscode-editorWidget-background: #252526;
+    --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --vscode-editor-font-family: 'Consolas', 'Courier New', monospace;
   }
 `;

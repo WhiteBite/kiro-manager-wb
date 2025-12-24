@@ -54,6 +54,11 @@ export const ko: Translations = {
   byDate: '날짜순',
   searchPlaceholder: '계정 검색...',
   newBadge: '새로운',
+  filterByTokens: '필터',
+  fresh: '새 계정',
+  partial: '부분',
+  trial: '체험판',
+  empty: '비어있음',
 
   // Account card
   active: '활성',
@@ -342,4 +347,20 @@ export const ko: Translations = {
   weeklyUsage: '주간 사용량',
   avgPerAccount: '계정당 평균',
   accountHealth: '계정 상태',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: '등록 전략',
+  registrationStrategyDesc: '계정 등록 방법 선택 (차단 위험에 영향)',
+  strategyWebView: 'WebView (권장)',
+  strategyWebViewDesc: '실제 브라우저 열기, 수동 입력. 최소 차단 위험.',
+  strategyWebViewBanRisk: '낮은 차단 위험 (<10%)',
+  strategyAutomated: '자동화 (레거시)',
+  strategyAutomatedDesc: 'DrissionPage로 자동화된 브라우저. 일부 사용자에게 작동.',
+  strategyAutomatedBanRisk: '중간-높은 차단 위험 (40-90%)',
+  manualInputRequired: '수동 입력 필요',
+  deferQuotaCheck: '할당량 확인 연기',
+  deferQuotaCheckDesc: '등록 직후 할당량 확인 안 함 (차단 위험 감소)',
+  lowBanRisk: '낮은 차단 위험',
+  mediumBanRisk: '중간 차단 위험',
+  highBanRisk: '높은 차단 위험',
 };

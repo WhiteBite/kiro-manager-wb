@@ -9,6 +9,8 @@ export interface AutoRegSettings {
   spoofing: boolean;
   deviceFlow: boolean;
   autoSwitchThreshold?: number;
+  strategy?: 'webview' | 'automated';
+  deferQuotaCheck?: boolean;
 }
 
 export interface RegProgress {

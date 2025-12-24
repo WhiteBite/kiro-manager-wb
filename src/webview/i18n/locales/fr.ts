@@ -54,6 +54,11 @@ export const fr: Translations = {
   byDate: 'Par Date',
   searchPlaceholder: 'Rechercher des comptes...',
   newBadge: 'NOUVEAU',
+  filterByTokens: 'Filtrer',
+  fresh: 'Nouveaux',
+  partial: 'Partiel',
+  trial: 'Essai',
+  empty: 'Vides',
 
   // Account card
   active: 'Actif',
@@ -342,4 +347,20 @@ export const fr: Translations = {
   weeklyUsage: 'Utilisation hebdomadaire',
   avgPerAccount: 'Moyenne par compte',
   accountHealth: 'Santé des comptes',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Stratégie d\'inscription',
+  registrationStrategyDesc: 'Choisissez comment inscrire les comptes (affecte le risque de bannissement)',
+  strategyWebView: 'WebView (Recommandé)',
+  strategyWebViewDesc: 'Ouvre un vrai navigateur, saisie manuelle. Risque minimal de bannissement.',
+  strategyWebViewBanRisk: 'Faible risque de bannissement (<10%)',
+  strategyAutomated: 'Automatisé (Legacy)',
+  strategyAutomatedDesc: 'Navigateur automatisé avec DrissionPage. Fonctionne pour certains.',
+  strategyAutomatedBanRisk: 'Risque moyen-élevé de bannissement (40-90%)',
+  manualInputRequired: 'Saisie manuelle requise',
+  deferQuotaCheck: 'Différer la vérification du quota',
+  deferQuotaCheckDesc: 'Ne pas vérifier le quota immédiatement après l\'inscription (réduit le risque de bannissement)',
+  lowBanRisk: 'Faible risque de bannissement',
+  mediumBanRisk: 'Risque moyen de bannissement',
+  highBanRisk: 'Risque élevé de bannissement',
 };

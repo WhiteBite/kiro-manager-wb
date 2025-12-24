@@ -54,6 +54,11 @@ export const zh: Translations = {
   byDate: '按日期',
   searchPlaceholder: '搜索账户...',
   newBadge: '新',
+  filterByTokens: '筛选',
+  fresh: '全新',
+  partial: '部分',
+  trial: '试用',
+  empty: '空',
 
   // Account card
   active: '活动',
@@ -342,4 +347,20 @@ export const zh: Translations = {
   weeklyUsage: '每周使用量',
   avgPerAccount: '每账户平均',
   accountHealth: '账户健康',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: '注册策略',
+  registrationStrategyDesc: '选择注册方式（影响封禁风险）',
+  strategyWebView: 'WebView（推荐）',
+  strategyWebViewDesc: '打开真实浏览器，手动输入凭据。封禁风险最低。',
+  strategyWebViewBanRisk: '低封禁风险（<10%）',
+  strategyAutomated: '自动化（旧版）',
+  strategyAutomatedDesc: '使用DrissionPage自动化浏览器。对部分用户有效。',
+  strategyAutomatedBanRisk: '中高封禁风险（40-90%）',
+  manualInputRequired: '需要手动输入',
+  deferQuotaCheck: '延迟配额检查',
+  deferQuotaCheckDesc: '注册后不立即检查配额（降低封禁风险）',
+  lowBanRisk: '低封禁风险',
+  mediumBanRisk: '中等封禁风险',
+  highBanRisk: '高封禁风险',
 };

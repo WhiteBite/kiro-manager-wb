@@ -28,6 +28,7 @@ export const ICONS = {
   plus: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7 7V1h2v6h6v2H9v6H7V9H1V7h6z"/></svg>`,
   import: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10L3 5h3V1h4v4h3l-5 5zm6 3v1H2v-1h12z"/></svg>`,
   search: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l4 4 1.4-1.4-4-4zM6 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>`,
+  filter: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1l-5 5v5l-4 1V8L1 3V2zm1.5 1l4.5 4.5V13l2-.5V7.5L13.5 3h-11z"/></svg>`,
   file: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1H3v14h10V5l-4-4zm3 13H4V2h4v4h4v8z"/></svg>`,
   users: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-1a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm6 1a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-6 2c-3 0-5 1.5-5 3v1h10v-1c0-1.5-2-3-5-3zm6 0c-.5 0-1 .1-1.4.2.9.7 1.4 1.6 1.4 2.8v1h4v-1c0-1.5-1.5-3-4-3z"/></svg>`,
 } as const;

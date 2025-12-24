@@ -54,6 +54,11 @@ export const de: Translations = {
   byDate: 'Nach Datum',
   searchPlaceholder: 'Konten suchen...',
   newBadge: 'NEU',
+  filterByTokens: 'Filter',
+  fresh: 'Neu',
+  partial: 'Teilweise',
+  trial: 'Test',
+  empty: 'Leer',
 
   // Account card
   active: 'Aktiv',
@@ -342,4 +347,20 @@ export const de: Translations = {
   weeklyUsage: 'Wöchentliche Nutzung',
   avgPerAccount: 'Durchschnitt pro Konto',
   accountHealth: 'Kontostatus',
+
+  // Registration Strategies (Anti-Ban)
+  registrationStrategy: 'Registrierungsstrategie',
+  registrationStrategyDesc: 'Wählen Sie die Registrierungsmethode (beeinflusst Sperrrisiko)',
+  strategyWebView: 'WebView (Empfohlen)',
+  strategyWebViewDesc: 'Öffnet echten Browser, manuelle Eingabe. Minimales Sperrrisiko.',
+  strategyWebViewBanRisk: 'Niedriges Sperrrisiko (<10%)',
+  strategyAutomated: 'Automatisiert (Legacy)',
+  strategyAutomatedDesc: 'Automatisierter Browser mit DrissionPage. Funktioniert bei einigen.',
+  strategyAutomatedBanRisk: 'Mittleres-Hohes Sperrrisiko (40-90%)',
+  manualInputRequired: 'Manuelle Eingabe erforderlich',
+  deferQuotaCheck: 'Kontingentprüfung verzögern',
+  deferQuotaCheckDesc: 'Kontingent nicht sofort nach Registrierung prüfen (reduziert Sperrrisiko)',
+  lowBanRisk: 'Niedriges Sperrrisiko',
+  mediumBanRisk: 'Mittleres Sperrrisiko',
+  highBanRisk: 'Hohes Sperrrisiko',
 };

@@ -25,6 +25,16 @@ export function renderToolbar({ isRunning, t }: ToolbarProps): string {
           <button class="search-clear" onclick="clearSearch()">×</button>
         </div>
       </div>
+      <div class="toolbar-row">
+        <div class="filter-group">
+          <span class="filter-label">${ICONS.filter} ${t.filterByTokens || 'Filter'}:</span>
+          <button class="filter-btn active" data-filter="all" onclick="filterByTokens('all')">${t.all || 'All'}</button>
+          <button class="filter-btn" data-filter="fresh" onclick="filterByTokens('fresh')">🟢 ${t.fresh || 'Fresh'} (500)</button>
+          <button class="filter-btn" data-filter="partial" onclick="filterByTokens('partial')">🟡 ${t.partial || 'Partial'} (1-499)</button>
+          <button class="filter-btn" data-filter="trial" onclick="filterByTokens('trial')">🔵 ${t.trial || 'Trial'} (50)</button>
+          <button class="filter-btn" data-filter="empty" onclick="filterByTokens('empty')">⚫ ${t.empty || 'Empty'} (0)</button>
+        </div>
+      </div>
       <div class="bulk-actions-bar hidden" id="bulkActionsBar">
         <div class="bulk-info">
           <span class="bulk-count" id="bulkCount">0</span> ${t.selected}

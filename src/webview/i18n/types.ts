@@ -71,6 +71,11 @@ export interface Translations {
   byDate: string;
   searchPlaceholder: string;
   newBadge: string;
+  filterByTokens: string;
+  fresh: string;
+  partial: string;
+  trial: string;
+  empty: string;
 
   // ============================================
   // Account card
@@ -411,4 +416,22 @@ export interface Translations {
   weeklyUsage: string;
   avgPerAccount: string;
   accountHealth: string;
+
+  // ============================================
+  // Registration Strategies (Anti-Ban)
+  // ============================================
+  registrationStrategy: string;
+  registrationStrategyDesc: string;
+  strategyWebView: string;
+  strategyWebViewDesc: string;
+  strategyWebViewBanRisk: string;
+  strategyAutomated: string;
+  strategyAutomatedDesc: string;
+  strategyAutomatedBanRisk: string;
+  deferQuotaCheck: string;
+  deferQuotaCheckDesc: string;
+  manualInputRequired: string;
+  lowBanRisk: string;
+  mediumBanRisk: string;
+  highBanRisk: string;
 }
