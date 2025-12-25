@@ -946,6 +946,13 @@ export async function deleteAccount(accountName: string, skipConfirm: boolean = 
 }
 
 // Check account health status by attempting a token refresh
+export interface AccountUsageInfo {
+  currentUsage: number;
+  usageLimit: number;
+  percentageUsed: number;
+  daysRemaining: number;
+}
+
 export interface AccountHealthStatus {
   accountName: string;
   isHealthy: boolean;
@@ -954,6 +961,7 @@ export interface AccountHealthStatus {
   hasCredentials: boolean;
   error?: OIDCErrorType;
   errorMessage?: string;
+  usage?: AccountUsageInfo;
 }
 
 export async function checkAccountHealth(accountName: string): Promise<AccountHealthStatus> {
