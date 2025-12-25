@@ -72,17 +72,16 @@ class KiroPatcherService:
     
     @property
     def kiro_install_path(self) -> Optional[Path]:
-        """Путь установки Kiro"""
+        """Путь установки Kiro (cross-platform)"""
         if self._kiro_path:
             return self._kiro_path
         
-        # Windows default path
-        local_app_data = os.environ.get('LOCALAPPDATA', '')
-        if local_app_data:
-            path = Path(local_app_data) / 'Programs' / 'Kiro'
-            if path.exists():
-                self._kiro_path = path
-                return path
+        # Use cross-platform path detection from kiro_config
+        from core.kiro_config import get_kiro_install_path
+        path = get_kiro_install_path()
+        if path:
+            self._kiro_path = path
+            return path
         
         return None
     
