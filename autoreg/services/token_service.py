@@ -90,7 +90,7 @@ class TokenService:
         """
         Сохранить токен.
         
-        ВАЖНО: Автоматически добавляет idp если его нет (для Web Portal API).
+        ВАЖНО: Автоматически добавляет idp и _machineId если их нет.
         """
         if name is None:
             name = data.get('accountName', 'unknown')
@@ -114,6 +114,10 @@ class TokenService:
                 data['idp'] = 'Github'
             else:
                 data['idp'] = 'Google'  # По умолчанию
+        
+        # ANTI-BAN: Добавляем _machineId если его нет
+        if '_machineId' not in data:
+            data['_machineId'] = get_machine_id()
         
         filepath.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         return filepath

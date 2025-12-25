@@ -176,6 +176,8 @@ class OAuthDevice:
     def _save_token(self, token_data: Dict, account_name: str) -> str:
         """Save token to file"""
         import re
+        from core.kiro_config import get_machine_id
+        
         timestamp = int(datetime.now().timestamp() * 1000)
         safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', account_name)
         filename = f"token-BuilderId-IdC-{safe_name}-{timestamp}.json"
@@ -185,6 +187,9 @@ class OAuthDevice:
         expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat() + 'Z'
         
         client_id_hash = get_client_id_hash(START_URL)
+        
+        # ВАЖНО: Сохраняем machine ID который использовался при регистрации!
+        current_machine_id = get_machine_id()
         
         token_file = {
             "accessToken": token_data.get('accessToken', token_data.get('access_token')),
@@ -198,7 +203,8 @@ class OAuthDevice:
             "region": OIDC_REGION,
             "createdAt": datetime.now().isoformat(),
             "_clientId": self.client_id,
-            "_clientSecret": self.client_secret
+            "_clientSecret": self.client_secret,
+            "_machineId": current_machine_id  # ANTI-BAN: сохраняем machine ID!
         }
         
         filepath.write_text(json.dumps(token_file, indent=2))

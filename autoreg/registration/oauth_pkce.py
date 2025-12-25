@@ -322,6 +322,10 @@ class OAuthPKCE:
         # Calculate clientIdHash (динамически как в Kiro IDE)
         client_id_hash = get_client_id_hash(START_URL)
         
+        # ВАЖНО: Сохраняем machine ID который использовался при регистрации!
+        # Это нужно чтобы при переключении на аккаунт использовался тот же ID
+        current_machine_id = get_machine_id()
+        
         token_file = {
             "accessToken": token_data.get('accessToken', token_data.get('access_token')),
             "refreshToken": token_data.get('refreshToken', token_data.get('refresh_token')),
@@ -334,7 +338,8 @@ class OAuthPKCE:
             "region": OIDC_REGION,
             "createdAt": datetime.now().isoformat(),
             "_clientId": self.client_id,
-            "_clientSecret": self.client_secret
+            "_clientSecret": self.client_secret,
+            "_machineId": current_machine_id  # ANTI-BAN: сохраняем machine ID!
         }
         
         filepath.write_text(json.dumps(token_file, indent=2))

@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.config import get_config
-from core.kiro_config import get_kiro_user_agent, get_kiro_scopes
+from core.kiro_config import get_kiro_user_agent, get_kiro_scopes, get_machine_id
 from core.exceptions import AuthError
 
 
@@ -381,7 +381,8 @@ class SsoImportService:
             "_clientId": result.client_id,
             "_clientSecret": result.client_secret,
             "_importedAt": datetime.now().isoformat(),
-            "_importMethod": "sso_cookie"
+            "_importMethod": "sso_cookie",
+            "_machineId": get_machine_id()  # ANTI-BAN: сохраняем machine ID!
         }
         
         saved_path = token_service.save_token(token_data, result.email.split("@")[0])

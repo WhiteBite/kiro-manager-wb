@@ -7,8 +7,15 @@ Kiro Web Portal API Client (CBOR RPC).
 
 import requests
 import logging
+import sys
+from pathlib import Path
 from typing import Dict, Any, Optional
-from ..core.cbor_utils import cbor_encode, cbor_decode
+
+# Ensure autoreg is in path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from core.cbor_utils import cbor_encode, cbor_decode
+from core.kiro_config import get_kiro_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +80,13 @@ class KiroWebPortalClient:
         except Exception as e:
             raise ValueError(f"Failed to encode request: {e}")
         
-        # Headers (имитируем браузер)
+        # Headers (имитируем Kiro IDE)
         headers = {
             'Content-Type': 'application/cbor',
             'Accept': 'application/cbor',
             'smithy-protocol': 'rpc-v2-cbor',  # КРИТИЧНО!
             'authorization': f'Bearer {access_token}',
+            'User-Agent': get_kiro_user_agent(),  # ВАЖНО для anti-detection!
         }
         
         # Cookie auth (как браузер!)
@@ -308,7 +316,8 @@ class KiroWebPortalClient:
         headers = {
             'Content-Type': 'application/cbor',
             'Accept': 'application/cbor',
-            'smithy-protocol': 'rpc-v2-cbor'
+            'smithy-protocol': 'rpc-v2-cbor',
+            'User-Agent': get_kiro_user_agent()
         }
         
         response = self.session.post(url, data=body, headers=headers, timeout=self.timeout)
@@ -359,7 +368,8 @@ class KiroWebPortalClient:
         headers = {
             'Content-Type': 'application/cbor',
             'Accept': 'application/cbor',
-            'smithy-protocol': 'rpc-v2-cbor'
+            'smithy-protocol': 'rpc-v2-cbor',
+            'User-Agent': get_kiro_user_agent()
         }
         
         response = self.session.post(url, data=body, headers=headers, timeout=self.timeout)

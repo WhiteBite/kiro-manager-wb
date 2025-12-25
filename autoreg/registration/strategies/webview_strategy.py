@@ -27,6 +27,7 @@ import logging
 from ..auth_strategy import RegistrationStrategy
 from ..oauth_callback_server import OAuthCallbackServer
 from ...core.proxy_checker import ProxyChecker
+from ...core.kiro_config import get_kiro_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +326,8 @@ class WebViewRegistrationStrategy(RegistrationStrategy):
                 json=data,
                 headers={
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    "User-Agent": get_kiro_user_agent()
                 },
                 timeout=30
             )

@@ -271,15 +271,7 @@ def authorize_via_webview(provider: str = 'Google', region: str = 'us-east-1') -
     
     try:
         import requests
-        
-        # Получаем machine ID
-        paths = get_paths()
-        machine_id_file = paths.data_dir / 'machine-id.txt'
-        if machine_id_file.exists():
-            machine_id = machine_id_file.read_text().strip()
-        else:
-            import uuid
-            machine_id = str(uuid.uuid4())
+        from core.kiro_config import get_kiro_user_agent
         
         # Обмениваем code на token
         response = requests.post(
@@ -292,7 +284,7 @@ def authorize_via_webview(provider: str = 'Google', region: str = 'us-east-1') -
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': f'KiroIDE-0.6.18-{machine_id}'
+                'User-Agent': get_kiro_user_agent()  # Динамический User-Agent!
             },
             timeout=30
         )
