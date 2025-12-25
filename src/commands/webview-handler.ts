@@ -295,5 +295,22 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
     case 'getLLMServerStatus':
       await provider.getLLMServerStatus();
       break;
+
+    // === Scheduled Registration ===
+    case 'updateScheduledRegSetting':
+      await provider.updateScheduledRegSetting(msg.key as string, msg.value as string | number | boolean);
+      break;
+
+    case 'startScheduledReg':
+      await provider.startScheduledReg();
+      break;
+
+    case 'stopScheduledReg':
+      await provider.stopScheduledReg();
+      break;
+
+    case 'resetScheduledReg':
+      await provider.resetScheduledReg();
+      break;
   }
 }

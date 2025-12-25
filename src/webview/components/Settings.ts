@@ -4,7 +4,7 @@
 
 import { ICONS } from '../icons';
 import { Translations } from '../i18n/types';
-import { AutoRegSettings } from '../types';
+import { AutoRegSettings, ProxyStatus } from '../types';
 import { Language } from '../i18n';
 
 export interface SettingsProps {
@@ -14,6 +14,7 @@ export interface SettingsProps {
   t: Translations;
   version: string;
   inline?: boolean; // Render without overlay wrapper (for tab navigation)
+  proxyStatus?: ProxyStatus;
 }
 
 function renderSpoofingSection(settings: AutoRegSettings | undefined, t: Translations): string {
@@ -101,6 +102,123 @@ function renderImportExportSection(t: Translations): string {
         <button class="btn btn-secondary" onclick="importAccounts()">
           📥 ${t.importAccounts}
         </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderProxySection(settings: AutoRegSettings | undefined, proxyStatus: ProxyStatus | undefined, t: Translations): string {
+  const status = proxyStatus?.status || 'not_configured';
+  const proxyAddress = settings?.proxyAddress || '';
+  const useProxy = settings?.useProxyForRegistration ?? false;
+
+  // Status indicator
+  let statusIcon = '⚪';
+  let statusText = t.proxyNotConfigured;
+  let statusClass = 'proxy-status-unknown';
+
+  if (proxyAddress) {
+    switch (status) {
+      case 'testing':
+        statusIcon = '🔄';
+        statusText = t.testingProxy;
+        statusClass = 'proxy-status-testing';
+        break;
+      case 'working':
+        statusIcon = '✅';
+        statusText = t.proxyWorking;
+        statusClass = 'proxy-status-working';
+        break;
+      case 'not_working':
+        statusIcon = '❌';
+        statusText = t.proxyNotWorking;
+        statusClass = 'proxy-status-error';
+        break;
+      default:
+        statusIcon = '⚪';
+        statusText = t.proxyNotConfigured;
+        statusClass = 'proxy-status-unknown';
+    }
+  }
+
+  // Additional info for working proxy
+  let proxyInfo = '';
+  if (status === 'working' && proxyStatus) {
+    const parts = [];
+    if (proxyStatus.ip) {
+      parts.push(`${t.proxyIpAddress}: ${proxyStatus.ip}`);
+    }
+    if (proxyStatus.responseTime) {
+      parts.push(`${t.proxyResponseTime}: ${proxyStatus.responseTime.toFixed(2)}s`);
+    }
+    if (parts.length > 0) {
+      proxyInfo = `<div class="proxy-info">${parts.join(' • ')}</div>`;
+    }
+  }
+
+  // Error info
+  let errorInfo = '';
+  if (status === 'not_working' && proxyStatus?.error) {
+    errorInfo = `<div class="proxy-error">${proxyStatus.error}</div>`;
+  }
+
+  return `
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-card-icon">🌐</span>
+        <span class="settings-card-title">${t.proxySettings}</span>
+        <div class="proxy-status-badge ${statusClass}">
+          <span>${statusIcon}</span>
+          <span>${statusText}</span>
+        </div>
+      </div>
+      <div class="settings-card-body">
+        <div class="setting-desc" style="margin-bottom: 12px;">${t.proxySettingsDesc}</div>
+        
+        <!-- Proxy Address Input -->
+        <div class="form-group">
+          <label class="form-label">${t.proxyAddress}</label>
+          <div class="proxy-input-row">
+            <input 
+              type="text" 
+              class="form-input proxy-input" 
+              id="proxyAddressInput"
+              placeholder="${t.proxyAddressPlaceholder}"
+              value="${proxyAddress}"
+              onchange="updateProxyAddress(this.value)"
+            />
+            <button 
+              class="btn btn-secondary" 
+              id="testProxyBtn"
+              onclick="testProxy()"
+              ${!proxyAddress ? 'disabled' : ''}
+              ${status === 'testing' ? 'disabled' : ''}
+            >
+              ${status === 'testing' ? `<span class="spinner"></span> ${t.testingProxy}` : `🔍 ${t.testProxy}`}
+            </button>
+          </div>
+          <div class="form-hint">${t.proxyUrlHint}</div>
+          ${proxyInfo}
+          ${errorInfo}
+        </div>
+        
+        <!-- Use Proxy for Registration -->
+        <div class="setting-row" style="margin-top: 16px;">
+          <div>
+            <div class="setting-label">${t.useProxyForRegistration}</div>
+            <div class="setting-desc">${t.useProxyForRegistrationDesc}</div>
+          </div>
+          <label class="toggle">
+            <input 
+              type="checkbox" 
+              id="useProxyToggle"
+              ${useProxy ? 'checked' : ''} 
+              ${!proxyAddress ? 'disabled' : ''}
+              onchange="toggleSetting('useProxyForRegistration', this.checked)"
+            >
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
     </div>
   `;
@@ -232,33 +350,70 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
       <div class="settings-card-body">
         <div class="setting-desc" style="margin-bottom: 16px;">${t.registrationStrategyDesc}</div>
         
-        <!-- WebView Strategy -->
-        <div class="strategy-option ${settings?.strategy === 'webview' || !settings?.strategy ? 'selected' : ''}" onclick="selectStrategy('webview')">
-          <input type="radio" name="strategy" value="webview" ${settings?.strategy === 'webview' || !settings?.strategy ? 'checked' : ''}>
+        <!-- WebView Strategy (Safe) -->
+        <div class="strategy-option strategy-safe ${settings?.strategy === 'webview' ? 'selected' : ''}" onclick="selectRegistrationStrategy('webview')">
+          <div class="strategy-icon-wrapper strategy-icon-safe">
+            <span class="strategy-icon">🌐</span>
+          </div>
+          <input type="radio" name="strategy" value="webview" ${settings?.strategy === 'webview' || !settings?.strategy ? 'checked' : ''} style="display: none;">
           <div class="strategy-content">
             <div class="strategy-header">
               <strong>${t.strategyWebView}</strong>
-              <span class="badge badge-success">${t.lowBanRisk}</span>
+              <span class="badge badge-success">✓ ${t.lowBanRisk}</span>
             </div>
             <div class="strategy-desc">${t.strategyWebViewDesc}</div>
-            <div class="strategy-meta">
-              <span class="badge badge-warning">${t.manualInputRequired}</span>
-              <span class="strategy-risk">${t.strategyWebViewBanRisk}</span>
+            <div class="strategy-features">
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>${t.strategyWebViewFeature1}</span>
+              </div>
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>${t.strategyWebViewFeature2}</span>
+              </div>
+              <div class="strategy-feature feature-con">
+                <span class="feature-icon">!</span>
+                <span>${t.manualInputRequired}</span>
+              </div>
+            </div>
+            <div class="strategy-risk-bar">
+              <div class="risk-label">${t.banRiskLabel}:</div>
+              <div class="risk-meter">
+                <div class="risk-fill risk-low" style="width: 10%;"></div>
+              </div>
+              <div class="risk-value risk-low-text">&lt;10%</div>
             </div>
           </div>
         </div>
         
-        <!-- Automated Strategy -->
-        <div class="strategy-option ${settings?.strategy === 'automated' ? 'selected' : ''}" onclick="selectStrategy('automated')">
-          <input type="radio" name="strategy" value="automated" ${settings?.strategy === 'automated' ? 'checked' : ''}>
+        <!-- Automated Strategy (Risky) -->
+        <div class="strategy-option strategy-risky ${settings?.strategy === 'automated' || !settings?.strategy ? 'selected' : ''}" onclick="selectRegistrationStrategy('automated')">
+          <div class="strategy-icon-wrapper strategy-icon-risky">
+            <span class="strategy-icon">🤖</span>
+          </div>
+          <input type="radio" name="strategy" value="automated" ${settings?.strategy === 'automated' ? 'checked' : ''} style="display: none;">
           <div class="strategy-content">
             <div class="strategy-header">
               <strong>${t.strategyAutomated}</strong>
-              <span class="badge badge-danger">${t.mediumBanRisk}</span>
+              <span class="badge badge-danger">⚠ ${t.highBanRisk}</span>
             </div>
             <div class="strategy-desc">${t.strategyAutomatedDesc}</div>
-            <div class="strategy-meta">
-              <span class="strategy-risk">${t.strategyAutomatedBanRisk}</span>
+            <div class="strategy-features">
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>${t.strategyAutomatedFeature1}</span>
+              </div>
+              <div class="strategy-feature feature-con">
+                <span class="feature-icon">⚠</span>
+                <span>${t.strategyAutomatedFeature2}</span>
+              </div>
+            </div>
+            <div class="strategy-risk-bar">
+              <div class="risk-label">${t.banRiskLabel}:</div>
+              <div class="risk-meter">
+                <div class="risk-fill risk-high" style="width: 70%;"></div>
+              </div>
+              <div class="risk-value risk-high-text">40-90%</div>
             </div>
           </div>
         </div>
@@ -273,6 +428,19 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
             <input type="checkbox" ${settings?.deferQuotaCheck !== false ? 'checked' : ''} onchange="toggleSetting('deferQuotaCheck', this.checked)">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+        
+        <!-- OAuth Provider (only for WebView) -->
+        <div id="oauthProviderOption" class="setting-row" style="margin-top: 16px; ${settings?.strategy === 'webview' || !settings?.strategy ? '' : 'display: none;'}">
+          <div>
+            <div class="setting-label">${t.oauthProvider}</div>
+            <div class="setting-desc">${t.oauthProviderDesc}</div>
+          </div>
+          <select class="select" id="oauthProviderSelect" onchange="updateSetting('oauthProvider', this.value)">
+            <option value="ask" ${!settings?.oauthProvider || settings?.oauthProvider === 'ask' ? 'selected' : ''}>${t.oauthProviderAsk}</option>
+            <option value="Google" ${settings?.oauthProvider === 'Google' ? 'selected' : ''}>${t.oauthProviderGoogle}</option>
+            <option value="Github" ${settings?.oauthProvider === 'Github' ? 'selected' : ''}>${t.oauthProviderGithub}</option>
+          </select>
         </div>
       </div>
     </div>

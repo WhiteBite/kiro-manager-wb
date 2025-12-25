@@ -27,5 +27,8 @@ anyio>=4.0.0
 # Async file operations (for LLM API)
 aiofiles>=23.0.0
 
+# WebView for manual OAuth (low ban risk)
+pywebview>=5.0.0
+
 # Optional: Playwright (если нужен fallback)
 # playwright>=1.40.0

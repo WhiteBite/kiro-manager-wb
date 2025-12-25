@@ -14,7 +14,7 @@ import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
 import { autoregProcess, llmServerProcess } from '../process-manager';
-import { getAutoregDir } from '../commands/autoreg';
+import { getAutoregDir, runAutoReg } from '../commands/autoreg';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 import { ImapProfileProvider } from './ImapProfileProvider';
 import { getLogService, LogService } from '../services/LogService';
@@ -914,13 +914,16 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       spoofing: config.get<boolean>('autoreg.spoofing', true),
       deviceFlow: config.get<boolean>('autoreg.deviceFlow', false),
       autoSwitchThreshold: config.get<number>('autoSwitch.usageThreshold', 50),
-      strategy: config.get<'webview' | 'automated'>('autoreg.strategy', 'webview'),
+      strategy: config.get<'webview' | 'automated'>('autoreg.strategy', 'automated'),
       deferQuotaCheck: config.get<boolean>('autoreg.deferQuotaCheck', true)
     };
 
     // Get active IMAP profile for Hero display
     const profileProvider = this.getProfileProvider();
     const activeProfile = profileProvider?.getActive() || null;
+
+    // Get scheduled registration settings
+    const scheduledRegSettings = this.getScheduledRegSettings();
 
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({
       accounts: this._accounts,
@@ -932,7 +935,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       version: this._version,
       language: this._language,
       availableUpdate: this._availableUpdate,
-      activeProfile
+      activeProfile,
+      scheduledRegSettings
     }));
 
     this._view.webview.html = html;
@@ -992,12 +996,19 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
     const provider = this.getProfileProvider();
     const profiles = provider.getAll();
-    const activeId = provider.getActive()?.id;
+    const activeProfile = provider.getActive();
+    const activeId = activeProfile?.id;
 
     this._view.webview.postMessage({
       type: 'profilesLoaded',
       profiles,
       activeProfileId: activeId
+    });
+
+    // Also send active profile for settings display
+    this._view.webview.postMessage({
+      type: 'activeProfileLoaded',
+      profile: activeProfile || null
     });
   }
 
@@ -1640,5 +1651,203 @@ except Exception as e:
         port: 8421
       }
     });
+  }
+
+  // === Scheduled Registration ===
+
+  private _scheduledRegTimer: NodeJS.Timeout | null = null;
+  private _scheduledRegSettings = {
+    enabled: false,
+    loginTemplate: 'Account_{N}',
+    currentNumber: 1,
+    interval: 0,
+    maxAccounts: 10,
+    registeredCount: 0,
+    isRunning: false,
+    nextRunAt: undefined as string | undefined
+  };
+
+  async updateScheduledRegSetting(key: string, value: string | number | boolean): Promise<void> {
+    const settings = this._scheduledRegSettings;
+
+    switch (key) {
+      case 'enabled':
+        settings.enabled = value as boolean;
+        break;
+      case 'loginTemplate':
+        settings.loginTemplate = value as string;
+        break;
+      case 'currentNumber':
+        settings.currentNumber = value as number;
+        break;
+      case 'interval':
+        settings.interval = value as number;
+        break;
+      case 'maxAccounts':
+        settings.maxAccounts = value as number;
+        break;
+    }
+
+    // Save to global state
+    this._context.globalState.update('scheduledRegSettings', settings);
+
+    // Send update to webview
+    this._sendScheduledRegState();
+  }
+
+  async startScheduledReg(): Promise<void> {
+    const settings = this._scheduledRegSettings;
+
+    if (!settings.enabled) {
+      this.addLog('⚠️ Scheduled registration is disabled');
+      return;
+    }
+
+    if (settings.registeredCount >= settings.maxAccounts) {
+      this.addLog('✓ Scheduled registration complete - max accounts reached');
+      return;
+    }
+
+    settings.isRunning = true;
+    this.addLog(`🚀 Starting scheduled registration (${settings.registeredCount}/${settings.maxAccounts})`);
+
+    // Run first registration immediately
+    await this._runScheduledRegistration();
+
+    // If interval > 0, schedule next runs
+    if (settings.interval > 0 && settings.registeredCount < settings.maxAccounts) {
+      this._scheduleNextRun();
+    }
+  }
+
+  async stopScheduledReg(): Promise<void> {
+    const settings = this._scheduledRegSettings;
+    settings.isRunning = false;
+    settings.nextRunAt = undefined;
+
+    if (this._scheduledRegTimer) {
+      clearTimeout(this._scheduledRegTimer);
+      this._scheduledRegTimer = null;
+    }
+
+    // Also stop any running autoreg
+    this.stopAutoReg();
+
+    this.addLog('🛑 Scheduled registration stopped');
+    this._sendScheduledRegState();
+  }
+
+  async resetScheduledReg(): Promise<void> {
+    const settings = this._scheduledRegSettings;
+    settings.registeredCount = 0;
+    settings.currentNumber = 1;
+    settings.isRunning = false;
+    settings.nextRunAt = undefined;
+
+    if (this._scheduledRegTimer) {
+      clearTimeout(this._scheduledRegTimer);
+      this._scheduledRegTimer = null;
+    }
+
+    this._context.globalState.update('scheduledRegSettings', settings);
+    this.addLog('↺ Scheduled registration reset');
+    this._sendScheduledRegState();
+  }
+
+  private async _runScheduledRegistration(): Promise<void> {
+    const settings = this._scheduledRegSettings;
+
+    if (!settings.isRunning || settings.registeredCount >= settings.maxAccounts) {
+      settings.isRunning = false;
+      this._sendScheduledRegState();
+      return;
+    }
+
+    // Generate login name from template
+    const loginName = settings.loginTemplate
+      .replace('{N}', settings.currentNumber.toString().padStart(3, '0'))
+      .replace('{n}', settings.currentNumber.toString());
+
+    this.addLog(`📝 Registering account: ${loginName}`);
+
+    try {
+      // Set environment variable for login name
+      process.env.KIRO_LOGIN_NAME = loginName;
+
+      // Run registration
+      await runAutoReg(this._context, this, 1);
+
+      // Wait for registration to complete (check status periodically)
+      await this._waitForRegistrationComplete();
+
+      // Increment counters
+      settings.currentNumber++;
+      settings.registeredCount++;
+
+      this._context.globalState.update('scheduledRegSettings', settings);
+      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts}`);
+
+    } catch (err) {
+      this.addLog(`❌ Registration failed: ${err}`);
+    } finally {
+      delete process.env.KIRO_LOGIN_NAME;
+    }
+
+    // Schedule next if still running and not complete
+    if (settings.isRunning && settings.registeredCount < settings.maxAccounts && settings.interval > 0) {
+      this._scheduleNextRun();
+    } else if (settings.registeredCount >= settings.maxAccounts) {
+      settings.isRunning = false;
+      this.addLog('✓ Scheduled registration complete!');
+    }
+
+    this._sendScheduledRegState();
+  }
+
+  private _scheduleNextRun(): void {
+    const settings = this._scheduledRegSettings;
+    const intervalMs = settings.interval * 60 * 1000;
+
+    settings.nextRunAt = new Date(Date.now() + intervalMs).toISOString();
+    this._sendScheduledRegState();
+
+    this._scheduledRegTimer = setTimeout(async () => {
+      await this._runScheduledRegistration();
+    }, intervalMs);
+
+    this.addLog(`⏰ Next registration in ${settings.interval} minutes`);
+  }
+
+  private async _waitForRegistrationComplete(): Promise<void> {
+    // Wait for autoreg process to complete (max 10 minutes)
+    const maxWait = 10 * 60 * 1000;
+    const checkInterval = 2000;
+    let waited = 0;
+
+    while (waited < maxWait) {
+      if (!autoregProcess.isRunning) {
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      waited += checkInterval;
+    }
+
+    throw new Error('Registration timeout');
+  }
+
+  private _sendScheduledRegState(): void {
+    this._view?.webview.postMessage({
+      type: 'scheduledRegState',
+      state: this._scheduledRegSettings
+    });
+  }
+
+  getScheduledRegSettings() {
+    // Load from global state on init
+    const saved = this._context.globalState.get<typeof this._scheduledRegSettings>('scheduledRegSettings');
+    if (saved) {
+      this._scheduledRegSettings = { ...this._scheduledRegSettings, ...saved };
+    }
+    return this._scheduledRegSettings;
   }
 }

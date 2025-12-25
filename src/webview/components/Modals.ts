@@ -5,11 +5,11 @@
 import { Translations } from '../i18n/types';
 
 export interface ModalsProps {
-    t: Translations;
+  t: Translations;
 }
 
 function renderSsoModal(t: Translations): string {
-    return `
+  return `
     <div class="modal-overlay" id="ssoModal" onclick="if(event.target === this) closeSsoModal()">
       <div class="modal">
         <div class="modal-header">
@@ -27,14 +27,14 @@ function renderSsoModal(t: Translations): string {
 }
 
 function renderDeleteDialog(t: Translations): string {
-    return `
+  return `
     <div class="dialog-overlay" id="dialogOverlay" onclick="if(event.target === this) closeDialog()">
       <div class="dialog">
         <div class="dialog-title" id="dialogTitle">${t.deleteTitle}</div>
         <div class="dialog-text" id="dialogText">${t.deleteConfirm}</div>
         <div class="dialog-actions">
           <button class="btn btn-secondary" onclick="closeDialog()">${t.cancel}</button>
-          <button class="btn btn-danger" onclick="dialogAction()">${t.delete}</button>
+          <button class="btn btn-danger" id="dialogConfirmBtn" onclick="dialogAction()">${t.delete}</button>
         </div>
       </div>
     </div>
@@ -42,11 +42,11 @@ function renderDeleteDialog(t: Translations): string {
 }
 
 function renderToastContainer(): string {
-    return `<div class="toast-container" id="toastContainer"></div>`;
+  return `<div class="toast-container" id="toastContainer"></div>`;
 }
 
 export function renderModals({ t }: ModalsProps): string {
-    return `
+  return `
     ${renderSsoModal(t)}
     ${renderDeleteDialog(t)}
     ${renderToastContainer()}

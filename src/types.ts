@@ -118,6 +118,23 @@ export interface ImapProfile {
     currentIndex?: number;  // Current position in rotation
   };
 
+  // Registration settings (optional)
+  registration?: {
+    // Login name template with {N} placeholder for number
+    // Example: "MyAccount_{N}" -> "MyAccount_001", "MyAccount_002"
+    loginTemplate?: string;
+    // Starting number for {N}
+    startNumber?: number;
+    // Current number (auto-incremented)
+    currentNumber?: number;
+    // Scheduled registration interval in minutes (0 = manual only)
+    scheduleInterval?: number;
+    // Max accounts to register in scheduled mode
+    maxAccounts?: number;
+    // Is scheduled registration active
+    scheduleActive?: boolean;
+  };
+
   // Statistics
   stats: {
     registered: number;

@@ -110,6 +110,7 @@ export interface Translations {
   // Dialog
   // ============================================
   confirm: string;
+  apply: string;
   cancel: string;
   deleteTitle: string;
   deleteConfirm: string;
@@ -301,6 +302,19 @@ export interface Translations {
   proxySettings: string;
   proxySettingsDesc: string;
   proxyUrlHint: string;
+  proxyAddress: string;
+  proxyAddressPlaceholder: string;
+  testProxy: string;
+  testingProxy: string;
+  proxyWorking: string;
+  proxyNotWorking: string;
+  proxyNotConfigured: string;
+  proxyResponseTime: string;
+  proxyIpAddress: string;
+  useProxyForRegistration: string;
+  useProxyForRegistrationDesc: string;
+  proxyTestSuccess: string;
+  proxyTestFailed: string;
 
   // Other
   // ============================================
@@ -425,13 +439,69 @@ export interface Translations {
   strategyWebView: string;
   strategyWebViewDesc: string;
   strategyWebViewBanRisk: string;
+  strategyWebViewFeature1: string;
+  strategyWebViewFeature2: string;
   strategyAutomated: string;
   strategyAutomatedDesc: string;
   strategyAutomatedBanRisk: string;
+  strategyAutomatedFeature1: string;
+  strategyAutomatedFeature2: string;
   deferQuotaCheck: string;
   deferQuotaCheckDesc: string;
   manualInputRequired: string;
   lowBanRisk: string;
   mediumBanRisk: string;
   highBanRisk: string;
+  banRiskLabel: string;
+  auto: string;
+  manual: string;
+
+  // ============================================
+  // OAuth Provider Selection
+  // ============================================
+  oauthProvider: string;
+  oauthProviderDesc: string;
+  oauthProviderGoogle: string;
+  oauthProviderGithub: string;
+  oauthProviderAsk: string;
+  oauthProviderAskDesc: string;
+  selectOAuthProvider: string;
+  selectOAuthProviderDesc: string;
+
+  // ============================================
+  // Scheduled Registration
+  // ============================================
+  scheduledRegistration: string;
+  scheduledRegistrationDesc: string;
+  loginTemplate: string;
+  loginTemplatePlaceholder: string;
+  loginTemplateHint: string;
+  startNumber: string;
+  scheduleInterval: string;
+  scheduleIntervalManual: string;
+  scheduleIntervalMinutes: string;
+  maxAccounts: string;
+  maxAccountsHint: string;
+  startSchedule: string;
+  stopSchedule: string;
+  scheduleActive: string;
+  scheduleNextIn: string;
+  // Additional scheduled reg keys
+  complete: string;
+  preview: string;
+  nextNumber: string;
+  interval: string;
+  minutes: string;
+  hour: string;
+  hours: string;
+  startScheduled: string;
+  resetProgress: string;
+  // New UX improvements
+  noTimer: string;
+  noTimerHint: string;
+  custom: string;
+  upcoming: string;
+  startFrom: string;
+  enableFirst: string;
+  registerOne: string;
 }

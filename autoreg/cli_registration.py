@@ -180,6 +180,9 @@ def cmd_register_auto(args):
     Использует настроенную email стратегию (single/plus_alias/catch_all/pool).
     По умолчанию использует automated стратегию, но можно указать webview.
     """
+    import os
+    from core.email_generator import EmailGenerator
+    
     count = args.count or 1
     strategy_name = args.strategy or "automated"
     headless = args.headless
@@ -199,17 +202,73 @@ def cmd_register_auto(args):
         print("   Setting count to 1")
         count = 1
     
-    # Создаём стратегию
+    # Получаем email стратегию из окружения
+    email_strategy_type = os.environ.get('EMAIL_STRATEGY', 'single')
+    imap_user = os.environ.get('IMAP_USER', '')
+    email_domain = os.environ.get('EMAIL_DOMAIN', '')
+    
+    print(f"Email strategy: {email_strategy_type}")
+    print(f"IMAP user: {imap_user}")
+    if email_domain:
+        print(f"Email domain: {email_domain}")
+    
+    # Создаём email генератор
+    email_generator = EmailGenerator.from_env()
+    
+    # Генерируем email
+    email_result = email_generator.generate()
+    email = email_result.registration_email
+    display_name = email_result.display_name
+    print(f"Generated email: {email}")
+    print(f"Display name: {display_name}")
+    
+    # WebView стратегия - используем напрямую
     if strategy_name == "webview":
         strategy = StrategyFactory.create('webview')
-    else:
-        strategy = StrategyFactory.create(
-            'automated',
-            headless=headless,
-            check_quota_immediately=check_quota
-        )
+        
+        # Get OAuth provider from environment (set by VS Code extension)
+        oauth_provider = os.environ.get('OAUTH_PROVIDER', 'Google')
+        print(f"OAuth provider: {oauth_provider}")
+        
+        try:
+            result = strategy.register(
+                email=email,
+                name=display_name,
+                provider=oauth_provider,
+                timeout=300
+            )
+            
+            # Результат
+            print("\n" + "="*70)
+            if result['success']:
+                print("[OK] SUCCESS")
+                print("="*70)
+                print(f"Email: {result['email']}")
+                print(f"Token file: {result.get('token_file', 'N/A')}")
+                print(f"Strategy: {result['strategy']}")
+                print(f"Ban risk: {result['ban_risk']}")
+                print(f"\n⚠️  Quota check deferred (anti-ban measure)")
+            else:
+                print("[X] FAILED")
+                print("="*70)
+                print(f"Email: {result['email']}")
+                print(f"Error: {result.get('error', 'Unknown error')}")
+            print("="*70 + "\n")
+            
+            return 0 if result['success'] else 1
+            
+        except KeyboardInterrupt:
+            print("\n\n⚠️  Registration cancelled by user")
+            return 1
+        except Exception as e:
+            print(f"\n[X] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            return 1
+        finally:
+            strategy.cleanup()
     
-    # Используем старый AWSRegistration для auto режима
+    # Automated стратегия - используем старый AWSRegistration
     from registration.register import AWSRegistration
     
     reg = AWSRegistration(headless=headless)
@@ -244,7 +303,6 @@ def cmd_register_auto(args):
         return 1
     finally:
         reg.close()
-        strategy.cleanup()
 
 
 def setup_registration_commands(subparsers):

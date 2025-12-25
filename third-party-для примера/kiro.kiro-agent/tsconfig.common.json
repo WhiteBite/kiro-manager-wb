@@ -1,0 +1,1 @@
+{"extends":["@tsconfig/node20"],"compilerOptions":{"lib":["es2023"],"target":"es2022","strict":true,"declaration":true,"sourceMap":true,"declarationMap":true,"allowJs":true,"moduleResolution":"bundler","module":"Preserve","esModuleInterop":true,"allowSyntheticDefaultImports":true}}

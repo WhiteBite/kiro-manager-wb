@@ -24,6 +24,7 @@ import { renderLLMSettings } from './components/LLMSettings';
 import { renderTabBar } from './components/TabBar';
 import { renderAutoRegControls } from './components/AutoRegControls';
 import { renderStats } from './components/Stats';
+import { renderScheduledReg, ScheduledRegSettings } from './components/ScheduledReg';
 
 // Re-exports
 export { RegProgress, AutoRegSettings };
@@ -60,6 +61,7 @@ export interface WebviewProps {
   language?: Language;
   availableUpdate?: { version: string; url: string } | null;
   activeProfile?: ImapProfile | null;
+  scheduledRegSettings?: ScheduledRegSettings;
 }
 
 // Parse registration status
@@ -133,7 +135,22 @@ export function generateWebviewHtml(
   const t = getTranslations(lang);
   const ver = props.version || 'dev';
   const bannedAccounts = accounts.filter(a => a.usage?.isBanned);
-  const visibleAccounts = accounts.filter(a => !a.usage?.isBanned);
+
+  // Sort accounts: newest first (by createdAt or file modification time)
+  const sortedAccounts = accounts
+    .filter(a => !a.usage?.isBanned)
+    .sort((a, b) => {
+      // Active account always first
+      if (a.isActive && !b.isActive) return -1;
+      if (!a.isActive && b.isActive) return 1;
+
+      // Then by creation date (newest first)
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+  const visibleAccounts = sortedAccounts;
   const activeAccount = visibleAccounts.find(a => a.isActive);
   const { progress, isRunning } = parseStatus(props.autoRegStatus);
   const validCount = visibleAccounts.filter(a => !a.isExpired).length;
@@ -157,7 +174,20 @@ export function generateWebviewHtml(
     <div class="tab-content active" id="tab-accounts">
       ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
       ${renderToolbar({ isRunning, t })}
-      ${renderAutoRegControls({ isRunning, t })}
+      ${renderAutoRegControls({ isRunning, t, strategy: props.autoRegSettings?.strategy || 'automated' })}
+      ${renderScheduledReg({
+    settings: props.scheduledRegSettings || {
+      enabled: false,
+      loginTemplate: 'Account_{N}',
+      currentNumber: 1,
+      interval: 0,
+      maxAccounts: 10,
+      registeredCount: 0,
+      isRunning: false
+    },
+    t,
+    collapsed: true
+  })}
       <div class="list" id="accountList">
         ${renderAccountList({ accounts: visibleAccounts, t })}
       </div>

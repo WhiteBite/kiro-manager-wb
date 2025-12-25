@@ -106,6 +106,7 @@ export function loadAccounts(): AccountInfo[] {
   for (const file of files) {
     try {
       const filepath = path.join(tokensDir, file);
+      const stats = fs.statSync(filepath);
       const content = fs.readFileSync(filepath, 'utf8');
       const tokenData = JSON.parse(content) as TokenData;
 
@@ -115,6 +116,9 @@ export function loadAccounts(): AccountInfo[] {
       const accountName = tokenData.accountName || file;
       const usageCount = usageStats[accountName]?.count || 0;
       const tokenLimit = usageStats[accountName]?.limit || 500;
+
+      // Get creation time from file stats (birthtime or mtime)
+      const createdAt = (stats.birthtime || stats.mtime).toISOString();
 
       // Load cached usage or create default for new accounts
       const cached = allUsage[accountName];
@@ -165,17 +169,22 @@ export function loadAccounts(): AccountInfo[] {
         expiresIn: getExpiresInText(tokenData),
         usageCount,
         tokenLimit,
-        usage
+        usage,
+        createdAt
       });
     } catch (error) {
       console.error(`Failed to load ${file}:`, error);
     }
   }
 
+  // Sort: active first, then by creation date (newest first)
   accounts.sort((a, b) => {
     if (a.isActive) return -1;
     if (b.isActive) return 1;
-    return (a.tokenData.accountName || '').localeCompare(b.tokenData.accountName || '');
+    // Newest first
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
   });
 
   return accounts;

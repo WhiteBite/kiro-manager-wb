@@ -11,6 +11,16 @@ export interface AutoRegSettings {
   autoSwitchThreshold?: number;
   strategy?: 'webview' | 'automated';
   deferQuotaCheck?: boolean;
+  // Proxy settings
+  proxyAddress?: string;
+  useProxyForRegistration?: boolean;
+}
+
+export interface ProxyStatus {
+  status: 'unknown' | 'testing' | 'working' | 'not_working' | 'not_configured';
+  ip?: string;
+  responseTime?: number;
+  error?: string;
 }
 
 export interface RegProgress {

@@ -14,3 +14,4 @@ export { renderLLMSettings } from './LLMSettings';
 export { renderTabBar } from './TabBar';
 export { renderAutoRegControls } from './AutoRegControls';
 export { renderStats } from './Stats';
+export { renderScheduledReg } from './ScheduledReg';

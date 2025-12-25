@@ -167,24 +167,12 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     return;
   }
 
-  // WebView strategy warning
-  if (strategy === 'webview') {
-    const proceed = await vscode.window.showInformationMessage(
-      '🛡️ WebView Strategy: Browser will open for manual login. Low ban risk (<10%).',
-      { modal: true },
-      'Continue', 'Cancel'
-    );
-
-    if (proceed !== 'Continue') {
-      provider.addLog('❌ Registration cancelled by user');
-      return;
-    }
-  }
+  // Log strategy info (no confirmation dialog needed - user already selected in UI)
+  provider.addLog(`Registration strategy: ${strategy} (ban risk: ${strategy === 'webview' ? 'low <10%' : 'medium-high 40-90%'})`);
 
   const profileEnv = profileProvider.getActiveProfileEnv();
   provider.addLog(`Active profile: ${activeProfile.name} (${activeProfile.id})`);
   provider.addLog(`Email strategy: ${activeProfile.strategy.type}`);
-  provider.addLog(`Registration strategy: ${strategy} (ban risk: ${strategy === 'webview' ? 'low' : 'medium-high'})`);
   if (strategy === 'automated' && deferQuotaCheck) {
     provider.addLog(`Defer quota check: enabled (reduces ban risk)`);
   }
@@ -216,152 +204,186 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   // Choose script based on strategy
   let scriptArgs: string[];
 
+  // Get proxy from pool with round-robin rotation
+  let currentProxy: string | undefined;
+  if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+    const proxyIndex = activeProfile.proxy.currentIndex || 0;
+    currentProxy = activeProfile.proxy.urls[proxyIndex % activeProfile.proxy.urls.length];
+    // Update index for next registration (will be saved after successful registration)
+    activeProfile.proxy.currentIndex = (proxyIndex + 1) % activeProfile.proxy.urls.length;
+    provider.addLog(`[PROXY] Using proxy ${proxyIndex + 1}/${activeProfile.proxy.urls.length}: ${currentProxy.replace(/:[^:@]+@/, ':***@')}`);
+  }
+
+  // Build environment variables (common for both strategies)
+  const env: Record<string, string> = {
+    IMAP_SERVER: imapServer,
+    IMAP_USER: imapUser,
+    IMAP_PASSWORD: imapPassword,
+    IMAP_PORT: imapPort,
+    EMAIL_DOMAIN: emailDomain,
+    EMAIL_STRATEGY: emailStrategy,
+    EMAIL_POOL: emailPool,
+    PROFILE_ID: profileId,
+    SPOOFING_ENABLED: spoofing ? '1' : '0',
+    DEVICE_FLOW: deviceFlow ? '1' : '0',
+    // Proxy from profile pool (takes priority) or from parent process
+    ...(currentProxy && { HTTPS_PROXY: currentProxy }),
+    ...(!currentProxy && process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
+    ...(!currentProxy && process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY }),
+    ...(process.env.NODE_TLS_REJECT_UNAUTHORIZED && { NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED })
+  };
+
   if (strategy === 'webview') {
     // WebView strategy - use cli_registration
-    scriptArgs = ['-m', 'autoreg.cli_registration', 'register-auto'];
+    scriptArgs = ['cli_registration.py', 'register-auto'];
     scriptArgs.push('--strategy', 'webview');
+
+    // Get OAuth provider setting
+    let oauthProvider = config.get<string>('autoreg.oauthProvider', 'ask');
+
+    // Show provider selection dialog if "ask" or not set
+    if (!oauthProvider || oauthProvider === 'ask') {
+      const selected = await vscode.window.showQuickPick(
+        [
+          { label: '$(globe) Google', description: 'Sign in with Google account', value: 'Google' },
+          { label: '$(github) GitHub', description: 'Sign in with GitHub account', value: 'Github' },
+        ],
+        {
+          placeHolder: 'Select OAuth provider for registration',
+          title: 'OAuth Provider',
+        }
+      );
+
+      if (!selected) {
+        provider.addLog('⚠️ Registration cancelled - no provider selected');
+        provider.setStatus('');
+        return;
+      }
+
+      oauthProvider = selected.value;
+    }
+
+    // Pass provider to Python script via environment
+    env.OAUTH_PROVIDER = oauthProvider;
+    provider.addLog(`OAuth provider: ${oauthProvider}`);
+
     if (count && count > 1) {
       provider.addLog('⚠️ WebView strategy: registering one account at a time');
       scriptArgs.push('--count', '1');
     }
+    provider.addLog(`Starting WebView registration...`);
+    provider.addLog(`Working dir: ${autoregDir}`);
+    provider.addLog(`Profile: ${activeProfile?.name || 'Legacy settings'}`);
+    provider.addLog(`Email strategy: ${emailStrategy}`);
   } else {
     // Automated strategy (legacy)
     scriptArgs = ['-m', 'registration.register_auto'];
     if (headless) scriptArgs.push('--headless');
     if (deviceFlow) scriptArgs.push('--device-flow');
-    if (deferQuotaCheck) scriptArgs.push('--no-check-quota');
+    // Note: register_auto.py registers one account at a time
     if (count && count > 1) {
-      scriptArgs.push('--count', count.toString());
+      provider.addLog(`⚠️ Will register ${count} accounts one by one`);
     }
-
-    // Get proxy from pool with round-robin rotation
-    let currentProxy: string | undefined;
-    if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
-      const proxyIndex = activeProfile.proxy.currentIndex || 0;
-      currentProxy = activeProfile.proxy.urls[proxyIndex % activeProfile.proxy.urls.length];
-      // Update index for next registration (will be saved after successful registration)
-      activeProfile.proxy.currentIndex = (proxyIndex + 1) % activeProfile.proxy.urls.length;
-      provider.addLog(`[PROXY] Using proxy ${proxyIndex + 1}/${activeProfile.proxy.urls.length}: ${currentProxy.replace(/:[^:@]+@/, ':***@')}`);
-    }
-
-    const env: Record<string, string> = {
-      IMAP_SERVER: imapServer,
-      IMAP_USER: imapUser,
-      IMAP_PASSWORD: imapPassword,
-      IMAP_PORT: imapPort,
-      EMAIL_DOMAIN: emailDomain,
-      EMAIL_STRATEGY: emailStrategy,
-      EMAIL_POOL: emailPool,
-      PROFILE_ID: profileId,
-      SPOOFING_ENABLED: spoofing ? '1' : '0',
-      DEVICE_FLOW: deviceFlow ? '1' : '0',
-      // Proxy from profile pool (takes priority) or from parent process
-      ...(currentProxy && { HTTPS_PROXY: currentProxy }),
-      ...(!currentProxy && process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
-      ...(!currentProxy && process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY }),
-      ...(process.env.NODE_TLS_REJECT_UNAUTHORIZED && { NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED })
-    };
-
     provider.addLog(`Starting autoreg...`);
     provider.addLog(`Working dir: ${autoregDir}`);
     provider.addLog(`Profile: ${activeProfile?.name || 'Legacy settings'}`);
     provider.addLog(`Strategy: ${emailStrategy}`);
-    provider.addLog(`Headless: ${headless ? 'ON' : 'OFF'}, Spoofing: ${spoofing ? 'ON' : 'OFF'}, DeviceFlow: ${deviceFlow ? 'ON' : 'OFF'}`);
-
-    // Use ProcessManager for better control
-    autoregProcess.removeAllListeners();
-
-    // Track actual registration result from stdout
-    let registrationSuccess = false;
-    let registrationFailed = false;
-
-    autoregProcess.on('stdout', (data: string) => {
-      const lines = data.split('\n').filter((l: string) => l.trim());
-      for (const line of lines) {
-        provider.addLog(line);
-        parseProgressLine(line, provider);
-
-        // Track actual result from Python output
-        if (line.includes('[OK] SUCCESS')) {
-          registrationSuccess = true;
-        } else if (line.includes('[X] FAILED') || line.includes('[X] ERROR')) {
-          registrationFailed = true;
-        }
-
-        // Auto-confirm prompts (y/n, да/нет)
-        if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
-          provider.addLog('→ Auto-confirming: y');
-          autoregProcess.write('y\n');
-        }
-      }
-    });
-
-    autoregProcess.on('stderr', (data: string) => {
-      const lines = data.split('\n').filter((l: string) => l.trim());
-      for (const line of lines) {
-        if (!line.includes('DevTools') && !line.includes('GPU process')) {
-          provider.addLog(`⚠️ ${line}`);
-        }
-      }
-    });
-
-    autoregProcess.on('close', async (code: number) => {
-      // Check actual result, not just exit code
-      if (registrationSuccess && !registrationFailed) {
-        provider.addLog('✓ Registration complete');
-
-        // Save updated proxy index after successful registration
-        if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
-          await profileProvider.update(activeProfile.id, { proxy: activeProfile.proxy });
-          provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
-        }
-
-        vscode.window.showInformationMessage('Account registered successfully!');
-      } else if (registrationFailed) {
-        provider.addLog('✗ Registration failed');
-        vscode.window.showErrorMessage('Registration failed. Check logs for details.');
-      } else if (code !== 0 && code !== null) {
-        provider.addLog(`✗ Process exited with code ${code}`);
-        vscode.window.showErrorMessage(`Registration process failed (exit code ${code})`);
-      }
-      provider.setStatus('');
-      provider.refresh();
-      provider.addLog('🔄 Refreshed account list');
-    });
-
-    autoregProcess.on('stopped', () => {
-      provider.addLog('⏹ Auto-reg stopped by user');
-      provider.setStatus('');
-      provider.refresh();
-    });
-
-    autoregProcess.on('error', (err: Error) => {
-      provider.addLog(`✗ Error: ${err.message}`);
-      provider.setStatus('');
-    });
-
-    autoregProcess.on('paused', () => {
-      provider.addLog('⏸ Auto-reg paused');
-      provider.refresh();
-    });
-
-    autoregProcess.on('resumed', () => {
-      provider.addLog('▶ Auto-reg resumed');
-      provider.refresh();
-    });
-
-    // Start with venv Python
-    autoregProcess.start(pythonPath, ['-u', ...scriptArgs], {
-      cwd: autoregDir,
-      env: {
-        ...process.env,
-        ...env,
-        VIRTUAL_ENV: path.join(autoregDir, '.venv'),
-        PYTHONUNBUFFERED: '1',
-        PYTHONIOENCODING: 'utf-8'
-      }
-    });
+    provider.addLog(`Headless: ${headless ? 'ON' : 'OFF'}, DeviceFlow: ${deviceFlow ? 'ON' : 'OFF'}`);
   }
+
+  // Use ProcessManager for better control
+  autoregProcess.removeAllListeners();
+
+  // Track actual registration result from stdout
+  let registrationSuccess = false;
+  let registrationFailed = false;
+
+  autoregProcess.on('stdout', (data: string) => {
+    const lines = data.split('\n').filter((l: string) => l.trim());
+    for (const line of lines) {
+      provider.addLog(line);
+      parseProgressLine(line, provider);
+
+      // Track actual result from Python output
+      if (line.includes('[OK] SUCCESS') || line.includes('✅ Authentication successful')) {
+        registrationSuccess = true;
+      } else if (line.includes('[X] FAILED') || line.includes('[X] ERROR') || line.includes('❌')) {
+        registrationFailed = true;
+      }
+
+      // Auto-confirm prompts (y/n, да/нет)
+      if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
+        provider.addLog('→ Auto-confirming: y');
+        autoregProcess.write('y\n');
+      }
+    }
+  });
+
+  autoregProcess.on('stderr', (data: string) => {
+    const lines = data.split('\n').filter((l: string) => l.trim());
+    for (const line of lines) {
+      if (!line.includes('DevTools') && !line.includes('GPU process')) {
+        provider.addLog(`⚠️ ${line}`);
+      }
+    }
+  });
+
+  autoregProcess.on('close', async (code: number) => {
+    // Check actual result, not just exit code
+    if (registrationSuccess && !registrationFailed) {
+      provider.addLog('✓ Registration complete');
+
+      // Save updated proxy index after successful registration
+      if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+        await profileProvider.update(activeProfile.id, { proxy: activeProfile.proxy });
+        provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
+      }
+
+      vscode.window.showInformationMessage('Account registered successfully!');
+    } else if (registrationFailed) {
+      provider.addLog('✗ Registration failed');
+      vscode.window.showErrorMessage('Registration failed. Check logs for details.');
+    } else if (code !== 0 && code !== null) {
+      provider.addLog(`✗ Process exited with code ${code}`);
+      vscode.window.showErrorMessage(`Registration process failed (exit code ${code})`);
+    }
+    provider.setStatus('');
+    provider.refresh();
+    provider.addLog('🔄 Refreshed account list');
+  });
+
+  autoregProcess.on('stopped', () => {
+    provider.addLog('⏹ Auto-reg stopped by user');
+    provider.setStatus('');
+    provider.refresh();
+  });
+
+  autoregProcess.on('error', (err: Error) => {
+    provider.addLog(`✗ Error: ${err.message}`);
+    provider.setStatus('');
+  });
+
+  autoregProcess.on('paused', () => {
+    provider.addLog('⏸ Auto-reg paused');
+    provider.refresh();
+  });
+
+  autoregProcess.on('resumed', () => {
+    provider.addLog('▶ Auto-reg resumed');
+    provider.refresh();
+  });
+
+  // Start with venv Python
+  autoregProcess.start(pythonPath, ['-u', ...scriptArgs], {
+    cwd: autoregDir,
+    env: {
+      ...process.env,
+      ...env,
+      VIRTUAL_ENV: path.join(autoregDir, '.venv'),
+      PYTHONUNBUFFERED: '1',
+      PYTHONIOENCODING: 'utf-8'
+    }
+  });
 }
 
 function parseProgressLine(line: string, provider: KiroAccountsProvider) {

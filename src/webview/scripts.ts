@@ -161,21 +161,43 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       vscode.postMessage({ command: 'updateSetting', key, value });
     }
     
-    function selectStrategy(strategy) {
-      // Update radio buttons
-      document.querySelectorAll('input[name="strategy"]').forEach(radio => {
-        radio.checked = radio.value === strategy;
+    function selectRegistrationStrategy(strategy) {
+      // Update switch buttons on main page
+      document.querySelectorAll('.strategy-sw-btn').forEach((btn, idx) => {
+        const isAuto = strategy === 'automated';
+        if (idx === 0) {
+          btn.classList.toggle('active', isAuto);
+        } else {
+          btn.classList.toggle('active', !isAuto);
+        }
       });
       
-      // Update selected class
+      // Update hint icon
+      const hint = document.querySelector('.strategy-hint');
+      if (hint) {
+        hint.className = 'strategy-hint ' + (strategy === 'automated' ? 'high' : 'low');
+        hint.textContent = strategy === 'automated' ? '⚠' : '✓';
+      }
+      
+      // Update strategy cards in settings (if visible)
       document.querySelectorAll('.strategy-option').forEach(option => {
-        option.classList.toggle('selected', option.querySelector('input').value === strategy);
+        const radio = option.querySelector('input[name="strategy"]');
+        if (radio) {
+          radio.checked = radio.value === strategy;
+          option.classList.toggle('selected', radio.value === strategy);
+        }
       });
       
-      // Show/hide defer quota check option
+      // Show/hide defer quota check option in settings
       const deferOption = document.getElementById('deferQuotaCheckOption');
       if (deferOption) {
         deferOption.style.display = strategy === 'automated' ? '' : 'none';
+      }
+      
+      // Show/hide OAuth provider option in settings
+      const oauthOption = document.getElementById('oauthProviderOption');
+      if (oauthOption) {
+        oauthOption.style.display = strategy === 'webview' ? '' : 'none';
       }
       
       // Save setting
@@ -211,6 +233,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'resetMachineId' };
       document.getElementById('dialogTitle').textContent = T.resetMachineIdTitle;
       document.getElementById('dialogText').textContent = T.resetMachineIdConfirm;
+      // Change button to Confirm (not Delete)
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.confirm;
+      btn.className = 'btn btn-warning';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -224,6 +250,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'patchKiro' };
       document.getElementById('dialogTitle').textContent = T.patchKiroTitle;
       document.getElementById('dialogText').textContent = T.patchKiroConfirm;
+      // Change button to Apply (not Delete)
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.apply;
+      btn.className = 'btn btn-primary';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -231,6 +261,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'unpatchKiro' };
       document.getElementById('dialogTitle').textContent = T.removePatchTitle;
       document.getElementById('dialogText').textContent = T.removePatchConfirm;
+      // Change button to Confirm (not Delete)
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.confirm;
+      btn.className = 'btn btn-warning';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -468,6 +502,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'deleteExhausted' };
       document.getElementById('dialogTitle').textContent = T.deleteTitle;
       document.getElementById('dialogText').textContent = T.deleteBadAccountsConfirm;
+      // Reset button to Delete style
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.delete;
+      btn.className = 'btn btn-danger';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -475,6 +513,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'deleteBanned' };
       document.getElementById('dialogTitle').textContent = T.deleteTitle;
       document.getElementById('dialogText').textContent = T.deleteBannedAccountsConfirm || 'Delete all banned accounts?';
+      // Reset button to Delete style
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.delete;
+      btn.className = 'btn btn-danger';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -988,6 +1030,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'deleteProfile', profileId };
       document.getElementById('dialogTitle').textContent = T.deleteTitle || 'Delete';
       document.getElementById('dialogText').textContent = T.deleteProfileConfirm;
+      // Reset button to Delete style
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.delete;
+      btn.className = 'btn btn-danger';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -1498,6 +1544,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       pendingAction = { type: 'deleteSelected', filenames: Array.from(selectedAccounts) };
       document.getElementById('dialogTitle').textContent = T.deleteTitle;
       document.getElementById('dialogText').textContent = (T.deleteSelectedConfirm || 'Delete {count} selected accounts?').replace('{count}', selectedAccounts.size);
+      // Reset button to Delete style
+      const btn = document.getElementById('dialogConfirmBtn');
+      btn.textContent = T.delete;
+      btn.className = 'btn btn-danger';
       document.getElementById('dialogOverlay').classList.add('visible');
     }
     
@@ -1579,6 +1629,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     window.refreshSelectedTokens = refreshSelectedTokens;
     window.deleteSelectedAccounts = deleteSelectedAccounts;
     window.selectStrategy = selectStrategy;
+    window.selectRegistrationStrategy = selectRegistrationStrategy;
     window.updateSetting = updateSetting;
     
     // === Initialization ===
@@ -1596,5 +1647,144 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         vscode.postMessage({ command: 'loadProfiles' });
       }, 100);
     }
+    
+    // === Scheduled Registration ===
+    
+    let scheduledRegTimer = null;
+    
+    function toggleScheduledReg() {
+      const card = document.getElementById('scheduledRegCard');
+      if (card) {
+        card.classList.toggle('collapsed');
+      }
+    }
+    
+    function toggleScheduledRegEnabled(enabled) {
+      vscode.postMessage({ command: 'updateScheduledRegSetting', key: 'enabled', value: enabled });
+    }
+    
+    function updateScheduledRegSetting(key, value) {
+      vscode.postMessage({ command: 'updateScheduledRegSetting', key, value });
+      
+      // Update preview if template or number changed
+      if (key === 'loginTemplate' || key === 'currentNumber') {
+        updateLoginPreview();
+      }
+    }
+    
+    function handleIntervalChange(value) {
+      if (value === 'custom') {
+        // Show custom input, default to 10 minutes
+        updateScheduledRegSetting('interval', 10);
+        // Refresh to show custom input
+        vscode.postMessage({ command: 'refresh' });
+      } else {
+        updateScheduledRegSetting('interval', parseInt(value));
+      }
+    }
+    
+    function updateLoginPreview() {
+      const templateInput = document.getElementById('loginTemplateInput');
+      const numberInput = document.getElementById('currentNumberInput');
+      const preview = document.querySelector('.scheduled-reg-preview');
+      
+      if (templateInput && numberInput && preview) {
+        const template = templateInput.value || 'Account_{N}';
+        const num = parseInt(numberInput.value) || 1;
+        const padded = num.toString().padStart(3, '0');
+        preview.textContent = template.replace('{N}', padded).replace('{n}', num.toString());
+      }
+    }
+    
+    function startScheduledReg() {
+      vscode.postMessage({ command: 'startScheduledReg' });
+    }
+    
+    function stopScheduledReg() {
+      vscode.postMessage({ command: 'stopScheduledReg' });
+      if (scheduledRegTimer) {
+        clearInterval(scheduledRegTimer);
+        scheduledRegTimer = null;
+      }
+    }
+    
+    function resetScheduledReg() {
+      vscode.postMessage({ command: 'resetScheduledReg' });
+    }
+    
+    function updateScheduledRegTimer(nextRunAt) {
+      const timerEl = document.getElementById('scheduledRegTimer');
+      if (!timerEl || !nextRunAt) return;
+      
+      // Clear existing timer
+      if (scheduledRegTimer) {
+        clearInterval(scheduledRegTimer);
+      }
+      
+      // Update timer every second
+      scheduledRegTimer = setInterval(() => {
+        const now = Date.now();
+        const next = new Date(nextRunAt).getTime();
+        const diff = Math.max(0, next - now);
+        
+        if (diff <= 0) {
+          timerEl.textContent = '00:00';
+          clearInterval(scheduledRegTimer);
+          scheduledRegTimer = null;
+          return;
+        }
+        
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        timerEl.textContent = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+      }, 1000);
+    }
+    
+    function updateScheduledRegState(state) {
+      const card = document.getElementById('scheduledRegCard');
+      if (!card) return;
+      
+      // Update running badge
+      const badge = card.querySelector('.scheduled-reg-badge.running');
+      if (badge) {
+        badge.style.display = state.isRunning ? '' : 'none';
+      }
+      
+      // Update progress
+      const progressFill = card.querySelector('.scheduled-reg-progress-fill');
+      const progressText = card.querySelector('.scheduled-reg-progress-text');
+      if (progressFill && state.maxAccounts > 0) {
+        const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
+        progressFill.style.width = percent + '%';
+        if (state.registeredCount >= state.maxAccounts) {
+          progressFill.classList.add('complete');
+        }
+      }
+      if (progressText) {
+        progressText.textContent = state.registeredCount + '/' + state.maxAccounts + ' ' + (T.accounts || 'accounts');
+      }
+      
+      // Update timer
+      if (state.nextRunAt && state.isRunning) {
+        updateScheduledRegTimer(state.nextRunAt);
+      }
+      
+      // Update current number input
+      const numberInput = document.getElementById('currentNumberInput');
+      if (numberInput && state.currentNumber) {
+        numberInput.value = state.currentNumber;
+        updateLoginPreview();
+      }
+    }
+    
+    // Export scheduled reg functions
+    window.toggleScheduledReg = toggleScheduledReg;
+    window.toggleScheduledRegEnabled = toggleScheduledRegEnabled;
+    window.updateScheduledRegSetting = updateScheduledRegSetting;
+    window.handleIntervalChange = handleIntervalChange;
+    window.startScheduledReg = startScheduledReg;
+    window.stopScheduledReg = stopScheduledReg;
+    window.resetScheduledReg = resetScheduledReg;
+    window.updateScheduledRegState = updateScheduledRegState;
   `;
 }
