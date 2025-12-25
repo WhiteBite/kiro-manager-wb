@@ -1,5 +1,0 @@
-AWS Intellectual Property License (AWS-IPL)
-
-©2025 Amazon.com, Inc. or its affiliates (collectively, “Amazon”). All Rights Reserved.
-
-This software is licensed to you as “AWS Content” under the AWS Customer Agreement (https://aws.amazon.com/agreement/), or other written agreement between you and Amazon governing your use of AWS services, and the AWS Intellectual Property License (https://aws.amazon.com/legal/aws-ip-license-terms/).
