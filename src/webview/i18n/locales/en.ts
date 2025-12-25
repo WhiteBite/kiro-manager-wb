@@ -414,4 +414,19 @@ export const en: Translations = {
   startFrom: 'Start #',
   enableFirst: 'Enable toggle first',
   registerOne: 'Register',
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'Proxy Address',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'Test Proxy',
+  testingProxy: 'Testing...',
+  proxyWorking: 'Proxy is working',
+  proxyNotWorking: 'Proxy is not working',
+  proxyNotConfigured: 'Proxy not configured',
+  proxyResponseTime: 'Response time',
+  proxyIpAddress: 'IP Address',
+  useProxyForRegistration: 'Use proxy for registration',
+  useProxyForRegistrationDesc: 'Route registration traffic through proxy',
+  proxyTestSuccess: 'Proxy test successful',
+  proxyTestFailed: 'Proxy test failed',
 };

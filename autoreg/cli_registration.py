@@ -218,7 +218,15 @@ def cmd_register_auto(args):
     # Генерируем email
     email_result = email_generator.generate()
     email = email_result.registration_email
-    display_name = email_result.display_name
+    
+    # Use custom login name from scheduled registration if provided
+    custom_login_name = os.environ.get('KIRO_LOGIN_NAME', '')
+    if custom_login_name:
+        display_name = custom_login_name
+        print(f"Using custom login name: {display_name}")
+    else:
+        display_name = email_result.display_name
+    
     print(f"Generated email: {email}")
     print(f"Display name: {display_name}")
     

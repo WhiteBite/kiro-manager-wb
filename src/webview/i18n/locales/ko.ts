@@ -403,4 +403,27 @@ export const ko: Translations = {
   enableFirst: '먼저 토글을 활성화하세요',
   registerOne: '등록',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: '프록시 주소',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: '프록시 테스트',
+  testingProxy: '테스트 중...',
+  proxyWorking: '프록시 작동 중',
+  proxyNotWorking: '프록시 작동 안 함',
+  proxyNotConfigured: '프록시 미설정',
+  proxyResponseTime: '응답 시간',
+  proxyIpAddress: 'IP 주소',
+  useProxyForRegistration: '등록에 프록시 사용',
+  useProxyForRegistrationDesc: '등록 트래픽을 프록시로 라우팅',
+  proxyTestSuccess: '프록시 테스트 성공',
+  proxyTestFailed: '프록시 테스트 실패',
+  oauthProvider: 'OAuth 제공자',
+  oauthProviderDesc: 'WebView 등록용 제공자 선택',
+  oauthProviderGoogle: 'Google',
+  oauthProviderGithub: 'GitHub',
+  oauthProviderAsk: '매번 묻기',
+  oauthProviderAskDesc: '제공자 선택 대화상자 표시',
+  selectOAuthProvider: 'OAuth 제공자 선택',
+  selectOAuthProviderDesc: 'Kiro 로그인 방법 선택',
 };

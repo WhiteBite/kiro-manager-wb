@@ -403,4 +403,27 @@ export const ja: Translations = {
   enableFirst: '先にトグルを有効にしてください',
   registerOne: '登録',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'プロキシアドレス',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'プロキシテスト',
+  testingProxy: 'テスト中...',
+  proxyWorking: 'プロキシ正常',
+  proxyNotWorking: 'プロキシ不可',
+  proxyNotConfigured: 'プロキシ未設定',
+  proxyResponseTime: '応答時間',
+  proxyIpAddress: 'IPアドレス',
+  useProxyForRegistration: '登録にプロキシを使用',
+  useProxyForRegistrationDesc: '登録トラフィックをプロキシ経由',
+  proxyTestSuccess: 'プロキシテスト成功',
+  proxyTestFailed: 'プロキシテスト失敗',
+  oauthProvider: 'OAuthプロバイダー',
+  oauthProviderDesc: 'WebView登録のプロバイダーを選択',
+  oauthProviderGoogle: 'Google',
+  oauthProviderGithub: 'GitHub',
+  oauthProviderAsk: '毎回確認',
+  oauthProviderAskDesc: 'プロバイダー選択ダイアログを表示',
+  selectOAuthProvider: 'OAuthプロバイダーを選択',
+  selectOAuthProviderDesc: 'Kiroへのログイン方法を選択',
 };

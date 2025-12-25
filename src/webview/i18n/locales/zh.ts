@@ -403,4 +403,27 @@ export const zh: Translations = {
   enableFirst: '请先启用开关',
   registerOne: '注册',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: '代理地址',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: '测试代理',
+  testingProxy: '测试中...',
+  proxyWorking: '代理正常',
+  proxyNotWorking: '代理不可用',
+  proxyNotConfigured: '未配置代理',
+  proxyResponseTime: '响应时间',
+  proxyIpAddress: 'IP地址',
+  useProxyForRegistration: '注册时使用代理',
+  useProxyForRegistrationDesc: '通过代理路由注册流量',
+  proxyTestSuccess: '代理测试成功',
+  proxyTestFailed: '代理测试失败',
+  oauthProvider: 'OAuth提供商',
+  oauthProviderDesc: '选择WebView注册的提供商',
+  oauthProviderGoogle: 'Google',
+  oauthProviderGithub: 'GitHub',
+  oauthProviderAsk: '每次询问',
+  oauthProviderAskDesc: '显示提供商选择对话框',
+  selectOAuthProvider: '选择OAuth提供商',
+  selectOAuthProviderDesc: '选择如何登录Kiro',
 };

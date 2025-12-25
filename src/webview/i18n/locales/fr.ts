@@ -412,4 +412,19 @@ export const fr: Translations = {
   oauthProviderAskDesc: 'Afficher la sélection du fournisseur',
   selectOAuthProvider: 'Sélectionner le fournisseur OAuth',
   selectOAuthProviderDesc: 'Choisissez comment vous connecter à Kiro',
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'Adresse du proxy',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'Tester le proxy',
+  testingProxy: 'Test en cours...',
+  proxyWorking: 'Le proxy fonctionne',
+  proxyNotWorking: 'Le proxy ne fonctionne pas',
+  proxyNotConfigured: 'Proxy non configuré',
+  proxyResponseTime: 'Temps de réponse',
+  proxyIpAddress: 'Adresse IP',
+  useProxyForRegistration: 'Utiliser le proxy pour l\'inscription',
+  useProxyForRegistrationDesc: 'Acheminer le trafic d\'inscription via le proxy',
+  proxyTestSuccess: 'Test du proxy réussi',
+  proxyTestFailed: 'Test du proxy échoué',
 };

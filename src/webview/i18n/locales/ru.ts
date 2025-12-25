@@ -413,4 +413,19 @@ export const ru: Translations = {
   enableFirst: 'Сначала включите переключатель',
   registerOne: 'Зарегистрировать',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'Адрес прокси',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'Тест прокси',
+  testingProxy: 'Тестирование...',
+  proxyWorking: 'Прокси работает',
+  proxyNotWorking: 'Прокси не работает',
+  proxyNotConfigured: 'Прокси не настроен',
+  proxyResponseTime: 'Время ответа',
+  proxyIpAddress: 'IP адрес',
+  useProxyForRegistration: 'Использовать прокси для регистрации',
+  useProxyForRegistrationDesc: 'Направлять трафик регистрации через прокси',
+  proxyTestSuccess: 'Тест прокси успешен',
+  proxyTestFailed: 'Тест прокси не пройден',
 };

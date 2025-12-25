@@ -403,4 +403,27 @@ export const es: Translations = {
   enableFirst: 'Activa el interruptor primero',
   registerOne: 'Registrar',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'Dirección del proxy',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'Probar proxy',
+  testingProxy: 'Probando...',
+  proxyWorking: 'El proxy funciona',
+  proxyNotWorking: 'El proxy no funciona',
+  proxyNotConfigured: 'Proxy no configurado',
+  proxyResponseTime: 'Tiempo de respuesta',
+  proxyIpAddress: 'Dirección IP',
+  useProxyForRegistration: 'Usar proxy para registro',
+  useProxyForRegistrationDesc: 'Enrutar tráfico de registro a través del proxy',
+  proxyTestSuccess: 'Prueba de proxy exitosa',
+  proxyTestFailed: 'Prueba de proxy fallida',
+  oauthProvider: 'Proveedor OAuth',
+  oauthProviderDesc: 'Elegir proveedor para registro WebView',
+  oauthProviderGoogle: 'Google',
+  oauthProviderGithub: 'GitHub',
+  oauthProviderAsk: 'Preguntar cada vez',
+  oauthProviderAskDesc: 'Mostrar diálogo de selección',
+  selectOAuthProvider: 'Seleccionar proveedor OAuth',
+  selectOAuthProviderDesc: 'Elegir cómo iniciar sesión en Kiro',
 };

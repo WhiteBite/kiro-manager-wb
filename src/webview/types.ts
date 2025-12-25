@@ -11,6 +11,7 @@ export interface AutoRegSettings {
   autoSwitchThreshold?: number;
   strategy?: 'webview' | 'automated';
   deferQuotaCheck?: boolean;
+  oauthProvider?: 'Google' | 'Github' | 'ask';
   // Proxy settings
   proxyAddress?: string;
   useProxyForRegistration?: boolean;

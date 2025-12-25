@@ -403,4 +403,27 @@ export const hi: Translations = {
   enableFirst: 'पहले टॉगल सक्षम करें',
   registerOne: 'पंजीकृत करें',
 
+
+  // Proxy & OAuth (auto-added)
+  proxyAddress: 'प्रॉक्सी पता',
+  proxyAddressPlaceholder: 'http://user:pass@host:port',
+  testProxy: 'प्रॉक्सी टेस्ट',
+  testingProxy: 'परीक्षण...',
+  proxyWorking: 'प्रॉक्सी काम कर रहा है',
+  proxyNotWorking: 'प्रॉक्सी काम नहीं कर रहा',
+  proxyNotConfigured: 'प्रॉक्सी कॉन्फ़िगर नहीं',
+  proxyResponseTime: 'प्रतिक्रिया समय',
+  proxyIpAddress: 'IP पता',
+  useProxyForRegistration: 'पंजीकरण के लिए प्रॉक्सी उपयोग करें',
+  useProxyForRegistrationDesc: 'पंजीकरण ट्रैफ़िक को प्रॉक्सी के माध्यम से रूट करें',
+  proxyTestSuccess: 'प्रॉक्सी टेस्ट सफल',
+  proxyTestFailed: 'प्रॉक्सी टेस्ट विफल',
+  oauthProvider: 'OAuth प्रदाता',
+  oauthProviderDesc: 'WebView पंजीकरण के लिए प्रदाता चुनें',
+  oauthProviderGoogle: 'Google',
+  oauthProviderGithub: 'GitHub',
+  oauthProviderAsk: 'हर बार पूछें',
+  oauthProviderAskDesc: 'प्रदाता चयन संवाद दिखाएं',
+  selectOAuthProvider: 'OAuth प्रदाता चुनें',
+  selectOAuthProviderDesc: 'Kiro में साइन इन करने का तरीका चुनें',
 };

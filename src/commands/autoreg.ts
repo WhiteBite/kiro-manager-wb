@@ -226,6 +226,8 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     PROFILE_ID: profileId,
     SPOOFING_ENABLED: spoofing ? '1' : '0',
     DEVICE_FLOW: deviceFlow ? '1' : '0',
+    // Login name from scheduled registration (if set)
+    ...(process.env.KIRO_LOGIN_NAME && { KIRO_LOGIN_NAME: process.env.KIRO_LOGIN_NAME }),
     // Proxy from profile pool (takes priority) or from parent process
     ...(currentProxy && { HTTPS_PROXY: currentProxy }),
     ...(!currentProxy && process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),

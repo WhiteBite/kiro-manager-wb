@@ -1688,8 +1688,9 @@ except Exception as e:
         break;
     }
 
-    // Save to global state
-    this._context.globalState.update('scheduledRegSettings', settings);
+    // Save to global state immediately
+    await this._context.globalState.update('scheduledRegSettings', settings);
+    this.addLog(`[ScheduledReg] Updated ${key} = ${value}`);
 
     // Send update to webview
     this._sendScheduledRegState();
@@ -1740,7 +1741,8 @@ except Exception as e:
   async resetScheduledReg(): Promise<void> {
     const settings = this._scheduledRegSettings;
     settings.registeredCount = 0;
-    settings.currentNumber = 1;
+    // Don't reset currentNumber - user may want to continue from where they left off
+    // settings.currentNumber = 1;  // Only reset if user explicitly changes it
     settings.isRunning = false;
     settings.nextRunAt = undefined;
 
@@ -1749,8 +1751,8 @@ except Exception as e:
       this._scheduledRegTimer = null;
     }
 
-    this._context.globalState.update('scheduledRegSettings', settings);
-    this.addLog('↺ Scheduled registration reset');
+    await this._context.globalState.update('scheduledRegSettings', settings);
+    this.addLog('↺ Scheduled registration progress reset (counter preserved)');
     this._sendScheduledRegState();
   }
 
@@ -1759,6 +1761,7 @@ except Exception as e:
 
     if (!settings.isRunning || settings.registeredCount >= settings.maxAccounts) {
       settings.isRunning = false;
+      await this._context.globalState.update('scheduledRegSettings', settings);
       this._sendScheduledRegState();
       return;
     }
@@ -1768,7 +1771,7 @@ except Exception as e:
       .replace('{N}', settings.currentNumber.toString().padStart(3, '0'))
       .replace('{n}', settings.currentNumber.toString());
 
-    this.addLog(`📝 Registering account: ${loginName}`);
+    this.addLog(`📝 Registering account: ${loginName} (${settings.registeredCount + 1}/${settings.maxAccounts})`);
 
     try {
       // Set environment variable for login name
@@ -1780,15 +1783,17 @@ except Exception as e:
       // Wait for registration to complete (check status periodically)
       await this._waitForRegistrationComplete();
 
-      // Increment counters
+      // Increment counters AFTER successful registration
       settings.currentNumber++;
       settings.registeredCount++;
 
-      this._context.globalState.update('scheduledRegSettings', settings);
-      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts}`);
+      // Save immediately after each successful registration
+      await this._context.globalState.update('scheduledRegSettings', settings);
+      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts} (next: ${settings.currentNumber})`);
 
     } catch (err) {
       this.addLog(`❌ Registration failed: ${err}`);
+      // Don't increment on failure - will retry with same number
     } finally {
       delete process.env.KIRO_LOGIN_NAME;
     }
@@ -1798,6 +1803,7 @@ except Exception as e:
       this._scheduleNextRun();
     } else if (settings.registeredCount >= settings.maxAccounts) {
       settings.isRunning = false;
+      await this._context.globalState.update('scheduledRegSettings', settings);
       this.addLog('✓ Scheduled registration complete!');
     }
 

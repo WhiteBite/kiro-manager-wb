@@ -244,6 +244,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Send Telegram notification
+        if: success()
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CHANGELOG=$(cat changelog.txt | head -10)
+          
+          MESSAGE="🚀 *Kiro Manager WB ${VERSION}*
+
+📦 Новый релиз доступен!
+
+📝 *Изменения:*
+${CHANGELOG}
+
+🔗 [Скачать на GitHub](https://github.com/WhiteBite/kiro-manager-wb/releases/tag/${VERSION})
+
+\`\`\`
+# Установка в Kiro/VSCode:
+Ctrl+Shift+P → Extensions: Install from VSIX
+\`\`\`"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="Markdown" \
+            -d disable_web_page_preview="true" \
+            --data-urlencode "text=${MESSAGE}"
+
   # Auto-update "latest" release on every master push (VSIX only)
   latest-release:
     needs: build-vsix
