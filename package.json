@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "6.5.1",
+  "version": "6.5.2",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
@@ -165,6 +165,21 @@
             "Automated (Legacy): DrissionPage automation, higher ban risk (40-90%)"
           ],
           "description": "Registration strategy - affects ban risk"
+        },
+        "kiroAccountSwitcher.autoreg.oauthProvider": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "Google",
+            "Github"
+          ],
+          "default": "ask",
+          "enumDescriptions": [
+            "Ask every time: Show provider selection dialog",
+            "Google: Always use Google OAuth",
+            "GitHub: Always use GitHub OAuth"
+          ],
+          "description": "OAuth provider for WebView registration"
         },
         "kiroAccountSwitcher.autoreg.deferQuotaCheck": {
           "type": "boolean",
