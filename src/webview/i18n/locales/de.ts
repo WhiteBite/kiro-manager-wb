@@ -133,7 +133,7 @@ export const de: Translations = {
   removePatch: 'Entfernen',
   newMachineId: 'Neue ID',
   patchKiroTitle: 'Kiro patchen',
-  patchKiroConfirm: 'Dies patcht Kiro für benutzerdefinierte Maschinen-ID. Schließen Sie Kiro zuerst! Fortfahren?',
+  patchKiroConfirm: 'Dies patcht Kiro für benutzerdefinierte Maschinen-ID. Starten Sie Kiro nach dem Patch neu. Fortfahren?',
   removePatchTitle: 'Patch entfernen',
   removePatchConfirm: 'Dies stellt die Original-Kiro-Dateien wieder her. Fortfahren?',
 

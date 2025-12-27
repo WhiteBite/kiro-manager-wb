@@ -133,7 +133,7 @@ export const ko: Translations = {
   removePatch: '제거',
   newMachineId: '새 ID',
   patchKiroTitle: 'Kiro 패치',
-  patchKiroConfirm: '사용자 정의 머신 ID를 사용하도록 Kiro를 패치합니다. 먼저 Kiro를 닫으세요! 계속하시겠습니까?',
+  patchKiroConfirm: '사용자 정의 머신 ID를 사용하도록 Kiro를 패치합니다. 패치 후 Kiro를 다시 시작하세요. 계속하시겠습니까?',
   removePatchTitle: '패치 제거',
   removePatchConfirm: '원본 Kiro 파일을 복원합니다. 계속하시겠습니까?',
 

@@ -133,7 +133,7 @@ export const ru: Translations = {
   removePatch: 'Убрать',
   newMachineId: 'Новый ID',
   patchKiroTitle: 'Пропатчить Kiro',
-  patchKiroConfirm: 'Это пропатчит Kiro для использования кастомного Machine ID. Сначала закройте Kiro! Продолжить?',
+  patchKiroConfirm: 'Это пропатчит Kiro для использования кастомного Machine ID. После патча перезапустите Kiro. Продолжить?',
   removePatchTitle: 'Удалить патч',
   removePatchConfirm: 'Это восстановит оригинальные файлы Kiro. Продолжить?',
 

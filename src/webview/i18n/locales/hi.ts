@@ -133,7 +133,7 @@ export const hi: Translations = {
   removePatch: 'हटाएं',
   newMachineId: 'नया ID',
   patchKiroTitle: 'Kiro पैच करें',
-  patchKiroConfirm: 'यह कस्टम मशीन ID उपयोग करने के लिए Kiro को पैच करेगा। पहले Kiro बंद करें! जारी रखें?',
+  patchKiroConfirm: 'यह कस्टम मशीन ID उपयोग करने के लिए Kiro को पैच करेगा। पैच के बाद Kiro को पुनः आरंभ करें। जारी रखें?',
   removePatchTitle: 'पैच हटाएं',
   removePatchConfirm: 'यह मूल Kiro फ़ाइलों को पुनर्स्थापित करेगा। जारी रखें?',
 
