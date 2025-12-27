@@ -63,8 +63,8 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       
       // FAB visibility - only show on accounts tab
       const fab = document.getElementById('fabContainer');
-      if (controls) {
-        controls.style.display = tabId === 'accounts' ? '' : 'none';
+      if (fab) {
+        fab.style.display = tabId === 'accounts' ? '' : 'none';
       }
       
       // Load data for specific tabs
@@ -305,22 +305,89 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     }
 
     function startLLMServer() {
+      const btn = document.getElementById('llmStartBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ ' + T.starting;
+      }
+      updateLLMServerStatus({ status: 'Starting...' });
       vscode.postMessage({ command: 'startLLMServer' });
     }
 
     function stopLLMServer() {
+      const btn = document.getElementById('llmStopBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ ' + T.stopping;
+      }
+      updateLLMServerStatus({ status: 'Stopping...' });
       vscode.postMessage({ command: 'stopLLMServer' });
     }
 
     function restartLLMServer() {
+      const btn = document.getElementById('llmRestartBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ ' + T.restarting;
+      }
+      updateLLMServerStatus({ status: 'Restarting...' });
       vscode.postMessage({ command: 'restartLLMServer' });
     }
 
     function updateLLMServerStatus(status) {
       const statusEl = document.getElementById('llmServerStatus');
+      const startBtn = document.getElementById('llmStartBtn');
+      const stopBtn = document.getElementById('llmStopBtn');
+      const restartBtn = document.getElementById('llmRestartBtn');
+      
       if (statusEl) {
-        statusEl.textContent = status.status;
-        statusEl.className = 'patch-status ' + status.status.toLowerCase();
+        const statusText = status.status || (status.running ? 'Running' : 'Stopped');
+        statusEl.textContent = statusText;
+        statusEl.className = 'patch-status ' + statusText.toLowerCase().replace('...', '');
+      }
+      
+      // Re-enable buttons and update text
+      const isRunning = status.running || status.status === 'Running';
+      const isPending = status.status?.includes('...');
+      
+      if (startBtn) {
+        startBtn.disabled = isPending || isRunning;
+        startBtn.textContent = T.startServer;
+      }
+      if (stopBtn) {
+        stopBtn.disabled = isPending || !isRunning;
+        stopBtn.textContent = T.stopServer;
+      }
+      if (restartBtn) {
+        restartBtn.disabled = isPending;
+        restartBtn.textContent = T.restartServer;
+      }
+      
+      // Load models when server is running
+      if (isRunning && !isPending) {
+        vscode.postMessage({ command: 'getLLMModels' });
+      }
+    }
+
+    function updateLLMModels(models) {
+      const select = document.getElementById('llmModel');
+      if (!select || !models || !models.length) return;
+      
+      const currentValue = select.value;
+      select.innerHTML = '';
+      
+      models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        // Show model id with credit info from description
+        const credit = model.description?.match(/\\([^)]+\\)/)?.[0] || '';
+        option.textContent = model.id + (credit ? ' ' + credit : '');
+        select.appendChild(option);
+      });
+      
+      // Restore selection if exists
+      if (currentValue) {
+        select.value = currentValue;
       }
     }
 
@@ -717,6 +784,9 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         case 'llmSettings':
           updateLLMSettings(msg.settings);
           break;
+        case 'llmModels':
+          updateLLMModels(msg.models);
+          break;
       }
     });
     
@@ -768,6 +838,8 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     }
     
     function updatePatchStatus(status) {
+      if (!status) return;
+      
       const patchBtn = document.getElementById('patchKiroBtn');
       const unpatchBtn = document.getElementById('unpatchKiroBtn');
       const generateBtn = document.getElementById('generateIdBtn');

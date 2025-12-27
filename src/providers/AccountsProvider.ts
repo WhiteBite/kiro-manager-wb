@@ -1558,6 +1558,7 @@ except Exception as e:
   async stopLLMServer(): Promise<void> {
     if (!llmServerProcess.isRunning) {
       this.addLog('⚠️ LLM server is not running');
+      this._updateLLMServerStatus(false);
       return;
     }
 
@@ -1574,16 +1575,18 @@ except Exception as e:
         timeout: 2000
       }, () => {
         this.addLog('✓ LLM server shutdown requested');
+        this._updateLLMServerStatus(false);
       });
 
       req.on('error', () => {
         // API not responding, force kill
         llmServerProcess.stop();
+        this._updateLLMServerStatus(false);
       });
 
       req.end();
 
-      // Give it time to shutdown gracefully
+      // Give it time to shutdown gracefully, then force update status
       setTimeout(async () => {
         if (llmServerProcess.isRunning) {
           await llmServerProcess.stop();
@@ -1647,9 +1650,65 @@ except Exception as e:
     this._view?.webview.postMessage({
       type: 'llmServerStatus',
       status: {
+        status: running ? 'Running' : 'Stopped',
         running,
         port: 8421
       }
+    });
+  }
+
+  async getLLMModels(): Promise<void> {
+    const http = require('http');
+
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: 8421,
+      path: '/v1/models',
+      method: 'GET',
+      timeout: 3000
+    }, (res: { statusCode: number; on: (event: string, cb: (data: Buffer | string) => void) => void }) => {
+      let data = '';
+      res.on('data', (chunk: Buffer | string) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const response = JSON.parse(data);
+            this._view?.webview.postMessage({
+              type: 'llmModels',
+              models: response.data || []
+            });
+          } catch {
+            this._sendDefaultModels();
+          }
+        } else {
+          this._sendDefaultModels();
+        }
+      });
+    });
+
+    req.on('error', () => {
+      this._sendDefaultModels();
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      this._sendDefaultModels();
+    });
+
+    req.end();
+  }
+
+  private _sendDefaultModels(): void {
+    const defaultModels = [
+      { id: 'claude-sonnet-4-20250514', description: 'claude-sonnet-4-20250514 (1.3x)' },
+      { id: 'claude-sonnet-4.5', description: 'claude-sonnet-4.5 (1.3x)' },
+      { id: 'claude-opus-4.5', description: 'claude-opus-4.5 (2.2x)' },
+      { id: 'claude-haiku-4.5', description: 'claude-haiku-4.5 (0.4x)' },
+      { id: 'auto', description: 'auto (1x)' }
+    ];
+    this._view?.webview.postMessage({
+      type: 'llmModels',
+      models: defaultModels
     });
   }
 
