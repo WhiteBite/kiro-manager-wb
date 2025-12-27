@@ -24,9 +24,9 @@ export function renderLLMSettings({ t }: LLMSettingsProps): string {
             </div>
           </div>
           <div class="danger-zone-actions">
-            <button class="btn btn-primary" onclick="startLLMServer()">${t.startServer}</button>
-            <button class="btn btn-danger" onclick="stopLLMServer()">${t.stopServer}</button>
-            <button class="btn btn-secondary" onclick="restartLLMServer()">${t.restartServer}</button>
+            <button id="llmStartBtn" class="btn btn-primary" onclick="startLLMServer()">${t.startServer}</button>
+            <button id="llmStopBtn" class="btn btn-danger" onclick="stopLLMServer()">${t.stopServer}</button>
+            <button id="llmRestartBtn" class="btn btn-secondary" onclick="restartLLMServer()">${t.restartServer}</button>
           </div>
         </div>
       </div>
@@ -51,8 +51,14 @@ export function renderLLMSettings({ t }: LLMSettingsProps): string {
           </div>
           <div class="form-group">
             <label for="llmModel">${t.llmModel}</label>
-            <input type="text" id="llmModel" class="form-control" placeholder="claude-sonnet-4-20250514">
-             <p class="setting-desc">${t.llmModelDesc}</p>
+            <select id="llmModel" class="form-control">
+              <option value="claude-sonnet-4-20250514">claude-sonnet-4-20250514 (1.3x)</option>
+              <option value="claude-sonnet-4.5">claude-sonnet-4.5 (1.3x)</option>
+              <option value="claude-opus-4.5">claude-opus-4.5 (2.2x)</option>
+              <option value="claude-haiku-4.5">claude-haiku-4.5 (0.4x)</option>
+              <option value="auto">auto (1x)</option>
+            </select>
+            <p class="setting-desc">${t.llmModelDesc}</p>
           </div>
         </div>
         <div class="settings-card-footer">

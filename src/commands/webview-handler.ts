@@ -296,6 +296,10 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       await provider.getLLMServerStatus();
       break;
 
+    case 'getLLMModels':
+      await provider.getLLMModels();
+      break;
+
     // === Scheduled Registration ===
     case 'updateScheduledRegSetting':
       await provider.updateScheduledRegSetting(msg.key as string, msg.value as string | number | boolean);

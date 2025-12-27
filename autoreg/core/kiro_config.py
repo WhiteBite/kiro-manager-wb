@@ -92,6 +92,9 @@ def get_machine_id(use_custom: bool = True) -> str:
     """
     Получает Machine ID.
     
+    ВАЖНО: Эта функция НЕ кэшируется! Каждый вызов читает файл заново,
+    чтобы корректно обрабатывать ротацию machine-id.txt.
+    
     Приоритет:
     1. Кастомный ID из ~/.kiro-manager-wb/machine-id.txt (если use_custom=True)
     2. Системный ID (как node-machine-id):
@@ -114,8 +117,21 @@ def get_machine_id(use_custom: bool = True) -> str:
             except Exception:
                 pass
     
-    # Fallback на системный ID
+    # Fallback на системный ID (этот кэшируется - системный ID не меняется)
     return _get_system_machine_id()
+
+
+def clear_machine_id_cache() -> None:
+    """
+    Очищает кэш системного Machine ID.
+    
+    Вызывайте эту функцию если нужно принудительно перечитать
+    системный machine ID (редкий случай, обычно не нужно).
+    
+    Примечание: get_machine_id() НЕ кэшируется и всегда читает
+    файл ~/.kiro-manager-wb/machine-id.txt заново.
+    """
+    _get_system_machine_id.cache_clear()
 
 
 @lru_cache(maxsize=1)
@@ -237,6 +253,7 @@ __all__ = [
     'get_kiro_version',
     'get_machine_id',
     'get_custom_machine_id_path',
+    'clear_machine_id_cache',
     '_get_system_machine_id',
     'get_kiro_user_agent',
     'get_kiro_scopes',

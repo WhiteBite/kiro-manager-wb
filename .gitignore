@@ -75,3 +75,9 @@ amz/
 
 # Recordings
 record/
+
+# Analysis scripts (local development only)
+autoreg/scripts/analyze_*.py
+autoreg/scripts/find_*.py
+autoreg/scripts/check_*.py
+autoreg/scripts/test_*.py

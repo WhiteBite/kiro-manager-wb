@@ -292,6 +292,9 @@ export interface Translations {
   startServer: string;
   stopServer: string;
   restartServer: string;
+  starting: string;
+  stopping: string;
+  restarting: string;
   serverStatus: string;
   serverStatusRunning: string;
   serverStatusStopped: string;
