@@ -133,7 +133,7 @@ export const zh: Translations = {
   removePatch: '移除',
   newMachineId: '新 ID',
   patchKiroTitle: '为 Kiro 打补丁',
-  patchKiroConfirm: '这将为 Kiro 打补丁以使用自定义机器 ID。请先关闭 Kiro！继续？',
+  patchKiroConfirm: '这将为 Kiro 打补丁以使用自定义机器 ID。打补丁后请重启 Kiro。继续？',
   removePatchTitle: '移除补丁',
   removePatchConfirm: '这将恢复原始 Kiro 文件。继续？',
 

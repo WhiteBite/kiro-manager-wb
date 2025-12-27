@@ -133,7 +133,7 @@ export const ja: Translations = {
   removePatch: '削除',
   newMachineId: '新しいID',
   patchKiroTitle: 'Kiroにパッチを適用',
-  patchKiroConfirm: 'カスタムマシンIDを使用するためにKiroにパッチを適用します。先にKiroを閉じてください！続行しますか？',
+  patchKiroConfirm: 'カスタムマシンIDを使用するためにKiroにパッチを適用します。パッチ後にKiroを再起動してください。続行しますか？',
   removePatchTitle: 'パッチを削除',
   removePatchConfirm: 'オリジナルのKiroファイルを復元します。続行しますか？',
 

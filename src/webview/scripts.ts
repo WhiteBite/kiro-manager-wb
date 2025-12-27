@@ -776,7 +776,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
           applyProviderHint(msg.hint, msg.recommendedStrategy);
           break;
         case 'patchStatus':
-          updatePatchStatus(msg.status);
+          updatePatchStatus(msg);
           break;
         case 'llmServerStatus':
           updateLLMServerStatus(msg.status);
