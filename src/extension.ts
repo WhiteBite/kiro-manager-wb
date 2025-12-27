@@ -53,7 +53,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kiroAccountSwitcher.refreshAccounts', () => accountsProvider.refresh()),
     vscode.commands.registerCommand('kiroAccountSwitcher.openSettings', () => openSettings()),
     vscode.commands.registerCommand('kiroAccountSwitcher.switchTo', (name: string) => doSwitch(name)),
-    vscode.commands.registerCommand('kiroAccountSwitcher.refreshToken', (name: string) => doRefresh(name))
+    vscode.commands.registerCommand('kiroAccountSwitcher.refreshToken', (name: string) => doRefresh(name)),
+    vscode.commands.registerCommand('kiroAccountSwitcher.switchToNextAvailable', () => switchToNextAvailable())
   );
 
   updateStatusBar();
@@ -95,6 +96,39 @@ async function doSwitch(name: string) {
 async function doRefresh(name: string) {
   await refreshAccountToken(name);
   accountsProvider?.refresh();
+}
+
+/**
+ * Switch to next available (non-banned, non-expired) account
+ * Called automatically by patched Kiro when current account is banned
+ */
+async function switchToNextAvailable(): Promise<boolean> {
+  const accounts = loadAccounts();
+  const currentActive = accounts.find(a => a.isActive);
+
+  // Find available accounts (not expired, not banned)
+  const available = accounts.filter(a =>
+    !a.isExpired &&
+    !a.isBanned &&
+    a.filename !== currentActive?.filename
+  );
+
+  if (available.length === 0) {
+    vscode.window.showErrorMessage('No available accounts to switch to. All accounts are banned or expired.');
+    return false;
+  }
+
+  // Switch to first available
+  const next = available[0];
+  const accountName = next.tokenData.accountName || next.filename;
+
+  vscode.window.showWarningMessage(
+    `Current account banned/suspended. Auto-switching to: ${accountName}`,
+    'OK'
+  );
+
+  await doSwitch(next.filename);
+  return true;
 }
 
 async function importToken() {
@@ -186,10 +220,25 @@ function setupAutoSwitch(context: vscode.ExtensionContext) {
   }
 }
 
-// Check if Kiro patch was overwritten (e.g., after Kiro update)
+// Check if Kiro patch was overwritten (e.g., after Kiro update) or needs update
 async function checkPatchOnStartup(context: vscode.ExtensionContext) {
   try {
     const status = await checkPatchStatus(context);
+
+    // If patch needs update (version mismatch or Kiro updated)
+    if (status.needsUpdate && status.updateReason) {
+      const action = await vscode.window.showWarningMessage(
+        `Kiro patch needs update: ${status.updateReason}`,
+        'Update Now',
+        'Later'
+      );
+
+      if (action === 'Update Now') {
+        // Hot-patch without closing Kiro - file is not locked on Windows
+        await applyHotPatch(context);
+      }
+      return;
+    }
 
     // If we have a custom machine ID file but patch is not applied, warn user
     if (status.currentMachineId && !status.isPatched && !status.error) {
@@ -200,13 +249,12 @@ async function checkPatchOnStartup(context: vscode.ExtensionContext) {
       if (status.kiroVersion && status.kiroVersion !== lastKiroVersion) {
         const action = await vscode.window.showWarningMessage(
           `Kiro was updated to ${status.kiroVersion}. The Machine ID patch needs to be re-applied.`,
-          'Re-apply Patch',
+          'Apply Patch',
           'Ignore'
         );
 
-        if (action === 'Re-apply Patch') {
-          vscode.commands.executeCommand('kiroAccountSwitcher.openSettings');
-          // Will show settings where user can click Patch button
+        if (action === 'Apply Patch') {
+          await applyHotPatch(context);
         }
 
         // Save current version
@@ -219,5 +267,28 @@ async function checkPatchOnStartup(context: vscode.ExtensionContext) {
     }
   } catch (error) {
     console.error('Patch check failed:', error);
+  }
+}
+
+// Apply patch without closing Kiro (hot-patch)
+async function applyHotPatch(context: vscode.ExtensionContext) {
+  const { patchKiroHot } = await import('./commands/autoreg');
+
+  const result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: 'Applying Kiro patch...',
+    cancellable: false
+  }, async () => {
+    return await patchKiroHot(context);
+  });
+
+  if (result.success) {
+    const action = await vscode.window.showInformationMessage(
+      'Patch applied! Restart Kiro to activate the changes.',
+      'Restart Later'
+    );
+    // User decides when to restart - we don't force it
+  } else {
+    vscode.window.showErrorMessage(`Patch failed: ${result.error}`);
   }
 }
