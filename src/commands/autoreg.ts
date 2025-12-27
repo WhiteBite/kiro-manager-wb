@@ -464,6 +464,56 @@ export async function patchKiro(context: vscode.ExtensionContext, provider: Kiro
   }
 }
 
+export interface HotPatchResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Hot-patch Kiro without closing it
+ * Works on all platforms:
+ * - Windows: files not locked by Electron
+ * - Linux/macOS: unlink semantics allow overwriting open files
+ * Called automatically on extension startup when patch update is needed
+ */
+export async function patchKiroHot(context: vscode.ExtensionContext): Promise<HotPatchResult> {
+  const autoregDir = getAutoregDir(context);
+  if (!autoregDir) {
+    return { success: false, error: 'Autoreg not found' };
+  }
+
+  const envManager = getEnvManager(autoregDir);
+
+  // Ensure venv is set up
+  if (!envManager.isVenvValid()) {
+    const result = await envManager.setup(() => { });
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+  }
+
+  // Use --skip-check to bypass "Kiro is running" check
+  // All platforms allow writing to files loaded by Electron
+  const args = ['cli.py', 'patch', 'apply', '--skip-check', '--force'];
+  const result = envManager.runScriptSync(args);
+
+  if (result.status === 0) {
+    return { success: true };
+  } else {
+    const errorText = result.stderr || result.stdout || '';
+
+    // Check for permission/lock errors
+    if (errorText.includes('Permission denied') || errorText.includes('EBUSY') || errorText.includes('being used')) {
+      return {
+        success: false,
+        error: 'File is locked. Please close Kiro and try again from Settings.'
+      };
+    }
+
+    return { success: false, error: errorText || 'Unknown error' };
+  }
+}
+
 /**
  * Remove Kiro patch (restore original)
  */
@@ -530,7 +580,10 @@ export interface PatchStatusResult {
   isPatched: boolean;
   kiroVersion?: string;
   patchVersion?: string;
+  latestPatchVersion?: string;
   currentMachineId?: string;
+  needsUpdate?: boolean;
+  updateReason?: string;
   error?: string;
 }
 
@@ -549,7 +602,7 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
   const bundledPath = path.join(context.extensionPath, 'autoreg');
   const homePath = path.join(os.homedir(), '.kiro-manager-wb');
 
-  // Prefer bundled, fallback to home
+  // Prefer bundled for scripts, fallback to home
   let autoregDir = '';
   if (fs.existsSync(path.join(bundledPath, 'services', 'kiro_patcher_service.py'))) {
     autoregDir = bundledPath;
@@ -568,7 +621,9 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
     return { isPatched: false, error: 'patch_status.py not found' };
   }
 
-  const envManager = getEnvManager(autoregDir);
+  // Always use home path for venv (bundled autoreg doesn't have venv)
+  const venvDir = fs.existsSync(path.join(homePath, '.venv')) ? homePath : autoregDir;
+  const envManager = getEnvManager(venvDir);
 
   // For patch status check, we can use system Python if venv not ready
   // This allows checking status before full setup
@@ -594,7 +649,13 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
 
     const proc = spawn(pythonCmd, [scriptPath], {
       cwd: autoregDir,
-      shell: true
+      shell: false,
+      windowsHide: true,
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: '1',
+        PYTHONIOENCODING: 'utf-8'
+      }
     });
 
     proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
@@ -608,7 +669,7 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
           resolve({ isPatched: false, error: 'Failed to parse status' });
         }
       } else {
-        resolve({ isPatched: false, error: stderr || 'Unknown error' });
+        resolve({ isPatched: false, error: stderr || stdout || 'Unknown error' });
       }
     });
 

@@ -29,9 +29,11 @@ from core.exceptions import KiroNotInstalledError, KiroRunningError
 class PatchStatus:
     """Статус патча Kiro"""
     is_patched: bool = False
+    workbench_patched: bool = False
     kiro_version: Optional[str] = None
     patch_version: Optional[str] = None
     extension_js_path: Optional[str] = None
+    workbench_js_path: Optional[str] = None
     current_machine_id: Optional[str] = None
     backup_exists: bool = False
     backup_path: Optional[str] = None
@@ -59,8 +61,9 @@ class KiroPatcherService:
     что предотвращает баны AWS за "unusual activity".
     """
     
-    PATCH_VERSION = "5.0.0"  # Версия 5 - патчим ВСЕ getMachineId функции
+    PATCH_VERSION = "6.2.0"  # Версия 6.2 - fix token cache for account switching
     PATCH_MARKER = "// KIRO_BATCH_LOGIN_PATCH_v"
+    WORKBENCH_PATCH_MARKER = "// KIRO_WORKBENCH_PATCH_v"
     
     # Путь к файлу с кастомным machine ID
     CUSTOM_ID_FILE = ".kiro-manager-wb/machine-id.txt"
@@ -69,6 +72,20 @@ class KiroPatcherService:
         self.paths = get_paths()
         self._kiro_path: Optional[Path] = None
         self._machine_id_js: Optional[Path] = None
+    
+    @property
+    def workbench_js_path(self) -> Optional[Path]:
+        """Путь к workbench.desktop.main.js"""
+        kiro_path = self.kiro_install_path
+        if not kiro_path:
+            return None
+        
+        wb_js = kiro_path / 'resources' / 'app' / 'out' / 'vs' / 'workbench' / 'workbench.desktop.main.js'
+        
+        if wb_js.exists():
+            return wb_js
+        
+        return None
     
     @property
     def kiro_install_path(self) -> Optional[Path]:
@@ -134,7 +151,7 @@ class KiroPatcherService:
         
         status.extension_js_path = str(js_path)
         
-        # Проверяем патч
+        # Проверяем патч extension.js
         content = js_path.read_text(encoding='utf-8')
         if self.PATCH_MARKER in content:
             status.is_patched = True
@@ -142,6 +159,14 @@ class KiroPatcherService:
             match = re.search(rf'{re.escape(self.PATCH_MARKER)}(\d+\.\d+\.\d+)', content)
             if match:
                 status.patch_version = match.group(1)
+        
+        # Проверяем workbench.desktop.main.js
+        wb_path = self.workbench_js_path
+        if wb_path:
+            status.workbench_js_path = str(wb_path)
+            wb_content = wb_path.read_text(encoding='utf-8')
+            if self.WORKBENCH_PATCH_MARKER in wb_content:
+                status.workbench_patched = True
         
         # Проверяем кастомный machine ID
         if self.custom_id_path.exists():
@@ -201,16 +226,88 @@ class KiroPatcherService:
         # Записываем
         js_path.write_text(patched_content, encoding='utf-8')
         
+        # === PATCH workbench.desktop.main.js ===
+        workbench_result = self._patch_workbench(force)
+        
         # Создаём файл с machine ID если не существует
         if not self.custom_id_path.exists():
             self.generate_machine_id()
         
+        # Сохраняем метку патча
+        self._save_patch_marker()
+        
+        msg = f"Kiro patched successfully! MachineId will be read from {self.custom_id_path}"
+        if workbench_result:
+            msg += " | Workbench patched (child window fix)"
+        
         return PatchResult(
             success=True,
-            message=f"Kiro patched successfully! MachineId will be read from {self.custom_id_path}",
+            message=msg,
             backup_path=str(backup_path),
             patched_file=str(js_path)
         )
+    
+    def _patch_workbench(self, force: bool = False) -> bool:
+        """
+        Патчит workbench.desktop.main.js для исправления child window createElement
+        
+        Returns:
+            True если патч применён успешно
+        """
+        wb_path = self.workbench_js_path
+        if not wb_path:
+            return False
+        
+        content = wb_path.read_text(encoding='utf-8')
+        
+        # Проверяем уже запатчен ли
+        if self.WORKBENCH_PATCH_MARKER in content:
+            if not force:
+                return True  # Уже запатчен
+            # Восстанавливаем из бэкапа
+            backup = self._get_workbench_backup()
+            if backup:
+                content = backup.read_text(encoding='utf-8')
+        
+        # Создаём бэкап
+        self._create_workbench_backup(wb_path, content)
+        
+        # Патчим - убираем блокировку createElement в child window
+        # Оригинал: e.document.createElement=function(){throw new Error('Not allowed to create elements in child window...
+        # Патч: просто не переопределяем createElement
+        
+        pattern = r"e\.document\.createElement=function\(\)\{throw new Error\('Not allowed to create elements in child window[^}]+\}"
+        
+        if re.search(pattern, content):
+            # Заменяем на пустую функцию которая вызывает оригинальный createElement
+            replacement = f"/* {self.WORKBENCH_PATCH_MARKER}{self.PATCH_VERSION} - child window fix */ void 0"
+            patched = re.sub(pattern, replacement, content, count=1)
+            
+            if patched != content:
+                wb_path.write_text(patched, encoding='utf-8')
+                return True
+        
+        return False
+    
+    def _create_workbench_backup(self, wb_path: Path, content: str) -> Path:
+        """Создаёт бэкап workbench.desktop.main.js"""
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        kiro_version = self._get_kiro_version() or 'unknown'
+        backup_name = f"workbench_{kiro_version}_{timestamp}.js.bak"
+        backup_path = self.backup_dir / backup_name
+        
+        backup_path.write_text(content, encoding='utf-8')
+        return backup_path
+    
+    def _get_workbench_backup(self) -> Optional[Path]:
+        """Получить последний бэкап workbench"""
+        if not self.backup_dir.exists():
+            return None
+        
+        backups = sorted(self.backup_dir.glob('workbench_*.js.bak'), reverse=True)
+        return backups[0] if backups else None
     
     def unpatch(self, skip_running_check: bool = False) -> PatchResult:
         """Восстановить оригинальный файл из бэкапа"""
@@ -225,8 +322,14 @@ class KiroPatcherService:
         if not backup:
             return PatchResult(success=False, message="No backup found")
         
-        # Восстанавливаем
+        # Восстанавливаем extension.js
         shutil.copy2(backup, js_path)
+        
+        # Восстанавливаем workbench.desktop.main.js
+        wb_backup = self._get_workbench_backup()
+        wb_path = self.workbench_js_path
+        if wb_backup and wb_path:
+            shutil.copy2(wb_backup, wb_path)
         
         return PatchResult(
             success=True,
@@ -256,6 +359,46 @@ class KiroPatcherService:
         
         return machine_id
     
+    @property
+    def patch_marker_path(self) -> Path:
+        """Путь к файлу с меткой патча"""
+        return self.custom_id_path.parent / 'patch-info.json'
+    
+    def _save_patch_marker(self) -> None:
+        """Сохраняет информацию о патче в файл"""
+        kiro_version = self._get_kiro_version() or 'unknown'
+        
+        patch_info = {
+            'patch_version': self.PATCH_VERSION,
+            'kiro_version': kiro_version,
+            'patched_at': datetime.now().isoformat(),
+            'patches_applied': [
+                'getMachineId',
+                'getMachineId2', 
+                'userAttributes',
+                'TemporarilySuspendedError',
+                'AccountNotSupportedError',
+                'readToken_cache_fix',
+                'getUniqueId',
+                'OpenTelemetry_host_id',
+                'workbench_createElement'
+            ],
+            'machine_id_file': str(self.custom_id_path),
+            'extension_path': str(self.extension_js_path) if self.extension_js_path else None
+        }
+        
+        self.patch_marker_path.parent.mkdir(parents=True, exist_ok=True)
+        self.patch_marker_path.write_text(json.dumps(patch_info, indent=2))
+    
+    def get_patch_info(self) -> Optional[Dict[str, Any]]:
+        """Получить информацию о текущем патче"""
+        if self.patch_marker_path.exists():
+            try:
+                return json.loads(self.patch_marker_path.read_text())
+            except:
+                pass
+        return None
+    
     def set_machine_id(self, machine_id: str) -> bool:
         """Установить конкретный machine ID"""
         # Валидация - должен быть 64-символьный hex
@@ -274,14 +417,16 @@ class KiroPatcherService:
     
     def _apply_patch(self, content: str) -> str:
         """
-        Применяет патч к extension.js (версия 5.0 - патчим ВСЕ getMachineId функции)
+        Применяет патч к extension.js (версия 6.0 - graceful ban handling)
         
         Kiro использует machineId в нескольких местах:
         1. getMachineId() - телеметрия
         2. getMachineId2() - User-Agent заголовок (KiroIDE-0.7.45-{machineId})
         3. userAttributes() - атрибуты телеметрии
         
-        Все нужно патчить!
+        Также патчим обработку ошибок:
+        4. TemporarilySuspendedError - return вместо throw (graceful ban)
+        5. AccountNotSupportedError - return вместо throw
         """
         
         patched = content
@@ -324,6 +469,87 @@ class KiroPatcherService:
         ua_pattern = r'(function userAttributes\(\)\s*\{\s*return\s*\{[^}]*machineId:\s*)MACHINE_ID(\s*\})'
         if re.search(ua_pattern, patched):
             patched = re.sub(ua_pattern, r'\1getMachineId()\2', patched)
+            patches_applied += 1
+        
+        # === PATCH 4: Auto-switch on ban ===
+        # При бане вызываем команду переключения на следующий аккаунт
+        # Оригинал: throw new TemporarilySuspendedError();
+        # Патч: вызываем vscode команду и возвращаем ошибку gracefully
+        ban_pattern = r'throw new TemporarilySuspendedError\(\);'
+        ban_replacement = '''(() => {
+      // KIRO_AUTO_SWITCH_PATCH
+      try {
+        const vscode = require('vscode');
+        vscode.commands.executeCommand('kiroAccountSwitcher.switchToNextAvailable');
+      } catch (_) {}
+      return new TemporarilySuspendedError();
+    })();'''
+        if re.search(ban_pattern, patched) and 'KIRO_AUTO_SWITCH_PATCH' not in patched:
+            patched = re.sub(ban_pattern, ban_replacement, patched, count=1)
+            patches_applied += 1
+        
+        # === PATCH 5: Graceful AccountNotSupportedError handling ===
+        account_pattern = r'throw new AccountNotSupportedError\(\)'
+        if re.search(account_pattern, patched):
+            patched = re.sub(account_pattern, 'return new AccountNotSupportedError()', patched)
+            patches_applied += 1
+        
+        # === PATCH 6: Fix token cache for account switching ===
+        # Problem: readToken() returns cached token even after file changed
+        # Solution: Always clear cache before reading to ensure fresh token
+        # Original: readToken() { const localToken = this.readTokenFromLocalCache();
+        # Patched: readToken() { this.clearCache(); const localToken = this.readTokenFromLocalCache();
+        readtoken_pattern = r'readToken\(\) \{\s+const localToken = this\.readTokenFromLocalCache\(\);'
+        readtoken_replacement = f'''readToken() {{
+        // KIRO_TOKEN_CACHE_PATCH_v{self.PATCH_VERSION} - always read fresh token for account switching
+        this.clearCache();
+        const localToken = this.readTokenFromLocalCache();'''
+        if re.search(readtoken_pattern, patched) and 'KIRO_TOKEN_CACHE_PATCH' not in patched:
+            patched = re.sub(readtoken_pattern, readtoken_replacement, patched, count=1)
+            patches_applied += 1
+        
+        # === PATCH 7: getUniqueId() - continuedev package also uses machineId ===
+        # Original: function getUniqueId() { const id = vscode20.env.machineId; if (id === "someValue.machineId") { return (0, import_node_machine_id8.machineIdSync)(); }
+        # Patched: Add custom machineId reading before fallback
+        uniqueid_pattern = r'function getUniqueId\(\) \{\s+const id = vscode20\.env\.machineId;'
+        uniqueid_replacement = f'''function getUniqueId() {{
+  // KIRO_UNIQUEID_PATCH_v{self.PATCH_VERSION}
+  try {{
+    const fs = require('fs');
+    const path = require('path');
+    const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-manager-wb', 'machine-id.txt');
+    if (fs.existsSync(customIdFile)) {{
+      const customId = fs.readFileSync(customIdFile, 'utf8').trim();
+      if (customId && customId.length >= 32) return customId;
+    }}
+  }} catch (_) {{}}
+  const id = vscode20.env.machineId;'''
+        if re.search(uniqueid_pattern, patched) and 'KIRO_UNIQUEID_PATCH' not in patched:
+            patched = re.sub(uniqueid_pattern, uniqueid_replacement, patched, count=1)
+            patches_applied += 1
+        
+        # === PATCH 8: OpenTelemetry _getAsyncAttributes - telemetry host.id ===
+        # OpenTelemetry sends real machineId in host.id attribute via separate getMachineId
+        # Original: _getAsyncAttributes() { return (0, getMachineId_1.getMachineId)().then((machineId2) => {
+        # Patched: Read from our custom file first
+        otel_pattern = r'_getAsyncAttributes\(\) \{\s+return \(0, getMachineId_1\.getMachineId\)\(\)\.then\(\(machineId2\) => \{'
+        otel_replacement = f'''_getAsyncAttributes() {{
+        // KIRO_OTEL_PATCH_v{self.PATCH_VERSION} - use custom machineId for telemetry
+        const getCustomMachineId = async () => {{
+          try {{
+            const fs = require('fs');
+            const path = require('path');
+            const customIdFile = path.join(process.env.USERPROFILE || process.env.HOME || '', '.kiro-manager-wb', 'machine-id.txt');
+            if (fs.existsSync(customIdFile)) {{
+              const customId = fs.readFileSync(customIdFile, 'utf8').trim();
+              if (customId && customId.length >= 32) return customId;
+            }}
+          }} catch (_) {{}}
+          return (0, getMachineId_1.getMachineId)();
+        }};
+        return getCustomMachineId().then((machineId2) => {{'''
+        if re.search(otel_pattern, patched) and 'KIRO_OTEL_PATCH' not in patched:
+            patched = re.sub(otel_pattern, otel_replacement, patched, count=1)
             patches_applied += 1
         
         if patches_applied == 0:
