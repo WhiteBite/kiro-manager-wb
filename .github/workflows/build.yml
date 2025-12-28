@@ -249,13 +249,22 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           CHANGELOG=$(cat changelog.txt | head -10 | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           MESSAGE="🚀 *Kiro Manager WB ${VERSION}*\n\n📦 Новый релиз доступен!\n\n📝 *Изменения:*\n${CHANGELOG}\n\n🔗 [Скачать на GitHub](https://github.com/WhiteBite/kiro-manager-wb/releases/tag/${VERSION})"
+          
+          # Build JSON with optional message_thread_id for forum topics
+          if [ -n "${TELEGRAM_THREAD_ID}" ]; then
+            JSON_DATA="{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"message_thread_id\": ${TELEGRAM_THREAD_ID}, \"text\": \"${MESSAGE}\", \"parse_mode\": \"Markdown\", \"disable_web_page_preview\": true}"
+          else
+            JSON_DATA="{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\", \"parse_mode\": \"Markdown\", \"disable_web_page_preview\": true}"
+          fi
+          
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -H "Content-Type: application/json" \
-            -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\", \"parse_mode\": \"Markdown\", \"disable_web_page_preview\": true}"
+            -d "${JSON_DATA}"
 
   # Auto-update "latest" release on every master push (VSIX only)
   latest-release:
