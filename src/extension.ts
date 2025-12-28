@@ -109,7 +109,7 @@ async function switchToNextAvailable(): Promise<boolean> {
   // Find available accounts (not expired, not banned)
   const available = accounts.filter(a =>
     !a.isExpired &&
-    !a.isBanned &&
+    !a.usage?.isBanned &&
     a.filename !== currentActive?.filename
   );
 
