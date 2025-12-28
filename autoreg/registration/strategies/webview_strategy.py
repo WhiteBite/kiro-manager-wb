@@ -77,6 +77,7 @@ class WebViewRegistrationStrategy(RegistrationStrategy):
             
             result = webview_register(
                 email=email,
+                name=name,
                 provider=provider,
                 timeout=timeout
             )

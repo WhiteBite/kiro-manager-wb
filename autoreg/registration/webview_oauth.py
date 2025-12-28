@@ -285,22 +285,27 @@ class KiroWebPortalClient:
         return result
 
 
-def webview_register(email: str, provider: str = 'Google', timeout: int = 300) -> Dict[str, Any]:
+def webview_register(email: str, name: str = None, provider: str = 'Google', timeout: int = 300) -> Dict[str, Any]:
     """
     Регистрация через WebView
     
     Args:
         email: Email (для подсказки пользователю)
+        name: Display name для аккаунта (используется в имени файла токена)
         provider: OAuth provider ('Google' или 'Github')
         timeout: Таймаут в секундах
         
     Returns:
         Dict с результатом регистрации
     """
+    # Use name if provided, otherwise extract from email
+    account_name = name or email.split('@')[0]
+    
     print("\n" + "="*60)
     print("🌐 WEBVIEW REGISTRATION (Low Ban Risk)")
     print("="*60)
     print(f"Provider: {provider}")
+    print(f"Account name: {account_name}")
     print(f"Email hint: {email}")
     print("="*60 + "\n")
     
@@ -362,13 +367,19 @@ def webview_register(email: str, provider: str = 'Google', timeout: int = 300) -
         from ..services.token_service import TokenService
         token_service = TokenService()
         
-        token_file = token_service.save_token(
-            email=email,
-            access_token=token_result['accessToken'],
-            refresh_token=token_result.get('refreshToken'),
-            expires_in=token_result.get('expiresIn', 3600),
-            idp=provider
-        )
+        # Prepare token data
+        token_data = {
+            'accessToken': token_result['accessToken'],
+            'refreshToken': token_result.get('refreshToken'),
+            'expiresIn': token_result.get('expiresIn', 3600),
+            'csrfToken': token_result.get('csrfToken'),
+            'profileArn': token_result.get('profileArn'),
+            'idp': provider,
+            'email': email,
+            'accountName': account_name,
+        }
+        
+        token_file = token_service.save_token(data=token_data, name=account_name)
         
         return {
             'email': email,
