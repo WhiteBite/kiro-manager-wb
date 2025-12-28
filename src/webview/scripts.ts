@@ -787,6 +787,9 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         case 'llmModels':
           updateLLMModels(msg.models);
           break;
+        case 'scheduledRegState':
+          updateScheduledRegState(msg.state);
+          break;
       }
     });
     
@@ -1822,23 +1825,93 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         badge.style.display = state.isRunning ? '' : 'none';
       }
       
-      // Update progress
-      const progressFill = card.querySelector('.scheduled-reg-progress-fill');
-      const progressText = card.querySelector('.scheduled-reg-progress-text');
-      if (progressFill && state.maxAccounts > 0) {
-        const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
-        progressFill.style.width = percent + '%';
-        if (state.registeredCount >= state.maxAccounts) {
-          progressFill.classList.add('complete');
+      // Update progress section - create if doesn't exist
+      let progressSection = card.querySelector('.scheduled-reg-progress-section');
+      const shouldShowProgress = state.isRunning || state.registeredCount > 0;
+      
+      if (shouldShowProgress && !progressSection) {
+        // Create progress section
+        const actionsDiv = card.querySelector('.scheduled-reg-actions');
+        if (actionsDiv) {
+          const progressHtml = \`
+            <div class="scheduled-reg-progress-section">
+              <div class="scheduled-reg-progress-header">
+                <span class="scheduled-reg-progress-text">
+                  \${state.registeredCount}/\${state.maxAccounts} \${T.accounts || 'accounts'}
+                </span>
+                \${state.interval > 0 ? \`
+                  <span class="scheduled-reg-timer" style="display: \${state.isRunning ? '' : 'none'}">
+                    <span class="timer-icon">⏱</span>
+                    <span class="timer-value" id="scheduledRegTimer">--:--</span>
+                  </span>
+                \` : ''}
+              </div>
+              <div class="scheduled-reg-progress-bar">
+                <div class="scheduled-reg-progress-fill" style="width: 0%"></div>
+              </div>
+            </div>
+          \`;
+          actionsDiv.insertAdjacentHTML('beforebegin', progressHtml);
+          progressSection = card.querySelector('.scheduled-reg-progress-section');
         }
       }
-      if (progressText) {
-        progressText.textContent = state.registeredCount + '/' + state.maxAccounts + ' ' + (T.accounts || 'accounts');
+      
+      // Update progress bar
+      if (progressSection) {
+        const progressFill = progressSection.querySelector('.scheduled-reg-progress-fill');
+        const progressText = progressSection.querySelector('.scheduled-reg-progress-text');
+        const timerWrap = progressSection.querySelector('.scheduled-reg-timer');
+        
+        if (progressFill && state.maxAccounts > 0) {
+          const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
+          progressFill.style.width = percent + '%';
+          if (state.registeredCount >= state.maxAccounts) {
+            progressFill.classList.add('complete');
+          } else {
+            progressFill.classList.remove('complete');
+          }
+        }
+        if (progressText) {
+          progressText.textContent = state.registeredCount + '/' + state.maxAccounts + ' ' + (T.accounts || 'accounts');
+        }
+        if (timerWrap) {
+          timerWrap.style.display = state.isRunning && state.interval > 0 ? '' : 'none';
+        }
       }
       
-      // Update timer
-      if (state.nextRunAt && state.isRunning) {
+      // Update timer countdown
+      if (state.nextRunAt && state.isRunning && state.interval > 0) {
         updateScheduledRegTimer(state.nextRunAt);
+      } else if (scheduledRegTimer) {
+        clearInterval(scheduledRegTimer);
+        scheduledRegTimer = null;
+        const timerEl = document.getElementById('scheduledRegTimer');
+        if (timerEl) timerEl.textContent = '--:--';
+      }
+      
+      // Update buttons
+      const actionsDiv = card.querySelector('.scheduled-reg-actions');
+      if (actionsDiv) {
+        const enabled = document.getElementById('scheduledRegEnabled')?.checked;
+        const isComplete = state.maxAccounts > 0 && state.registeredCount >= state.maxAccounts;
+        
+        actionsDiv.innerHTML = \`
+          \${!state.isRunning ? \`
+            <button class="btn btn-primary scheduled-reg-btn" onclick="startScheduledReg()" \${!enabled || isComplete ? 'disabled' : ''}>
+              ▶ \${state.interval === 0 ? (T.registerOne || 'Register') : (T.startScheduled || 'Start')}
+            </button>
+          \` : \`
+            <button class="btn btn-danger scheduled-reg-btn" onclick="stopScheduledReg()">
+              ⏹ \${T.stop || 'Stop'}
+            </button>
+          \`}
+          \${state.registeredCount > 0 ? \`
+            <button class="btn btn-secondary scheduled-reg-btn" onclick="resetScheduledReg()" 
+              \${state.isRunning ? 'disabled' : ''} title="\${T.resetProgress || 'Reset counter to start'}">
+              ↺ \${T.reset || 'Reset'}
+            </button>
+          \` : ''}
+        \`;
       }
       
       // Update current number input

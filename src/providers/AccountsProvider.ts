@@ -1769,6 +1769,7 @@ except Exception as e:
     }
 
     settings.isRunning = true;
+    this._sendScheduledRegState(); // Send state immediately after setting isRunning
     this.addLog(`🚀 Starting scheduled registration (${settings.registeredCount}/${settings.maxAccounts})`);
 
     // Run first registration immediately
@@ -1912,6 +1913,13 @@ except Exception as e:
     const saved = this._context.globalState.get<typeof this._scheduledRegSettings>('scheduledRegSettings');
     if (saved) {
       this._scheduledRegSettings = { ...this._scheduledRegSettings, ...saved };
+      // Reset isRunning on load - timer doesn't survive Kiro restart
+      if (this._scheduledRegSettings.isRunning) {
+        this._scheduledRegSettings.isRunning = false;
+        this._scheduledRegSettings.nextRunAt = undefined;
+        // Save the reset state
+        this._context.globalState.update('scheduledRegSettings', this._scheduledRegSettings);
+      }
     }
     return this._scheduledRegSettings;
   }
