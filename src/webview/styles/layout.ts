@@ -2939,8 +2939,8 @@ export const statsStyles = `
     text-align: center;
   }
 
-  /* === Scheduled Registration Card === */
-  .scheduled-reg-card {
+  /* === Batch Registration Card === */
+  .batch-reg-card {
     margin: 8px;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -2948,262 +2948,331 @@ export const statsStyles = `
     overflow: hidden;
     transition: all var(--transition);
   }
-  .scheduled-reg-card:hover {
+  .batch-reg-card:hover {
     border-color: rgba(63,182,139,0.3);
   }
-  .scheduled-reg-header {
+  .batch-reg-card.running {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(63,182,139,0.15);
+  }
+  .batch-reg-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    cursor: pointer;
+    padding: 12px 14px;
     background: rgba(0,0,0,0.1);
-    user-select: none;
   }
-  .scheduled-reg-header:hover {
-    background: rgba(0,0,0,0.15);
-  }
-  .scheduled-reg-title {
+  .batch-reg-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
   }
-  .scheduled-reg-icon {
-    font-size: 14px;
+  .batch-reg-icon {
+    font-size: 16px;
   }
-  .scheduled-reg-badge {
+  .batch-reg-badge {
     font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
     font-weight: 600;
   }
-  .scheduled-reg-badge.running {
+  .batch-reg-badge.running {
     background: var(--accent-dim);
     color: var(--accent);
     animation: pulse 1.5s ease-in-out infinite;
   }
-  .scheduled-reg-badge.complete {
+  .batch-reg-badge.complete {
     background: rgba(76,175,80,0.2);
     color: #4CAF50;
   }
-  .scheduled-reg-toggle-wrap {
+  .batch-reg-body {
+    padding: 14px;
+  }
+  
+  /* Running state - progress display */
+  .batch-reg-status {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 20px;
+    padding: 16px;
+    background: rgba(0,0,0,0.15);
+    border-radius: var(--radius-md);
+    margin-bottom: 14px;
   }
-  .scheduled-reg-chevron {
-    font-size: 10px;
-    color: var(--muted);
-    transition: transform 0.2s ease;
+  .batch-reg-progress-ring {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
   }
-  .scheduled-reg-card.collapsed .scheduled-reg-chevron {
+  .batch-reg-progress-ring svg {
+    width: 100%;
+    height: 100%;
     transform: rotate(-90deg);
   }
-  .scheduled-reg-body {
-    padding: 12px;
+  .batch-reg-progress-ring .progress-bg {
+    fill: none;
+    stroke: rgba(128,128,128,0.2);
+    stroke-width: 3;
+  }
+  .batch-reg-progress-ring .progress-fill {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+  }
+  .batch-reg-progress-ring .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .batch-reg-status-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
   }
-  .scheduled-reg-card.collapsed .scheduled-reg-body {
-    display: none;
-  }
-  .scheduled-reg-row {
+  .status-line {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    font-size: 12px;
   }
-  .scheduled-reg-field {
-    flex: 1;
-    min-width: 0;
+  .status-label {
+    color: var(--muted);
   }
-  .scheduled-reg-field.small {
-    flex: 0 0 70px;
+  .status-value {
+    font-weight: 600;
+    color: var(--fg);
   }
-  .scheduled-reg-label {
-    display: block;
-    font-size: 10px;
+  .status-line.timer .status-value {
+    color: var(--accent);
+    font-family: monospace;
+  }
+  
+  /* Settings state */
+  .batch-reg-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .batch-reg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .batch-reg-field > label {
+    font-size: 11px;
     font-weight: 600;
     color: var(--muted);
-    margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .scheduled-reg-input-group {
+  
+  /* Count selector */
+  .batch-reg-count-group {
     display: flex;
     align-items: center;
+    gap: 0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .count-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 18px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .count-btn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .count-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .count-input {
+    flex: 1;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    font-family: inherit;
+  }
+  .count-input:focus {
+    outline: none;
+  }
+  
+  /* Interval pills */
+  .batch-reg-interval-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .interval-pill {
+    padding: 8px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 20px;
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .interval-pill:hover {
+    border-color: var(--accent);
+    color: var(--fg);
+  }
+  .interval-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .batch-reg-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: -4px;
+  }
+  
+  /* Name mode selector */
+  .batch-reg-name-mode {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
   }
-  .scheduled-reg-input {
-    flex: 1;
-    padding: 8px 10px;
+  .name-mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .name-mode-option:hover {
+    border-color: rgba(63,182,139,0.4);
+  }
+  .name-mode-option.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .name-mode-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--accent);
+  }
+  .name-mode-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .name-mode-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .name-mode-desc {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .batch-reg-input {
+    width: 100%;
+    padding: 10px 12px;
     font-size: 12px;
     font-family: inherit;
     background: var(--input-bg);
     color: var(--fg);
     border: 1px solid var(--input-border);
     border-radius: var(--radius-sm);
+    margin-top: 8px;
     transition: all var(--transition);
   }
-  .scheduled-reg-input:focus {
+  .batch-reg-input:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(63,182,139,0.15);
   }
-  .scheduled-reg-input.number {
-    width: 100%;
-    text-align: center;
-    padding: 8px 4px;
-  }
-  .scheduled-reg-preview {
-    font-size: 11px;
-    color: var(--accent);
-    font-family: monospace;
-    white-space: nowrap;
-    padding: 4px 8px;
-    background: var(--accent-dim);
-    border-radius: var(--radius-sm);
-  }
-  .scheduled-reg-hint {
-    font-size: 9px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-  .scheduled-reg-select {
-    width: 100%;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-family: inherit;
-    background: var(--input-bg);
-    color: var(--fg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition);
-  }
-  .scheduled-reg-select:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  .scheduled-reg-progress-section {
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
-  }
-  .scheduled-reg-progress-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-  .scheduled-reg-progress-bar {
-    height: 6px;
-    background: rgba(128,128,128,0.15);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 6px;
-  }
-  .scheduled-reg-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-    border-radius: 3px;
-    transition: width 0.4s ease;
-  }
-  .scheduled-reg-progress-fill.complete {
-    background: linear-gradient(90deg, #4CAF50, #66BB6A);
-  }
-  .scheduled-reg-progress-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .scheduled-reg-progress-text {
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .scheduled-reg-timer {
+  
+  /* Preview names */
+  .batch-reg-preview {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .timer-icon {
-    font-size: 12px;
-  }
-  .timer-value {
-    font-family: monospace;
-  }
-  .scheduled-reg-actions {
-    display: flex;
-    gap: 8px;
-    padding-top: 8px;
-  }
-  .scheduled-reg-btn {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 11px;
-  }
-  /* Preview section for upcoming names */
-  .scheduled-reg-preview-section {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 10px 12px;
     background: rgba(63,182,139,0.08);
     border-radius: var(--radius-sm);
-    margin-bottom: 4px;
   }
-  .scheduled-reg-preview-label {
+  .preview-label {
     font-size: 10px;
     color: var(--muted);
     font-weight: 600;
+    white-space: nowrap;
   }
-  .scheduled-reg-preview-names {
+  .preview-names {
     display: flex;
-    align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
   }
-  .scheduled-reg-preview-name {
+  .preview-name {
     font-size: 11px;
-    font-family: monospace;
-    color: var(--fg);
-    padding: 2px 6px;
+    color: var(--accent);
+    padding: 3px 8px;
     background: var(--bg);
     border-radius: var(--radius-sm);
+    font-family: inherit;
   }
-  .scheduled-reg-preview-name.next {
-    color: var(--accent);
-    font-weight: 600;
-    background: var(--accent-dim);
-  }
-  .scheduled-reg-preview-arrow {
-    font-size: 10px;
-    color: var(--muted);
-  }
-  .scheduled-reg-preview-more {
-    font-size: 10px;
-    color: var(--muted);
-  }
-  /* Interval group with custom input */
-  .scheduled-reg-interval-group {
+  
+  /* Previous progress */
+  .batch-reg-previous {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(255,193,7,0.1);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: #FFC107;
   }
-  .scheduled-reg-interval-group .scheduled-reg-select {
-    flex: 1;
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
   }
-  .scheduled-reg-interval-group .custom-interval {
-    width: 60px;
-    flex: 0 0 60px;
+  .btn-link:hover {
+    color: var(--accent-hover);
   }
-  .scheduled-reg-interval-unit {
-    font-size: 10px;
-    color: var(--muted);
+  
+  /* Buttons */
+  .btn-block {
+    width: 100%;
   }
+  .btn-large {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }

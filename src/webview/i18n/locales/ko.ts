@@ -373,7 +373,10 @@ export const ko: Translations = {
   highBanRisk: '높은 위험',
   banRiskLabel: '차단 위험',
   auto: '자동',
-  manual: '수동',// Scheduled Registration
+  manual: '수동',
+
+  // Batch Registration
+  batchRegistration: '일괄 등록',
   scheduledRegistration: '예약 등록',
   scheduledRegistrationDesc: '간격을 두고 계정 자동 등록',
   loginTemplate: '로그인 템플릿',
@@ -405,7 +408,24 @@ export const ko: Translations = {
   startFrom: '시작 #',
   enableFirst: '먼저 토글을 활성화하세요',
   registerOne: '등록',
-
+  accountsToRegister: '등록할 계정 수',
+  intervalBetween: '등록 간격',
+  noDelay: '지연 없음',
+  noDelayHint: '등록이 연속으로 실행됩니다',
+  withDelayHint: '속도 제한을 피하기 위해 더 안전',
+  accountNames: '계정 이름',
+  randomNames: '무작위 이름',
+  randomNamesDesc: '실제 이름 + 성',
+  customPrefix: '사용자 정의 접두사',
+  customPrefixDesc: '접두사 + 번호',
+  enterPrefix: '접두사 입력 (예: 내계정)',
+  exampleNames: '이름 예시',
+  previousProgress: '이전 진행',
+  startBatchReg: '등록 시작',
+  stopRegistration: '등록 중지',
+  completed: '완료됨',
+  remaining: '남음',
+  nextIn: '다음까지',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: '프록시 주소',

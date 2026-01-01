@@ -373,7 +373,10 @@ export const pt: Translations = {
   highBanRisk: 'Risco alto',
   banRiskLabel: 'Risco de ban',
   auto: 'Auto',
-  manual: 'Manual',// Scheduled Registration
+  manual: 'Manual',
+
+  // Batch Registration
+  batchRegistration: 'Registro em lote',
   scheduledRegistration: 'Registro Agendado',
   scheduledRegistrationDesc: 'Registrar contas automaticamente em intervalos',
   loginTemplate: 'Modelo de Login',
@@ -405,7 +408,24 @@ export const pt: Translations = {
   startFrom: 'Início #',
   enableFirst: 'Ative o interruptor primeiro',
   registerOne: 'Registrar',
-
+  accountsToRegister: 'Contas para registrar',
+  intervalBetween: 'Intervalo entre registros',
+  noDelay: 'Sem atraso',
+  noDelayHint: 'Registros serão executados um após o outro',
+  withDelayHint: 'Mais seguro para evitar limites',
+  accountNames: 'Nomes de conta',
+  randomNames: 'Nomes aleatórios',
+  randomNamesDesc: 'Nomes e sobrenomes realistas',
+  customPrefix: 'Prefixo personalizado',
+  customPrefixDesc: 'Seu prefixo + número',
+  enterPrefix: 'Digite o prefixo (ex. MinhaConta)',
+  exampleNames: 'Exemplos de nomes',
+  previousProgress: 'Progresso anterior',
+  startBatchReg: 'Iniciar registro',
+  stopRegistration: 'Parar registro',
+  completed: 'Concluído',
+  remaining: 'Restante',
+  nextIn: 'Próximo em',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'Endereço do proxy',

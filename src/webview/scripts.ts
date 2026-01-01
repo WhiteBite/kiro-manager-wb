@@ -1723,55 +1723,42 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       }, 100);
     }
     
-    // === Scheduled Registration ===
+    // === Batch Registration ===
     
     let scheduledRegTimer = null;
-    
-    function toggleScheduledReg() {
-      const card = document.getElementById('scheduledRegCard');
-      if (card) {
-        card.classList.toggle('collapsed');
-      }
-    }
-    
-    function toggleScheduledRegEnabled(enabled) {
-      vscode.postMessage({ command: 'updateScheduledRegSetting', key: 'enabled', value: enabled });
-    }
     
     function updateScheduledRegSetting(key, value) {
       vscode.postMessage({ command: 'updateScheduledRegSetting', key, value });
       
-      // Update preview if template or number changed
-      if (key === 'loginTemplate' || key === 'currentNumber') {
-        updateLoginPreview();
-      }
-    }
-    
-    function handleIntervalChange(value) {
-      if (value === 'custom') {
-        // Show custom input, default to 10 minutes
-        updateScheduledRegSetting('interval', 10);
-        // Refresh to show custom input
+      // Refresh preview when name mode changes
+      if (key === 'useCustomName' || key === 'customNamePrefix') {
         vscode.postMessage({ command: 'refresh' });
-      } else {
-        updateScheduledRegSetting('interval', parseInt(value));
       }
     }
     
-    function updateLoginPreview() {
-      const templateInput = document.getElementById('loginTemplateInput');
-      const numberInput = document.getElementById('currentNumberInput');
-      const preview = document.querySelector('.scheduled-reg-preview');
-      
-      if (templateInput && numberInput && preview) {
-        const template = templateInput.value || 'Account_{N}';
-        const num = parseInt(numberInput.value) || 1;
-        const padded = num.toString().padStart(3, '0');
-        preview.textContent = template.replace('{N}', padded).replace('{n}', num.toString());
+    function adjustBatchCount(delta) {
+      const input = document.getElementById('maxAccountsInput');
+      if (input) {
+        const current = parseInt(input.value) || 5;
+        const newVal = Math.max(1, Math.min(100, current + delta));
+        input.value = newVal;
+        updateScheduledRegSetting('maxAccounts', newVal);
       }
+    }
+    
+    function setBatchInterval(minutes) {
+      updateScheduledRegSetting('interval', minutes);
+      // Update pill buttons visually
+      document.querySelectorAll('.interval-pill').forEach(pill => {
+        pill.classList.toggle('active', parseInt(pill.getAttribute('onclick').match(/\\d+/)?.[0] || '0') === minutes);
+      });
+      // Update hint
+      vscode.postMessage({ command: 'refresh' });
     }
     
     function startScheduledReg() {
+      // Auto-enable when starting
+      updateScheduledRegSetting('enabled', true);
       vscode.postMessage({ command: 'startScheduledReg' });
     }
     
@@ -1791,12 +1778,10 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const timerEl = document.getElementById('scheduledRegTimer');
       if (!timerEl || !nextRunAt) return;
       
-      // Clear existing timer
       if (scheduledRegTimer) {
         clearInterval(scheduledRegTimer);
       }
       
-      // Update timer every second
       scheduledRegTimer = setInterval(() => {
         const now = Date.now();
         const next = new Date(nextRunAt).getTime();
@@ -1819,64 +1804,20 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const card = document.getElementById('scheduledRegCard');
       if (!card) return;
       
-      // Update running badge
-      const badge = card.querySelector('.scheduled-reg-badge.running');
-      if (badge) {
-        badge.style.display = state.isRunning ? '' : 'none';
+      // Toggle running class on card
+      card.classList.toggle('running', state.isRunning);
+      
+      // Update progress ring if running
+      const progressFill = card.querySelector('.progress-fill');
+      if (progressFill && state.maxAccounts > 0) {
+        const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
+        progressFill.setAttribute('stroke-dasharray', percent + ', 100');
       }
       
-      // Update progress section - create if doesn't exist
-      let progressSection = card.querySelector('.scheduled-reg-progress-section');
-      const shouldShowProgress = state.isRunning || state.registeredCount > 0;
-      
-      if (shouldShowProgress && !progressSection) {
-        // Create progress section
-        const actionsDiv = card.querySelector('.scheduled-reg-actions');
-        if (actionsDiv) {
-          const progressHtml = \`
-            <div class="scheduled-reg-progress-section">
-              <div class="scheduled-reg-progress-header">
-                <span class="scheduled-reg-progress-text">
-                  \${state.registeredCount}/\${state.maxAccounts} \${T.accounts || 'accounts'}
-                </span>
-                \${state.interval > 0 ? \`
-                  <span class="scheduled-reg-timer" style="display: \${state.isRunning ? '' : 'none'}">
-                    <span class="timer-icon">⏱</span>
-                    <span class="timer-value" id="scheduledRegTimer">--:--</span>
-                  </span>
-                \` : ''}
-              </div>
-              <div class="scheduled-reg-progress-bar">
-                <div class="scheduled-reg-progress-fill" style="width: 0%"></div>
-              </div>
-            </div>
-          \`;
-          actionsDiv.insertAdjacentHTML('beforebegin', progressHtml);
-          progressSection = card.querySelector('.scheduled-reg-progress-section');
-        }
-      }
-      
-      // Update progress bar
-      if (progressSection) {
-        const progressFill = progressSection.querySelector('.scheduled-reg-progress-fill');
-        const progressText = progressSection.querySelector('.scheduled-reg-progress-text');
-        const timerWrap = progressSection.querySelector('.scheduled-reg-timer');
-        
-        if (progressFill && state.maxAccounts > 0) {
-          const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
-          progressFill.style.width = percent + '%';
-          if (state.registeredCount >= state.maxAccounts) {
-            progressFill.classList.add('complete');
-          } else {
-            progressFill.classList.remove('complete');
-          }
-        }
-        if (progressText) {
-          progressText.textContent = state.registeredCount + '/' + state.maxAccounts + ' ' + (T.accounts || 'accounts');
-        }
-        if (timerWrap) {
-          timerWrap.style.display = state.isRunning && state.interval > 0 ? '' : 'none';
-        }
+      // Update progress text
+      const progressText = card.querySelector('.progress-text');
+      if (progressText) {
+        progressText.textContent = state.registeredCount + '/' + state.maxAccounts;
       }
       
       // Update timer countdown
@@ -1889,44 +1830,16 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
         if (timerEl) timerEl.textContent = '--:--';
       }
       
-      // Update buttons
-      const actionsDiv = card.querySelector('.scheduled-reg-actions');
-      if (actionsDiv) {
-        const enabled = document.getElementById('scheduledRegEnabled')?.checked;
-        const isComplete = state.maxAccounts > 0 && state.registeredCount >= state.maxAccounts;
-        
-        actionsDiv.innerHTML = \`
-          \${!state.isRunning ? \`
-            <button class="btn btn-primary scheduled-reg-btn" onclick="startScheduledReg()" \${!enabled || isComplete ? 'disabled' : ''}>
-              ▶ \${state.interval === 0 ? (T.registerOne || 'Register') : (T.startScheduled || 'Start')}
-            </button>
-          \` : \`
-            <button class="btn btn-danger scheduled-reg-btn" onclick="stopScheduledReg()">
-              ⏹ \${T.stop || 'Stop'}
-            </button>
-          \`}
-          \${state.registeredCount > 0 ? \`
-            <button class="btn btn-secondary scheduled-reg-btn" onclick="resetScheduledReg()" 
-              \${state.isRunning ? 'disabled' : ''} title="\${T.resetProgress || 'Reset counter to start'}">
-              ↺ \${T.reset || 'Reset'}
-            </button>
-          \` : ''}
-        \`;
-      }
-      
-      // Update current number input
-      const numberInput = document.getElementById('currentNumberInput');
-      if (numberInput && state.currentNumber) {
-        numberInput.value = state.currentNumber;
-        updateLoginPreview();
+      // Full refresh for state changes (running/stopped)
+      if (state._refresh) {
+        vscode.postMessage({ command: 'refresh' });
       }
     }
     
-    // Export scheduled reg functions
-    window.toggleScheduledReg = toggleScheduledReg;
-    window.toggleScheduledRegEnabled = toggleScheduledRegEnabled;
+    // Export batch reg functions
     window.updateScheduledRegSetting = updateScheduledRegSetting;
-    window.handleIntervalChange = handleIntervalChange;
+    window.adjustBatchCount = adjustBatchCount;
+    window.setBatchInterval = setBatchInterval;
     window.startScheduledReg = startScheduledReg;
     window.stopScheduledReg = stopScheduledReg;
     window.resetScheduledReg = resetScheduledReg;

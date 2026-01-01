@@ -373,7 +373,10 @@ export const hi: Translations = {
   highBanRisk: 'उच्च प्रतिबंध जोखिम',
   banRiskLabel: 'प्रतिबंध जोखिम',
   auto: 'स्वचालित',
-  manual: 'मैनुअल',// Scheduled Registration
+  manual: 'मैनुअल',
+
+  // Batch Registration
+  batchRegistration: 'बैच पंजीकरण',
   scheduledRegistration: 'निर्धारित पंजीकरण',
   scheduledRegistrationDesc: 'अंतराल पर स्वचालित रूप से खाते पंजीकृत करें',
   loginTemplate: 'लॉगिन टेम्पलेट',
@@ -405,7 +408,24 @@ export const hi: Translations = {
   startFrom: 'शुरू #',
   enableFirst: 'पहले टॉगल सक्षम करें',
   registerOne: 'पंजीकृत करें',
-
+  accountsToRegister: 'पंजीकृत करने के लिए खाते',
+  intervalBetween: 'पंजीकरण के बीच अंतराल',
+  noDelay: 'कोई देरी नहीं',
+  noDelayHint: 'पंजीकरण एक के बाद एक चलेंगे',
+  withDelayHint: 'दर सीमा से बचने के लिए सुरक्षित',
+  accountNames: 'खाता नाम',
+  randomNames: 'यादृच्छिक नाम',
+  randomNamesDesc: 'वास्तविक नाम + उपनाम',
+  customPrefix: 'कस्टम उपसर्ग',
+  customPrefixDesc: 'आपका उपसर्ग + संख्या',
+  enterPrefix: 'उपसर्ग दर्ज करें (जैसे मेराखाता)',
+  exampleNames: 'नाम उदाहरण',
+  previousProgress: 'पिछली प्रगति',
+  startBatchReg: 'पंजीकरण शुरू करें',
+  stopRegistration: 'पंजीकरण रोकें',
+  completed: 'पूर्ण',
+  remaining: 'शेष',
+  nextIn: 'अगला में',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'प्रॉक्सी पता',

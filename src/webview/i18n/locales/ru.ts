@@ -383,7 +383,10 @@ export const ru: Translations = {
   oauthProviderAsk: 'Спрашивать каждый раз',
   oauthProviderAskDesc: 'Показывать диалог выбора провайдера',
   selectOAuthProvider: 'Выберите OAuth провайдер',
-  selectOAuthProviderDesc: 'Как войти в Kiro',// Scheduled Registration
+  selectOAuthProviderDesc: 'Как войти в Kiro',
+
+  // Batch Registration
+  batchRegistration: 'Пакетная регистрация',
   scheduledRegistration: 'Авторегистрация по расписанию',
   scheduledRegistrationDesc: 'Автоматическая регистрация аккаунтов с интервалом',
   loginTemplate: 'Шаблон логина',
@@ -415,7 +418,25 @@ export const ru: Translations = {
   startFrom: 'Начать с #',
   enableFirst: 'Сначала включите переключатель',
   registerOne: 'Зарегистрировать',
-
+  // New batch reg keys
+  accountsToRegister: 'Аккаунтов для регистрации',
+  intervalBetween: 'Интервал между регистрациями',
+  noDelay: 'Без паузы',
+  noDelayHint: 'Регистрации пойдут одна за другой',
+  withDelayHint: 'Безопаснее для избежания лимитов',
+  accountNames: 'Имена аккаунтов',
+  randomNames: 'Случайные имена',
+  randomNamesDesc: 'Реалистичные имя + фамилия',
+  customPrefix: 'Свой префикс',
+  customPrefixDesc: 'Ваш префикс + номер',
+  enterPrefix: 'Введите префикс (напр. МойАкк)',
+  exampleNames: 'Примеры имён',
+  previousProgress: 'Предыдущий прогресс',
+  startBatchReg: 'Начать регистрацию',
+  stopRegistration: 'Остановить регистрацию',
+  completed: 'Завершено',
+  remaining: 'Осталось',
+  nextIn: 'Следующий через',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'Адрес прокси',
