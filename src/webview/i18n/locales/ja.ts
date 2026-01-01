@@ -373,7 +373,10 @@ export const ja: Translations = {
   highBanRisk: '高リスク',
   banRiskLabel: 'BANリスク',
   auto: '自動',
-  manual: '手動',// Scheduled Registration
+  manual: '手動',
+
+  // Batch Registration
+  batchRegistration: 'バッチ登録',
   scheduledRegistration: 'スケジュール登録',
   scheduledRegistrationDesc: '間隔を置いてアカウントを自動登録',
   loginTemplate: 'ログインテンプレート',
@@ -405,7 +408,24 @@ export const ja: Translations = {
   startFrom: '開始 #',
   enableFirst: '先にトグルを有効にしてください',
   registerOne: '登録',
-
+  accountsToRegister: '登録するアカウント数',
+  intervalBetween: '登録間隔',
+  noDelay: '遅延なし',
+  noDelayHint: '登録は連続して実行されます',
+  withDelayHint: 'レート制限を避けるため安全',
+  accountNames: 'アカウント名',
+  randomNames: 'ランダム名',
+  randomNamesDesc: 'リアルな名前+姓',
+  customPrefix: 'カスタムプレフィックス',
+  customPrefixDesc: 'プレフィックス+番号',
+  enterPrefix: 'プレフィックスを入力（例：マイアカウント）',
+  exampleNames: '名前の例',
+  previousProgress: '前回の進捗',
+  startBatchReg: '登録開始',
+  stopRegistration: '登録停止',
+  completed: '完了',
+  remaining: '残り',
+  nextIn: '次まで',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'プロキシアドレス',

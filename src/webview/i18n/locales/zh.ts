@@ -373,7 +373,10 @@ export const zh: Translations = {
   highBanRisk: '高风险',
   banRiskLabel: '封禁风险',
   auto: '自动',
-  manual: '手动',// Scheduled Registration
+  manual: '手动',
+
+  // Batch Registration
+  batchRegistration: '批量注册',
   scheduledRegistration: '定时注册',
   scheduledRegistrationDesc: '按间隔自动注册账户',
   loginTemplate: '登录名模板',
@@ -405,7 +408,24 @@ export const zh: Translations = {
   startFrom: '起始 #',
   enableFirst: '请先启用开关',
   registerOne: '注册',
-
+  accountsToRegister: '要注册的账户数',
+  intervalBetween: '注册间隔',
+  noDelay: '无延迟',
+  noDelayHint: '注册将连续执行',
+  withDelayHint: '更安全，避免限制',
+  accountNames: '账户名称',
+  randomNames: '随机名称',
+  randomNamesDesc: '真实的名字+姓氏',
+  customPrefix: '自定义前缀',
+  customPrefixDesc: '您的前缀+编号',
+  enterPrefix: '输入前缀（如 我的账户）',
+  exampleNames: '示例名称',
+  previousProgress: '之前的进度',
+  startBatchReg: '开始注册',
+  stopRegistration: '停止注册',
+  completed: '已完成',
+  remaining: '剩余',
+  nextIn: '下一个在',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: '代理地址',

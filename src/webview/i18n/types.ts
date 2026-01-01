@@ -472,8 +472,9 @@ export interface Translations {
   selectOAuthProviderDesc: string;
 
   // ============================================
-  // Scheduled Registration
+  // Batch Registration
   // ============================================
+  batchRegistration: string;
   scheduledRegistration: string;
   scheduledRegistrationDesc: string;
   loginTemplate: string;
@@ -499,7 +500,7 @@ export interface Translations {
   hours: string;
   startScheduled: string;
   resetProgress: string;
-  // New UX improvements
+  // Batch reg UX
   noTimer: string;
   noTimerHint: string;
   custom: string;
@@ -507,4 +508,23 @@ export interface Translations {
   startFrom: string;
   enableFirst: string;
   registerOne: string;
+  // New batch reg keys
+  accountsToRegister: string;
+  intervalBetween: string;
+  noDelay: string;
+  noDelayHint: string;
+  withDelayHint: string;
+  accountNames: string;
+  randomNames: string;
+  randomNamesDesc: string;
+  customPrefix: string;
+  customPrefixDesc: string;
+  enterPrefix: string;
+  exampleNames: string;
+  previousProgress: string;
+  startBatchReg: string;
+  stopRegistration: string;
+  completed: string;
+  remaining: string;
+  nextIn: string;
 }

@@ -1712,22 +1712,47 @@ except Exception as e:
     });
   }
 
-  // === Scheduled Registration ===
+  // === Batch Registration ===
 
   private _scheduledRegTimer: NodeJS.Timeout | null = null;
   private _scheduledRegSettings = {
     enabled: false,
-    loginTemplate: 'Account_{N}',
-    currentNumber: 1,
-    interval: 0,
-    maxAccounts: 10,
+    loginTemplate: 'Account_{N}', // Legacy, kept for compatibility
+    currentNumber: 1, // Legacy
+    interval: 5, // Default 5 min between registrations
+    maxAccounts: 5, // Default 5 accounts
     registeredCount: 0,
     isRunning: false,
-    nextRunAt: undefined as string | undefined
+    nextRunAt: undefined as string | undefined,
+    // New fields
+    useCustomName: false, // false = random realistic names
+    customNamePrefix: '' // prefix for custom names
   };
 
+  // Realistic name lists for random generation
+  private static readonly FIRST_NAMES = [
+    'James', 'John', 'Robert', 'Michael', 'David', 'William', 'Richard', 'Joseph', 'Thomas', 'Christopher',
+    'Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 'Jessica', 'Sarah', 'Karen',
+    'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn', 'Avery', 'Parker', 'Blake',
+    'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua', 'Kenneth',
+    'Nancy', 'Betty', 'Margaret', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle', 'Dorothy'
+  ];
+
+  private static readonly LAST_NAMES = [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+    'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris',
+    'Clark', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Green',
+    'Baker', 'Adams', 'Nelson', 'Hill', 'Ramirez', 'Campbell', 'Mitchell', 'Roberts', 'Carter', 'Phillips'
+  ];
+
+  private _generateRandomName(): string {
+    const first = AccountsProvider.FIRST_NAMES[Math.floor(Math.random() * AccountsProvider.FIRST_NAMES.length)];
+    const last = AccountsProvider.LAST_NAMES[Math.floor(Math.random() * AccountsProvider.LAST_NAMES.length)];
+    return `${first} ${last}`;
+  }
+
   async updateScheduledRegSetting(key: string, value: string | number | boolean): Promise<void> {
-    const settings = this._scheduledRegSettings;
+    const settings = this._scheduledRegSettings as Record<string, unknown>;
 
     switch (key) {
       case 'enabled':
@@ -1745,11 +1770,17 @@ except Exception as e:
       case 'maxAccounts':
         settings.maxAccounts = value as number;
         break;
+      case 'useCustomName':
+        settings.useCustomName = value as boolean;
+        break;
+      case 'customNamePrefix':
+        settings.customNamePrefix = value as string;
+        break;
     }
 
     // Save to global state immediately
     await this._context.globalState.update('scheduledRegSettings', settings);
-    this.addLog(`[ScheduledReg] Updated ${key} = ${value}`);
+    this.addLog(`[BatchReg] Updated ${key} = ${value}`);
 
     // Send update to webview
     this._sendScheduledRegState();
@@ -1758,12 +1789,8 @@ except Exception as e:
   async startScheduledReg(): Promise<void> {
     const settings = this._scheduledRegSettings;
 
-    if (!settings.enabled) {
-      this.addLog('⚠️ Scheduled registration is disabled');
-      return;
-    }
-
-    if (settings.registeredCount >= settings.maxAccounts) {
+    // Auto-enable when starting (no need for separate toggle)
+    settings.enabled = true; if (settings.registeredCount >= settings.maxAccounts) {
       this.addLog('✓ Scheduled registration complete - max accounts reached');
       return;
     }
@@ -1812,7 +1839,7 @@ except Exception as e:
     }
 
     await this._context.globalState.update('scheduledRegSettings', settings);
-    this.addLog('↺ Scheduled registration progress reset (counter preserved)');
+    this.addLog('↺ Batch registration progress reset');
     this._sendScheduledRegState();
   }
 
@@ -1826,10 +1853,15 @@ except Exception as e:
       return;
     }
 
-    // Generate login name from template
-    const loginName = settings.loginTemplate
-      .replace('{N}', settings.currentNumber.toString().padStart(3, '0'))
-      .replace('{n}', settings.currentNumber.toString());
+    // Generate login name based on mode
+    let loginName: string;
+    if (settings.useCustomName && settings.customNamePrefix) {
+      // Custom prefix + number
+      loginName = `${settings.customNamePrefix} ${settings.currentNumber}`;
+    } else {
+      // Random realistic name
+      loginName = this._generateRandomName();
+    }
 
     this.addLog(`📝 Registering account: ${loginName} (${settings.registeredCount + 1}/${settings.maxAccounts})`);
 
@@ -1849,11 +1881,11 @@ except Exception as e:
 
       // Save immediately after each successful registration
       await this._context.globalState.update('scheduledRegSettings', settings);
-      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts} (next: ${settings.currentNumber})`);
+      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts}`);
 
     } catch (err) {
       this.addLog(`❌ Registration failed: ${err}`);
-      // Don't increment on failure - will retry with same number
+      // Don't increment on failure - will retry
     } finally {
       delete process.env.KIRO_LOGIN_NAME;
     }

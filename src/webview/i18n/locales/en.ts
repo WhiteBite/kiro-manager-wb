@@ -385,7 +385,8 @@ export const en: Translations = {
   selectOAuthProvider: 'Select OAuth Provider',
   selectOAuthProviderDesc: 'Choose how to sign in to Kiro',
 
-  // Scheduled Registration
+  // Batch Registration
+  batchRegistration: 'Batch Registration',
   scheduledRegistration: 'Scheduled Registration',
   scheduledRegistrationDesc: 'Auto-register accounts at intervals',
   loginTemplate: 'Login Template',
@@ -417,6 +418,25 @@ export const en: Translations = {
   startFrom: 'Start #',
   enableFirst: 'Enable toggle first',
   registerOne: 'Register',
+  // New batch reg keys
+  accountsToRegister: 'Accounts to register',
+  intervalBetween: 'Interval between registrations',
+  noDelay: 'No delay',
+  noDelayHint: 'Registrations will run one after another',
+  withDelayHint: 'Safer for avoiding rate limits',
+  accountNames: 'Account names',
+  randomNames: 'Random names',
+  randomNamesDesc: 'Realistic first + last names',
+  customPrefix: 'Custom prefix',
+  customPrefixDesc: 'Your prefix + number',
+  enterPrefix: 'Enter prefix (e.g. MyAcc)',
+  exampleNames: 'Example names',
+  previousProgress: 'Previous progress',
+  startBatchReg: 'Start Registration',
+  stopRegistration: 'Stop Registration',
+  completed: 'Completed',
+  remaining: 'Remaining',
+  nextIn: 'Next in',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'Proxy Address',

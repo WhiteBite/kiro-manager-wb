@@ -373,7 +373,10 @@ export const fr: Translations = {
   highBanRisk: 'Risque élevé',
   banRiskLabel: 'Risque de ban',
   auto: 'Auto',
-  manual: 'Manuel',// Scheduled Registration
+  manual: 'Manuel',
+
+  // Batch Registration
+  batchRegistration: 'Inscription par lots',
   scheduledRegistration: 'Inscription Programmée',
   scheduledRegistrationDesc: 'Inscrire automatiquement des comptes à intervalles',
   loginTemplate: 'Modèle de connexion',
@@ -405,6 +408,24 @@ export const fr: Translations = {
   startFrom: 'Début #',
   enableFirst: "Activez d'abord l'interrupteur",
   registerOne: 'Inscrire',
+  accountsToRegister: 'Comptes à inscrire',
+  intervalBetween: 'Intervalle entre inscriptions',
+  noDelay: 'Sans délai',
+  noDelayHint: 'Les inscriptions s\'exécuteront l\'une après l\'autre',
+  withDelayHint: 'Plus sûr pour éviter les limites',
+  accountNames: 'Noms de compte',
+  randomNames: 'Noms aléatoires',
+  randomNamesDesc: 'Prénoms + noms réalistes',
+  customPrefix: 'Préfixe personnalisé',
+  customPrefixDesc: 'Votre préfixe + numéro',
+  enterPrefix: 'Entrez le préfixe (ex. MonCompte)',
+  exampleNames: 'Exemples de noms',
+  previousProgress: 'Progression précédente',
+  startBatchReg: 'Démarrer l\'inscription',
+  stopRegistration: 'Arrêter l\'inscription',
+  completed: 'Terminé',
+  remaining: 'Restant',
+  nextIn: 'Prochain dans',
 
   // OAuth Provider Selection
   oauthProvider: 'Fournisseur OAuth',
