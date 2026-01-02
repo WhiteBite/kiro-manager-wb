@@ -140,23 +140,34 @@ class EmailGenerator:
         )
     
     def _generate_catch_all(self) -> EmailResult:
-        """Catch-all mode - random@custom-domain.com"""
+        """Catch-all mode - random@custom-domain.com or prefix@custom-domain.com"""
         domain = self.config.domain
         if not domain:
             raise ValueError("Domain required for catch_all strategy")
         
-        # Generate random email
-        first = random.choice(FIRST_NAMES)
-        last = random.choice(LAST_NAMES)
-        num = random.randint(100, 9999)
+        # Check for custom login name from scheduled registration
+        custom_login_name = os.environ.get('KIRO_LOGIN_NAME', '')
         
-        registration_email = f"{first}{last}{num}@{domain}"
+        if custom_login_name:
+            # Use custom prefix - remove spaces and special chars for email
+            # "zal 1" -> "zal1", "MyAcc 5" -> "MyAcc5"
+            email_prefix = ''.join(c for c in custom_login_name if c.isalnum())
+            registration_email = f"{email_prefix}@{domain}"
+            display_name = custom_login_name
+        else:
+            # Generate random email
+            first = random.choice(FIRST_NAMES)
+            last = random.choice(LAST_NAMES)
+            num = random.randint(100, 9999)
+            registration_email = f"{first}{last}{num}@{domain}"
+            display_name = f"{first} {last}"
         
         # Ensure uniqueness
         attempts = 0
+        base_email = registration_email
         while registration_email.lower() in self._used_emails and attempts < 100:
             num = random.randint(100, 9999)
-            registration_email = f"{first}{last}{num}@{domain}"
+            registration_email = f"{base_email.split('@')[0]}{num}@{domain}"
             attempts += 1
         
         self._used_emails.add(registration_email.lower())
@@ -164,7 +175,7 @@ class EmailGenerator:
         return EmailResult(
             registration_email=registration_email,
             imap_lookup_email=registration_email,  # IMAP filters by To: header
-            display_name=f"{first} {last}"
+            display_name=display_name
         )
     
     def _generate_from_pool(self) -> EmailResult:

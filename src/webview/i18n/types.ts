@@ -160,8 +160,15 @@ export interface Translations {
   patchStatusLoading: string;
   patchStatusActive: string;
   patchStatusNotPatched: string;
+  patchStatusOutdated: string;
+  patchVersion: string;
+  patchVersionInstalled: string;
+  patchVersionLatest: string;
+  patchUpdateAvailable: string;
+  kiroVersion: string;
   patch: string;
   removePatch: string;
+  updatePatch: string;
   newMachineId: string;
   patchKiroTitle: string;
   patchKiroConfirm: string;

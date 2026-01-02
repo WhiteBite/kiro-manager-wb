@@ -238,12 +238,18 @@ function renderDangerZone(t: Translations): string {
           <div class="danger-zone-desc">${t.kiroPatchDesc}</div>
           <div class="patch-status-row">
             <span id="patchStatusText" class="patch-status">${t.patchStatusLoading}</span>
+            <span id="patchVersionInfo" class="patch-version-info"></span>
+          </div>
+          <div class="patch-machine-id-row">
             <span id="currentMachineId" class="machine-id-preview"></span>
           </div>
         </div>
         <div class="danger-zone-actions">
           <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="${t.patchKiroTitle}">
             🔧 ${t.patch}
+          </button>
+          <button id="updatePatchBtn" class="btn btn-primary" onclick="confirmPatchKiro()" style="display:none" title="${t.patchUpdateAvailable}">
+            ⬆️ ${t.updatePatch}
           </button>
           <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="${t.removePatchTitle}">
             ↩️ ${t.removePatch}

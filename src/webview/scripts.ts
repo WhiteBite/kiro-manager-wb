@@ -844,9 +844,11 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       if (!status) return;
       
       const patchBtn = document.getElementById('patchKiroBtn');
+      const updateBtn = document.getElementById('updatePatchBtn');
       const unpatchBtn = document.getElementById('unpatchKiroBtn');
       const generateBtn = document.getElementById('generateIdBtn');
       const statusEl = document.getElementById('patchStatusText');
+      const versionInfoEl = document.getElementById('patchVersionInfo');
       const machineIdEl = document.getElementById('currentMachineId');
       const indicator = document.getElementById('patchIndicator');
       
@@ -856,17 +858,42 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
           statusEl.textContent = status.error;
           statusEl.className = 'patch-status error';
         } else if (status.isPatched) {
-          statusEl.textContent = T.patchStatusActive + ' ✓';
-          statusEl.className = 'patch-status success';
+          if (status.needsUpdate) {
+            statusEl.textContent = T.patchStatusOutdated + ' ⚠️';
+            statusEl.className = 'patch-status warning';
+          } else {
+            statusEl.textContent = T.patchStatusActive + ' ✓';
+            statusEl.className = 'patch-status success';
+          }
         } else {
           statusEl.textContent = T.patchStatusNotPatched;
           statusEl.className = 'patch-status warning';
         }
       }
       
+      // Update version info
+      if (versionInfoEl) {
+        if (status.isPatched && status.patchVersion) {
+          let versionText = T.patchVersion + ' v' + status.patchVersion;
+          if (status.latestPatchVersion && status.patchVersion !== status.latestPatchVersion) {
+            versionText += ' → v' + status.latestPatchVersion;
+          }
+          if (status.kiroVersion) {
+            versionText += ' | ' + T.kiroVersion + ' v' + status.kiroVersion;
+          }
+          versionInfoEl.textContent = versionText;
+          versionInfoEl.style.display = '';
+        } else if (status.kiroVersion) {
+          versionInfoEl.textContent = T.kiroVersion + ' v' + status.kiroVersion;
+          versionInfoEl.style.display = '';
+        } else {
+          versionInfoEl.style.display = 'none';
+        }
+      }
+      
       // Update machine ID preview
       if (machineIdEl && status.currentMachineId) {
-        machineIdEl.textContent = status.currentMachineId.substring(0, 16) + '...';
+        machineIdEl.textContent = 'ID: ' + status.currentMachineId.substring(0, 16) + '...';
         machineIdEl.title = status.currentMachineId;
       }
       
@@ -877,8 +904,13 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
           indicator.classList.add('error');
           indicator.title = status.error;
         } else if (status.isPatched) {
-          indicator.classList.add('patched');
-          indicator.title = T.patchStatusActive + ' (v' + status.patchVersion + ')';
+          if (status.needsUpdate) {
+            indicator.classList.add('needs-update');
+            indicator.title = T.patchUpdateAvailable + ': v' + status.patchVersion + ' → v' + status.latestPatchVersion;
+          } else {
+            indicator.classList.add('patched');
+            indicator.title = T.patchStatusActive + ' (v' + status.patchVersion + ')';
+          }
         } else if (status.currentMachineId) {
           // Has custom ID but not patched - needs attention
           indicator.classList.add('not-patched');
@@ -891,8 +923,15 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       }
       
       // Update buttons visibility
-      if (patchBtn) patchBtn.style.display = status.isPatched ? 'none' : '';
-      if (unpatchBtn) unpatchBtn.style.display = status.isPatched ? '' : 'none';
+      if (status.isPatched) {
+        if (patchBtn) patchBtn.style.display = 'none';
+        if (updateBtn) updateBtn.style.display = status.needsUpdate ? '' : 'none';
+        if (unpatchBtn) unpatchBtn.style.display = '';
+      } else {
+        if (patchBtn) patchBtn.style.display = '';
+        if (updateBtn) updateBtn.style.display = 'none';
+        if (unpatchBtn) unpatchBtn.style.display = 'none';
+      }
     }
     
     function updateStatus(status) {

@@ -958,6 +958,7 @@ export const layout = `
     align-items: center;
     gap: 10px;
     margin-top: 8px;
+    flex-wrap: wrap;
   }
   .patch-status {
     font-size: 10px;
@@ -978,6 +979,14 @@ export const layout = `
     color: var(--danger);
     background: var(--danger-dim);
   }
+  .patch-version-info {
+    font-size: 9px;
+    color: var(--muted);
+    font-family: monospace;
+  }
+  .patch-machine-id-row {
+    margin-top: 4px;
+  }
   .machine-id-preview {
     font-size: 9px;
     font-family: monospace;
@@ -986,6 +995,13 @@ export const layout = `
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     cursor: help;
+  }
+  .patch-indicator.needs-update {
+    background: var(--warning);
+    color: #1a1a1a;
+  }
+  .patch-indicator.needs-update::before {
+    content: '⬆';
   }
   .btn-warning {
     background: linear-gradient(135deg, var(--warning) 0%, #d4a84a 100%);
