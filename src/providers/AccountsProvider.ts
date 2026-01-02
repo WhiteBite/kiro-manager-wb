@@ -1256,7 +1256,7 @@ except Exception as e:
     }
   }
 
-  sendPatchStatus(status: { isPatched: boolean; kiroVersion?: string; patchVersion?: string; currentMachineId?: string; error?: string }) {
+  sendPatchStatus(status: { isPatched: boolean; kiroVersion?: string; patchVersion?: string; latestPatchVersion?: string; currentMachineId?: string; needsUpdate?: boolean; updateReason?: string; error?: string }) {
     if (this._view) {
       this._view.webview.postMessage({
         type: 'patchStatus',
@@ -1789,15 +1789,15 @@ except Exception as e:
   async startScheduledReg(): Promise<void> {
     const settings = this._scheduledRegSettings;
 
-    // Auto-enable when starting (no need for separate toggle)
-    settings.enabled = true; if (settings.registeredCount >= settings.maxAccounts) {
-      this.addLog('✓ Scheduled registration complete - max accounts reached');
-      return;
-    }
+    // Auto-enable when starting
+    settings.enabled = true;
+
+    // Reset counter on each start - no need to track across sessions
+    settings.registeredCount = 0;
 
     settings.isRunning = true;
-    this._sendScheduledRegState(); // Send state immediately after setting isRunning
-    this.addLog(`🚀 Starting scheduled registration (${settings.registeredCount}/${settings.maxAccounts})`);
+    this._sendScheduledRegState();
+    this.addLog(`🚀 Запуск пакетной регистрации: ${settings.maxAccounts} аккаунтов`);
 
     // Run first registration immediately
     await this._runScheduledRegistration();

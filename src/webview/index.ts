@@ -180,13 +180,15 @@ export function generateWebviewHtml(
       enabled: false,
       loginTemplate: 'Account_{N}',
       currentNumber: 1,
-      interval: 0,
-      maxAccounts: 10,
+      interval: 5,
+      maxAccounts: 5,
       registeredCount: 0,
-      isRunning: false
+      isRunning: false,
+      useCustomName: false,
+      customNamePrefix: ''
     },
     t,
-    collapsed: true
+    collapsed: false
   })}
       <div class="list" id="accountList">
         ${renderAccountList({ accounts: visibleAccounts, t })}

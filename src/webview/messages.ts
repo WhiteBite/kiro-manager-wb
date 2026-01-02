@@ -99,7 +99,7 @@ export type ExtensionMessage =
     | { type: 'emailsImported'; emails: string[] }
 
     // Patch status
-    | { type: 'patchStatus'; isPatched: boolean; kiroVersion?: string; patchVersion?: string; currentMachineId?: string; error?: string };
+    | { type: 'patchStatus'; isPatched: boolean; kiroVersion?: string; patchVersion?: string; latestPatchVersion?: string; currentMachineId?: string; needsUpdate?: boolean; updateReason?: string; error?: string };
 
 // ============================================
 // Helper Types

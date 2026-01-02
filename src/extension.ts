@@ -98,22 +98,38 @@ async function doRefresh(name: string) {
   accountsProvider?.refresh();
 }
 
+// Track failed switch attempts to prevent infinite loops
+const failedSwitchAttempts = new Set<string>();
+let lastSwitchAttemptTime = 0;
+const SWITCH_DEBOUNCE_MS = 5000; // 5 seconds between switch attempts
+
 /**
  * Switch to next available (non-banned, non-expired) account
  * Called automatically by patched Kiro when current account is banned
  */
 async function switchToNextAvailable(): Promise<boolean> {
+  // Debounce: prevent rapid repeated calls
+  const now = Date.now();
+  if (now - lastSwitchAttemptTime < SWITCH_DEBOUNCE_MS) {
+    console.log('[AutoSwitch] Debounced - too soon since last attempt');
+    return false;
+  }
+  lastSwitchAttemptTime = now;
+
   const accounts = loadAccounts();
   const currentActive = accounts.find(a => a.isActive);
 
-  // Find available accounts (not expired, not banned)
+  // Find available accounts (not expired, not banned, not previously failed)
   const available = accounts.filter(a =>
     !a.isExpired &&
     !a.usage?.isBanned &&
-    a.filename !== currentActive?.filename
+    a.filename !== currentActive?.filename &&
+    !failedSwitchAttempts.has(a.filename) // Skip accounts that failed before
   );
 
   if (available.length === 0) {
+    // Clear failed attempts after showing error (allow retry later)
+    failedSwitchAttempts.clear();
     vscode.window.showErrorMessage('No available accounts to switch to. All accounts are banned or expired.');
     return false;
   }
@@ -127,8 +143,36 @@ async function switchToNextAvailable(): Promise<boolean> {
     'OK'
   );
 
-  await doSwitch(next.filename);
-  return true;
+  try {
+    // Use returnDetails=true to get ban status
+    const result = await switchToAccount(next.filename, true);
+
+    // If switch failed (account was banned), mark it as failed
+    if (!result.success && result.isBanned) {
+      failedSwitchAttempts.add(next.filename);
+      console.log(`[AutoSwitch] Marked ${next.filename} as banned, will skip in future attempts`);
+
+      // Try next account recursively (with debounce protection)
+      lastSwitchAttemptTime = 0; // Reset debounce for immediate retry
+      return switchToNextAvailable();
+    }
+
+    // Success - clear failed attempts
+    if (result.success) {
+      failedSwitchAttempts.clear();
+      accountsProvider?.refresh();
+      updateStatusBar();
+      return true;
+    }
+
+    // Other failure - mark as failed but don't retry immediately
+    failedSwitchAttempts.add(next.filename);
+    return false;
+  } catch (err) {
+    console.error('[AutoSwitch] Switch failed:', err);
+    failedSwitchAttempts.add(next.filename);
+    return false;
+  }
 }
 
 async function importToken() {
