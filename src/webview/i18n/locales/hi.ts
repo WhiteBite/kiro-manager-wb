@@ -431,7 +431,7 @@ export const hi: Translations = {
   startBatchReg: 'पंजीकरण शुरू करें',
   stopRegistration: 'पंजीकरण रोकें',
   completed: 'पूर्ण',
-  remaining: 'शेष',
+  batchRemaining: 'शेष',
   nextIn: 'अगला में',
 
   // Proxy & OAuth (auto-added)

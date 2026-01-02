@@ -442,7 +442,7 @@ export const ru: Translations = {
   startBatchReg: 'Начать регистрацию',
   stopRegistration: 'Остановить регистрацию',
   completed: 'Завершено',
-  remaining: 'Осталось',
+  batchRemaining: 'Осталось',
   nextIn: 'Следующий через',
 
   // Proxy & OAuth (auto-added)

@@ -5,7 +5,7 @@
 import { generateStateScript } from './state';
 import { Translations } from './i18n/types';
 
-export function generateWebviewScript(totalAccounts: number, bannedCount: number, t: Translations): string {
+export function generateWebviewScript(_totalAccounts: number, _bannedCount: number, t: Translations): string {
   // Serialize translations for client-side use
   const T = JSON.stringify(t);
 
@@ -14,6 +14,13 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
    
     const vscode = acquireVsCodeApi();
     let pendingAction = null;
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
     
     // Registration step definitions for progress indicators
     const REG_STEPS = [
@@ -466,7 +473,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       }
     }
     
-    // === Logs Drawer ===
+    // === Console Drawer ===
     
     function toggleLogs() {
       const drawer = document.getElementById('logsDrawer');
@@ -483,10 +490,34 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     function copyLogs() {
       const content = document.getElementById('logsContent');
       if (content) {
-        const logs = Array.from(content.querySelectorAll('.log-line'))
-          .map(el => el.textContent)
+        const logs = Array.from(content.querySelectorAll('.console-line'))
+          .map(el => el.textContent?.trim())
+          .filter(Boolean)
           .join('\\n');
         vscode.postMessage({ command: 'copyLogs', logs });
+      }
+    }
+    
+    function filterConsole(type: string) {
+      const content = document.getElementById('logsContent');
+      const filters = document.querySelectorAll('.console-filter');
+      
+      // Update active filter button
+      filters.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-filter') === type);
+      });
+      
+      // Filter log lines
+      if (content) {
+        const lines = content.querySelectorAll('.console-line');
+        lines.forEach(line => {
+          if (type === 'all') {
+            line.classList.remove('hidden');
+          } else {
+            const lineType = line.getAttribute('data-type');
+            line.classList.toggle('hidden', lineType !== type);
+          }
+        });
       }
     }
     
@@ -494,36 +525,70 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
       const content = document.getElementById('logsContent');
       const countEl = document.getElementById('logsCount');
       if (content && countEl) {
-        const count = content.children.length;
-        const hasErrors = content.querySelector('.log-line.error') !== null;
+        const count = content.querySelectorAll('.console-line:not(.hidden)').length;
+        const hasErrors = content.querySelector('.console-line.error') !== null;
+        const hasWarnings = content.querySelector('.console-line.warning') !== null;
         countEl.textContent = count.toString();
-        countEl.classList.toggle('has-errors', hasErrors);
+        countEl.classList.remove('error', 'warning');
+        if (hasErrors) countEl.classList.add('error');
+        else if (hasWarnings) countEl.classList.add('warning');
       }
     }
     
-    function appendLogLine(log) {
+    function appendLogLine(log: string) {
       const content = document.getElementById('logsContent');
       if (!content) return;
       
-      // Don't auto-open drawer - let user control it
-      // Only open on errors
-      if (log.includes('ERROR') || log.includes('❌') || log.includes('✗')) {
-        document.getElementById('logsDrawer')?.classList.add('open');
+      // Determine log type
+      let type = 'info';
+      let icon = '→';
+      if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')) {
+        type = 'error';
+        icon = '❌';
+      } else if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅') || log.includes('[OK]')) {
+        type = 'success';
+        icon = '✓';
+      } else if (log.includes('WARN') || log.includes('⚠') || log.includes('⛔')) {
+        type = 'warning';
+        icon = '⚠';
       }
       
+      // Extract time if present
+      const timeMatch = log.match(/^\\[?(\\d{1,2}:\\d{2}:\\d{2})\\s*[AP]?M?\\]?/i);
+      const time = timeMatch ? timeMatch[1] : '';
+      const message = timeMatch ? log.slice(timeMatch[0].length).trim() : log;
+      
+      // Create line element
       const line = document.createElement('div');
-      line.className = 'log-line';
-      if (log.includes('✓') || log.includes('SUCCESS') || log.includes('✅')) line.classList.add('success');
-      else if (log.includes('✗') || log.includes('ERROR') || log.includes('❌')) line.classList.add('error');
-      else if (log.includes('⚠') || log.includes('WARN')) line.classList.add('warning');
-      line.textContent = log;
+      line.className = \`console-line \${type}\`;
+      line.setAttribute('data-type', type);
+      line.innerHTML = \`
+        <span class="console-icon">\${icon}</span>
+        \${time ? \`<span class="console-time">\${time}</span>\` : ''}
+        <span class="console-msg">\${escapeHtml(message)}</span>
+      \`;
+      
       content.appendChild(line);
+      content.scrollTop = content.scrollHeight;
+      
+      // Check current filter
+      const activeFilter = document.querySelector('.console-filter.active');
+      const currentFilter = activeFilter?.getAttribute('data-filter') || 'all';
+      if (currentFilter !== 'all' && currentFilter !== type) {
+        line.classList.add('hidden');
+      }
       
       // Keep max 200 lines
-      while (content.children.length > 200) content.removeChild(content.firstChild);
+      while (content.children.length > 200 && content.firstChild) {
+        content.removeChild(content.firstChild);
+      }
       
-      content.scrollTop = content.scrollHeight;
       updateLogsCount();
+      
+      // Auto-open on errors
+      if (type === 'error') {
+        document.getElementById('logsDrawer')?.classList.add('open');
+      }
     }
 
     // === Delete with Double-Click (no modal) ===
@@ -1682,6 +1747,7 @@ export function generateWebviewScript(totalAccounts: number, bannedCount: number
     window.closeSettings = closeSettings;
     window.toggleLogs = toggleLogs;
     window.clearConsole = clearConsole;
+    window.filterConsole = filterConsole;
     window.copyLogs = copyLogs;
     window.toggleAutoSwitch = toggleAutoSwitch;
     window.toggleSetting = toggleSetting;

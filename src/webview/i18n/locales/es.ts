@@ -431,7 +431,7 @@ export const es: Translations = {
   startBatchReg: 'Iniciar registro',
   stopRegistration: 'Detener registro',
   completed: 'Completado',
-  remaining: 'Restante',
+  batchRemaining: 'Restante',
   nextIn: 'Siguiente en',
 
   // Proxy & OAuth (auto-added)

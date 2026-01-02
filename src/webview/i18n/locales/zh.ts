@@ -431,7 +431,7 @@ export const zh: Translations = {
   startBatchReg: '开始注册',
   stopRegistration: '停止注册',
   completed: '已完成',
-  remaining: '剩余',
+  batchRemaining: '剩余',
   nextIn: '下一个在',
 
   // Proxy & OAuth (auto-added)

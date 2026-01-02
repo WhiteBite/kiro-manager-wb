@@ -148,7 +148,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       const doc = await vscode.workspace.openTextDocument(logFile);
       await vscode.window.showTextDocument(doc);
     } else {
-      vscode.window.showWarningMessage('Log file not found');
+      this.addLog('⚠️ Log file not found');
     }
   }
 
@@ -206,7 +206,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   async exportAccounts(selectedOnly: string[] = []) {
     const accounts = loadAccounts();
     if (accounts.length === 0) {
-      vscode.window.showWarningMessage('No accounts to export');
+      this.addLog('⚠️ No accounts to export');
       return;
     }
 
@@ -216,7 +216,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       : accounts;
 
     if (toExport.length === 0) {
-      vscode.window.showWarningMessage('No accounts selected for export');
+      this.addLog('⚠️ No accounts selected for export');
       return;
     }
 
@@ -241,7 +241,6 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
     if (uri) {
       fs.writeFileSync(uri.fsPath, content);
-      vscode.window.showInformationMessage(`Exported ${toExport.length} accounts with tokens`);
       this.addLog(`✅ Exported ${toExport.length} accounts to ${uri.fsPath}`);
     }
   }
@@ -261,7 +260,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       const data = JSON.parse(content);
 
       if (!data.accounts || !Array.isArray(data.accounts)) {
-        vscode.window.showErrorMessage('Invalid export file format');
+        this.addLog('❌ Invalid export file format');
         return;
       }
 
@@ -303,12 +302,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         }
       }
 
-      this.addLog(`✅ Imported ${imported} accounts, skipped ${skipped} duplicates`);
-      vscode.window.showInformationMessage(`Imported ${imported} accounts${skipped > 0 ? `, skipped ${skipped} duplicates` : ''}`);
+      this.addLog(`✅ Imported ${imported} accounts${skipped > 0 ? `, skipped ${skipped} duplicates` : ''}`);
       this.refresh();
 
     } catch (err) {
-      vscode.window.showErrorMessage(`Import failed: ${err}`);
       this.addLog(`❌ Import failed: ${err}`);
     }
   }
@@ -370,12 +367,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         );
         if (acc?.password) {
           await vscode.env.clipboard.writeText(acc.password);
-          vscode.window.showInformationMessage('Password copied to clipboard');
+          this.addLog('📋 Password copied to clipboard');
           return;
         }
       } catch { }
     }
-    vscode.window.showWarningMessage('Password not found for this account');
+    this.addLog('⚠️ Password not found for this account');
   }
 
   private getAutoregDir(): string {
@@ -395,7 +392,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     );
 
     if (badAccounts.length === 0) {
-      vscode.window.showInformationMessage('No exhausted/suspended accounts to delete');
+      this.addLog('ℹ️ No exhausted/suspended accounts to delete');
       return;
     }
 
@@ -415,7 +412,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       }
     }
 
-    vscode.window.showInformationMessage(`Deleted ${deleted} exhausted/suspended account(s)`);
+    this.addLog(`✅ Deleted ${deleted} exhausted/suspended account(s)`);
     this.refresh();
   }
 
@@ -426,7 +423,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     );
 
     if (bannedAccounts.length === 0) {
-      vscode.window.showInformationMessage('No banned accounts to delete');
+      this.addLog('ℹ️ No banned accounts to delete');
       return;
     }
 
@@ -444,7 +441,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       }
     }
 
-    vscode.window.showInformationMessage(`Deleted ${deleted} banned account(s)`);
+    this.addLog(`✅ Deleted ${deleted} banned account(s)`);
     this.refresh();
   }
 
@@ -461,7 +458,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     });
 
     if (expiredAccounts.length === 0) {
-      vscode.window.showInformationMessage('No expired tokens to refresh');
+      this.addLog('ℹ️ No expired tokens to refresh');
       return;
     }
 
@@ -528,8 +525,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       }
     });
 
-    const message = `Refreshed ${refreshed} token(s)` + (failed > 0 ? `, ${failed} failed` : '');
-    vscode.window.showInformationMessage(message);
+    const message = `✅ Refreshed ${refreshed} token(s)` + (failed > 0 ? `, ${failed} failed` : '');
+    this.addLog(message);
     this.refresh();
   }
 
@@ -563,8 +560,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
       if (status.isBanned) {
         this.markAccountAsBanned(activeAccount.filename, status.errorMessage);
-        this.addLog(`⛔ Active account "${accountName}" is BANNED!`);
-        vscode.window.showWarningMessage(`⛔ Active account "${accountName}" is banned. Consider switching to another account.`);
+        this.addLog(`⛔ Active account "${accountName}" is BANNED! Consider switching to another account.`);
         this.refresh();
       } else if (!status.isHealthy && status.error) {
         this.addLog(`⚠️ Active account issue: ${status.errorMessage || status.error}`);
@@ -586,25 +582,25 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     const account = accounts.find(a => a.filename === filename || a.filename.includes(filename));
     if (account) {
       await vscode.env.clipboard.writeText(account.tokenData.accessToken || '');
-      vscode.window.showInformationMessage('Token copied to clipboard');
+      this.addLog('📋 Token copied to clipboard');
     }
   }
 
   async viewQuota(filename: string) {
     const account = this._accounts.find(a => a.filename === filename || a.filename.includes(filename));
     if (account?.usage) {
-      vscode.window.showInformationMessage(
-        `${account.tokenData.accountName || filename}: ${account.usage.currentUsage}/${account.usage.usageLimit} (${account.usage.percentageUsed.toFixed(1)}%)`
+      this.addLog(
+        `📊 ${account.tokenData.accountName || filename}: ${account.usage.currentUsage}/${account.usage.usageLimit} (${account.usage.percentageUsed.toFixed(1)}%)`
       );
     } else {
       const accountName = account?.tokenData.accountName || filename;
       const cachedUsage = await loadSingleAccountUsage(accountName);
       if (cachedUsage) {
-        vscode.window.showInformationMessage(
-          `${accountName}: ${cachedUsage.currentUsage}/${cachedUsage.usageLimit} (${cachedUsage.percentageUsed.toFixed(1)}%)`
+        this.addLog(
+          `📊 ${accountName}: ${cachedUsage.currentUsage}/${cachedUsage.usageLimit} (${cachedUsage.percentageUsed.toFixed(1)}%)`
         );
       } else {
-        vscode.window.showWarningMessage('No usage data available. Switch to this account and refresh to load usage.');
+        this.addLog('⚠️ No usage data available. Switch to this account and refresh to load usage.');
       }
     }
   }
@@ -647,14 +643,12 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         if (banCheck.isBanned) {
           this.markAccountAsBanned(filename, banCheck.message || 'TEMPORARILY_SUSPENDED');
           this.addLog(`⛔ BANNED (API): ${accountName}`);
-          vscode.window.showErrorMessage(`⛔ Account "${accountName}" is BANNED`);
           this.refresh();
           return;
         }
       }
 
       // All good!
-      vscode.window.showInformationMessage(`✓ ${accountName} is healthy`);
       this.addLog(`✓ Healthy: ${accountName}`);
       this.refresh();
     });
@@ -780,11 +774,13 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     const update = await forceCheckForUpdates(this._context);
     this._availableUpdate = update;
     if (update) {
+      this.addLog(`🆕 New version ${update.version} available!`);
+      // Still show dialog for download action
       vscode.window.showInformationMessage(`New version ${update.version} available!`, 'Download').then(sel => {
         if (sel === 'Download') vscode.env.openExternal(vscode.Uri.parse(update.url));
       });
     } else {
-      vscode.window.showInformationMessage('You have the latest version!');
+      this.addLog('✓ You have the latest version!');
     }
     this.refresh();
   }
@@ -1052,11 +1048,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       });
 
       this.addLog(`✓ Created profile: ${profile.name} (${profile.id})`);
-      vscode.window.showInformationMessage(`Profile "${profile.name}" created`);
       await this.loadProfiles();
     } catch (err) {
       this.addLog(`✗ Failed to create profile: ${err}`);
-      vscode.window.showErrorMessage(`Failed to create profile: ${err}`);
     }
   }
 
@@ -1069,12 +1063,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       const profile = await provider.update(profileData.id, profileData);
       if (profile) {
         this.addLog(`✓ Updated profile: ${profile.name}`);
-        vscode.window.showInformationMessage(`Profile "${profile.name}" updated`);
         await this.loadProfiles();
       }
     } catch (err) {
-      this.addLog(`✗ Failed to update profile: ${err}`);
-      vscode.window.showErrorMessage(`Failed to update profile: ${err}`);
+      this.addLog(`❌ Failed to update profile: ${err}`);
     }
   }
 
@@ -1086,12 +1078,10 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
     try {
       await provider.delete(profileId);
-      this.addLog(`✓ Deleted profile: ${profile.name}`);
-      vscode.window.showInformationMessage(`Profile "${profile.name}" deleted`);
+      this.addLog(`✅ Deleted profile: ${profile.name}`);
       await this.loadProfiles();
     } catch (err) {
-      this.addLog(`✗ Failed to delete profile: ${err}`);
-      vscode.window.showErrorMessage(`Failed to delete profile: ${err}`);
+      this.addLog(`❌ Failed to delete profile: ${err}`);
     }
   }
 
@@ -1247,12 +1237,12 @@ except Exception as e:
           type: 'emailsImported',
           emails
         });
-        vscode.window.showInformationMessage(`Imported ${emails.length} emails`);
+        this.addLog(`✅ Imported ${emails.length} emails`);
       } else {
-        vscode.window.showWarningMessage('No valid emails found in file');
+        this.addLog('⚠️ No valid emails found in file');
       }
     } catch (err) {
-      vscode.window.showErrorMessage(`Failed to read file: ${err}`);
+      this.addLog(`❌ Failed to read file: ${err}`);
     }
   }
 
@@ -1270,7 +1260,7 @@ except Exception as e:
   // Refresh tokens for selected accounts
   async refreshSelectedTokens(filenames: string[]) {
     if (!filenames || filenames.length === 0) {
-      vscode.window.showWarningMessage('No accounts selected');
+      this.addLog('⚠️ No accounts selected');
       return;
     }
 
@@ -1348,18 +1338,18 @@ except Exception as e:
       }
     });
 
-    const message = `Checked ${filenames.length}: ${refreshed} healthy` +
+    const message = `✅ Checked ${filenames.length}: ${refreshed} healthy` +
       (banned > 0 ? `, ${banned} banned` : '') +
       (failed - banned > 0 ? `, ${failed - banned} failed` : '');
 
-    vscode.window.showInformationMessage(message);
+    this.addLog(message);
     this.refresh();
   }
 
   // Delete selected accounts
   async deleteSelectedAccounts(filenames: string[]) {
     if (!filenames || filenames.length === 0) {
-      vscode.window.showWarningMessage('No accounts selected');
+      this.addLog('⚠️ No accounts selected');
       return;
     }
 
@@ -1383,7 +1373,7 @@ except Exception as e:
       }
     }
 
-    vscode.window.showInformationMessage(`Deleted ${deleted} account(s)`);
+    this.addLog(`✅ Deleted ${deleted} account(s)`);
     this.refresh();
   }
 
@@ -1399,7 +1389,7 @@ except Exception as e:
     });
 
     if (accountsToCheck.length === 0) {
-      vscode.window.showInformationMessage('No accounts to check (all banned or exhausted)');
+      this.addLog('ℹ️ No accounts to check (all banned or exhausted)');
       return;
     }
 
@@ -1470,9 +1460,8 @@ except Exception as e:
       }
     });
 
-    const summary = `Health check: ${healthy} healthy, ${banned} banned, ${expired} expired, ${noCredentials} no credentials`;
-    this.addLog(`✅ ${summary}`);
-    vscode.window.showInformationMessage(summary);
+    const summary = `✅ Health check: ${healthy} healthy, ${banned} banned, ${expired} expired, ${noCredentials} no credentials`;
+    this.addLog(summary);
     this.refresh();
   }
 
@@ -1746,8 +1735,8 @@ except Exception as e:
   ];
 
   private _generateRandomName(): string {
-    const first = AccountsProvider.FIRST_NAMES[Math.floor(Math.random() * AccountsProvider.FIRST_NAMES.length)];
-    const last = AccountsProvider.LAST_NAMES[Math.floor(Math.random() * AccountsProvider.LAST_NAMES.length)];
+    const first = KiroAccountsProvider.FIRST_NAMES[Math.floor(Math.random() * KiroAccountsProvider.FIRST_NAMES.length)];
+    const last = KiroAccountsProvider.LAST_NAMES[Math.floor(Math.random() * KiroAccountsProvider.LAST_NAMES.length)];
     return `${first} ${last}`;
   }
 

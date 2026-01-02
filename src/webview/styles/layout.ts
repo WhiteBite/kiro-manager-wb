@@ -1130,82 +1130,196 @@ export const layout = `
     justify-content: flex-end;
   }
 
-  /* === Logs Drawer === */
-  .logs-drawer {
+  /* === Enhanced Console Drawer === */
+  .console-drawer {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-elevated);
+    background: var(--vscode-terminal-background, #1a1a1a);
     border-top: 1px solid var(--border);
     z-index: 50;
     transform: translateY(calc(100% - 36px));
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
   }
-  .logs-drawer.open { transform: translateY(0); }
-  .logs-header {
+  .console-drawer.open { transform: translateY(0); }
+  
+  /* Console Header */
+  .console-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
     cursor: pointer;
-    background: rgba(0,0,0,0.2);
+    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border-subtle);
     user-select: none;
   }
-  .logs-header:hover { background: rgba(0,0,0,0.3); }
-  .logs-header-left {
+  .console-header:hover { background: rgba(255,255,255,0.05); }
+  .console-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .console-header-right {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .logs-title {
-    font-size: 10px;
+  .console-title {
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--muted);
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
   }
-  .logs-count {
-    font-size: 9px;
-    padding: 2px 6px;
-    background: var(--accent-dim);
-    color: var(--accent);
-    border-radius: 8px;
+  .console-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 10px;
     font-weight: 600;
+    min-width: 20px;
+    text-align: center;
   }
-  .logs-count.has-errors {
+  .console-badge.error {
     background: var(--danger-dim);
     color: var(--danger);
   }
-  .logs-toggle {
+  .console-badge.warning {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+  }
+  .console-toggle-icon {
     font-size: 10px;
     color: var(--muted);
     transition: transform 0.3s ease;
   }
-  .logs-drawer.open .logs-toggle { transform: rotate(180deg); }
-  .logs-actions {
+  .console-drawer.open .console-toggle-icon { transform: rotate(180deg); }
+  
+  /* Console Toolbar */
+  .console-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .console-filters {
     display: flex;
     gap: 4px;
-    padding: 4px 12px;
-    justify-content: flex-end;
-    background: rgba(0,0,0,0.1);
   }
-  .logs-content {
-    max-height: 150px;
+  .console-filter {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .console-filter:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+  }
+  .console-filter.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .filter-icon { font-size: 10px; }
+  .filter-icon.error { color: var(--danger); }
+  .filter-icon.warning { color: #ffc107; }
+  .filter-icon.success { color: var(--accent); }
+  .filter-count {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+  .console-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .console-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.15s ease;
+  }
+  .console-btn:hover {
+    background: rgba(255,255,255,0.1);
+    opacity: 1;
+  }
+  
+  /* Console Body */
+  .console-body {
+    max-height: 180px;
     overflow-y: auto;
     padding: 8px 12px;
-    font-family: var(--vscode-editor-font-family, monospace);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .console-body::-webkit-scrollbar { width: 6px; }
+  .console-body::-webkit-scrollbar-track { background: transparent; }
+  .console-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .console-body::-webkit-scrollbar-thumb:hover { background: var(--border-medium); }
+  
+  /* Console Line */
+  .console-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .console-line:last-child { border-bottom: none; }
+  .console-line.hidden { display: none; }
+  .console-icon {
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
     font-size: 10px;
-    line-height: 1.5;
   }
-  .log-line {
+  .console-time {
+    flex-shrink: 0;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: 0.6;
+    font-family: monospace;
+  }
+  .console-msg {
+    flex: 1;
+    word-break: break-word;
     white-space: pre-wrap;
-    word-break: break-all;
-    padding: 1px 0;
   }
-  .log-line.error { color: var(--danger); }
-  .log-line.success { color: var(--accent); }
-  .log-line.warning { color: var(--warning); }
+  
+  /* Console Line Types */
+  .console-line.error { color: var(--danger); }
+  .console-line.error .console-icon { color: var(--danger); }
+  .console-line.success { color: var(--accent); }
+  .console-line.success .console-icon { color: var(--accent); }
+  .console-line.warning { color: #ffc107; }
+  .console-line.warning .console-icon { color: #ffc107; }
+  .console-line.info { color: var(--text-secondary); }
+  .console-line.info .console-icon { color: var(--muted); }
+
+  /* Legacy support - hide old classes */
+  .logs-drawer { display: none; }
 
   /* === Toast Container === */
   .toast-container {
