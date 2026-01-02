@@ -532,6 +532,6 @@ export interface Translations {
   startBatchReg: string;
   stopRegistration: string;
   completed: string;
-  remaining: string;
+  batchRemaining: string;
   nextIn: string;
 }

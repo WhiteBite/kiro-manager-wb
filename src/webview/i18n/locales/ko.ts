@@ -431,7 +431,7 @@ export const ko: Translations = {
   startBatchReg: '등록 시작',
   stopRegistration: '등록 중지',
   completed: '완료됨',
-  remaining: '남음',
+  batchRemaining: '남음',
   nextIn: '다음까지',
 
   // Proxy & OAuth (auto-added)

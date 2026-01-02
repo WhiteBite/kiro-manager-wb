@@ -156,7 +156,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
     case 'copyLogs':
       if (msg.logs) {
         await vscode.env.clipboard.writeText(msg.logs as string);
-        vscode.window.showInformationMessage('Logs copied to clipboard');
+        provider.addLog('📋 Logs copied to clipboard');
       }
       break;
 

@@ -313,6 +313,154 @@ def cmd_register_auto(args):
         reg.close()
 
 
+def cmd_register_batch(args):
+    """
+    Пакетная регистрация с шаблоном имени и интервалом
+    
+    Пример: python cli_registration.py register-batch --template "Account_{N}" --count 3 --interval 5
+    """
+    import os
+    import time
+    from core.email_generator import EmailGenerator
+    
+    template = args.template or "Account_{N}"
+    count = args.count or 2
+    start_num = args.start or 1
+    interval = args.interval or 0  # minutes, 0 = no delay
+    provider = args.provider or "Google"
+    strategy_name = args.strategy or "automated"
+    headless = args.headless
+    
+    print("\n" + "="*70)
+    print(f"🚀 BATCH REGISTRATION")
+    print("="*70)
+    print(f"Template: {template}")
+    print(f"Count: {count}")
+    print(f"Start #: {start_num}")
+    print(f"Interval: {interval} min" if interval > 0 else "Interval: no delay")
+    print(f"Strategy: {strategy_name}")
+    print(f"Provider: {provider}")
+    if strategy_name == "automated":
+        print(f"Headless: {headless}")
+    print("="*70 + "\n")
+    
+    results = []
+    
+    # For automated strategy, create registration instance once
+    reg = None
+    if strategy_name == "automated":
+        from registration.register import AWSRegistration
+        reg = AWSRegistration(headless=headless)
+    
+    try:
+        for i in range(count):
+            current_num = start_num + i
+            # Generate name from template
+            login_name = template.replace('{N}', str(current_num).zfill(3)).replace('{n}', str(current_num))
+            
+            print(f"\n{'='*70}")
+            print(f"📝 Account {i+1}/{count}: {login_name}")
+            print('='*70 + "\n")
+            
+            # Set environment for this registration
+            os.environ['KIRO_LOGIN_NAME'] = login_name
+            os.environ['OAUTH_PROVIDER'] = provider
+            
+            # Create email generator and generate email
+            email_generator = EmailGenerator.from_env()
+            email_result = email_generator.generate()
+            email = email_result.registration_email
+            
+            print(f"Email: {email}")
+            print(f"Display name: {login_name}")
+            
+            try:
+                if strategy_name == "webview":
+                    # WebView strategy
+                    strategy = StrategyFactory.create('webview')
+                    try:
+                        result = strategy.register(
+                            email=email,
+                            name=login_name,
+                            provider=provider,
+                            timeout=300
+                        )
+                    finally:
+                        strategy.cleanup()
+                else:
+                    # Automated strategy
+                    result = reg.register_single(
+                        email=email,
+                        name=login_name,
+                        password=None
+                    )
+                
+                results.append({
+                    'name': login_name,
+                    'email': email,
+                    'success': result.get('success', False),
+                    'token_file': result.get('token_file'),
+                    'error': result.get('error')
+                })
+                
+                if result.get('success'):
+                    print(f"\n✅ SUCCESS: {login_name}")
+                    print(f"   Token: {result.get('token_file', 'N/A')}")
+                else:
+                    print(f"\n❌ FAILED: {login_name}")
+                    print(f"   Error: {result.get('error', 'Unknown')}")
+                    
+            except KeyboardInterrupt:
+                print("\n\n⚠️  Registration cancelled by user")
+                break
+            except Exception as e:
+                print(f"\n❌ Error: {e}")
+                results.append({
+                    'name': login_name,
+                    'email': email,
+                    'success': False,
+                    'error': str(e)
+                })
+            finally:
+                if 'KIRO_LOGIN_NAME' in os.environ:
+                    del os.environ['KIRO_LOGIN_NAME']
+            
+            # Wait before next registration
+            if interval > 0 and i < count - 1:
+                wait_seconds = interval * 60
+                print(f"\n⏰ Next registration in {interval} minutes...")
+                for remaining in range(wait_seconds, 0, -1):
+                    mins, secs = divmod(remaining, 60)
+                    print(f"\r   ⏳ {mins:02d}:{secs:02d} remaining...", end='', flush=True)
+                    time.sleep(1)
+                print()
+    
+    finally:
+        # Cleanup automated strategy
+        if reg:
+            reg.close()
+    
+    # Summary
+    print("\n" + "="*70)
+    print("📊 BATCH REGISTRATION SUMMARY")
+    print("="*70)
+    
+    success_count = len([r for r in results if r['success']])
+    failed_count = len(results) - success_count
+    
+    print(f"✅ Success: {success_count}")
+    print(f"❌ Failed: {failed_count}")
+    print()
+    
+    for r in results:
+        status = "✅" if r['success'] else "❌"
+        print(f"  {status} {r['name']}: {r.get('token_file') or r.get('error', 'Unknown')}")
+    
+    print("="*70 + "\n")
+    
+    return 0 if failed_count == 0 else 1
+
+
 def setup_registration_commands(subparsers):
     """
     Настроить команды регистрации
@@ -377,6 +525,27 @@ def setup_registration_commands(subparsers):
     parser_auto.add_argument('--no-check-quota', action='store_true',
                             help='Do NOT check quota immediately (reduces ban risk)')
     parser_auto.set_defaults(func=cmd_register_auto)
+    
+    # register batch - Пакетная регистрация с шаблоном
+    parser_batch = subparsers.add_parser(
+        'register-batch',
+        help='Batch registration with name template and interval'
+    )
+    parser_batch.add_argument('--template', '-t', default='Account_{N}',
+                             help='Name template, use {N} for number (default: Account_{N})')
+    parser_batch.add_argument('--count', '-c', type=int, default=2,
+                             help='Number of accounts to register (default: 2)')
+    parser_batch.add_argument('--start', '-s', type=int, default=1,
+                             help='Starting number (default: 1)')
+    parser_batch.add_argument('--interval', '-i', type=int, default=0,
+                             help='Interval between registrations in minutes (default: 0 = no delay)')
+    parser_batch.add_argument('--provider', '-p', choices=['Google', 'Github'], default='Google',
+                             help='OAuth provider (default: Google)')
+    parser_batch.add_argument('--strategy', choices=['automated', 'webview'], default='automated',
+                             help='Registration strategy (default: automated)')
+    parser_batch.add_argument('--headless', action='store_true',
+                             help='Run browser in headless mode (automated only)')
+    parser_batch.set_defaults(func=cmd_register_batch)
 
 
 if __name__ == '__main__':

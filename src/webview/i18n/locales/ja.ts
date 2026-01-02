@@ -431,7 +431,7 @@ export const ja: Translations = {
   startBatchReg: '登録開始',
   stopRegistration: '登録停止',
   completed: '完了',
-  remaining: '残り',
+  batchRemaining: '残り',
   nextIn: '次まで',
 
   // Proxy & OAuth (auto-added)

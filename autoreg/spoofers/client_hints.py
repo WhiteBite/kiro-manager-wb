@@ -131,54 +131,71 @@ class ClientHintsSpoofModule(BaseSpoofModule):
     const brands = [
         {{ brand: 'Google Chrome', version: CHROME_VERSION }},
         {{ brand: 'Chromium', version: CHROME_VERSION }},
-        {{ brand: 'Not A(Brand', version: '24' }}
+        {{ brand: 'Not_A Brand', version: '24' }}
     ];
     
     const fullVersionList = [
         {{ brand: 'Google Chrome', version: CHROME_VERSION + '.0.0.0' }},
         {{ brand: 'Chromium', version: CHROME_VERSION + '.0.0.0' }},
-        {{ brand: 'Not A(Brand', version: '24.0.0.0' }}
+        {{ brand: 'Not_A Brand', version: '24.0.0.0' }}
     ];
     
-    // Создаём fake userAgentData
-    const fakeUserAgentData = {{
-        brands: brands,
-        mobile: false,
-        platform: PLATFORM,
-        
-        getHighEntropyValues: function(hints) {{
-            return Promise.resolve({{
-                architecture: ARCHITECTURE,
-                bitness: BITNESS,
-                brands: brands,
-                fullVersionList: fullVersionList,
-                mobile: false,
-                model: '',
-                platform: PLATFORM,
-                platformVersion: PLATFORM_VERSION,
-                uaFullVersion: CHROME_VERSION + '.0.0.0',
-                wow64: false,
-                formFactors: ['Desktop']
-            }});
-        }},
-        
-        toJSON: function() {{
-            return {{
-                brands: brands,
-                mobile: false,
-                platform: PLATFORM
-            }};
-        }}
+    // Создаём fake userAgentData с правильным prototype
+    const NavigatorUAData = function() {{}};
+    NavigatorUAData.prototype.brands = brands;
+    NavigatorUAData.prototype.mobile = false;
+    NavigatorUAData.prototype.platform = PLATFORM;
+    
+    NavigatorUAData.prototype.getHighEntropyValues = function(hints) {{
+        return Promise.resolve({{
+            architecture: ARCHITECTURE,
+            bitness: BITNESS,
+            brands: brands,
+            fullVersionList: fullVersionList,
+            mobile: false,
+            model: '',
+            platform: PLATFORM,
+            platformVersion: PLATFORM_VERSION,
+            uaFullVersion: CHROME_VERSION + '.0.0.0',
+            wow64: false,
+            formFactors: ['Desktop']
+        }});
     }};
     
-    // Замораживаем чтобы нельзя было изменить
-    Object.freeze(fakeUserAgentData.brands);
-    Object.freeze(fakeUserAgentData);
+    NavigatorUAData.prototype.toJSON = function() {{
+        return {{
+            brands: brands,
+            mobile: false,
+            platform: PLATFORM
+        }};
+    }};
     
-    // Переопределяем navigator.userAgentData
+    const fakeUserAgentData = new NavigatorUAData();
+    fakeUserAgentData.brands = brands;
+    fakeUserAgentData.mobile = false;
+    fakeUserAgentData.platform = PLATFORM;
+    
+    // Замораживаем brands array
+    Object.freeze(fakeUserAgentData.brands);
+    
+    // Регистрируем в Proxy системе (если доступна)
+    if (typeof window.__registerSpoofedProp === 'function') {{
+        window.__registerSpoofedProp('userAgentData', () => fakeUserAgentData);
+    }}
+    
+    // Также пробуем напрямую переопределить (для случаев без Proxy)
     try {{
         Object.defineProperty(navigator, 'userAgentData', {{
             get: () => fakeUserAgentData,
+            configurable: true,
+            enumerable: true
+        }});
+    }} catch(e) {{}}
+    
+    // Добавляем Symbol.toStringTag для правильного typeof
+    try {{
+        Object.defineProperty(NavigatorUAData.prototype, Symbol.toStringTag, {{
+            value: 'NavigatorUAData',
             configurable: true
         }});
     }} catch(e) {{}}

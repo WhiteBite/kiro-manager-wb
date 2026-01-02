@@ -431,7 +431,7 @@ export const fr: Translations = {
   startBatchReg: 'Démarrer l\'inscription',
   stopRegistration: 'Arrêter l\'inscription',
   completed: 'Terminé',
-  remaining: 'Restant',
+  batchRemaining: 'Restant',
   nextIn: 'Prochain dans',
 
   // OAuth Provider Selection

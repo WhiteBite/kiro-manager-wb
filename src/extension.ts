@@ -67,7 +67,7 @@ export function deactivate() { }
 async function quickSwitch() {
   const accounts = loadAccounts();
   if (accounts.length === 0) {
-    vscode.window.showWarningMessage('No accounts found');
+    accountsProvider?.addLog('⚠️ No accounts found');
     return;
   }
 
@@ -130,7 +130,7 @@ async function switchToNextAvailable(): Promise<boolean> {
   if (available.length === 0) {
     // Clear failed attempts after showing error (allow retry later)
     failedSwitchAttempts.clear();
-    vscode.window.showErrorMessage('No available accounts to switch to. All accounts are banned or expired.');
+    accountsProvider?.addLog('❌ No available accounts to switch to. All accounts are banned or expired.');
     return false;
   }
 
@@ -138,10 +138,7 @@ async function switchToNextAvailable(): Promise<boolean> {
   const next = available[0];
   const accountName = next.tokenData.accountName || next.filename;
 
-  vscode.window.showWarningMessage(
-    `Current account banned/suspended. Auto-switching to: ${accountName}`,
-    'OK'
-  );
+  accountsProvider?.addLog(`⚠️ Current account banned/suspended. Auto-switching to: ${accountName}`);
 
   try {
     // Use returnDetails=true to get ban status
@@ -193,10 +190,10 @@ async function importToken() {
     const tokensDir = getTokensDir();
     const filename = path.basename(fileUri[0].fsPath);
     fs.copyFileSync(fileUri[0].fsPath, path.join(tokensDir, filename));
-    vscode.window.showInformationMessage('Token imported successfully');
+    accountsProvider?.addLog('✅ Token imported successfully');
     accountsProvider?.refresh();
   } catch (error) {
-    vscode.window.showErrorMessage('Failed to import token');
+    accountsProvider?.addLog('❌ Failed to import token');
     console.error('Import failed:', error);
   }
 }
@@ -205,16 +202,16 @@ function showCurrentAccount() {
   const accounts = loadAccounts();
   const active = accounts.find(a => a.isActive);
   if (active) {
-    vscode.window.showInformationMessage(`Current account: ${active.tokenData.accountName || active.filename}`);
+    accountsProvider?.addLog(`ℹ️ Current account: ${active.tokenData.accountName || active.filename}`);
   } else {
-    vscode.window.showInformationMessage('No active account');
+    accountsProvider?.addLog('ℹ️ No active account');
   }
 }
 
 async function signOut() {
   try {
     await vscode.commands.executeCommand('_signOutOfKiro');
-    vscode.window.showInformationMessage('Signed out');
+    accountsProvider?.addLog('✅ Signed out');
   } catch (error) {
     console.error('Sign out failed:', error);
   }
@@ -255,7 +252,7 @@ function setupAutoSwitch(context: vscode.ExtensionContext) {
           await switchToAccount(validAccounts[0].filename);
           accountsProvider?.refresh();
           updateStatusBar();
-          vscode.window.showInformationMessage(`Auto-switched to ${validAccounts[0].tokenData.accountName}`);
+          accountsProvider?.addLog(`✅ Auto-switched to ${validAccounts[0].tokenData.accountName}`);
         }
       }
     }, intervalMinutes * 60 * 1000);

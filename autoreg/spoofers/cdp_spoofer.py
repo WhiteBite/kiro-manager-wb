@@ -77,6 +77,14 @@ class CDPSpoofer:
             "// === WEBDRIVER PROXY (must be first!) ===",
             """
 (function() {
+    // Храним спуфленные свойства которые модули переопределят позже
+    const spoofedProps = new Map();
+    
+    // Функция для регистрации спуфленных свойств (вызывается модулями)
+    window.__registerSpoofedProp = function(prop, getter) {
+        spoofedProps.set(prop, getter);
+    };
+    
     // Proxy для полного скрытия webdriver
     const originalNavigator = window.navigator;
     const navigatorProxy = new Proxy(originalNavigator, {
@@ -85,12 +93,23 @@ class CDPSpoofer:
             return prop in target;
         },
         get: function(target, prop) {
+            // Скрываем webdriver
             if (prop === 'webdriver') return undefined;
+            
+            // Проверяем спуфленные свойства
+            if (spoofedProps.has(prop)) {
+                return spoofedProps.get(prop)();
+            }
+            
             const value = target[prop];
             if (typeof value === 'function') {
                 return value.bind(target);
             }
             return value;
+        },
+        getOwnPropertyDescriptor: function(target, prop) {
+            if (prop === 'webdriver') return undefined;
+            return Object.getOwnPropertyDescriptor(target, prop);
         }
     });
     
@@ -323,6 +342,25 @@ class CDPSpoofer:
             print(f"   [OK] Device metrics")
         except Exception as e:
             print(f"   [WARN] Device metrics: {e}")
+        
+        # Permission override через CDP (для Notification.permission)
+        try:
+            # Устанавливаем notifications permission в 'prompt' для всех origins
+            page.run_cdp('Browser.setPermission',
+                permission={'name': 'notifications'},
+                setting='prompt'
+            )
+            print(f"   [OK] Notification permission: prompt")
+        except Exception as e:
+            # Fallback: пробуем через Emulation
+            try:
+                page.run_cdp('Emulation.setPermissionOverride',
+                    permission={'name': 'notifications'},
+                    setting='prompt'
+                )
+                print(f"   [OK] Notification permission (emulation): prompt")
+            except:
+                print(f"   [WARN] Notification permission: {e}")
         
         # Персистентный JS-инжект
         try:

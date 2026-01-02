@@ -140,7 +140,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register.py') : '';
 
   if (!finalPath || !fs.existsSync(finalPath)) {
-    vscode.window.showWarningMessage('Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-manager-wb/');
+    provider.addLog('⚠️ Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-manager-wb/');
     return;
   }
 
@@ -341,13 +341,11 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
         provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
       }
 
-      vscode.window.showInformationMessage('Account registered successfully!');
+      provider.addLog('✅ Account registered successfully!');
     } else if (registrationFailed) {
-      provider.addLog('✗ Registration failed');
-      vscode.window.showErrorMessage('Registration failed. Check logs for details.');
+      provider.addLog('❌ Registration failed. Check logs for details.');
     } else if (code !== 0 && code !== null) {
-      provider.addLog(`✗ Process exited with code ${code}`);
-      vscode.window.showErrorMessage(`Registration process failed (exit code ${code})`);
+      provider.addLog(`❌ Process exited with code ${code}`);
     }
     provider.setStatus('');
     provider.refresh();
@@ -419,7 +417,7 @@ function parseProgressLine(line: string, provider: KiroAccountsProvider) {
 export async function patchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider, force: boolean = false) {
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
-    vscode.window.showErrorMessage('Autoreg not found');
+    provider.addLog('❌ Autoreg not found');
     return;
   }
 
@@ -456,11 +454,9 @@ export async function patchKiro(context: vscode.ExtensionContext, provider: Kiro
   }
 
   if (result.status === 0) {
-    provider.addLog('✅ Kiro patched successfully!');
-    vscode.window.showInformationMessage('Kiro patched! Restart Kiro for changes to take effect.');
+    provider.addLog('✅ Kiro patched successfully! Restart Kiro for changes to take effect.');
   } else {
-    provider.addLog(`❌ Patch failed (code ${result.status})`);
-    vscode.window.showErrorMessage('Patch failed. Check console for details.');
+    provider.addLog(`❌ Patch failed (code ${result.status}). Check console for details.`);
   }
 }
 
@@ -520,7 +516,7 @@ export async function patchKiroHot(context: vscode.ExtensionContext): Promise<Ho
 export async function unpatchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
-    vscode.window.showErrorMessage('Autoreg not found');
+    provider.addLog('❌ Autoreg not found');
     return;
   }
 
@@ -537,11 +533,9 @@ export async function unpatchKiro(context: vscode.ExtensionContext, provider: Ki
   }
 
   if (result.status === 0) {
-    provider.addLog('✅ Kiro patch removed!');
-    vscode.window.showInformationMessage('Kiro restored! Restart Kiro for changes to take effect.');
+    provider.addLog('✅ Kiro patch removed! Restart Kiro for changes to take effect.');
   } else {
-    provider.addLog(`❌ Unpatch failed (code ${result.status})`);
-    vscode.window.showErrorMessage('Unpatch failed. Check console for details.');
+    provider.addLog(`❌ Unpatch failed (code ${result.status}). Check console for details.`);
   }
 }
 
@@ -551,7 +545,7 @@ export async function unpatchKiro(context: vscode.ExtensionContext, provider: Ki
 export async function generateMachineId(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
-    vscode.window.showErrorMessage('Autoreg not found');
+    provider.addLog('❌ Autoreg not found');
     return;
   }
 
@@ -568,11 +562,9 @@ export async function generateMachineId(context: vscode.ExtensionContext, provid
   }
 
   if (result.status === 0) {
-    provider.addLog('✅ New Machine ID generated!');
-    vscode.window.showInformationMessage('New Machine ID generated! Restart Kiro for changes to take effect.');
+    provider.addLog('✅ New Machine ID generated! Restart Kiro for changes to take effect.');
   } else {
-    provider.addLog(`❌ Generation failed (code ${result.status})`);
-    vscode.window.showErrorMessage('Generation failed. Check console for details.');
+    provider.addLog(`❌ Generation failed (code ${result.status}). Check console for details.`);
   }
 }
 
@@ -692,7 +684,7 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
 export async function resetMachineId(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
-    vscode.window.showErrorMessage('Autoreg not found');
+    provider.addLog('❌ Autoreg not found');
     return;
   }
 
@@ -717,18 +709,16 @@ export async function resetMachineId(context: vscode.ExtensionContext, provider:
   }
 
   if (result.status === 0) {
-    provider.addLog('✅ Machine ID reset successfully!');
-    vscode.window.showInformationMessage('Machine ID reset! Restart Kiro for changes to take effect.');
+    provider.addLog('✅ Machine ID reset successfully! Restart Kiro for changes to take effect.');
   } else {
-    provider.addLog(`❌ Machine ID reset failed (code ${result.status})`);
-    vscode.window.showErrorMessage('Machine ID reset failed. Check console for details.');
+    provider.addLog(`❌ Machine ID reset failed (code ${result.status}). Check console for details.`);
   }
 }
 
 export async function importSsoToken(context: vscode.ExtensionContext, provider: KiroAccountsProvider, bearerToken: string) {
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
-    vscode.window.showErrorMessage('Autoreg not found');
+    provider.addLog('❌ Autoreg not found');
     return;
   }
 
@@ -763,20 +753,17 @@ export async function importSsoToken(context: vscode.ExtensionContext, provider:
     },
     onClose: (code) => {
       if (code === 0) {
-        provider.addLog('✅ SSO import successful!');
+        provider.addLog('✅ SSO import successful! Account imported.');
         provider.setStatus('');
-        vscode.window.showInformationMessage('Account imported successfully!');
         provider.refresh();
       } else {
-        provider.addLog(`❌ SSO import failed (code ${code})`);
+        provider.addLog(`❌ SSO import failed (code ${code}). Check console for details.`);
         provider.setStatus('');
-        vscode.window.showErrorMessage('SSO import failed. Check console for details.');
       }
     },
     onError: (err) => {
-      provider.addLog(`❌ Error: ${err.message}`);
+      provider.addLog(`❌ SSO import error: ${err.message}`);
       provider.setStatus('');
-      vscode.window.showErrorMessage(`SSO import error: ${err.message}`);
     }
   });
 }
