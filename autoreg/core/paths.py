@@ -39,6 +39,7 @@ class Paths:
         self.backups_dir = self.user_data_dir / 'backups'
         self.logs_dir = self.user_data_dir / 'logs'
         self.cache_dir = self.user_data_dir / 'cache'
+        self.debug_sessions_dir = self.user_data_dir / 'debug_sessions'
         
         # Files
         self.accounts_file = self.user_data_dir / 'accounts.json'
@@ -93,6 +94,7 @@ class Paths:
             self.backups_dir,
             self.logs_dir,
             self.cache_dir,
+            self.debug_sessions_dir,
             self.aws_sso_cache,
         ]
         

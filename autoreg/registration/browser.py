@@ -25,6 +25,10 @@ from spoofers.profile_storage import ProfileStorage
 # Debug recorder
 from core.debug_recorder import get_recorder, record, init_recorder
 
+# Script collector for analysis (disabled by default, enable for debugging)
+# from debugger.collectors.script_collector import ScriptCollector, collect_scripts, save_collected_scripts
+COLLECT_SCRIPTS = False  # Set to True to enable script collection for analysis
+
 
 def find_chrome_path() -> Optional[str]:
     """Find Chrome/Chromium executable path on different platforms"""
@@ -564,25 +568,10 @@ class BrowserAutomation:
         # Определяем режим: если fast не указан, используем настройку
         use_fast = fast if fast is not None else not self._realistic_typing
         
-        if use_fast:
-            # Быстрый режим: execCommand для совместимости с React
-            if click_first:
-                element.click()
-                self._behavior.human_delay(0.02, 0.05)
-            
-            self.page.run_js('''
-                const input = arguments[0];
-                const text = arguments[1];
-                input.focus();
-                input.value = '';
-                input.select();
-                document.execCommand('insertText', false, text);
-            ''', element, text)
-            
-            self._behavior.human_delay(0.03, 0.08)
-        else:
-            # Реалистичный режим: посимвольный ввод с человеческими задержками
-            self._behavior.human_type(element, text, clear_first=click_first, field_type=field_type)
+        # ВСЕГДА используем fwcim_type для генерации правильных событий клавиатуры
+        # FWCIM отслеживает keyCycles (keydown->keyup timing) - execCommand их не генерирует!
+        # Параметр fast передаётся в fwcim_type для уменьшения задержек
+        self._behavior.fwcim_type(self.page, element, text, field_type=field_type, fast=use_fast)
     
     def human_click(self, element, with_delay: bool = True):
         """
@@ -592,7 +581,11 @@ class BrowserAutomation:
             element: Элемент для клика
             with_delay: Добавить задержку до/после клика
         """
-        self._behavior.human_js_click(self.page, element, pre_delay=with_delay)
+        if with_delay:
+            self._behavior.human_delay(0.15, 0.4)
+        
+        # FWCIM-совместимый клик с mousedown/mouseup событиями
+        self._behavior.fwcim_click(self.page, element)
     
     def simulate_human_activity(self):
         """
@@ -704,6 +697,23 @@ class BrowserAutomation:
             ''')
         except:
             pass
+    
+    def _collect_scripts(self):
+        """Collect all JS scripts from current page for analysis.
+        
+        Disabled by default. Set COLLECT_SCRIPTS = True at top of file to enable.
+        """
+        if not COLLECT_SCRIPTS:
+            return
+        
+        try:
+            # Import only when needed
+            from debugger.collectors.script_collector import collect_scripts
+            collect_scripts(self.page)
+        except Exception as e:
+            # Don't fail registration if script collection fails
+            if self.verbose:
+                print(f"[ScriptCollector] Error: {e}")
     
     def close_cookie_dialog(self, force: bool = False):
         """Принимает или скрывает диалог cookie."""
@@ -963,15 +973,10 @@ class BrowserAutomation:
             self.screenshot("error_no_email")
             raise Exception("Email field not found")
         
-        # КРИТИЧНО: Ввод email через JS без опечаток - email должен быть точным!
-        self.page.run_js('''
-            const input = arguments[0];
-            const email = arguments[1];
-            input.focus();
-            input.value = '';
-            input.select();
-            document.execCommand('insertText', false, email);
-        ''', email_input, email)
+        # КРИТИЧНО: Используем fwcim_type для генерации правильных событий клавиатуры
+        # FWCIM отслеживает keyCycles (keydown->keyup timing) - execCommand их не генерирует!
+        # fast=True для скорости, но всё ещё генерирует события
+        self._behavior.fwcim_type(self.page, email_input, email, field_type='email', fast=True)
         
         time.sleep(0.1)
         # Проверяем что ввелось правильно
@@ -1085,6 +1090,8 @@ class BrowserAutomation:
                     if self.page.ele(selector, timeout=0.3):
                         elapsed = time.time() - start_time
                         print(f"   [OK] Name page loaded in {elapsed:.2f}s")
+                        # Collect scripts after page transition
+                        self._collect_scripts()
                         return True
                 except:
                     pass
@@ -1192,16 +1199,12 @@ class BrowserAutomation:
             print("   [X] Name field not found!")
             return False
         
-        # КРИТИЧНО: Ввод имени через JS без опечаток
-        self.page.run_js('''
-            const input = arguments[0];
-            const name = arguments[1];
-            input.focus();
-            input.value = '';
-            input.select();
-            document.execCommand('insertText', false, name);
-            input.dispatchEvent(new Event('blur', { bubbles: true }));
-        ''', name_input, name)
+        # КРИТИЧНО: Используем fwcim_type для генерации правильных событий клавиатуры
+        # FWCIM отслеживает keyCycles (keydown->keyup timing) - execCommand их не генерирует!
+        self._behavior.fwcim_type(self.page, name_input, name, field_type='name', fast=True)
+        
+        # Blur event после ввода
+        self.page.run_js('arguments[0].dispatchEvent(new Event("blur", { bubbles: true }));', name_input)
         
         time.sleep(0.1)
         
@@ -1265,13 +1268,8 @@ class BrowserAutomation:
                     # Retry - ищем поле имени заново
                     retry_input = self.page.ele('css:input[type="text"]:not([hidden])', timeout=1)
                     if retry_input:
-                        self.page.run_js('''
-                            const input = arguments[0];
-                            const name = arguments[1];
-                            input.focus();
-                            input.select();
-                            document.execCommand('insertText', false, name);
-                        ''', retry_input, name)
+                        # Используем fwcim_type для генерации правильных событий
+                        self._behavior.fwcim_type(self.page, retry_input, name, field_type='name', fast=True)
                     self._click_if_exists(SELECTORS['continue_btn'], timeout=1)
                     continue
             
@@ -1280,6 +1278,8 @@ class BrowserAutomation:
                     if self.page.ele(selector, timeout=0.3):
                         elapsed = time.time() - start_time
                         print(f"   [OK] Verification page loaded in {elapsed:.2f}s")
+                        # Collect scripts after page transition
+                        self._collect_scripts()
                         return True
                 except:
                     pass
@@ -1306,16 +1306,10 @@ class BrowserAutomation:
         if not code_input:
             raise Exception("Verification code field not found")
         
-        # КРИТИЧНО: Очищаем поле и вводим код напрямую через JS (без опечаток!)
-        # Код верификации должен быть введён точно
-        self.page.run_js('''
-            const input = arguments[0];
-            const code = arguments[1];
-            input.focus();
-            input.value = '';
-            input.select();
-            document.execCommand('insertText', false, code);
-        ''', code_input, code)
+        # КРИТИЧНО: Используем fwcim_type для генерации правильных событий клавиатуры
+        # FWCIM отслеживает keyCycles (keydown->keyup timing) - execCommand их не генерирует!
+        # Код верификации - критичное поле, используем fast=True для скорости
+        self._behavior.fwcim_type(self.page, code_input, code, field_type='code', fast=True)
         
         time.sleep(0.1)
         print(f"   Entered code: '{code_input.attr('value') or ''}'")
@@ -1382,6 +1376,8 @@ class BrowserAutomation:
                     if self.page.ele(selector, timeout=0.1):
                         elapsed = time.time() - start_time
                         print(f"   [OK] Password page loaded in {elapsed:.2f}s")
+                        # Collect scripts after page transition
+                        self._collect_scripts()
                         return True
                 except:
                     pass
@@ -1553,11 +1549,15 @@ class BrowserAutomation:
             if 'view.awsapps.com' in current_url or 'awsapps.com/start' in current_url:
                 elapsed = time.time() - redirect_start
                 print(f"   [OK] Redirected to awsapps.com after {elapsed:.1f}s")
+                # Collect scripts after redirect
+                self._collect_scripts()
                 break
             
             if '127.0.0.1' in current_url and 'oauth/callback' in current_url:
                 elapsed = time.time() - redirect_start
                 print(f"   [OK] Redirected to callback after {elapsed:.1f}s")
+                # Collect scripts after redirect
+                self._collect_scripts()
                 break
             
             # КРИТИЧНО: Проверяем cookie workflow-step-id
@@ -2006,6 +2006,8 @@ class BrowserAutomation:
                 time.sleep(0.5)
                 if '127.0.0.1' in self.page.url:
                     print("   [OK] Redirected to callback!")
+                    # Collect scripts after redirect
+                    self._collect_scripts()
                     return True
             except Exception as e:
                 print(f"   [!] Direct click failed: {e}")
@@ -2016,6 +2018,8 @@ class BrowserAutomation:
                 time.sleep(0.5)
                 if '127.0.0.1' in self.page.url:
                     print("   [OK] Redirected to callback!")
+                    # Collect scripts after redirect
+                    self._collect_scripts()
                     return True
             except Exception as e:
                 print(f"   [!] JS click failed: {e}")
@@ -2026,6 +2030,8 @@ class BrowserAutomation:
                 time.sleep(0.5)
                 if '127.0.0.1' in self.page.url:
                     print("   [OK] Redirected to callback!")
+                    # Collect scripts after redirect
+                    self._collect_scripts()
                     return True
             except:
                 pass
@@ -2133,6 +2139,9 @@ class BrowserAutomation:
             print(f"   [OK] Page elements loaded")
         else:
             print(f"   [!] Page elements not detected, continuing anyway")
+        
+        # Collect JS scripts from this page
+        self._collect_scripts()
         
         # Скрываем cookie
         self._hide_cookie_banner()
@@ -2256,6 +2265,15 @@ class BrowserAutomation:
     
     def close(self):
         """Закрытие браузера"""
+        # Save collected scripts (only if enabled)
+        if COLLECT_SCRIPTS:
+            try:
+                from debugger.collectors.script_collector import save_collected_scripts
+                save_collected_scripts()
+            except Exception as e:
+                if self.verbose:
+                    print(f"[ScriptCollector] Error saving: {e}")
+        
         # Завершаем debug recording
         recorder = get_recorder()
         if recorder:
