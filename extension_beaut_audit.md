@@ -378,7 +378,7 @@ Part 2 contains critical business logic modules:
 if (error2 instanceof SignInBlockedError) {
     return { blocked: 1 };
 } else if (error2 instanceof AbandonedError) {
-    return { abandon: 1 };
+всё    return { abandon: 1 };
 }
 ```
 

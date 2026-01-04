@@ -79,28 +79,33 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
     customNamePrefix = ''
   } = settings;
 
-  const progress = maxAccounts > 0 ? Math.min(100, (registeredCount / maxAccounts) * 100) : 0;
+  const progress = maxAccounts > 0 ? Math.round((registeredCount / maxAccounts) * 100) : 0;
   const timeRemaining = formatTimeRemaining(nextRunAt);
   const isComplete = maxAccounts > 0 && registeredCount >= maxAccounts;
   const remaining = Math.max(0, maxAccounts - registeredCount);
+  const currentStep = Math.min(maxAccounts, registeredCount + 1);
 
-  // Preview names
+  // Preview names - stable preview using currentNumber
   const previewNames = useCustomName && customNamePrefix
-    ? [`${customNamePrefix} 1`, `${customNamePrefix} 2`, `${customNamePrefix} 3`]
+    ? [`${customNamePrefix} ${settings.currentNumber}`, `${customNamePrefix} ${settings.currentNumber + 1}`, `${customNamePrefix} ${settings.currentNumber + 2}`]
     : generatePreviewNames(3);
 
+  // Collapsible state - default collapsed when not running
+  const isCollapsed = !isRunning && collapsed;
+
   return `
-    <div class="batch-reg-card ${isRunning ? 'running' : ''}" id="scheduledRegCard">
-      <div class="batch-reg-header">
+    <div class="batch-reg-card ${isRunning ? 'running' : ''} ${isCollapsed ? 'collapsed' : ''}" id="scheduledRegCard">
+      <div class="batch-reg-header" onclick="toggleBatchReg(event)">
         <div class="batch-reg-title">
           <span class="batch-reg-icon">${isRunning ? '🔄' : '📋'}</span>
-          <span>${t.batchRegistration || 'Batch Registration'}</span>
+          <span class="batch-reg-title-text">${t.batchRegistration || 'Batch Registration'}</span>
           ${isRunning ? `<span class="batch-reg-badge running">${t.running || 'Running'}</span>` : ''}
           ${isComplete ? `<span class="batch-reg-badge complete">✓</span>` : ''}
         </div>
+        <span class="batch-reg-toggle">${isCollapsed ? '▼' : '▲'}</span>
       </div>
       
-      <div class="batch-reg-body">
+      <div class="batch-reg-body ${isCollapsed ? 'hidden' : ''}">
         <!-- Quick Stats when running -->
         ${isRunning ? `
           <div class="batch-reg-status">
@@ -112,15 +117,15 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
               <div class="progress-text">${registeredCount}/${maxAccounts}</div>
             </div>
             <div class="batch-reg-status-info">
-              <div class="status-line">
-                <span class="status-label">${t.completed || 'Completed'}:</span>
-                <span class="status-value">${registeredCount}</span>
+              <div class="status-line highlight">
+                <span class="status-label">${t.current || 'Current'}:</span>
+                <span class="status-value">#${currentStep}</span>
               </div>
               <div class="status-line">
                 <span class="status-label">${t.remaining || 'Remaining'}:</span>
                 <span class="status-value">${remaining}</span>
               </div>
-              ${interval > 0 ? `
+              ${interval > 0 && !isComplete ? `
                 <div class="status-line timer">
                   <span class="status-label">${t.nextIn || 'Next in'}:</span>
                   <span class="status-value timer-value" id="scheduledRegTimer">${timeRemaining}</span>
@@ -130,7 +135,7 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
           </div>
           
           <button class="btn btn-danger btn-block" onclick="stopScheduledReg()">
-            ⏹ ${t.stopRegistration || 'Stop Registration'}
+            ⏹ ${t.stopRegistration || 'Stop'}
           </button>
         ` : `
           <!-- Settings when not running -->
@@ -196,10 +201,18 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
                 </label>
               </div>
               ${useCustomName ? `
-                <input type="text" class="batch-reg-input" id="customNamePrefixInput"
-                  value="${customNamePrefix}"
-                  placeholder="${t.enterPrefix || 'Enter prefix (e.g. MyAcc)'}"
-                  oninput="updateScheduledRegSetting('customNamePrefix', this.value)">
+                <div class="batch-reg-input-group">
+                  <input type="text" class="batch-reg-input" id="customNamePrefixInput"
+                    value="${customNamePrefix}"
+                    placeholder="${t.enterPrefix || 'Enter prefix (e.g. MyAcc)'}"
+                    oninput="updateScheduledRegSetting('customNamePrefix', this.value)">
+                  <div class="batch-reg-number-setting">
+                    <label>${t.startFrom || 'Start from'}:</label>
+                    <input type="number" class="number-input-sm" 
+                      value="${settings.currentNumber}" min="1"
+                      onchange="updateScheduledRegSetting('currentNumber', parseInt(this.value))">
+                  </div>
+                </div>
               ` : ''}
             </div>
 
@@ -214,7 +227,7 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
 
           <!-- Start Button -->
           <button class="btn btn-primary btn-block btn-large" onclick="startScheduledReg()">
-            ▶ ${t.startBatchReg || 'Start Registration'} (${maxAccounts} ${t.accounts || 'accounts'})
+            ▶ ${t.startBatchReg || 'Start'} (${maxAccounts})
           </button>
         `}
       </div>

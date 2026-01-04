@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const hi: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro खाते',
+  accounts: 'खाते',
+  registration: 'पंजीकरण',
+  llm: 'AI/LLM',
+  profiles: 'प्रोफाइल',
+  settings: 'सेटिंग्स',
   compactViewTip: 'अधिक खाते दिखाने के लिए कार्ड छोटे करें',
   settingsTip: 'ऑटो-स्विच, ब्राउज़र मोड, लॉगिंग कॉन्फ़िगर करें',
   back: 'वापस',
@@ -59,6 +64,7 @@ export const hi: Translations = {
   partial: 'आंशिक',
   trial: 'परीक्षण',
   empty: 'खाली',
+  more: 'और',
 
   // Account card
   active: 'सक्रिय',
@@ -74,6 +80,8 @@ export const hi: Translations = {
   clearTip: 'कंसोल आउटपुट साफ़ करें',
   openLogTip: 'संपादक में पूर्ण लॉग फ़ाइल खोलें',
   copyLogsTip: 'लॉग कॉपी करें',
+  scrollToBottom: 'नीचे स्क्रॉल करें',
+  newMessagesBelow: 'नीचे नए संदेश',
 
   // Progress
   step: 'चरण',
@@ -343,14 +351,19 @@ export const hi: Translations = {
   noAccountsFound: 'कोई खाता नहीं मिला',
   clearSearch: 'खोज साफ़ करें',
 
+  // Empty States
+  emptyAccountsTitle: 'अभी तक कोई खाता नहीं',
+  emptyAccountsDesc: 'Kiro के साथ शुरू करने के लिए अपना पहला खाता बनाएं',
+  emptySearchTitle: 'कोई परिणाम नहीं',
+  emptySearchDesc: 'कोई अन्य खोज शब्द आज़माएं',
+  emptyBannedTitle: 'कोई प्रतिबंधित खाता नहीं',
+  emptyBannedDesc: 'आपके सभी खाते अच्छी स्थिति में हैं',
+
   // Settings Cards
   automation: 'स्वचालन',
   interface: 'इंटरफ़ेस',
   autoSwitchThreshold: 'स्विच सीमा',
   autoSwitchThresholdDesc: 'शेष < इस मान पर स्विच करें',
-  settings: 'सेटिंग्स',
-  accounts: 'खाते',
-  profiles: 'प्रोफाइल',
   pause: 'रोकें',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const hi: Translations = {
   stopSchedule: 'रोकें',
   scheduleActive: 'सक्रिय',
   scheduleNextIn: 'अगला में',
+  current: '?????',
   complete: 'पूर्ण',
   preview: 'पूर्वावलोकन',
   nextNumber: 'अगला #',

@@ -22,35 +22,22 @@ FALLBACK_MACHINE_ID = None
 def get_kiro_install_path() -> Optional[Path]:
     """
     Находит путь установки Kiro IDE.
+    Uses centralized paths from core.paths module.
     
-    Windows: %LOCALAPPDATA%/Programs/kiro
-    macOS: /Applications/Kiro.app
-    Linux: /usr/share/kiro или ~/.local/share/kiro
+    Приоритет:
+    1. Переменная окружения KIRO_PATH
+    2. Централизованные пути из core.paths
     """
-    system = platform.system()
+    # Priority 1: Environment variable
+    kiro_env = os.environ.get('KIRO_PATH')
+    if kiro_env:
+        kiro_path = Path(kiro_env)
+        if kiro_path.exists():
+            return kiro_path
     
-    if system == 'Windows':
-        paths = [
-            Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs' / 'kiro',
-            Path(os.environ.get('PROGRAMFILES', '')) / 'Kiro',
-        ]
-    elif system == 'Darwin':
-        paths = [
-            Path('/Applications/Kiro.app/Contents/Resources/app'),
-            Path.home() / 'Applications' / 'Kiro.app' / 'Contents' / 'Resources' / 'app',
-        ]
-    else:  # Linux
-        paths = [
-            Path('/usr/share/kiro'),
-            Path('/opt/kiro'),
-            Path.home() / '.local' / 'share' / 'kiro',
-        ]
-    
-    for path in paths:
-        if path.exists():
-            return path
-    
-    return None
+    # Priority 2: Use centralized paths
+    from .paths import get_paths
+    return get_paths().kiro_install_path
 
 
 @lru_cache(maxsize=1)

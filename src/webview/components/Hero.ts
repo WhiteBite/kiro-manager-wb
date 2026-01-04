@@ -2,29 +2,11 @@
  * Hero Dashboard Component
  */
 
-import { AccountInfo } from '../../types';
+import { AccountInfo, ImapProfile } from '../../types';
 import { KiroUsageData } from '../../utils';
 import { escapeHtml, getAccountEmail } from '../helpers';
 import { Translations } from '../i18n/types';
 import { RegProgress } from '../types';
-
-export interface ImapProfile {
-  id: string;
-  name: string;
-  imap?: {
-    server?: string;
-    user?: string;
-    port?: number;
-  };
-  strategy?: {
-    type: 'single' | 'plus_alias' | 'catch_all' | 'pool';
-    emails?: Array<{ email: string; status?: string }>;
-  };
-  stats?: {
-    registered: number;
-    failed: number;
-  };
-}
 
 export interface HeroProps {
   activeAccount?: AccountInfo;
@@ -76,7 +58,7 @@ function renderStepIndicators(currentStep: number, totalSteps: number, error?: b
 }
 
 export function renderHero({ activeAccount, activeProfile, usage, progress, isRunning, t }: HeroProps): string {
-  // Registration in progress
+  // Registration in progress - keep detailed view
   if (isRunning && progress) {
     const percent = Math.round((progress.step / progress.totalSteps) * 100);
     const hasError = progress.detail?.toLowerCase().includes('error') ||
@@ -100,9 +82,8 @@ export function renderHero({ activeAccount, activeProfile, usage, progress, isRu
     `;
   }
 
-  // No active Kiro account - show IMAP profile if available
+  // No active Kiro account - show IMAP profile or empty state
   if (!activeAccount) {
-    // Show active IMAP profile info
     if (activeProfile) {
       const profileName = activeProfile.name || t.unnamed || 'Unnamed';
       const email = activeProfile.imap?.user || '';
@@ -113,16 +94,13 @@ export function renderHero({ activeAccount, activeProfile, usage, progress, isRu
 
       return `
         <div class="hero profile" onclick="openSettings()">
-          <div class="hero-header">
-            <span class="hero-email" title="${escapeHtml(email)}">${strategyIcon} ${escapeHtml(profileName)}</span>
-            <span class="hero-days">${t.ready || 'Ready'}</span>
+          <div class="hero-main">
+            <span class="hero-value">${strategyIcon}</span>
+            <span class="hero-label">${escapeHtml(profileName)}</span>
           </div>
-          <div class="hero-profile-info">
-            <span class="hero-profile-email">${escapeHtml(email)}</span>
-          </div>
-          <div class="hero-stats">
-            <span class="hero-usage font-mono">✅ ${registered} / ❌ ${failed}</span>
-            <span class="hero-percent">${t.clickToConfigure || 'Click to configure'}</span>
+          <div class="hero-footer">
+            <span class="hero-stat" title="${escapeHtml(email)}">✅ ${registered} / ❌ ${failed}</span>
+            <span class="hero-stat">${t.ready || 'Ready'}</span>
           </div>
         </div>
       `;
@@ -130,12 +108,12 @@ export function renderHero({ activeAccount, activeProfile, usage, progress, isRu
 
     return `
       <div class="hero empty" onclick="openSettings()">
-        <div class="hero-email">${t.noActive}</div>
-        <div class="hero-hint">${t.clickToConfigure || 'Click to configure'}</div>
+        <span class="hero-label">${t.noActive}</span>
       </div>
     `;
   }
 
+  // Active account - minimalist view
   const email = getAccountEmail(activeAccount);
   const current = usage?.currentUsage ?? 0;
   const limit = usage?.usageLimit ?? 500;
@@ -144,28 +122,22 @@ export function renderHero({ activeAccount, activeProfile, usage, progress, isRu
   const remaining = limit - current;
   const usageClass = getUsageClass(percent);
 
-  // Warning states
   const isLow = remaining < 50;
   const isCritical = remaining < 10;
+  const daysText = typeof daysLeft === 'number' ? `${daysLeft}d ${t.daysLeft}` : daysLeft;
 
   return `
-    <div class="hero ${isCritical ? 'critical' : isLow ? 'warning' : ''}" onclick="refreshUsage()">
-      <div class="hero-header">
-        <span class="hero-email" title="${escapeHtml(email)}">${escapeHtml(email)}</span>
-        <span class="hero-days">${daysLeft}${typeof daysLeft === 'number' ? 'd' : ''} ${t.daysLeft}</span>
-      </div>
+    <div class="hero ${isCritical ? 'critical' : isLow ? 'warning' : ''}" onclick="refreshUsage()" title="${escapeHtml(email)}">
       <div class="hero-main">
-        <div class="hero-remaining">
-          <span class="hero-remaining-value ${usageClass}">${remaining.toLocaleString()}</span>
-          <span class="hero-remaining-label">${t.remaining || 'remaining'}</span>
-        </div>
+        <span class="hero-value ${usageClass}">${remaining.toLocaleString()}</span>
+        <span class="hero-label">${t.remaining || 'remaining'}</span>
       </div>
       <div class="hero-progress">
         <div class="hero-progress-fill ${usageClass}" style="width: ${Math.min(percent, 100)}%"></div>
       </div>
-      <div class="hero-stats">
-        <span class="hero-usage font-mono">${current.toLocaleString()} / ${limit}</span>
-        <span class="hero-percent">${percent.toFixed(1)}%</span>
+      <div class="hero-footer">
+        <span class="hero-stat">${current.toLocaleString()}/${limit} ${t.used || 'used'}</span>
+        <span class="hero-stat">${daysText}</span>
       </div>
     </div>
   `;

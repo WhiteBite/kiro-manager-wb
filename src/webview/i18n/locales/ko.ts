@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const ko: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro 계정',
+  accounts: '계정',
+  registration: '등록',
+  llm: 'AI/LLM',
+  profiles: '프로필',
+  settings: '설정',
   compactViewTip: '카드를 축소하여 더 많은 계정 표시',
   settingsTip: '자동 전환, 브라우저 모드, 로깅 설정',
   back: '뒤로',
@@ -59,6 +64,7 @@ export const ko: Translations = {
   partial: '부분',
   trial: '체험판',
   empty: '비어있음',
+  more: '더보기',
 
   // Account card
   active: '활성',
@@ -74,6 +80,8 @@ export const ko: Translations = {
   clearTip: '콘솔 출력 지우기',
   openLogTip: '편집기에서 전체 로그 파일 열기',
   copyLogsTip: '로그 복사',
+  scrollToBottom: '맨 아래로 스크롤',
+  newMessagesBelow: '아래에 새 메시지',
 
   // Progress
   step: '단계',
@@ -343,14 +351,19 @@ export const ko: Translations = {
   noAccountsFound: '계정을 찾을 수 없습니다',
   clearSearch: '검색 지우기',
 
+  // Empty States
+  emptyAccountsTitle: '계정이 없습니다',
+  emptyAccountsDesc: 'Kiro를 시작하려면 첫 번째 계정을 만드세요',
+  emptySearchTitle: '결과 없음',
+  emptySearchDesc: '다른 검색어를 시도해 보세요',
+  emptyBannedTitle: '차단된 계정 없음',
+  emptyBannedDesc: '모든 계정이 정상 상태입니다',
+
   // Settings Cards
   automation: '자동화',
   interface: '인터페이스',
   autoSwitchThreshold: '전환 임계값',
   autoSwitchThresholdDesc: '남은 양 < 이 값일 때 전환',
-  settings: '설정',
-  accounts: '계정',
-  profiles: '프로필',
   pause: '일시정지',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const ko: Translations = {
   stopSchedule: '중지',
   scheduleActive: '활성',
   scheduleNextIn: '다음까지',
+  current: '??',
   complete: '완료',
   preview: '미리보기',
   nextNumber: '다음 #',

@@ -78,6 +78,37 @@ class Paths:
             self.kiro_agent_storage = None
         
         # =====================================================================
+        # Kiro installation path
+        # =====================================================================
+        self.kiro_install_path: Optional[Path] = None
+        if self.os_type == 'windows':
+            possible_paths = [
+                Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs' / 'kiro',
+                Path(os.environ.get('PROGRAMFILES', '')) / 'Kiro',
+            ]
+            # Additional paths for non-standard installations
+            for drive in ['C:', 'D:', 'E:', 'S:', 'F:', 'G:']:
+                possible_paths.append(Path(drive) / 'Kiro')
+                possible_paths.append(Path(drive) / 'Programs' / 'Kiro')
+                possible_paths.append(Path(drive) / 'kiro')
+        elif self.os_type == 'darwin':
+            possible_paths = [
+                Path('/Applications/Kiro.app/Contents/Resources/app'),
+                self.home / 'Applications' / 'Kiro.app' / 'Contents' / 'Resources' / 'app',
+            ]
+        else:  # Linux
+            possible_paths = [
+                Path('/usr/share/kiro'),
+                Path('/opt/kiro'),
+                self.home / '.local' / 'share' / 'kiro',
+            ]
+        
+        for path in possible_paths:
+            if path.exists():
+                self.kiro_install_path = path
+                break
+        
+        # =====================================================================
         # Kiro settings (~/.kiro/)
         # =====================================================================
         self.kiro_settings_dir = self.home / '.kiro' / 'settings'

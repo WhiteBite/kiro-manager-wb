@@ -1048,9 +1048,24 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       });
 
       this.addLog(`✓ Created profile: ${profile.name} (${profile.id})`);
+      
+      // Send success toast to UI
+      this._view?.webview.postMessage({
+        type: 'toast',
+        message: `Profile "${profile.name}" created successfully!`,
+        toastType: 'success'
+      });
+      
       await this.loadProfiles();
     } catch (err) {
       this.addLog(`✗ Failed to create profile: ${err}`);
+      
+      // Send error toast to UI
+      this._view?.webview.postMessage({
+        type: 'toast',
+        message: `Failed to create profile: ${err}`,
+        toastType: 'error'
+      });
     }
   }
 
@@ -1063,10 +1078,25 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       const profile = await provider.update(profileData.id, profileData);
       if (profile) {
         this.addLog(`✓ Updated profile: ${profile.name}`);
+        
+        // Send success toast to UI
+        this._view?.webview.postMessage({
+          type: 'toast',
+          message: `Profile "${profile.name}" updated successfully!`,
+          toastType: 'success'
+        });
+        
         await this.loadProfiles();
       }
     } catch (err) {
       this.addLog(`❌ Failed to update profile: ${err}`);
+      
+      // Send error toast to UI
+      this._view?.webview.postMessage({
+        type: 'toast',
+        message: `Failed to update profile: ${err}`,
+        toastType: 'error'
+      });
     }
   }
 
@@ -1132,86 +1162,101 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     });
 
     try {
-      const { spawn } = require('child_process');
-      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+      // Use Node.js built-in modules instead of Python
+      const net = require('net');
+      const tls = require('tls');
 
-      // Python one-liner to test IMAP
-      const pythonCode = `
-import imaplib
-import json
-import sys
-try:
-    server = sys.argv[1]
-    port = int(sys.argv[2])
-    user = sys.argv[3]
-    password = sys.argv[4]
-    imap = imaplib.IMAP4_SSL(server, port)
-    imap.login(user, password)
-    status, folders = imap.list()
-    folder_count = len(folders) if folders else 0
-    imap.logout()
-    print(json.dumps({"success": True, "folders": folder_count}))
-except Exception as e:
-    print(json.dumps({"success": False, "error": str(e)}))
-`;
+      await new Promise<void>((resolve, reject) => {
+        const socket = tls.connect({
+          host: params.server,
+          port: params.port,
+          timeout: 15000,
+          rejectUnauthorized: false // Allow self-signed certificates
+        });
 
-      const proc = spawn(pythonCmd, ['-c', pythonCode, params.server, params.port.toString(), params.user, params.password]);
+        let buffer = '';
+        let authenticated = false;
+        let folderCount = 0;
 
-      let output = '';
-      proc.stdout.on('data', (data: Buffer) => { output += data.toString(); });
-      proc.stderr.on('data', (data: Buffer) => { output += data.toString(); });
+        socket.on('data', (data: Buffer) => {
+          buffer += data.toString();
+          const lines = buffer.split('\r\n');
+          buffer = lines.pop() || '';
 
-      proc.on('close', (code: number) => {
-        try {
-          const result = JSON.parse(output.trim());
-          if (result.success) {
-            this.addLog(`✅ IMAP connected! Found ${result.folders} folders`);
-            this._view?.webview.postMessage({
-              type: 'imapTestResult',
-              status: 'success',
-              message: `Connected! ${result.folders} folders found`
-            });
-          } else {
-            // Improve error messages for common issues
-            let errorMsg = result.error;
-            if (errorMsg.includes('Empty username or password') || errorMsg.includes('Invalid credentials')) {
-              if (params.server.includes('gmail')) {
-                errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
-              } else {
-                errorMsg = 'Invalid username or password. Check your credentials.';
-              }
-            } else if (errorMsg.includes('AUTHENTICATIONFAILED')) {
-              errorMsg = 'Authentication failed. For Gmail, use App Password instead of regular password.';
+          for (const line of lines) {
+            console.log('IMAP Response:', line);
+            
+            if (line.includes('* OK') && !authenticated) {
+              // Server ready, try to login
+              socket.write(`A001 LOGIN "${params.user}" "${params.password}"\r\n`);
+            } else if (line.includes('A001 OK') && line.toLowerCase().includes('login')) {
+              // Login successful
+              authenticated = true;
+              socket.write('A002 LIST "" "*"\r\n');
+            } else if (line.startsWith('* LIST')) {
+              // Count folders
+              folderCount++;
+            } else if (line.includes('A002 OK') && authenticated) {
+              // List command completed
+              socket.write('A003 LOGOUT\r\n');
+              setTimeout(() => resolve(), 500); // Give time for logout
+            } else if (line.includes('A001 NO') || line.includes('A001 BAD')) {
+              // Login failed
+              socket.destroy();
+              reject(new Error('Authentication failed. Check your credentials.'));
             }
-
-            this.addLog(`❌ IMAP failed: ${result.error}`);
-            this._view?.webview.postMessage({
-              type: 'imapTestResult',
-              status: 'error',
-              message: errorMsg
-            });
           }
-        } catch {
-          this.addLog(`❌ IMAP test error: ${output}`);
-          this._view?.webview.postMessage({
-            type: 'imapTestResult',
-            status: 'error',
-            message: output || 'Unknown error'
-          });
-        }
+        });
+
+        socket.on('error', (err: Error) => {
+          socket.destroy();
+          reject(new Error(`Connection failed: ${err.message}`));
+        });
+
+        socket.on('timeout', () => {
+          socket.destroy();
+          reject(new Error('Connection timeout (15s)'));
+        });
+
+        socket.on('close', () => {
+          if (authenticated) {
+            resolve();
+          }
+        });
       });
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        proc.kill();
-      }, 10000);
+      this.addLog(`✅ IMAP connected! Found folders`);
+      this._view?.webview.postMessage({
+        type: 'imapTestResult',
+        status: 'success',
+        message: `Connected successfully! IMAP server is working.`
+      });
 
-    } catch (err) {
-      this.addLog(`❌ IMAP test error: ${err}`);
+    } catch (error: any) {
+      let errorMsg = error.message || 'Unknown error';
+      
+      // Improve error messages for common issues
+      if (errorMsg.includes('Authentication failed')) {
+        if (params.server.includes('gmail')) {
+          errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
+        } else if (params.server.includes('yandex')) {
+          errorMsg = 'Check your Yandex credentials. Make sure IMAP is enabled in Yandex Mail settings.';
+        } else {
+          errorMsg = 'Authentication failed. Check your username and password.';
+        }
+      } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
+        errorMsg = `Cannot resolve server ${params.server}. Check server address and internet connection.`;
+      } else if (errorMsg.includes('ECONNREFUSED')) {
+        errorMsg = `Connection refused by ${params.server}:${params.port}. Check server and port.`;
+      } else if (errorMsg.includes('timeout')) {
+        errorMsg = `Connection timeout. Server ${params.server} is not responding.`;
+      }
+
+      this.addLog(`❌ IMAP failed: ${errorMsg}`);
       this._view?.webview.postMessage({
         type: 'imapTestResult',
         status: 'error',
-        message: String(err)
+        message: errorMsg
       });
     }
   }
@@ -1858,23 +1903,24 @@ except Exception as e:
       // Set environment variable for login name
       process.env.KIRO_LOGIN_NAME = loginName;
 
-      // Run registration
-      await runAutoReg(this._context, this, 1);
+      // Run registration and wait for it to complete
+      const success = await runAutoReg(this._context, this, 1);
 
-      // Wait for registration to complete (check status periodically)
-      await this._waitForRegistrationComplete();
-
-      // Increment counters AFTER successful registration
-      settings.currentNumber++;
-      settings.registeredCount++;
-
-      // Save immediately after each successful registration
-      await this._context.globalState.update('scheduledRegSettings', settings);
-      this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts}`);
+      if (success) {
+        // Increment counters ONLY on success
+        settings.currentNumber++;
+        settings.registeredCount++;
+        
+        // Save immediately after each successful registration
+        await this._context.globalState.update('scheduledRegSettings', settings);
+        this.addLog(`✓ Registered ${settings.registeredCount}/${settings.maxAccounts}`);
+      } else {
+        this.addLog(`❌ Registration failed for: ${loginName}`);
+        // If it failed, we don't increment, so it will retry the same account next time
+      }
 
     } catch (err) {
-      this.addLog(`❌ Registration failed: ${err}`);
-      // Don't increment on failure - will retry
+      this.addLog(`❌ Registration error: ${err}`);
     } finally {
       delete process.env.KIRO_LOGIN_NAME;
     }
@@ -1903,23 +1949,6 @@ except Exception as e:
     }, intervalMs);
 
     this.addLog(`⏰ Next registration in ${settings.interval} minutes`);
-  }
-
-  private async _waitForRegistrationComplete(): Promise<void> {
-    // Wait for autoreg process to complete (max 10 minutes)
-    const maxWait = 10 * 60 * 1000;
-    const checkInterval = 2000;
-    let waited = 0;
-
-    while (waited < maxWait) {
-      if (!autoregProcess.isRunning) {
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-      waited += checkInterval;
-    }
-
-    throw new Error('Registration timeout');
   }
 
   private _sendScheduledRegState(): void {

@@ -1,6 +1,12 @@
 /**
  * Webview-specific types
+ * 
+ * Note: Common types (AccountInfo, TokenData, etc.) are in src/types.ts
+ * Import them from there: import { AccountInfo } from '../types';
  */
+
+// Re-export common types for convenience
+export type { AccountInfo, TokenData, AccountUsage, ImapProfile } from '../types';
 
 export interface AutoRegSettings {
   headless: boolean;

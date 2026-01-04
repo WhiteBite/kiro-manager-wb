@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const ru: Translations = {
   // Header & Navigation
   kiroAccounts: 'Аккаунты Kiro',
+  accounts: 'Аккаунты',
+  registration: 'Регистрация',
+  llm: 'Нейросети',
+  profiles: 'Профили',
+  settings: 'Настройки',
   compactViewTip: 'Уменьшить карточки для показа большего числа аккаунтов',
   settingsTip: 'Настроить авто-переключение, режим браузера, логи',
   back: 'Назад',
@@ -59,6 +64,7 @@ export const ru: Translations = {
   partial: 'Частично',
   trial: 'Пробные',
   empty: 'Пустые',
+  more: 'Ещё',
 
   // Account card
   active: 'Активен',
@@ -74,6 +80,8 @@ export const ru: Translations = {
   clearTip: 'Очистить вывод консоли',
   openLogTip: 'Открыть полный лог в редакторе',
   copyLogsTip: 'Копировать логи',
+  scrollToBottom: 'Прокрутить вниз',
+  newMessagesBelow: 'Новые сообщения ниже',
 
   // Progress
   step: 'Шаг',
@@ -343,14 +351,19 @@ export const ru: Translations = {
   noAccountsFound: 'Аккаунты не найдены',
   clearSearch: 'Очистить поиск',
 
+  // Empty States
+  emptyAccountsTitle: 'Пока нет аккаунтов',
+  emptyAccountsDesc: 'Создайте первый аккаунт, чтобы начать работу с Kiro',
+  emptySearchTitle: 'Ничего не найдено',
+  emptySearchDesc: 'Попробуйте другой поисковый запрос',
+  emptyBannedTitle: 'Нет забаненных аккаунтов',
+  emptyBannedDesc: 'Все ваши аккаунты в хорошем состоянии',
+
   // Settings Cards
   automation: 'Автоматизация',
   interface: 'Интерфейс',
   autoSwitchThreshold: 'Порог переключения',
   autoSwitchThresholdDesc: 'Переключать когда осталось меньше',
-  settings: 'Настройки',
-  accounts: 'Аккаунты',
-  profiles: 'Профили',
   pause: 'Пауза',
 
   // Stats Dashboard
@@ -402,6 +415,8 @@ export const ru: Translations = {
   startNumber: 'Начать с #',
   scheduleInterval: 'Интервал',
   scheduleIntervalManual: 'Вручную',
+  current: 'Текущий',
+  startFrom: 'Начать с №',
   scheduleIntervalMinutes: 'мин',
   maxAccounts: 'Лимит',
   maxAccountsHint: 'Максимум аккаунтов для регистрации',
@@ -422,7 +437,6 @@ export const ru: Translations = {
   noTimerHint: 'Нажмите Старт для каждой регистрации',
   custom: 'Свой',
   upcoming: 'Следующие',
-  startFrom: 'Начать с #',
   enableFirst: 'Сначала включите переключатель',
   registerOne: 'Зарегистрировать',
   // New batch reg keys

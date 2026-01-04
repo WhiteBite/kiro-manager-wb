@@ -4,8 +4,10 @@
 Все модули используют этот профиль для консистентного спуфинга.
 """
 
+import json
 import random
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 from .ip_timezone import detect_ip_geo, get_system_timezone, IPGeoData
@@ -281,9 +283,6 @@ def generate_random_profile() -> SpoofProfile:
 
 
 # === Сохранение/загрузка профиля ===
-
-import json
-from pathlib import Path
 
 
 def get_profile_path(email: str) -> Path:

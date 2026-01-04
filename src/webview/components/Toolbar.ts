@@ -1,5 +1,5 @@
 /**
- * Toolbar Component
+ * Toolbar Component - Compact single-row layout with responsive "More" menu
  */
 
 import { ICONS } from '../icons';
@@ -12,28 +12,51 @@ export interface ToolbarProps {
 
 export function renderToolbar({ isRunning, t }: ToolbarProps): string {
   return `
-    <div class="toolbar">
+    <div class="toolbar compact">
       <div class="toolbar-row">
-        <div class="toolbar-buttons">
-          <button class="btn btn-secondary btn-icon" onclick="openSsoModal()" title="SSO Import">🌐</button>
-          <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="${t.checkHealth || 'Check Health'}">🩺</button>
+        <!-- Primary buttons - always visible -->
+        <div class="toolbar-buttons toolbar-primary">
           <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="${t.selectMode}" id="selectModeBtn">☑️</button>
         </div>
+        
+        <!-- Secondary buttons - hidden on narrow screens, moved to dropdown -->
+        <div class="toolbar-buttons toolbar-secondary">
+          <button class="btn btn-secondary btn-icon" onclick="openSsoModal()" title="SSO Import">🌐</button>
+          <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="${t.checkHealth || 'Check Health'}">🩺</button>
+        </div>
+        
+        <!-- More dropdown - visible only on narrow screens -->
+        <div class="toolbar-more-wrapper">
+          <button class="btn btn-secondary btn-icon toolbar-more-btn" onclick="toggleToolbarMore()" title="${t.more || 'More'}">⋯</button>
+          <div class="toolbar-more-menu" id="toolbarMoreMenu">
+            <button class="toolbar-more-item" onclick="openSsoModal(); toggleToolbarMore();">
+              <span class="more-icon">🌐</span>
+              <span class="more-label">SSO Import</span>
+            </button>
+            <button class="toolbar-more-item" onclick="checkAllAccountsHealth(); toggleToolbarMore();">
+              <span class="more-icon">🩺</span>
+              <span class="more-label">${t.checkHealth || 'Check Health'}</span>
+            </button>
+            <div class="toolbar-more-divider"></div>
+            <button class="toolbar-more-item" onclick="exportAllAccounts(); toggleToolbarMore();">
+              <span class="more-icon">📤</span>
+              <span class="more-label">${t.export || 'Export All'}</span>
+            </button>
+          </div>
+        </div>
+        
         <div class="search-wrapper">
           <span class="search-icon">${ICONS.search}</span>
           <input type="text" class="search-input" id="searchInput" placeholder="${t.searchPlaceholder}" oninput="searchAccounts(this.value)">
           <button class="search-clear" onclick="clearSearch()">×</button>
         </div>
-      </div>
-      <div class="toolbar-row">
-        <div class="filter-group">
-          <span class="filter-label">${ICONS.filter} ${t.filterByTokens || 'Filter'}:</span>
-          <button class="filter-btn active" data-filter="all" onclick="filterByTokens('all')">${t.all || 'All'}</button>
-          <button class="filter-btn" data-filter="fresh" onclick="filterByTokens('fresh')">🟢 ${t.fresh || 'Fresh'} (500)</button>
-          <button class="filter-btn" data-filter="partial" onclick="filterByTokens('partial')">🟡 ${t.partial || 'Partial'} (1-499)</button>
-          <button class="filter-btn" data-filter="trial" onclick="filterByTokens('trial')">🔵 ${t.trial || 'Trial'} (50)</button>
-          <button class="filter-btn" data-filter="empty" onclick="filterByTokens('empty')">⚫ ${t.empty || 'Empty'} (0)</button>
-        </div>
+        <select class="filter-select" id="tokenFilterSelect" onchange="filterByTokens(this.value)">
+          <option value="all">${t.all || 'All'}</option>
+          <option value="fresh">🟢 ${t.fresh || 'Fresh'}</option>
+          <option value="partial">🟡 ${t.partial || 'Partial'}</option>
+          <option value="trial">🔵 ${t.trial || 'Trial'}</option>
+          <option value="empty">⚫ ${t.empty || 'Empty'}</option>
+        </select>
       </div>
       <div class="bulk-actions-bar hidden" id="bulkActionsBar">
         <div class="bulk-info">

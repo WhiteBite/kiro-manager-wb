@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const es: Translations = {
   // Header & Navigation
   kiroAccounts: 'Cuentas Kiro',
+  accounts: 'Cuentas',
+  registration: 'Registro',
+  llm: 'AI/LLM',
+  profiles: 'Perfiles',
+  settings: 'Configuración',
   compactViewTip: 'Reducir tarjetas para mostrar más cuentas',
   settingsTip: 'Configurar cambio automático, modo navegador, registros',
   back: 'Atrás',
@@ -59,6 +64,7 @@ export const es: Translations = {
   partial: 'Parcial',
   trial: 'Prueba',
   empty: 'Vacías',
+  more: 'Más',
 
   // Account card
   active: 'Activa',
@@ -74,6 +80,8 @@ export const es: Translations = {
   clearTip: 'Limpiar salida de consola',
   openLogTip: 'Abrir archivo de log completo en editor',
   copyLogsTip: 'Copiar registros',
+  scrollToBottom: 'Desplazar hacia abajo',
+  newMessagesBelow: 'Nuevos mensajes abajo',
 
   // Progress
   step: 'Paso',
@@ -343,14 +351,19 @@ export const es: Translations = {
   noAccountsFound: 'No se encontraron cuentas',
   clearSearch: 'Limpiar búsqueda',
 
+  // Empty States
+  emptyAccountsTitle: 'Sin cuentas aún',
+  emptyAccountsDesc: 'Crea tu primera cuenta para comenzar con Kiro',
+  emptySearchTitle: 'Sin resultados',
+  emptySearchDesc: 'Intenta con otro término de búsqueda',
+  emptyBannedTitle: 'Sin cuentas baneadas',
+  emptyBannedDesc: 'Todas tus cuentas están en buen estado',
+
   // Settings Cards
   automation: 'Automatización',
   interface: 'Interfaz',
   autoSwitchThreshold: 'Umbral de cambio',
   autoSwitchThresholdDesc: 'Cambiar cuando restante < este valor',
-  settings: 'Configuración',
-  accounts: 'Cuentas',
-  profiles: 'Perfiles',
   pause: 'Pausar',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const es: Translations = {
   stopSchedule: 'Detener',
   scheduleActive: 'Activo',
   scheduleNextIn: 'Siguiente en',
+  current: 'Actual',
   complete: 'Completo',
   preview: 'Vista previa',
   nextNumber: 'Siguiente #',

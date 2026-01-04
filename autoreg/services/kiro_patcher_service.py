@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.paths import get_paths
 from core.exceptions import KiroNotInstalledError, KiroRunningError
+from core.process_utils import is_kiro_running
 
 
 @dataclass
@@ -200,7 +201,7 @@ class KiroPatcherService:
         if not self.kiro_install_path:
             return PatchResult(success=False, message="Kiro not installed")
         
-        if not skip_running_check and self._is_kiro_running():
+        if not skip_running_check and is_kiro_running():
             return PatchResult(success=False, message="Kiro is running. Please close it first.")
         
         js_path = self.extension_js_path
@@ -316,7 +317,7 @@ class KiroPatcherService:
     
     def unpatch(self, skip_running_check: bool = False) -> PatchResult:
         """Восстановить оригинальный файл из бэкапа"""
-        if not skip_running_check and self._is_kiro_running():
+        if not skip_running_check and is_kiro_running():
             return PatchResult(success=False, message="Kiro is running. Please close it first.")
         
         js_path = self.extension_js_path
@@ -877,22 +878,6 @@ class KiroPatcherService:
                 pass
         return None
     
-    def _is_kiro_running(self) -> bool:
-        """Проверяет запущен ли Kiro"""
-        import subprocess
-        try:
-            if os.name == 'nt':
-                result = subprocess.run(
-                    ['tasklist', '/FI', 'IMAGENAME eq Kiro.exe'],
-                    capture_output=True, text=True
-                )
-                return 'Kiro.exe' in result.stdout
-            else:
-                result = subprocess.run(['pgrep', '-f', 'Kiro'], capture_output=True)
-                return result.returncode == 0
-        except:
-            return False
-    
     def check_update_needed(self) -> Tuple[bool, Optional[str]]:
         """
         Проверяет нужно ли обновить патч после обновления Kiro
@@ -961,7 +946,7 @@ class KiroPatcherService:
         import subprocess
         import time
         
-        if not self._is_kiro_running():
+        if not is_kiro_running():
             return True
         
         try:
@@ -972,20 +957,20 @@ class KiroPatcherService:
                 # Ждём завершения
                 for _ in range(timeout):
                     time.sleep(1)
-                    if not self._is_kiro_running():
+                    if not is_kiro_running():
                         return True
                 
                 # Если не закрылся - force kill
                 subprocess.run(['taskkill', '/F', '/IM', 'Kiro.exe'], capture_output=True)
                 time.sleep(1)
                 
-                return not self._is_kiro_running()
+                return not is_kiro_running()
             else:
                 subprocess.run(['pkill', '-f', 'Kiro'], capture_output=True)
                 time.sleep(2)
-                if self._is_kiro_running():
+                if is_kiro_running():
                     subprocess.run(['pkill', '-9', '-f', 'Kiro'], capture_output=True)
-                return not self._is_kiro_running()
+                return not is_kiro_running()
         except Exception as e:
             print(f"[!] Failed to close Kiro: {e}")
             return False

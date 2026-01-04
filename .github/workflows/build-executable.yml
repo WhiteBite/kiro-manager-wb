@@ -1,0 +1,97 @@
+name: Build Executable
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'autoreg/**'
+      - '.github/workflows/build-executable.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'autoreg/**'
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('autoreg/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        cd autoreg
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build executable
+      run: |
+        cd autoreg
+        pyinstaller kiro-manager.spec --clean --noconfirm
+        
+    - name: Prepare distribution
+      run: |
+        mkdir dist\executable
+        copy autoreg\dist\kiro-manager.exe dist\executable\
+        copy autoreg\.env.example dist\executable\
+        copy BUILD_EXECUTABLE.md dist\executable\README.md
+        
+    - name: Get file size
+      run: |
+        $size = (Get-Item "dist\executable\kiro-manager.exe").Length / 1MB
+        Write-Output "Executable size: $([math]::Round($size, 1)) MB"
+        
+    - name: Upload executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: kiro-manager-executable-windows
+        path: dist/executable/
+        retention-days: 30
+        
+    - name: Upload to release (if tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/executable/kiro-manager.exe
+          dist/executable/.env.example
+          dist/executable/README.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-executable:
+    needs: build-windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Download executable
+      uses: actions/download-artifact@v3
+      with:
+        name: kiro-manager-executable-windows
+        path: test-executable/
+        
+    - name: Test executable runs
+      run: |
+        cd test-executable
+        .\kiro-manager.exe --help
+        
+    - name: Test IMAP command exists
+      run: |
+        cd test-executable
+        .\kiro-manager.exe imap --help

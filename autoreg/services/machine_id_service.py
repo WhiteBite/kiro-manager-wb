@@ -7,7 +7,6 @@ import os
 import sqlite3
 import hashlib
 import uuid
-import subprocess
 import platform
 from pathlib import Path
 from datetime import datetime
@@ -21,6 +20,7 @@ sys.path.insert(0, str(SysPath(__file__).parent.parent))
 from core.paths import get_paths
 from core.config import get_config
 from core.exceptions import MachineIdError, KiroNotInstalledError, KiroRunningError
+from core.process_utils import is_kiro_running
 
 # Windows-specific
 if platform.system() == 'Windows':
@@ -135,7 +135,7 @@ class MachineIdService:
         if not self.paths.is_kiro_installed():
             raise KiroNotInstalledError("Kiro is not installed")
         
-        if check_running and self._is_kiro_running():
+        if check_running and is_kiro_running():
             raise KiroRunningError("Kiro is running. Please close it first.")
         
         # Бэкапим если настроено
@@ -393,21 +393,3 @@ class MachineIdService:
     def _generate_dev_device_id(self) -> str:
         """Генерирует devDeviceId (UUID)"""
         return str(uuid.uuid4())
-    
-    def _is_kiro_running(self) -> bool:
-        """Проверяет запущен ли Kiro"""
-        try:
-            if self.os_type == 'windows':
-                result = subprocess.run(
-                    ['tasklist', '/FI', 'IMAGENAME eq Kiro.exe'],
-                    capture_output=True, text=True
-                )
-                return 'Kiro.exe' in result.stdout
-            else:
-                result = subprocess.run(
-                    ['pgrep', '-f', 'Kiro'],
-                    capture_output=True
-                )
-                return result.returncode == 0
-        except:
-            return False

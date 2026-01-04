@@ -24,6 +24,7 @@ from pathlib import Path
 # Добавляем путь к модулям
 sys.path.insert(0, str(Path(__file__).parent))
 
+from cli_registration import setup_registration_commands
 from core.paths import get_paths
 from core.config import get_config
 from services.token_service import TokenService
@@ -572,6 +573,64 @@ def cmd_kiro_info(args):
 
 
 # =============================================================================
+# IMAP Commands
+# =============================================================================
+
+def cmd_imap_test(args):
+    """Тестировать IMAP подключение"""
+    from core.config import get_config
+    import imaplib
+    import ssl
+    
+    config = get_config()
+    
+    if not config.imap.email or not config.imap.password:
+        print("❌ IMAP not configured")
+        print("Set IMAP_USER and IMAP_PASSWORD environment variables")
+        print("\nExample .env:")
+        print("IMAP_SERVER=imap.yandex.ru")
+        print("IMAP_USER=testmail@example.com")
+        print("IMAP_PASSWORD=your-imap-app-password")
+        return
+    
+    print(f"\n🔌 Testing IMAP: {config.imap.host}:{config.imap.port} as {config.imap.email}...")
+    
+    try:
+        # SSL подключение
+        if config.imap.use_ssl:
+            context = ssl.create_default_context()
+            mail = imaplib.IMAP4_SSL(config.imap.host, config.imap.port, ssl_context=context)
+        else:
+            mail = imaplib.IMAP4(config.imap.host, config.imap.port)
+        
+        print("✅ Connected to server")
+        
+        # Авторизация
+        mail.login(config.imap.email, config.imap.password)
+        print("✅ Authentication successful")
+        
+        # Получаем список папок
+        status, folders = mail.list()
+        if status == 'OK':
+            print(f"✅ Found {len(folders)} folders")
+        
+        # Проверяем INBOX
+        status, messages = mail.select('INBOX')
+        if status == 'OK':
+            msg_count = int(messages[0]) if messages[0] else 0
+            print(f"✅ INBOX: {msg_count} messages")
+        
+        # Закрываем
+        mail.close()
+        mail.logout()
+        
+        print("✅ IMAP test successful!")
+        
+    except Exception as e:
+        print(f"❌ IMAP test error: {e}")
+
+
+# =============================================================================
 # SSO Import Commands
 # =============================================================================
 
@@ -633,6 +692,8 @@ def main():
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Command')
+    
+    setup_registration_commands(subparsers)
     
     # status
     status_parser = subparsers.add_parser('status', help='Show overall status')
@@ -708,6 +769,13 @@ def main():
     sso_parser.add_argument('-a', '--activate', action='store_true', help='Activate in Kiro after import')
     sso_parser.set_defaults(func=cmd_sso_import)
     
+    # imap
+    imap_parser = subparsers.add_parser('imap', help='IMAP management')
+    imap_sub = imap_parser.add_subparsers(dest='imap_cmd')
+    
+    imap_test = imap_sub.add_parser('test', help='Test IMAP connection')
+    imap_test.set_defaults(func=cmd_imap_test)
+    
     # patch
     patch_parser = subparsers.add_parser('patch', help='Kiro patching (custom Machine ID)')
     patch_sub = patch_parser.add_subparsers(dest='patch_cmd')
@@ -763,6 +831,10 @@ def main():
     
     if args.command == 'patch' and not args.patch_cmd:
         cmd_patch_status(args)
+        return
+    
+    if args.command == 'imap' and not args.imap_cmd:
+        cmd_imap_test(args)
         return
     
     if hasattr(args, 'func'):

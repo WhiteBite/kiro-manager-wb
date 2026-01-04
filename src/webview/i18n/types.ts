@@ -10,6 +10,11 @@ export interface Translations {
   // Header & Navigation
   // ============================================
   kiroAccounts: string;
+  accounts: string;
+  registration: string;
+  llm: string;
+  profiles: string;
+  settings: string;
   compactViewTip: string;
   settingsTip: string;
   back: string;
@@ -76,6 +81,7 @@ export interface Translations {
   partial: string;
   trial: string;
   empty: string;
+  more: string;
 
   // ============================================
   // Account card
@@ -95,6 +101,8 @@ export interface Translations {
   clearTip: string;
   openLogTip: string;
   copyLogsTip: string;
+  scrollToBottom: string;
+  newMessagesBelow: string;
 
   // ============================================
   // Progress
@@ -422,15 +430,22 @@ export interface Translations {
   clearSearch: string;
 
   // ============================================
+  // Empty States
+  // ============================================
+  emptyAccountsTitle: string;
+  emptyAccountsDesc: string;
+  emptySearchTitle: string;
+  emptySearchDesc: string;
+  emptyBannedTitle: string;
+  emptyBannedDesc: string;
+
+  // ============================================
   // Settings Cards
   // ============================================
   automation: string;
   interface: string;
   autoSwitchThreshold: string;
   autoSwitchThresholdDesc: string;
-  settings: string;
-  accounts: string;
-  profiles: string;
   pause: string;
 
   // ============================================
@@ -534,4 +549,5 @@ export interface Translations {
   completed: string;
   batchRemaining: string;
   nextIn: string;
+  current: string;
 }

@@ -11,6 +11,14 @@ from .exceptions import (
     QuotaError,
     MachineIdError
 )
+from .constants import *
+from .process_utils import (
+    is_process_running,
+    wait_for_process_exit,
+    kill_process,
+    is_kiro_running,
+    kill_kiro
+)
 
 __all__ = [
     'Config',
@@ -20,5 +28,11 @@ __all__ = [
     'TokenError',
     'AuthError',
     'QuotaError',
-    'MachineIdError'
+    'MachineIdError',
+    # Process utilities
+    'is_process_running',
+    'wait_for_process_exit',
+    'kill_process',
+    'is_kiro_running',
+    'kill_kiro'
 ]

@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services.kiro_patcher_service import KiroPatcherService
+from core.process_utils import is_kiro_running
 
 
 class IncrementalPatcher(KiroPatcherService):
@@ -64,7 +65,7 @@ class IncrementalPatcher(KiroPatcherService):
         Apply patches incrementally
         patch_level: 1 = only PATCH 1, 2 = PATCH 1+2, 3 = all patches
         """
-        if not skip_running_check and self._is_kiro_running():
+        if not skip_running_check and is_kiro_running():
             return {'success': False, 'message': 'Kiro is running. Please close it first.'}
         
         js_path = self.extension_js_path

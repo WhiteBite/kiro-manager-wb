@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "6.7.3",
+  "version": "6.8.1",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
@@ -59,6 +59,10 @@
       {
         "command": "kiroAccountSwitcher.switchToNextAvailable",
         "title": "Kiro: Switch to Next Available Account"
+      },
+      {
+        "command": "kiroAccountSwitcher.testImap",
+        "title": "Kiro: Test IMAP Connection"
       }
     ],
     "viewsContainers": {
@@ -92,6 +96,9 @@
         },
         {
           "command": "kiroAccountSwitcher.openDashboard"
+        },
+        {
+          "command": "kiroAccountSwitcher.testImap"
         }
       ],
       "view/title": [
@@ -194,6 +201,72 @@
           "type": "string",
           "default": "",
           "description": "Last known Kiro version when patch was applied"
+        },
+        "kiroAccountSwitcher.imap.profiles": {
+          "type": "array",
+          "default": [
+            {
+              "name": "Yandex (testmail@example.com)",
+              "host": "imap.yandex.ru",
+              "port": 993,
+              "ssl": true,
+              "email": "testmail@example.com",
+              "password": "your-imap-app-password",
+              "description": "Catch-all email for registration"
+            },
+            {
+              "name": "Gmail",
+              "host": "imap.gmail.com",
+              "port": 993,
+              "ssl": true,
+              "email": "",
+              "password": "",
+              "description": "Gmail IMAP (requires App Password)"
+            },
+            {
+              "name": "Outlook",
+              "host": "outlook.office365.com",
+              "port": 993,
+              "ssl": true,
+              "email": "",
+              "password": "",
+              "description": "Outlook/Hotmail IMAP"
+            }
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Profile display name"
+              },
+              "host": {
+                "type": "string",
+                "description": "IMAP server hostname"
+              },
+              "port": {
+                "type": "number",
+                "description": "IMAP server port"
+              },
+              "ssl": {
+                "type": "boolean",
+                "description": "Use SSL/TLS"
+              },
+              "email": {
+                "type": "string",
+                "description": "Email address"
+              },
+              "password": {
+                "type": "string",
+                "description": "Email password or App Password"
+              },
+              "description": {
+                "type": "string",
+                "description": "Profile description"
+              }
+            }
+          },
+          "description": "IMAP profiles for email registration"
         }
       }
     }
@@ -211,7 +284,8 @@
     "release": "npx ts-node scripts/release.ts",
     "release:patch": "npx ts-node scripts/release.ts patch",
     "release:minor": "npx ts-node scripts/release.ts minor",
-    "release:major": "npx ts-node scripts/release.ts major"
+    "release:major": "npx ts-node scripts/release.ts major",
+    "build:executable": "npx ts-node scripts/build-executable.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
