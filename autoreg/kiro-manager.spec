@@ -15,16 +15,26 @@ ROOT = Path(SPECPATH)
 APP_DIR = ROOT / 'app'
 STATIC_DIR = APP_DIR / 'static'
 
-# Data files - use OS-appropriate separator
-# Windows uses ';', Unix uses ':'
-sep = ';' if sys.platform == 'win32' else ':'
-datas = [
-    (str(STATIC_DIR), 'app/static'),
-]
+# Data files - включаем все необходимые файлы
+datas = []
 
-# Hidden imports for FastAPI/Uvicorn
+# Добавляем static файлы если есть
+if STATIC_DIR.exists():
+    datas.append((str(STATIC_DIR), 'app/static'))
+
+# Добавляем .env.example
+env_example = ROOT / '.env.example'
+if env_example.exists():
+    datas.append((str(env_example), '.'))
+
+# Добавляем requirements.txt для справки
+requirements = ROOT / 'requirements.txt'
+if requirements.exists():
+    datas.append((str(requirements), '.'))
+
+# Hidden imports для всех модулей
 hiddenimports = [
-    # Uvicorn
+    # Uvicorn/FastAPI
     'uvicorn',
     'uvicorn.logging',
     'uvicorn.loops',
@@ -71,12 +81,57 @@ hiddenimports = [
     'anyio._backends',
     'anyio._backends._asyncio',
     
-    # Email/IMAP
+    # Email/IMAP - КРИТИЧНО для работы с почтой
     'email',
+    'email.mime',
+    'email.mime.text',
+    'email.mime.multipart',
+    'email.header',
+    'email.utils',
     'imaplib',
+    'smtplib',
+    'ssl',
     
-    # Our modules
+    # DrissionPage и браузер автоматизация
+    'DrissionPage',
+    'DrissionPage.common',
+    'DrissionPage.configs',
+    'DrissionPage.errors',
+    
+    # Requests и HTTP клиенты
+    'requests',
+    'requests.adapters',
+    'requests.auth',
+    'requests.cookies',
+    'requests.exceptions',
+    'httpx',
+    'httpx._client',
+    'httpx._config',
+    'httpx._exceptions',
+    
+    # CBOR для Web Portal API
+    'cbor2',
+    
+    # SOCKS proxy
+    'socks',
+    'sockshandler',
+    
+    # Async файлы
+    'aiofiles',
+    'aiofiles.os',
+    'aiofiles.threadpool',
+    
+    # WebView для OAuth
+    'webview',
+    'webview.platforms',
+    'webview.platforms.winforms',
+    
+    # Наши модули
     'version',
+    'cli',
+    'run',
+    
+    # App модули
     'app',
     'app.main',
     'app.utils',
@@ -87,6 +142,8 @@ hiddenimports = [
     'app.api.autoreg',
     'app.api.patch',
     'app.api.system',
+    
+    # Services
     'services',
     'services.token_service',
     'services.quota_service',
@@ -94,12 +151,37 @@ hiddenimports = [
     'services.machine_id_service',
     'services.kiro_patcher_service',
     'services.sso_import_service',
+    
+    # Core
     'core',
     'core.paths',
     'core.config',
     'core.kiro_config',
     'core.exceptions',
     'core.email_generator',
+    
+    # Registration
+    'registration',
+    'registration.register',
+    'registration.browser',
+    'registration.mail_handler',
+    'registration.oauth_google',
+    'registration.oauth_github',
+    
+    # Spoofers
+    'spoofers',
+    'spoofers.canvas_spoofer',
+    'spoofers.webgl_spoofer',
+    'spoofers.audio_spoofer',
+    'spoofers.font_spoofer',
+    'spoofers.navigator_spoofer',
+    'spoofers.timing_spoofer',
+    
+    # Debugger
+    'debugger',
+    'debugger.collectors',
+    'debugger.analyzers',
+    'debugger.exporters',
 ]
 
 a = Analysis(
@@ -112,12 +194,42 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
+        # GUI библиотеки (не нужны для CLI)
         'tkinter',
+        'PyQt5',
+        'PyQt6',
+        'PySide2',
+        'PySide6',
+        'wx',
+        
+        # Научные библиотеки (не используем)
         'matplotlib',
         'numpy',
         'pandas',
+        'scipy',
+        'sklearn',
+        'tensorflow',
+        'torch',
+        
+        # Изображения (не нужны)
         'PIL',
+        'Pillow',
         'cv2',
+        'opencv',
+        
+        # Jupyter
+        'jupyter',
+        'notebook',
+        'ipython',
+        
+        # Тестирование
+        'pytest',
+        'unittest',
+        'nose',
+        
+        # Документация
+        'sphinx',
+        'docutils',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -138,14 +250,15 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=True,  # Сжатие UPX для уменьшения размера
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # Show console for logs
+    console=True,  # CLI приложение
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add icon path here if needed
+    icon=None,  # Можно добавить иконку позже
+    version_file=None,  # Можно добавить версию позже
 )

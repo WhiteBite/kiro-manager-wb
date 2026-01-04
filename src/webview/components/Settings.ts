@@ -1,11 +1,15 @@
 /**
  * Settings Overlay Component
+ * Now includes Stats and LLM sections as collapsible cards
  */
 
 import { ICONS } from '../icons';
 import { Translations } from '../i18n/types';
 import { AutoRegSettings, ProxyStatus } from '../types';
 import { Language } from '../i18n';
+import { AccountInfo } from '../../types';
+import { renderStats } from './Stats';
+import { renderLLMSettings } from './LLMSettings';
 
 export interface SettingsProps {
   autoSwitchEnabled: boolean;
@@ -15,25 +19,24 @@ export interface SettingsProps {
   version: string;
   inline?: boolean; // Render without overlay wrapper (for tab navigation)
   proxyStatus?: ProxyStatus;
+  accounts?: AccountInfo[]; // For stats
 }
 
 function renderSpoofingSection(settings: AutoRegSettings | undefined, t: Translations): string {
   return `
-    <div class="spoof-section">
-      <div class="spoof-header">
-        <div class="spoof-title">
-          <span class="spoof-icon">🛡️</span>
-          <div>
-            <div class="setting-label">${t.spoofing}</div>
-            <div class="setting-desc">${t.spoofingDesc}</div>
-          </div>
-        </div>
-        <label class="toggle">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this, event)">
+        <span class="settings-card-icon">🛡️</span>
+        <span class="settings-card-title">${t.spoofing}</span>
+        <label class="toggle" onclick="event.stopPropagation()">
           <input type="checkbox" id="spoofingToggle" ${settings?.spoofing !== false ? 'checked' : ''} onchange="toggleSpoofing(this.checked)">
           <span class="toggle-slider"></span>
         </label>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
-      <div class="spoof-details" id="spoofDetails">
+      <div class="settings-card-body">
+        <div class="setting-desc" style="margin-bottom: 12px;">${t.spoofingDesc}</div>
+        <div class="spoof-details" id="spoofDetails" style="margin-top: 0;">
         <div class="spoof-modules">
           <div class="spoof-module">
             <span class="module-icon">🤖</span>
@@ -83,25 +86,29 @@ function renderSpoofingSection(settings: AutoRegSettings | undefined, t: Transla
           <span>${t.spoofWarning}</span>
         </div>
       </div>
+      </div>
     </div>
   `;
 }
 
 function renderImportExportSection(t: Translations): string {
   return `
-    <div class="import-export-section">
-      <div class="section-header">
-        <span class="section-icon">📦</span>
-        <span class="section-title">${t.exportAccounts}</span>
-      </div>
-      <div class="section-desc">${t.exportAccountsDesc}</div>
-      <div class="import-export-actions">
-        <button class="btn btn-primary" onclick="exportAllAccounts()">
-          📤 ${t.exportAll}
-        </button>
-        <button class="btn btn-secondary" onclick="importAccounts()">
-          📥 ${t.importAccounts}
-        </button>
+    <div class="settings-card collapsed">
+        <div class="settings-card-header" onclick="toggleSettingsCard(this, event)">
+          <span class="settings-card-icon">📦</span>
+          <span class="settings-card-title">${t.exportAccounts}</span>
+          <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
+        </div>
+      <div class="settings-card-body">
+        <div class="section-desc" style="margin-bottom: 12px;">${t.exportAccountsDesc}</div>
+        <div class="import-export-actions">
+          <button class="btn btn-primary btn-full" onclick="exportAllAccounts()">
+            📤 ${t.exportAll}
+          </button>
+          <button class="btn btn-secondary btn-full" onclick="importAccounts()">
+            📥 ${t.importAccounts}
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -163,14 +170,15 @@ function renderProxySection(settings: AutoRegSettings | undefined, proxyStatus: 
   }
 
   return `
-    <div class="settings-card">
-      <div class="settings-card-header">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this, event)">
         <span class="settings-card-icon">🌐</span>
         <span class="settings-card-title">${t.proxySettings}</span>
         <div class="proxy-status-badge ${statusClass}">
           <span>${statusIcon}</span>
           <span>${statusText}</span>
         </div>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
       <div class="settings-card-body">
         <div class="setting-desc" style="margin-bottom: 12px;">${t.proxySettingsDesc}</div>
@@ -190,7 +198,7 @@ function renderProxySection(settings: AutoRegSettings | undefined, proxyStatus: 
             <button 
               class="btn btn-secondary" 
               id="testProxyBtn"
-              onclick="testProxy()"
+              onclick="testProxy(); event.stopPropagation()"
               ${!proxyAddress ? 'disabled' : ''}
               ${status === 'testing' ? 'disabled' : ''}
             >
@@ -208,7 +216,7 @@ function renderProxySection(settings: AutoRegSettings | undefined, proxyStatus: 
             <div class="setting-label">${t.useProxyForRegistration}</div>
             <div class="setting-desc">${t.useProxyForRegistrationDesc}</div>
           </div>
-          <label class="toggle">
+          <label class="toggle" onclick="event.stopPropagation()">
             <input 
               type="checkbox" 
               id="useProxyToggle"
@@ -226,82 +234,99 @@ function renderProxySection(settings: AutoRegSettings | undefined, proxyStatus: 
 
 function renderDangerZone(t: Translations): string {
   return `
-    <div class="danger-zone-section">
-      <div class="danger-zone-header">
-        <span class="danger-zone-icon">⚠️</span>
-        <span class="danger-zone-title">${t.dangerZone}</span>
+    <div class="settings-card collapsed danger-card">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this, event)">
+        <span class="settings-card-icon">⚠️</span>
+        <span class="settings-card-title">${t.dangerZone}</span>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
-      
-      <div class="danger-zone-card patch-card">
-        <div class="danger-zone-info">
-          <div class="danger-zone-label">${t.kiroPatch}</div>
-          <div class="danger-zone-desc">${t.kiroPatchDesc}</div>
-          <div class="patch-status-row">
-            <span id="patchStatusText" class="patch-status">${t.patchStatusLoading}</span>
-            <span id="patchVersionInfo" class="patch-version-info"></span>
+      <div class="settings-card-body">
+        <div class="danger-zone-card patch-card">
+          <div class="danger-zone-info">
+            <div class="danger-zone-label">${t.kiroPatch}</div>
+            <div class="danger-zone-desc">${t.kiroPatchDesc}</div>
+            <div class="patch-status-row">
+              <span id="patchStatusText" class="patch-status">${t.patchStatusLoading}</span>
+              <span id="patchVersionInfo" class="patch-version-info"></span>
+            </div>
+            <div class="patch-machine-id-row">
+              <span id="currentMachineId" class="machine-id-preview"></span>
+            </div>
           </div>
-          <div class="patch-machine-id-row">
-            <span id="currentMachineId" class="machine-id-preview"></span>
+          <div class="danger-zone-actions">
+            <button id="patchKiroBtn" class="btn btn-warning btn-sm" onclick="confirmPatchKiro(); event.stopPropagation()" title="${t.patchKiroTitle}">
+              🔧 ${t.patch}
+            </button>
+            <button id="updatePatchBtn" class="btn btn-primary btn-sm" onclick="confirmPatchKiro(); event.stopPropagation()" style="display:none" title="${t.patchUpdateAvailable}">
+              ⬆️ ${t.updatePatch}
+            </button>
+            <button id="unpatchKiroBtn" class="btn btn-secondary btn-sm" onclick="confirmUnpatchKiro(); event.stopPropagation()" style="display:none" title="${t.removePatchTitle}">
+              ↩️ ${t.removePatch}
+            </button>
+            <button id="generateIdBtn" class="btn btn-secondary btn-sm" onclick="generateNewMachineId(); event.stopPropagation()" title="${t.newMachineId}">
+              🎲 ${t.newMachineId}
+            </button>
           </div>
         </div>
-        <div class="danger-zone-actions">
-          <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="${t.patchKiroTitle}">
-            🔧 ${t.patch}
-          </button>
-          <button id="updatePatchBtn" class="btn btn-primary" onclick="confirmPatchKiro()" style="display:none" title="${t.patchUpdateAvailable}">
-            ⬆️ ${t.updatePatch}
-          </button>
-          <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="${t.removePatchTitle}">
-            ↩️ ${t.removePatch}
-          </button>
-          <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="${t.newMachineId}">
-            🎲 ${t.newMachineId}
+        
+        <div class="danger-zone-card">
+          <div class="danger-zone-info">
+            <div class="danger-zone-label">${t.resetMachineId}</div>
+            <div class="danger-zone-desc">${t.resetMachineIdDesc}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="confirmResetMachineId(); event.stopPropagation()" title="${t.resetMachineIdTip}">
+            🔄 ${t.reset}
           </button>
         </div>
-      </div>
-      
-      <div class="danger-zone-card">
-        <div class="danger-zone-info">
-          <div class="danger-zone-label">${t.resetMachineId}</div>
-          <div class="danger-zone-desc">${t.resetMachineIdDesc}</div>
+        <div class="danger-zone-hint">
+          💡 ${t.restartAfterReset}
         </div>
-        <button class="btn btn-danger" onclick="confirmResetMachineId()" title="${t.resetMachineIdTip}">
-          🔄 ${t.reset}
-        </button>
-      </div>
-      <div class="danger-zone-hint">
-        💡 ${t.restartAfterReset}
       </div>
     </div>
   `;
 }
 
-export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, inline = false }: SettingsProps): string {
+export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, inline = false, proxyStatus, accounts = [] }: SettingsProps): string {
   const langOptions = ['en', 'ru', 'zh', 'es', 'pt', 'ja', 'de', 'fr', 'ko', 'hi']
     .map(l => `<option value="${l}" ${l === lang ? 'selected' : ''}>${l.toUpperCase()}</option>`)
     .join('');
 
   const content = `
+    <!-- Stats Section (embedded) -->
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
+        <span class="settings-card-icon">📊</span>
+        <span class="settings-card-title">${t.statistics || 'Statistics'}</span>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
+      </div>
+      <div class="settings-card-body">
+        ${renderStats({ accounts, t })}
+      </div>
+    </div>
+
     <!-- Active Profile Card -->
-    <div class="settings-card" id="activeProfileCard">
-      <div class="settings-card-header">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
         <span class="settings-card-icon">📧</span>
         <span class="settings-card-title">${t.activeProfile}</span>
-        <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')">${t.change}</button>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
-      <div class="active-profile-content" id="activeProfileContent">
-        <div class="active-profile-empty">
-          <span class="empty-text">${t.noProfileConfigured}</span>
-          <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">${t.configure}</button>
+      <div class="settings-card-body">
+        <div class="active-profile-content" id="activeProfileContent">
+          <div class="active-profile-empty">
+            <span class="empty-text">${t.noProfileConfigured}</span>
+            <button class="btn btn-primary btn-sm" onclick="switchTab('profiles')">${t.configure}</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Automation Card -->
-    <div class="settings-card">
-      <div class="settings-card-header">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
         <span class="settings-card-icon">⚙️</span>
         <span class="settings-card-title">${t.automation || 'Automation'}</span>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
       <div class="settings-card-body">
         <div class="setting-row">
@@ -348,10 +373,11 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
     </div>
 
     <!-- Registration Strategy Card (Anti-Ban) -->
-    <div class="settings-card">
-      <div class="settings-card-header">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
         <span class="settings-card-icon">🛡️</span>
         <span class="settings-card-title">${t.registrationStrategy}</span>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
       <div class="settings-card-body">
         <div class="setting-desc" style="margin-bottom: 16px;">${t.registrationStrategyDesc}</div>
@@ -452,10 +478,11 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
     </div>
 
     <!-- Interface Card -->
-    <div class="settings-card">
-      <div class="settings-card-header">
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
         <span class="settings-card-icon">🎨</span>
         <span class="settings-card-title">${t.interface || 'Interface'}</span>
+        <span class="settings-card-toggle">${ICONS.chevronLeft}</span>
       </div>
       <div class="settings-card-body">
         <div class="setting-row">
@@ -488,7 +515,9 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
       </div>
     </div>
 
+    ${renderProxySection(settings, proxyStatus, t)}
     ${renderSpoofingSection(settings, t)}
+    
     ${renderImportExportSection(t)}
     ${renderDangerZone(t)}
     

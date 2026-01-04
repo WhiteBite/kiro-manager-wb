@@ -54,7 +54,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kiroAccountSwitcher.openSettings', () => openSettings()),
     vscode.commands.registerCommand('kiroAccountSwitcher.switchTo', (name: string) => doSwitch(name)),
     vscode.commands.registerCommand('kiroAccountSwitcher.refreshToken', (name: string) => doRefresh(name)),
-    vscode.commands.registerCommand('kiroAccountSwitcher.switchToNextAvailable', () => switchToNextAvailable())
+    vscode.commands.registerCommand('kiroAccountSwitcher.switchToNextAvailable', () => switchToNextAvailable()),
+    vscode.commands.registerCommand('kiroAccountSwitcher.testImap', () => testImapFromSettings())
   );
 
   updateStatusBar();
@@ -332,4 +333,115 @@ async function applyHotPatch(context: vscode.ExtensionContext) {
   } else {
     vscode.window.showErrorMessage(`Patch failed: ${result.error}`);
   }
+}
+
+// Test IMAP connection from VS Code settings
+async function testImapFromSettings() {
+  const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+  const profiles = config.get<any[]>('imap.profiles', []);
+
+  if (profiles.length === 0) {
+    vscode.window.showWarningMessage('No IMAP profiles configured in settings');
+    return;
+  }
+
+  // Show quick pick to select profile
+  const items = profiles.map(p => ({
+    label: p.name || p.email || 'Unnamed Profile',
+    description: p.email,
+    profile: p
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select IMAP profile to test'
+  });
+
+  if (!selected) return;
+
+  const profile = selected.profile;
+  
+  if (!profile.email || !profile.password || !profile.host) {
+    vscode.window.showErrorMessage('Profile is missing required fields (email, password, host)');
+    return;
+  }
+
+  // Test IMAP connection
+  await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: `Testing IMAP: ${profile.host}`,
+    cancellable: false
+  }, async (progress) => {
+    try {
+      progress.report({ message: 'Connecting...' });
+
+      // Use Node.js built-in modules to test IMAP without Python
+      const net = require('net');
+      const tls = require('tls');
+
+      await new Promise<void>((resolve, reject) => {
+        const socket = tls.connect({
+          host: profile.host,
+          port: profile.port || 993,
+          timeout: 10000
+        });
+
+        let buffer = '';
+        let authenticated = false;
+
+        socket.on('data', (data: Buffer) => {
+          buffer += data.toString();
+          const lines = buffer.split('\r\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            console.log('IMAP:', line);
+            
+            if (line.includes('* OK') && !authenticated) {
+              // Server ready, try to login
+              progress.report({ message: 'Authenticating...' });
+              socket.write(`A001 LOGIN "${profile.email}" "${profile.password}"\r\n`);
+            } else if (line.includes('A001 OK') && line.toLowerCase().includes('login')) {
+              // Login successful
+              authenticated = true;
+              progress.report({ message: 'Getting folder list...' });
+              socket.write('A002 LIST "" "*"\r\n');
+            } else if (line.includes('A002 OK') && authenticated) {
+              // List command completed
+              socket.write('A003 LOGOUT\r\n');
+              resolve();
+            } else if (line.includes('A001 NO') || line.includes('A001 BAD')) {
+              // Login failed
+              reject(new Error('Authentication failed. Check your credentials.'));
+            }
+          }
+        });
+
+        socket.on('error', (err: Error) => {
+          reject(new Error(`Connection failed: ${err.message}`));
+        });
+
+        socket.on('timeout', () => {
+          reject(new Error('Connection timeout'));
+        });
+
+        socket.on('close', () => {
+          if (!authenticated) {
+            reject(new Error('Connection closed unexpectedly'));
+          }
+        });
+      });
+
+      vscode.window.showInformationMessage(`✅ IMAP test successful: ${profile.email}`);
+
+    } catch (error: any) {
+      let errorMsg = error.message || 'Unknown error';
+      
+      // Improve error messages
+      if (errorMsg.includes('Authentication failed') && profile.host?.includes('gmail')) {
+        errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
+      }
+
+      vscode.window.showErrorMessage(`❌ IMAP test failed: ${errorMsg}`);
+    }
+  });
 }

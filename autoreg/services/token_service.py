@@ -20,10 +20,7 @@ from core.kiro_config import get_machine_id, get_kiro_user_agent
 from core.exceptions import (
     TokenError, TokenExpiredError, TokenRefreshError, TokenNotFoundError
 )
-
-# Retry configuration
-MAX_RETRIES = 3
-RETRY_DELAY_SEC = 1.0
+from core.constants import MAX_RETRIES, RETRY_DELAY_SEC
 
 
 @dataclass

@@ -11,6 +11,7 @@ import { KiroAccountsProvider } from '../providers/AccountsProvider';
 import { ImapProfileProvider } from '../providers/ImapProfileProvider';
 import { autoregProcess } from '../process-manager';
 import { PythonEnvManager } from '../utils/python-env';
+import { runExecutable, isExecutableAvailable, ensureExecutable } from '../utils/executable-runner';
 
 // Get autoreg directory
 export function getAutoregDir(context: vscode.ExtensionContext): string {
@@ -135,13 +136,92 @@ async function setupPythonEnv(autoregDir: string, provider: KiroAccountsProvider
   return envManager;
 }
 
-export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number) {
+export async function runAutoReg(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number): Promise<boolean> {
+  const ok = await supportsCliRegistration(context);
+  if (ok) return runAutoRegWithCli(context, provider, count);
+  return runAutoRegWithPython(context, provider, count);
+}
+
+/**
+ * Run auto-registration using bundled executable (DISABLED - missing command)
+ */
+async function runAutoRegWithExecutable(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number): Promise<boolean> {
+  provider.addLog('⚠️ Executable registration unavailable');
+  return runAutoRegWithPython(context, provider, count);
+}
+
+async function supportsCliRegistration(context: vscode.ExtensionContext): Promise<boolean> {
+  const result = await runExecutable(context, ['register-auto', '--help'], undefined, undefined, 'cli');
+  return result.success;
+}
+
+async function runAutoRegWithCli(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number): Promise<boolean> {
+  const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+  const headless = config.get<boolean>('autoreg.headless', false);
+  const spoofing = config.get<boolean>('autoreg.spoofing', true);
+  const strategy = config.get<string>('autoreg.strategy', 'webview');
+
+  const profileProvider = ImapProfileProvider.getInstance(context);
+  await profileProvider.load();
+  const activeProfile = profileProvider.getActive();
+  if (!activeProfile) {
+    provider.addLog('⚠️ No IMAP profile configured');
+    return false;
+  }
+
+  const envProfile = profileProvider.getActiveProfileEnv();
+  let currentProxy: string | undefined;
+  if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+    const proxyIndex = activeProfile.proxy.currentIndex || 0;
+    currentProxy = activeProfile.proxy.urls[proxyIndex % activeProfile.proxy.urls.length];
+    activeProfile.proxy.currentIndex = (proxyIndex + 1) % activeProfile.proxy.urls.length;
+  }
+
+  const env: Record<string, string> = {
+    IMAP_SERVER: envProfile.IMAP_SERVER,
+    IMAP_USER: envProfile.IMAP_USER,
+    IMAP_PASSWORD: envProfile.IMAP_PASSWORD,
+    IMAP_PORT: envProfile.IMAP_PORT || '993',
+    EMAIL_DOMAIN: envProfile.EMAIL_DOMAIN || '',
+    EMAIL_STRATEGY: envProfile.EMAIL_STRATEGY,
+    EMAIL_POOL: envProfile.EMAIL_POOL || '',
+    PROFILE_ID: envProfile.PROFILE_ID,
+    SPOOFING_ENABLED: spoofing ? '1' : '0',
+    OAUTH_PROVIDER: 'Google',
+    ...(currentProxy && { HTTPS_PROXY: currentProxy }),
+    ...(!currentProxy && process.env.HTTP_PROXY && { HTTP_PROXY: process.env.HTTP_PROXY }),
+    ...(!currentProxy && process.env.HTTPS_PROXY && { HTTPS_PROXY: process.env.HTTPS_PROXY })
+  };
+
+  const args: string[] = ['register-auto', '--strategy', strategy];
+  if (headless) args.push('--headless');
+  if (count && count > 1) args.push('--count', String(count));
+
+  provider.setStatus('{"step":1,"totalSteps":8,"stepName":"Starting","detail":"Initializing..."}');
+  const result = await runExecutable(context, args, env, (line) => provider.addLog(line), 'cli');
+
+  if (result.success) {
+    provider.addLog('✅ Registration completed successfully!');
+    provider.setStatus('');
+    vscode.commands.executeCommand('kiroAccountSwitcher.refreshAccounts');
+    return true;
+  } else {
+    provider.addLog(`❌ Registration failed: ${result.error || 'Unknown error'}`);
+    provider.setStatus('');
+    return false;
+  }
+}
+
+/**
+ * Run auto-registration using Python (legacy fallback)
+ */
+async function runAutoRegWithPython(context: vscode.ExtensionContext, provider: KiroAccountsProvider, count?: number): Promise<boolean> {
   const autoregDir = getAutoregDir(context);
   const finalPath = autoregDir ? path.join(autoregDir, 'registration', 'register.py') : '';
 
   if (!finalPath || !fs.existsSync(finalPath)) {
     provider.addLog('⚠️ Auto-reg script not found. Place autoreg folder in workspace or ~/.kiro-manager-wb/');
-    return;
+    return false;
   }
 
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
@@ -164,7 +244,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     if (result === 'Open Settings') {
       vscode.commands.executeCommand('kiroAccountSwitcher.focus');
     }
-    return;
+    return false;
   }
 
   // Log strategy info (no confirmation dialog needed - user already selected in UI)
@@ -193,7 +273,7 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   const envManager = await setupPythonEnv(autoregDir, provider);
   if (!envManager) {
     provider.setStatus('❌ Python setup failed. Install Python 3.8+');
-    return;
+    return false;
   }
 
   const pythonPath = envManager.getPythonPath();
@@ -243,26 +323,11 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
     // Get OAuth provider setting
     let oauthProvider = config.get<string>('autoreg.oauthProvider', 'ask');
 
-    // Show provider selection dialog if "ask" or not set
+    // NEVER show QuickPick for automated strategy or if user wants to avoid menus
     if (!oauthProvider || oauthProvider === 'ask') {
-      const selected = await vscode.window.showQuickPick(
-        [
-          { label: '$(globe) Google', description: 'Sign in with Google account', value: 'Google' },
-          { label: '$(github) GitHub', description: 'Sign in with GitHub account', value: 'Github' },
-        ],
-        {
-          placeHolder: 'Select OAuth provider for registration',
-          title: 'OAuth Provider',
-        }
-      );
-
-      if (!selected) {
-        provider.addLog('⚠️ Registration cancelled - no provider selected');
-        provider.setStatus('');
-        return;
-      }
-
-      oauthProvider = selected.value;
+      // Default to Google to avoid the menu
+      oauthProvider = 'Google';
+      provider.addLog(`ℹ️ Using default OAuth provider: ${oauthProvider} (to avoid VS Code menus)`);
     }
 
     // Pass provider to Python script via environment
@@ -296,93 +361,101 @@ export async function runAutoReg(context: vscode.ExtensionContext, provider: Kir
   // Use ProcessManager for better control
   autoregProcess.removeAllListeners();
 
-  // Track actual registration result from stdout
-  let registrationSuccess = false;
-  let registrationFailed = false;
+  return new Promise((resolve) => {
+    // Track actual registration result from stdout
+    let registrationSuccess = false;
+    let registrationFailed = false;
 
-  autoregProcess.on('stdout', (data: string) => {
-    const lines = data.split('\n').filter((l: string) => l.trim());
-    for (const line of lines) {
-      provider.addLog(line);
-      parseProgressLine(line, provider);
+    autoregProcess.on('stdout', (data: string) => {
+      const lines = data.split('\n').filter((l: string) => l.trim());
+      for (const line of lines) {
+        provider.addLog(line);
+        parseProgressLine(line, provider);
 
-      // Track actual result from Python output
-      if (line.includes('[OK] SUCCESS') || line.includes('✅ Authentication successful')) {
-        registrationSuccess = true;
-      } else if (line.includes('[X] FAILED') || line.includes('[X] ERROR') || line.includes('❌')) {
-        registrationFailed = true;
+        // Track actual result from Python output
+        if (line.includes('[OK] SUCCESS') || line.includes('✅ Authentication successful')) {
+          registrationSuccess = true;
+        } else if (line.includes('[X] FAILED') || line.includes('[X] ERROR') || line.includes('❌')) {
+          registrationFailed = true;
+        }
+
+        // Auto-confirm prompts (y/n, да/нет)
+        if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
+          provider.addLog('→ Auto-confirming: y');
+          autoregProcess.write('y\n');
+        }
       }
+    });
 
-      // Auto-confirm prompts (y/n, да/нет)
-      if (line.includes('(y/n)') || line.includes('(да/нет)') || line.includes('Начать?') || line.includes('Start?')) {
-        provider.addLog('→ Auto-confirming: y');
-        autoregProcess.write('y\n');
+    autoregProcess.on('stderr', (data: string) => {
+      const lines = data.split('\n').filter((l: string) => l.trim());
+      for (const line of lines) {
+        if (!line.includes('DevTools') && !line.includes('GPU process')) {
+          provider.addLog(`⚠️ ${line}`);
+        }
       }
-    }
-  });
+    });
 
-  autoregProcess.on('stderr', (data: string) => {
-    const lines = data.split('\n').filter((l: string) => l.trim());
-    for (const line of lines) {
-      if (!line.includes('DevTools') && !line.includes('GPU process')) {
-        provider.addLog(`⚠️ ${line}`);
+    autoregProcess.on('close', async (code: number) => {
+      // Check actual result, not just exit code
+      if (registrationSuccess && !registrationFailed) {
+        provider.addLog('✓ Registration complete');
+
+        // Save updated proxy index after successful registration
+        if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
+          await profileProvider.update(activeProfile.id, { proxy: activeProfile.proxy });
+          provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
+        }
+
+        provider.addLog('✅ Account registered successfully!');
+        resolve(true);
+      } else {
+        if (registrationFailed) {
+          provider.addLog('❌ Registration failed. Check logs for details.');
+        } else if (code !== 0 && code !== null) {
+          provider.addLog(`❌ Process exited with code ${code}`);
+        }
+        resolve(false);
       }
-    }
-  });
+      provider.setStatus('');
+      provider.refresh();
+      provider.addLog('🔄 Refreshed account list');
+    });
 
-  autoregProcess.on('close', async (code: number) => {
-    // Check actual result, not just exit code
-    if (registrationSuccess && !registrationFailed) {
-      provider.addLog('✓ Registration complete');
+    autoregProcess.on('stopped', () => {
+      provider.addLog('⏹ Auto-reg stopped by user');
+      provider.setStatus('');
+      provider.refresh();
+      resolve(false);
+    });
 
-      // Save updated proxy index after successful registration
-      if (activeProfile?.proxy?.enabled && activeProfile.proxy.urls && activeProfile.proxy.urls.length > 0) {
-        await profileProvider.update(activeProfile.id, { proxy: activeProfile.proxy });
-        provider.addLog(`[PROXY] Saved next proxy index: ${activeProfile.proxy.currentIndex}`);
+    autoregProcess.on('error', (err: Error) => {
+      provider.addLog(`✗ Error: ${err.message}`);
+      provider.setStatus('');
+      resolve(false);
+    });
+
+    autoregProcess.on('paused', () => {
+      provider.addLog('⏸ Auto-reg paused');
+      provider.refresh();
+    });
+
+    autoregProcess.on('resumed', () => {
+      provider.addLog('▶ Auto-reg resumed');
+      provider.refresh();
+    });
+
+    // Start with venv Python
+    autoregProcess.start(pythonPath, ['-u', ...scriptArgs], {
+      cwd: autoregDir,
+      env: {
+        ...process.env,
+        ...env,
+        VIRTUAL_ENV: path.join(autoregDir, '.venv'),
+        PYTHONUNBUFFERED: '1',
+        PYTHONIOENCODING: 'utf-8'
       }
-
-      provider.addLog('✅ Account registered successfully!');
-    } else if (registrationFailed) {
-      provider.addLog('❌ Registration failed. Check logs for details.');
-    } else if (code !== 0 && code !== null) {
-      provider.addLog(`❌ Process exited with code ${code}`);
-    }
-    provider.setStatus('');
-    provider.refresh();
-    provider.addLog('🔄 Refreshed account list');
-  });
-
-  autoregProcess.on('stopped', () => {
-    provider.addLog('⏹ Auto-reg stopped by user');
-    provider.setStatus('');
-    provider.refresh();
-  });
-
-  autoregProcess.on('error', (err: Error) => {
-    provider.addLog(`✗ Error: ${err.message}`);
-    provider.setStatus('');
-  });
-
-  autoregProcess.on('paused', () => {
-    provider.addLog('⏸ Auto-reg paused');
-    provider.refresh();
-  });
-
-  autoregProcess.on('resumed', () => {
-    provider.addLog('▶ Auto-reg resumed');
-    provider.refresh();
-  });
-
-  // Start with venv Python
-  autoregProcess.start(pythonPath, ['-u', ...scriptArgs], {
-    cwd: autoregDir,
-    env: {
-      ...process.env,
-      ...env,
-      VIRTUAL_ENV: path.join(autoregDir, '.venv'),
-      PYTHONUNBUFFERED: '1',
-      PYTHONIOENCODING: 'utf-8'
-    }
+    });
   });
 }
 
@@ -412,16 +485,39 @@ function parseProgressLine(line: string, provider: KiroAccountsProvider) {
 
 /**
  * Patch Kiro to use custom Machine ID
- * Calls Python cli.py patch apply
+ * Uses executable if available, falls back to Python cli.py
  */
 export async function patchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider, force: boolean = false) {
+  provider.addLog('🔧 Patching Kiro...');
+
+  // First try to use executable
+  const { runExecutable, isExecutableAvailable } = await import('../utils/executable-runner');
+  
+  if (isExecutableAvailable(context)) {
+    const args = ['patch', 'apply', '--skip-check'];
+    if (force) args.push('--force');
+    
+    const result = await runExecutable(context, args, undefined, (line) => {
+      provider.addLog(line);
+    });
+    
+    if (result.success) {
+      provider.addLog('✅ Kiro patched successfully! Restart Kiro for changes to take effect.');
+      // Refresh patch status
+      const status = await checkPatchStatus(context);
+      provider.sendPatchStatus(status);
+    } else {
+      provider.addLog(`❌ Patch failed: ${result.error || 'Unknown error'}`);
+    }
+    return;
+  }
+
+  // Fallback to Python
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
     provider.addLog('❌ Autoreg not found');
     return;
   }
-
-  provider.addLog('🔧 Patching Kiro...');
 
   const envManager = getEnvManager(autoregDir);
 
@@ -455,6 +551,9 @@ export async function patchKiro(context: vscode.ExtensionContext, provider: Kiro
 
   if (result.status === 0) {
     provider.addLog('✅ Kiro patched successfully! Restart Kiro for changes to take effect.');
+    // Refresh patch status
+    const status = await checkPatchStatus(context);
+    provider.sendPatchStatus(status);
   } else {
     provider.addLog(`❌ Patch failed (code ${result.status}). Check console for details.`);
   }
@@ -514,13 +613,33 @@ export async function patchKiroHot(context: vscode.ExtensionContext): Promise<Ho
  * Remove Kiro patch (restore original)
  */
 export async function unpatchKiro(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+  provider.addLog('🔧 Removing Kiro patch...');
+
+  // First try to use executable
+  const { runExecutable, isExecutableAvailable } = await import('../utils/executable-runner');
+  
+  if (isExecutableAvailable(context)) {
+    const result = await runExecutable(context, ['patch', 'remove', '--skip-check'], undefined, (line) => {
+      provider.addLog(line);
+    });
+    
+    if (result.success) {
+      provider.addLog('✅ Kiro patch removed! Restart Kiro for changes to take effect.');
+      // Refresh patch status
+      const status = await checkPatchStatus(context);
+      provider.sendPatchStatus(status);
+    } else {
+      provider.addLog(`❌ Unpatch failed: ${result.error || 'Unknown error'}`);
+    }
+    return;
+  }
+
+  // Fallback to Python
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
     provider.addLog('❌ Autoreg not found');
     return;
   }
-
-  provider.addLog('🔧 Removing Kiro patch...');
 
   const envManager = getEnvManager(autoregDir);
   const args = ['cli.py', 'patch', 'remove', '--skip-check'];
@@ -534,6 +653,9 @@ export async function unpatchKiro(context: vscode.ExtensionContext, provider: Ki
 
   if (result.status === 0) {
     provider.addLog('✅ Kiro patch removed! Restart Kiro for changes to take effect.');
+    // Refresh patch status
+    const status = await checkPatchStatus(context);
+    provider.sendPatchStatus(status);
   } else {
     provider.addLog(`❌ Unpatch failed (code ${result.status}). Check console for details.`);
   }
@@ -543,13 +665,33 @@ export async function unpatchKiro(context: vscode.ExtensionContext, provider: Ki
  * Generate new custom Machine ID
  */
 export async function generateMachineId(context: vscode.ExtensionContext, provider: KiroAccountsProvider) {
+  provider.addLog('🔄 Generating new Machine ID...');
+
+  // First try to use executable
+  const { runExecutable, isExecutableAvailable } = await import('../utils/executable-runner');
+  
+  if (isExecutableAvailable(context)) {
+    const result = await runExecutable(context, ['patch', 'generate-id'], undefined, (line) => {
+      provider.addLog(line);
+    });
+    
+    if (result.success) {
+      provider.addLog('✅ New Machine ID generated!');
+      // Refresh patch status
+      const status = await checkPatchStatus(context);
+      provider.sendPatchStatus(status);
+    } else {
+      provider.addLog(`❌ Failed to generate ID: ${result.error || 'Unknown error'}`);
+    }
+    return;
+  }
+
+  // Fallback to Python
   const autoregDir = getAutoregDir(context);
   if (!autoregDir) {
     provider.addLog('❌ Autoreg not found');
     return;
   }
-
-  provider.addLog('🔄 Generating new Machine ID...');
 
   const envManager = getEnvManager(autoregDir);
   const args = ['cli.py', 'patch', 'generate-id'];
@@ -590,7 +732,32 @@ export async function getPatchStatus(context: vscode.ExtensionContext): Promise<
  * Check patch status - can be called from extension.ts on startup
  */
 export async function checkPatchStatus(context: vscode.ExtensionContext): Promise<PatchStatusResult> {
-  // Use bundled autoreg from extension, not workspace - ensures kiro_patcher_service exists
+  // First try to use executable
+  const { runExecutable, isExecutableAvailable } = await import('../utils/executable-runner');
+  
+  if (isExecutableAvailable(context)) {
+    try {
+      const result = await runExecutable(context, ['patch', 'status', '--json']);
+      if (result.success && result.output) {
+        try {
+          const parsed = JSON.parse(result.output.trim());
+          return {
+            isPatched: parsed.isPatched || false,
+            kiroVersion: parsed.kiroVersion,
+            patchVersion: parsed.patchVersion,
+            currentMachineId: parsed.currentMachineId,
+            error: parsed.error
+          };
+        } catch {
+          // JSON parse failed, continue to Python fallback
+        }
+      }
+    } catch {
+      // Executable failed, continue to Python fallback
+    }
+  }
+
+  // Fallback to Python script
   const bundledPath = path.join(context.extensionPath, 'autoreg');
   const homePath = path.join(os.homedir(), '.kiro-manager-wb');
 

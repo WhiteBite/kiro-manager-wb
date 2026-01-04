@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const ja: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro アカウント',
+  accounts: 'アカウント',
+  registration: '登録',
+  llm: 'AI/LLM',
+  profiles: 'プロファイル',
+  settings: '設定',
   compactViewTip: 'カードを縮小してより多くのアカウントを表示',
   settingsTip: '自動切替、ブラウザモード、ログを設定',
   back: '戻る',
@@ -59,6 +64,7 @@ export const ja: Translations = {
   partial: '部分的',
   trial: '試用版',
   empty: '空',
+  more: 'もっと',
 
   // Account card
   active: 'アクティブ',
@@ -74,6 +80,8 @@ export const ja: Translations = {
   clearTip: 'コンソール出力をクリア',
   openLogTip: 'エディタで完全なログファイルを開く',
   copyLogsTip: 'ログをコピー',
+  scrollToBottom: '一番下にスクロール',
+  newMessagesBelow: '下に新しいメッセージ',
 
   // Progress
   step: 'ステップ',
@@ -343,14 +351,19 @@ export const ja: Translations = {
   noAccountsFound: 'アカウントが見つかりません',
   clearSearch: '検索をクリア',
 
+  // Empty States
+  emptyAccountsTitle: 'アカウントがありません',
+  emptyAccountsDesc: '最初のアカウントを作成してKiroを始めましょう',
+  emptySearchTitle: '結果が見つかりません',
+  emptySearchDesc: '別の検索語をお試しください',
+  emptyBannedTitle: 'BANされたアカウントはありません',
+  emptyBannedDesc: 'すべてのアカウントは正常です',
+
   // Settings Cards
   automation: '自動化',
   interface: 'インターフェース',
   autoSwitchThreshold: '切替閾値',
   autoSwitchThresholdDesc: '残り < この値で切替',
-  settings: '設定',
-  accounts: 'アカウント',
-  profiles: 'プロファイル',
   pause: '一時停止',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const ja: Translations = {
   stopSchedule: '停止',
   scheduleActive: 'アクティブ',
   scheduleNextIn: '次まで',
+  current: '??',
   complete: '完了',
   preview: 'プレビュー',
   nextNumber: '次の #',

@@ -29,20 +29,38 @@
 - **Мульти-аккаунт** — храни сколько угодно аккаунтов, переключайся в один клик
 - **Usage мониторинг** — видишь сколько запросов потрачено, сколько осталось, когда рефреш
 - **Авторег** — автоматическая регистрация новых AWS Builder ID аккаунтов
+- **IMAP интеграция** — поддержка Yandex, Gmail, Outlook для получения кодов подтверждения
 - **Machine ID патчинг** — обход бана по hardware fingerprint
 - **LLM API сервер** — OpenAI-совместимый API для использования Claude через Kiro токены
+- **Standalone executable** — не требует установки Python на компьютере пользователя
 - **10 языков** — EN, RU, DE, ES, FR, PT, ZH, JA, KO, HI
 
 ---
 
 ## 🚀 Быстрый старт
 
-### Установка
+### Установка расширения
 
 1. Скачать `.vsix` из [Releases](../../releases)
 2. Открыть Kiro → `Ctrl+Shift+P` → `Extensions: Install from VSIX`
 3. Выбрать скачанный файл
 4. Перезапустить Kiro
+
+### Standalone Executable (без Python)
+
+Для пользователей без Python на компьютере:
+
+1. Скачать `kiro-manager.exe` из [Releases](../../releases)
+2. Создать файл `.env` рядом с executable:
+   ```env
+   IMAP_SERVER=imap.yandex.ru
+   IMAP_USER=testmail@whitebite.ru
+   IMAP_PASSWORD=aosusinxnuwnnuzl
+   ```
+3. Тестировать: `kiro-manager.exe imap test`
+4. Использовать: `kiro-manager.exe status`
+
+📖 **Подробная инструкция**: [BUILD_EXECUTABLE.md](BUILD_EXECUTABLE.md)
 
 ### Из исходников
 

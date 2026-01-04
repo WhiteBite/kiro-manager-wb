@@ -4,7 +4,7 @@
  * Main entry point that composes UI from components.
  */
 
-import { AccountInfo } from '../types';
+import { AccountInfo, ImapProfile } from '../types';
 import { KiroUsageData } from '../utils';
 import { AutoRegSettings, RegProgress } from './types';
 import { generateWebviewScript } from './scripts';
@@ -20,34 +20,16 @@ import { renderSettings } from './components/Settings';
 import { renderLogs } from './components/Logs';
 import { renderModals } from './components/Modals';
 import { renderProfileEditor } from './components/ProfileEditor';
-import { renderLLMSettings } from './components/LLMSettings';
 import { renderTabBar } from './components/TabBar';
 import { renderAutoRegControls } from './components/AutoRegControls';
-import { renderStats } from './components/Stats';
 import { renderScheduledReg, ScheduledRegSettings } from './components/ScheduledReg';
+import { renderLLMSettings } from './components/LLMSettings';
 
 // Re-exports
 export { RegProgress, AutoRegSettings };
 export type { Language } from './i18n';
+export type { ImapProfile } from '../types';
 export { getTranslations } from './i18n';
-
-export interface ImapProfile {
-  id: string;
-  name: string;
-  imap?: {
-    server?: string;
-    user?: string;
-    port?: number;
-  };
-  strategy?: {
-    type: 'single' | 'plus_alias' | 'catch_all' | 'pool';
-    emails?: Array<{ email: string; status?: string }>;
-  };
-  stats?: {
-    registered: number;
-    failed: number;
-  };
-}
 
 export interface WebviewProps {
   accounts: AccountInfo[];
@@ -171,55 +153,54 @@ export function generateWebviewHtml(
     ${renderTabBar({ activeTab: 'accounts', t, accountsCount: visibleAccounts.length, bannedCount: bannedAccounts.length })}
     
     <!-- Accounts Tab -->
-    <div class="tab-content active" id="tab-accounts">
+    <div class="tab-content active" id="tab-accounts" role="tabpanel" aria-labelledby="tab-accounts-btn">
       ${renderHero({ activeAccount, activeProfile: props.activeProfile, usage: props.kiroUsage, progress, isRunning, t })}
       ${renderToolbar({ isRunning, t })}
-      ${renderAutoRegControls({ isRunning, t, strategy: props.autoRegSettings?.strategy || 'automated' })}
-      ${renderScheduledReg({
-    settings: props.scheduledRegSettings || {
-      enabled: false,
-      loginTemplate: 'Account_{N}',
-      currentNumber: 1,
-      interval: 5,
-      maxAccounts: 5,
-      registeredCount: 0,
-      isRunning: false,
-      useCustomName: false,
-      customNamePrefix: ''
-    },
-    t,
-    collapsed: false
-  })}
       <div class="list" id="accountList">
         ${renderAccountList({ accounts: visibleAccounts, t })}
       </div>
     </div>
 
+    <!-- Registration Tab -->
+      <div class="tab-content" id="tab-registration" role="tabpanel" aria-labelledby="tab-registration-btn">
+        ${renderAutoRegControls({ isRunning, t, strategy: props.autoRegSettings?.strategy || 'automated' })}
+        ${renderScheduledReg({
+          settings: props.scheduledRegSettings || {
+            enabled: false,
+            loginTemplate: 'Account_{N}',
+            currentNumber: 1,
+            interval: 5,
+            maxAccounts: 5,
+            registeredCount: 0,
+            isRunning: false,
+            useCustomName: false,
+            customNamePrefix: ''
+          },
+          t,
+          collapsed: false
+        })}
+      </div>
+
+      <!-- LLM Tab -->
+      <div class="tab-content" id="tab-llm" role="tabpanel" aria-labelledby="tab-llm-btn">
+        ${renderLLMSettings({ t })}
+      </div>
+
     <!-- Profiles Tab -->
-    <div class="tab-content" id="tab-profiles">
+    <div class="tab-content" id="tab-profiles" role="tabpanel" aria-labelledby="tab-profiles-btn">
       ${renderProfileEditor({ t, inline: true })}
     </div>
 
-    <!-- Stats Tab -->
-    <div class="tab-content" id="tab-stats">
-      ${renderStats({ accounts, t })}
-    </div>
-
-    <!-- Banned Tab -->
-    <div class="tab-content" id="tab-banned">
+    <!-- Banned Tab (conditionally shown via TabBar) -->
+    <div class="tab-content" id="tab-banned" role="tabpanel" aria-labelledby="tab-banned-btn">
       <div class="list" id="bannedList">
         ${renderAccountList({ accounts: bannedAccounts, t, variant: 'banned' })}
       </div>
     </div>
 
-    <!-- Settings Tab -->
-    <div class="tab-content" id="tab-settings">
-      ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver, inline: true })}
-    </div>
-
-    <!-- LLM Tab -->
-    <div class="tab-content" id="tab-llm">
-      ${renderLLMSettings({ t })}
+    <!-- Settings Tab (includes Stats and LLM) -->
+    <div class="tab-content" id="tab-settings" role="tabpanel" aria-labelledby="tab-settings-btn">
+      ${renderSettings({ autoSwitchEnabled: props.autoSwitchEnabled, settings: props.autoRegSettings, lang, t, version: ver, inline: true, accounts })}
     </div>
 
         ${renderLogs({ logs: props.consoleLogs, t })}

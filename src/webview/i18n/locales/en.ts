@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const en: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro Accounts',
+  accounts: 'Accounts',
+  registration: 'Registration',
+  llm: 'AI/LLM',
+  profiles: 'Profiles',
+  settings: 'Settings',
   compactViewTip: 'Shrink cards to show more accounts',
   settingsTip: 'Configure auto-switch, browser mode, logging',
   back: 'Back',
@@ -59,6 +64,7 @@ export const en: Translations = {
   partial: 'Partial',
   trial: 'Trial',
   empty: 'Empty',
+  more: 'More',
 
   // Account card
   active: 'Active',
@@ -74,6 +80,8 @@ export const en: Translations = {
   clearTip: 'Clear console output',
   openLogTip: 'Open full log file in editor',
   copyLogsTip: 'Copy logs to clipboard',
+  scrollToBottom: 'Scroll to bottom',
+  newMessagesBelow: 'New messages below',
 
   // Progress
   step: 'Step',
@@ -343,14 +351,19 @@ export const en: Translations = {
   noAccountsFound: 'No accounts found',
   clearSearch: 'Clear search',
 
+  // Empty States
+  emptyAccountsTitle: 'No accounts yet',
+  emptyAccountsDesc: 'Create your first account to get started with Kiro',
+  emptySearchTitle: 'No results found',
+  emptySearchDesc: 'Try a different search term',
+  emptyBannedTitle: 'No banned accounts',
+  emptyBannedDesc: 'All your accounts are in good standing',
+
   // Settings Cards
   automation: 'Automation',
   interface: 'Interface',
   autoSwitchThreshold: 'Switch threshold',
   autoSwitchThresholdDesc: 'Switch when remaining < this value',
-  settings: 'Settings',
-  accounts: 'Accounts',
-  profiles: 'Profiles',
   pause: 'Pause',
 
   // Stats Dashboard
@@ -444,6 +457,7 @@ export const en: Translations = {
   completed: 'Completed',
   batchRemaining: 'Remaining',
   nextIn: 'Next in',
+  current: 'Current',
 
   // Proxy & OAuth (auto-added)
   proxyAddress: 'Proxy Address',

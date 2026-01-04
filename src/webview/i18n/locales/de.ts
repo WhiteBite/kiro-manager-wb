@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const de: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro Konten',
+  accounts: 'Konten',
+  registration: 'Registrierung',
+  llm: 'AI/LLM',
+  profiles: 'Profile',
+  settings: 'Einstellungen',
   compactViewTip: 'Karten verkleinern um mehr Konten anzuzeigen',
   settingsTip: 'Auto-Wechsel, Browser-Modus, Protokollierung konfigurieren',
   back: 'Zurück',
@@ -59,6 +64,7 @@ export const de: Translations = {
   partial: 'Teilweise',
   trial: 'Test',
   empty: 'Leer',
+  more: 'Mehr',
 
   // Account card
   active: 'Aktiv',
@@ -74,6 +80,8 @@ export const de: Translations = {
   clearTip: 'Konsolenausgabe löschen',
   openLogTip: 'Vollständige Log-Datei im Editor öffnen',
   copyLogsTip: 'Protokolle kopieren',
+  scrollToBottom: 'Nach unten scrollen',
+  newMessagesBelow: 'Neue Nachrichten unten',
 
   // Progress
   step: 'Schritt',
@@ -343,14 +351,19 @@ export const de: Translations = {
   noAccountsFound: 'Keine Konten gefunden',
   clearSearch: 'Suche löschen',
 
+  // Empty States
+  emptyAccountsTitle: 'Noch keine Konten',
+  emptyAccountsDesc: 'Erstellen Sie Ihr erstes Konto, um mit Kiro zu beginnen',
+  emptySearchTitle: 'Keine Ergebnisse',
+  emptySearchDesc: 'Versuchen Sie einen anderen Suchbegriff',
+  emptyBannedTitle: 'Keine gesperrten Konten',
+  emptyBannedDesc: 'Alle Ihre Konten sind in gutem Zustand',
+
   // Settings Cards
   automation: 'Automatisierung',
   interface: 'Oberfläche',
   autoSwitchThreshold: 'Wechselschwelle',
   autoSwitchThresholdDesc: 'Wechseln wenn verbleibend < dieser Wert',
-  settings: 'Einstellungen',
-  accounts: 'Konten',
-  profiles: 'Profile',
   pause: 'Pause',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const de: Translations = {
   stopSchedule: 'Stoppen',
   scheduleActive: 'Aktiv',
   scheduleNextIn: 'Nächster in',
+  current: 'Aktuell',
   complete: 'Fertig',
   preview: 'Vorschau',
   nextNumber: 'Nächste #',

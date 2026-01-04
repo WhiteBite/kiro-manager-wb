@@ -17,6 +17,37 @@ export interface AccountListProps {
 
 
 
+/**
+ * Truncate email for narrow screens: user@domain.com -> us...@do...com
+ */
+function truncateEmail(email: string, maxLen: number = 20): string {
+  if (email.length <= maxLen) return email;
+  
+  const atIndex = email.indexOf('@');
+  if (atIndex === -1) {
+    // Not an email, just truncate
+    return email.slice(0, maxLen - 3) + '...';
+  }
+  
+  const localPart = email.slice(0, atIndex);
+  const domainPart = email.slice(atIndex + 1);
+  
+  // For very short maxLen, show minimal
+  if (maxLen < 15) {
+    return localPart.slice(0, 2) + '..@' + domainPart.slice(-4);
+  }
+  
+  // Show first 4 chars of local, last 6 of domain
+  const localShow = Math.min(4, localPart.length);
+  const domainShow = Math.min(8, domainPart.length);
+  
+  if (localPart.length > localShow) {
+    return localPart.slice(0, localShow) + '..@' + domainPart.slice(-domainShow);
+  }
+  
+  return email;
+}
+
 function renderAccount(acc: AccountInfo, index: number, t: Translations, selectionMode: boolean = false): string {
   const email = getAccountEmail(acc);
   const avatar = email.charAt(0).toUpperCase();
@@ -49,6 +80,9 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations, selecti
     hasUsage ? `${remaining}/${usage!.usageLimit}` :
       '—';
   const expiryText = acc.expiresIn || '—';
+  
+  // Compact usage badge for narrow screens
+  const usageBadge = hasUsage && !isUnknown ? remaining : null;
 
   // Ban reason tooltip
   const banTooltip = isBanned && usage?.banReason ? ` title="${escapeHtml(usage.banReason)}"` : '';
@@ -61,8 +95,11 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations, selecti
     </label>
   ` : '';
 
+  // Truncated email for data attribute (used by CSS on narrow screens)
+  const truncatedEmail = truncateEmail(email, 18);
+
   return `
-    <div class="${classes}" data-index="${index}" data-filename="${escapeHtml(acc.filename)}" onclick="switchAccount('${escapeHtml(acc.filename)}')"${banTooltip}>
+    <div class="${classes}" data-index="${index}" data-filename="${escapeHtml(acc.filename)}" data-email-short="${escapeHtml(truncatedEmail)}" onclick="switchAccount('${escapeHtml(acc.filename)}')"${banTooltip}>
       ${checkbox}
       <div class="account-avatar">
         ${avatar}
@@ -70,12 +107,14 @@ function renderAccount(acc: AccountInfo, index: number, t: Translations, selecti
       </div>
       <div class="account-info">
         <div class="account-email">
-          ${escapeHtml(email)}
+          <span class="email-full">${escapeHtml(email)}</span>
+          <span class="email-short">${escapeHtml(truncatedEmail)}</span>
           ${isBanned ? '<span class="ban-badge">⛔</span>' : ''}
+          ${usageBadge !== null ? `<span class="account-usage-badge">${usageBadge}</span>` : ''}
         </div>
         <div class="account-meta">
-          <span>${ICONS.chart} ${usageText}</span>
-          <span>${ICONS.clock} ${expiryText}</span>
+          <span class="meta-usage">${ICONS.chart} ${usageText}</span>
+          <span class="meta-expiry">${ICONS.clock} ${expiryText}</span>
           ${isBanned ? `<span class="ban-reason">${t.banned || 'BANNED'}</span>` : ''}
         </div>
       </div>
@@ -108,21 +147,56 @@ export function renderAccountListSkeleton(count: number = 3): string {
   return html;
 }
 
+/**
+ * SVG illustrations for empty states
+ */
+const EMPTY_ILLUSTRATIONS = {
+  // Account illustration - person with circle
+  accounts: `
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <circle cx="40" cy="28" r="14" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="2"/>
+      <path d="M18 62c0-12.15 9.85-22 22-22s22 9.85 22 22" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <circle cx="40" cy="28" r="6" fill="var(--accent)" opacity="0.6"/>
+    </svg>
+  `,
+  // Search illustration - magnifying glass
+  search: `
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <circle cx="34" cy="34" r="18" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="2"/>
+      <line x1="47" y1="47" x2="62" y2="62" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="34" cy="34" r="8" stroke="var(--accent)" stroke-width="1.5" opacity="0.5" fill="none"/>
+    </svg>
+  `,
+  // Banned illustration - shield with X
+  banned: `
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <path d="M40 8L12 20v20c0 16.57 11.93 32.08 28 36 16.07-3.92 28-19.43 28-36V20L40 8z" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="40" cy="38" r="12" fill="var(--accent)" opacity="0.3"/>
+      <path d="M40 30v12M40 46v2" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  `
+};
+
 export function renderAccountList({ accounts, t, selectionMode = false, selectedCount = 0, variant = 'default' }: AccountListProps): string {
   if (accounts.length === 0) {
-    const emptyIcon = variant === 'banned' ? '⛔' : '📭';
-    const emptyText = variant === 'banned'
-      ? `${t.bannedGroup}: ${t.noAccountsFound || 'No accounts found'}`
-      : t.noAccounts;
-    const emptyAction = variant === 'banned'
-      ? ''
-      : `<button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>`;
+    // Different empty states based on variant
+    if (variant === 'banned') {
+      return `
+        <div class="empty-state">
+          <div class="empty-illustration">${EMPTY_ILLUSTRATIONS.banned}</div>
+          <h3 class="empty-title">${t.emptyBannedTitle || 'No banned accounts'}</h3>
+          <p class="empty-desc">${t.emptyBannedDesc || 'All your accounts are in good standing'}</p>
+        </div>
+      `;
+    }
 
+    // Default empty state - no accounts
     return `
       <div class="empty-state">
-        <div class="empty-state-icon">${emptyIcon}</div>
-        <div class="empty-state-text">${emptyText}</div>
-        ${emptyAction}
+        <div class="empty-illustration">${EMPTY_ILLUSTRATIONS.accounts}</div>
+        <h3 class="empty-title">${t.emptyAccountsTitle || 'No accounts yet'}</h3>
+        <p class="empty-desc">${t.emptyAccountsDesc || 'Create your first account to get started with Kiro'}</p>
+        <button class="btn btn-primary" onclick="startAutoReg()">${ICONS.bolt} ${t.createFirst}</button>
       </div>
     `;
   }
@@ -146,8 +220,9 @@ export function renderAccountList({ accounts, t, selectionMode = false, selected
   // Empty search state (hidden by default, shown via JS when search has no results)
   const emptySearchHtml = `
     <div class="empty-state empty-search" id="emptySearchState" style="display: none;">
-      <div class="empty-state-icon">🔍</div>
-      <div class="empty-state-text">${t.noAccountsFound || 'No accounts found'}</div>
+      <div class="empty-illustration">${EMPTY_ILLUSTRATIONS.search}</div>
+      <h3 class="empty-title">${t.emptySearchTitle || 'No results found'}</h3>
+      <p class="empty-desc">${t.emptySearchDesc || 'Try a different search term'}</p>
       <button class="btn btn-secondary btn-sm" onclick="clearSearch()">${t.clearSearch || 'Clear search'}</button>
     </div>
   `;

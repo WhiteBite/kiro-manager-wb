@@ -3,6 +3,11 @@ import { Translations } from '../types';
 export const zh: Translations = {
   // Header & Navigation
   kiroAccounts: 'Kiro 账户',
+  accounts: '账户',
+  registration: '注册',
+  llm: 'AI/LLM',
+  profiles: '配置文件',
+  settings: '设置',
   compactViewTip: '缩小卡片以显示更多账户',
   settingsTip: '配置自动切换、浏览器模式、日志',
   back: '返回',
@@ -59,6 +64,7 @@ export const zh: Translations = {
   partial: '部分',
   trial: '试用',
   empty: '空',
+  more: '更多',
 
   // Account card
   active: '活动',
@@ -74,6 +80,8 @@ export const zh: Translations = {
   clearTip: '清除控制台输出',
   openLogTip: '在编辑器中打开完整日志',
   copyLogsTip: '复制日志',
+  scrollToBottom: '滚动到底部',
+  newMessagesBelow: '下方有新消息',
 
   // Progress
   step: '步骤',
@@ -343,14 +351,19 @@ export const zh: Translations = {
   noAccountsFound: '未找到账户',
   clearSearch: '清除搜索',
 
+  // Empty States
+  emptyAccountsTitle: '暂无账户',
+  emptyAccountsDesc: '创建您的第一个账户以开始使用 Kiro',
+  emptySearchTitle: '未找到结果',
+  emptySearchDesc: '尝试其他搜索词',
+  emptyBannedTitle: '没有被封禁的账户',
+  emptyBannedDesc: '您的所有账户状态良好',
+
   // Settings Cards
   automation: '自动化',
   interface: '界面',
   autoSwitchThreshold: '切换阈值',
   autoSwitchThresholdDesc: '剩余 < 此值时切换',
-  settings: '设置',
-  accounts: '账户',
-  profiles: '配置文件',
   pause: '暂停',
 
   // Stats Dashboard
@@ -399,6 +412,7 @@ export const zh: Translations = {
   stopSchedule: '停止',
   scheduleActive: '活动中',
   scheduleNextIn: '下一个在',
+  current: '??',
   complete: '完成',
   preview: '预览',
   nextNumber: '下一个 #',

@@ -161,9 +161,8 @@ export class ImapProfileProvider {
     try {
       // Read from ~/.kiro-manager-wb/profiles.json
       if (!fs.existsSync(PROFILES_FILE)) {
-        // No profiles file - start fresh
-        this.profiles = [];
-        this.activeProfileId = undefined;
+        // No profiles file - check VS Code settings for initial profiles
+        await this.loadFromVSCodeSettings();
         return;
       }
 
@@ -187,7 +186,77 @@ export class ImapProfileProvider {
       this._onDidChange.fire();
     } catch (err) {
       console.error('[ImapProfileProvider] Failed to load profiles:', err);
-      // File doesn't exist or invalid - start fresh
+      // File doesn't exist or invalid - try loading from VS Code settings
+      await this.loadFromVSCodeSettings();
+    }
+  }
+
+  /**
+   * Load initial profiles from VS Code settings
+   */
+  private async loadFromVSCodeSettings(): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+      const vsCodeProfiles = config.get<any[]>('imap.profiles', []);
+
+      console.log(`[ImapProfileProvider] Loading ${vsCodeProfiles.length} profiles from VS Code settings`);
+
+      if (vsCodeProfiles.length === 0) {
+        // No profiles in settings - start fresh
+        this.profiles = [];
+        this.activeProfileId = undefined;
+        return;
+      }
+
+      // Convert VS Code profiles to our format
+      const convertedProfiles: ImapProfile[] = [];
+      
+      for (const vsProfile of vsCodeProfiles) {
+        if (!vsProfile.email || !vsProfile.password || !vsProfile.host) {
+          console.warn('[ImapProfileProvider] Skipping invalid VS Code profile:', vsProfile);
+          continue;
+        }
+
+        const now = new Date().toISOString();
+        const profile: ImapProfile = {
+          id: this.generateId(),
+          name: vsProfile.name || `${vsProfile.email} Profile`,
+          imap: {
+            user: vsProfile.email,
+            password: vsProfile.password,
+            server: vsProfile.host,
+            port: vsProfile.port || 993,
+            ssl: vsProfile.ssl !== false // default to true
+          },
+          strategy: {
+            type: 'single' as EmailStrategyType
+          },
+          status: 'active',
+          isDefault: convertedProfiles.length === 0, // First profile is default
+          provider: this.detectProvider(vsProfile.email),
+          stats: { registered: 0, failed: 0 },
+          createdAt: now,
+          updatedAt: now
+        };
+
+        convertedProfiles.push(profile);
+        console.log(`[ImapProfileProvider] Converted VS Code profile: ${profile.name} (${profile.imap.user})`);
+      }
+
+      this.profiles = convertedProfiles;
+      
+      // Set first profile as active
+      if (convertedProfiles.length > 0) {
+        this.activeProfileId = convertedProfiles[0].id;
+      }
+
+      // Save to file
+      await this.save();
+      console.log(`[ImapProfileProvider] Saved ${convertedProfiles.length} profiles from VS Code settings`);
+
+    } catch (err) {
+      console.error('[ImapProfileProvider] Failed to load from VS Code settings:', err);
+      // Fallback to empty profiles
       this.profiles = [];
       this.activeProfileId = undefined;
     }

@@ -18,14 +18,15 @@
     --warning-dim: rgba(217, 163, 52, 0.12);
     --success: #3fb68b;
     
-    /* Fixed Dark Theme - same everywhere */
-    --muted: #888888;
+    /* Fixed Dark Theme - improved contrast */
+    --muted: #999999;
     --border: rgba(128, 128, 128, 0.2);
     --bg: #1e1e1e;
     --bg-hover: rgba(255, 255, 255, 0.05);
     --bg-active: rgba(63, 182, 139, 0.2);
     --bg-elevated: rgba(255, 255, 255, 0.03);
-    --fg: #cccccc;
+    --fg: #e0e0e0;
+    --fg-secondary: #b0b0b0;
     --input-bg: #3c3c3c;
     --input-border: rgba(128, 128, 128, 0.3);
     
@@ -33,10 +34,44 @@
     --glass-bg: rgba(255, 255, 255, 0.02);
     --glass-border: rgba(255, 255, 255, 0.08);
     
+    /* Typography */
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-base: 13px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 20px;
+    --line-height-tight: 1.3;
+    --line-height-base: 1.5;
+    --line-height-relaxed: 1.6;
+    
+    /* Spacing Scale (4px base) */
+    --space-0: 0;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    
+    /* Touch-friendly sizes */
+    --touch-target: 44px;
+    --button-min-height: 36px;
+    --input-min-height: 32px;
+    --icon-size-sm: 16px;
+    --icon-size-md: 20px;
+    --icon-size-lg: 24px;
+    
     /* Spacing & Radius */
     --radius-sm: 4px;
     --radius-md: 6px;
     --radius-lg: 10px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
     
     /* Transitions */
     --transition: 0.15s ease;
@@ -60,12 +95,12 @@
     --z-toast: 400;
     
     /* VS Code variable fallbacks for Kiro Desktop compatibility */
-    --vscode-foreground: #cccccc;
+    --vscode-foreground: #e0e0e0;
     --vscode-sideBar-background: #1e1e1e;
     --vscode-input-background: #3c3c3c;
-    --vscode-input-foreground: #cccccc;
+    --vscode-input-foreground: #e0e0e0;
     --vscode-dropdown-background: #3c3c3c;
-    --vscode-dropdown-foreground: #cccccc;
+    --vscode-dropdown-foreground: #e0e0e0;
     --vscode-terminal-background: #1e1e1e;
     --vscode-editorWidget-background: #252526;
     --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -79,13 +114,15 @@
   
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--fg, #cccccc);
+    font-size: var(--font-size-base, 13px);
+    line-height: var(--line-height-base, 1.5);
+    color: var(--fg, #e0e0e0);
     background: var(--bg, #1e1e1e);
     background-color: #1e1e1e;
     display: flex;
     flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   .app { 
@@ -95,23 +132,200 @@
     overflow: hidden; /* Don't scroll the whole app */
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { 
-    background: rgba(128,128,128,0.25); 
-    border-radius: 4px; 
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
-  ::-webkit-scrollbar-thumb:hover { 
-    background: rgba(128,128,128,0.4); 
+  
+  @keyframes fadeInFast {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  .tab-content {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.2s ease-out;
   }
 
-  /* Utility classes */
+  /* Scrollbar - improved */
+  ::-webkit-scrollbar { 
+    width: 10px; 
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track { 
+    background: transparent;
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb { 
+    background: rgba(128, 128, 128, 0.3); 
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { 
+    background: rgba(128, 128, 128, 0.5);
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(128, 128, 128, 0.6);
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Text utilities */
   .hidden { display: none !important; }
   .text-muted { color: var(--muted); }
+  .text-secondary { color: var(--fg-secondary); }
   .text-accent { color: var(--accent); }
   .text-danger { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+  .text-success { color: var(--success); }
   .font-mono { font-family: var(--vscode-editor-font-family, monospace); }
+  .text-xs { font-size: var(--font-size-xs); }
+  .text-sm { font-size: var(--font-size-sm); }
+  .text-base { font-size: var(--font-size-base); }
+  .text-md { font-size: var(--font-size-md); }
+  .text-lg { font-size: var(--font-size-lg); }
+  .text-center { text-align: center; }
+  .text-right { text-align: right; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  
+  /* Spacing utilities - margin */
+  .m-0 { margin: var(--space-0); }
+  .m-1 { margin: var(--space-1); }
+  .m-2 { margin: var(--space-2); }
+  .m-3 { margin: var(--space-3); }
+  .m-4 { margin: var(--space-4); }
+  .m-5 { margin: var(--space-5); }
+  
+  .mt-0 { margin-top: var(--space-0); }
+  .mt-1 { margin-top: var(--space-1); }
+  .mt-2 { margin-top: var(--space-2); }
+  .mt-3 { margin-top: var(--space-3); }
+  .mt-4 { margin-top: var(--space-4); }
+  .mt-5 { margin-top: var(--space-5); }
+  
+  .mb-0 { margin-bottom: var(--space-0); }
+  .mb-1 { margin-bottom: var(--space-1); }
+  .mb-2 { margin-bottom: var(--space-2); }
+  .mb-3 { margin-bottom: var(--space-3); }
+  .mb-4 { margin-bottom: var(--space-4); }
+  .mb-5 { margin-bottom: var(--space-5); }
+  
+  .ml-0 { margin-left: var(--space-0); }
+  .ml-1 { margin-left: var(--space-1); }
+  .ml-2 { margin-left: var(--space-2); }
+  .ml-3 { margin-left: var(--space-3); }
+  .ml-4 { margin-left: var(--space-4); }
+  
+  .mr-0 { margin-right: var(--space-0); }
+  .mr-1 { margin-right: var(--space-1); }
+  .mr-2 { margin-right: var(--space-2); }
+  .mr-3 { margin-right: var(--space-3); }
+  .mr-4 { margin-right: var(--space-4); }
+  
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  
+  /* Spacing utilities - padding */
+  .p-0 { padding: var(--space-0); }
+  .p-1 { padding: var(--space-1); }
+  .p-2 { padding: var(--space-2); }
+  .p-3 { padding: var(--space-3); }
+  .p-4 { padding: var(--space-4); }
+  .p-5 { padding: var(--space-5); }
+  
+  .pt-0 { padding-top: var(--space-0); }
+  .pt-1 { padding-top: var(--space-1); }
+  .pt-2 { padding-top: var(--space-2); }
+  .pt-3 { padding-top: var(--space-3); }
+  .pt-4 { padding-top: var(--space-4); }
+  .pt-5 { padding-top: var(--space-5); }
+  
+  .pb-0 { padding-bottom: var(--space-0); }
+  .pb-1 { padding-bottom: var(--space-1); }
+  .pb-2 { padding-bottom: var(--space-2); }
+  .pb-3 { padding-bottom: var(--space-3); }
+  .pb-4 { padding-bottom: var(--space-4); }
+  .pb-5 { padding-bottom: var(--space-5); }
+  
+  .px-0 { padding-left: var(--space-0); padding-right: var(--space-0); }
+  .px-1 { padding-left: var(--space-1); padding-right: var(--space-1); }
+  .px-2 { padding-left: var(--space-2); padding-right: var(--space-2); }
+  .px-3 { padding-left: var(--space-3); padding-right: var(--space-3); }
+  .px-4 { padding-left: var(--space-4); padding-right: var(--space-4); }
+  
+  .py-0 { padding-top: var(--space-0); padding-bottom: var(--space-0); }
+  .py-1 { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .py-2 { padding-top: var(--space-2); padding-bottom: var(--space-2); }
+  .py-3 { padding-top: var(--space-3); padding-bottom: var(--space-3); }
+  .py-4 { padding-top: var(--space-4); padding-bottom: var(--space-4); }
+  
+  /* Gap utilities */
+  .gap-1 { gap: var(--space-1); }
+  .gap-2 { gap: var(--space-2); }
+  .gap-3 { gap: var(--space-3); }
+  .gap-4 { gap: var(--space-4); }
+  .gap-5 { gap: var(--space-5); }
+  
+  /* Flex utilities */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .flex-row { flex-direction: row; }
+  .flex-wrap { flex-wrap: wrap; }
+  .flex-1 { flex: 1; }
+  .items-center { align-items: center; }
+  .items-start { align-items: flex-start; }
+  .items-end { align-items: flex-end; }
+  .justify-center { justify-content: center; }
+  .justify-between { justify-content: space-between; }
+  .justify-end { justify-content: flex-end; }
+  
+  /* Width/Height utilities */
+  .w-full { width: 100%; }
+  .h-full { height: 100%; }
+  .min-h-touch { min-height: var(--touch-target); }
+  
+  /* Border utilities */
+  .rounded-sm { border-radius: var(--radius-sm); }
+  .rounded-md { border-radius: var(--radius-md); }
+  .rounded-lg { border-radius: var(--radius-lg); }
+  .rounded-full { border-radius: var(--radius-full); }
+  
+  /* Overflow utilities */
+  .overflow-hidden { overflow: hidden; }
+  .overflow-auto { overflow: auto; }
+  .overflow-y-auto { overflow-y: auto; }
+  .overflow-x-hidden { overflow-x: hidden; }
+  
+  /* Cursor utilities */
+  .cursor-pointer { cursor: pointer; }
+  .cursor-default { cursor: default; }
+  .cursor-not-allowed { cursor: not-allowed; }
+  
+  /* Opacity utilities */
+  .opacity-50 { opacity: 0.5; }
+  .opacity-75 { opacity: 0.75; }
+  .hover\:opacity-100:hover { opacity: 1; }
+  
+  /* Transition utilities */
+  .transition { transition: all var(--transition); }
+  .transition-colors { transition: color var(--transition), background-color var(--transition), border-color var(--transition); }
 
     
   /* === Buttons === */
@@ -119,9 +333,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 11px;
+    gap: clamp(3px, 1.5vw, 6px);
+    padding: clamp(4px, 2vw, 8px) clamp(8px, 3.5vw, 14px);
+    min-height: clamp(24px, 9vw, 36px);
+    font-size: clamp(9px, 2.8vw, 11px);
     font-family: inherit;
     font-weight: 600;
     border: none;
@@ -133,7 +348,12 @@
     overflow: hidden;
   }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn svg { 
+    width: clamp(10px, 3.5vw, 14px); 
+    height: clamp(10px, 3.5vw, 14px); 
+    flex-shrink: 0; 
+  }
   
   .btn-primary {
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
@@ -142,7 +362,11 @@
   }
   .btn-primary:hover:not(:disabled) { 
     transform: translateY(-2px); 
-    box-shadow: 0 6px 20px rgba(63,182,139,0.4);
+    box-shadow: 0 8px 24px rgba(63,182,139,0.45);
+  }
+  .btn-primary:active:not(:disabled) { 
+    transform: scale(0.97) translateY(0); 
+    box-shadow: 0 2px 8px rgba(63,182,139,0.3);
   }
   
   .btn-secondary {
@@ -155,19 +379,35 @@
     background: rgba(128,128,128,0.15); 
     border-color: var(--border);
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .btn-secondary:active:not(:disabled) { 
+    transform: scale(0.97); 
+    box-shadow: none;
   }
   
   .btn-danger { 
     background: linear-gradient(135deg, var(--danger) 0%, #f06b6b 100%); 
     color: #fff; 
+    box-shadow: 0 2px 12px rgba(239,83,80,0.3);
+  }
+  .btn-danger:hover:not(:disabled) { 
+    box-shadow: 0 6px 20px rgba(239,83,80,0.4);
+    transform: translateY(-2px);
+  }
+  .btn-danger:active:not(:disabled) { 
+    transform: scale(0.97); 
+    box-shadow: 0 2px 8px rgba(239,83,80,0.3);
   }
   
   .btn-icon { padding: 8px 10px; }
 
   /* === Icon Button === */
   .icon-btn {
-    width: 28px; 
-    height: 28px;
+    min-width: clamp(24px, 9vw, 36px);
+    min-height: clamp(24px, 9vw, 36px);
+    width: clamp(24px, 9vw, 36px); 
+    height: clamp(24px, 9vw, 36px);
     display: flex; 
     align-items: center; 
     justify-content: center;
@@ -183,25 +423,33 @@
     border-color: var(--border); 
     color: var(--fg);
     transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
-  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:active { 
+    transform: scale(0.95); 
+    box-shadow: none;
+  }
+  .icon-btn svg { 
+    width: clamp(10px, 3.5vw, 14px); 
+    height: clamp(10px, 3.5vw, 14px); 
+  }
 
   /* === Inputs === */
-  .form-group { margin-bottom: 14px; }
+  .form-group { margin-bottom: clamp(8px, 3.5vw, 14px); }
   .form-group:last-child { margin-bottom: 0; }
   
   .form-label {
     display: block;
-    font-size: 11px;
+    font-size: clamp(9px, 2.8vw, 11px);
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: clamp(4px, 1.5vw, 6px);
     color: var(--fg);
   }
   
   .form-input {
     width: 100%;
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: clamp(5px, 2vw, 8px) clamp(6px, 2.5vw, 10px);
+    font-size: clamp(10px, 3vw, 12px);
     font-family: inherit;
     background: var(--input-bg);
     color: var(--fg);
@@ -217,17 +465,18 @@
   .form-input::placeholder { color: var(--muted); }
   
   .form-hint {
-    font-size: 10px;
+    font-size: clamp(8px, 2.5vw, 10px);
     color: var(--muted);
-    margin-top: 4px;
+    margin-top: clamp(2px, 1vw, 4px);
   }
   
   .form-row {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: clamp(6px, 2.5vw, 10px);
   }
-  .form-row .flex-1 { flex: 1; }
-  .form-row .flex-2 { flex: 2; }
+  .form-row .flex-1 { flex: 1; min-width: 60px; }
+  .form-row .flex-2 { flex: 2; min-width: 80px; }
 
   /* === Toggle === */
   .toggle {
@@ -347,49 +596,169 @@
     transform: scale(1.1);
   }
 
+  /* === CSS Tooltips === */
+  .tooltip {
+    position: relative;
+  }
+  .tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: #fff;
+    background: #2a2a2a;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+    z-index: 1000;
+  }
+  .tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2a2a2a;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+    z-index: 1001;
+  }
+  .tooltip:hover::after,
+  .tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    transition-delay: 500ms, 500ms;
+  }
+  .tooltip:hover::before {
+    transform: translateX(-50%);
+    transition-delay: 500ms, 500ms;
+  }
+  /* Tooltip position variants */
+  .tooltip-bottom::after {
+    bottom: auto;
+    top: calc(100% + 8px);
+    transform: translateX(-50%) translateY(-4px);
+  }
+  .tooltip-bottom::before {
+    bottom: auto;
+    top: calc(100% + 2px);
+    border-top-color: transparent;
+    border-bottom-color: #2a2a2a;
+  }
+  .tooltip-bottom:hover::after {
+    transform: translateX(-50%) translateY(0);
+  }
+  .tooltip-left::after {
+    bottom: auto;
+    left: auto;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+  }
+  .tooltip-left::before {
+    bottom: auto;
+    left: auto;
+    right: calc(100% + 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    border-top-color: transparent;
+    border-left-color: #2a2a2a;
+  }
+  .tooltip-left:hover::after {
+    transform: translateY(-50%) translateX(0);
+  }
+  .tooltip-right::after {
+    bottom: auto;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  .tooltip-right::before {
+    bottom: auto;
+    left: calc(100% + 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    border-top-color: transparent;
+    border-right-color: #2a2a2a;
+  }
+  .tooltip-right:hover::after {
+    transform: translateY(-50%) translateX(0);
+  }
+
     
   /* === Header === */
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: clamp(3px, 1.5vw, 6px) clamp(4px, 2vw, 10px);
     background: var(--bg);
     flex-shrink: 0; /* Don't shrink */
+    min-height: clamp(24px, 8vw, 34px);
+    gap: clamp(4px, 2vw, 8px);
   }
   .header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: clamp(3px, 1.5vw, 6px);
+    min-width: 0; /* Allow shrinking */
+    overflow: hidden;
   }
   .header-title {
-    font-size: 14px;
+    font-size: clamp(9px, 3vw, 13px);
     font-weight: 700;
     color: var(--fg);
+    flex-shrink: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .header-badge {
-    font-size: 10px;
+    font-size: clamp(7px, 2vw, 9px);
     font-weight: 600;
-    padding: 2px 8px;
+    padding: clamp(1px, 0.5vw, 2px) clamp(3px, 1.5vw, 6px);
     background: var(--accent-dim);
     color: var(--accent);
     border-radius: 10px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .header-actions {
     display: flex;
-    gap: 4px;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  /* Header button text - hide on narrow screens */
+  .header-actions .btn-text {
+    display: none;
+  }
+  @media (min-width: 400px) {
+    .header-actions .btn-text { display: inline; }
   }
 
   /* === Hero Dashboard === */
   .hero {
-    margin: 10px 12px;
-    padding: 14px;
+    margin: clamp(2px, 1.5vw, 6px) clamp(3px, 2vw, 8px);
+    padding: clamp(6px, 3vw, 12px);
     background: linear-gradient(135deg, rgba(63,182,139,0.1) 0%, rgba(63,182,139,0.03) 100%);
     border: 1px solid rgba(63,182,139,0.25);
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all var(--transition-normal);
-    flex-shrink: 0; /* Don't shrink */
+    flex-shrink: 0;
   }
   .hero:hover {
     border-color: rgba(63,182,139,0.4);
@@ -401,12 +770,7 @@
     border-color: var(--glass-border);
     cursor: pointer;
     text-align: center;
-    padding: 20px;
-  }
-  .hero.empty .hero-hint {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 6px;
+    padding: 14px 12px;
   }
   .hero.profile {
     background: linear-gradient(135deg, rgba(100,149,237,0.1) 0%, rgba(100,149,237,0.03) 100%);
@@ -429,44 +793,78 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(229,83,83,0.3); }
     50% { box-shadow: 0 0 0 4px rgba(229,83,83,0.1); }
   }
+  
+  /* Hero main - minimalist centered value */
   .hero-main {
     text-align: center;
-    padding: 8px 0;
+    padding: clamp(2px, 1vw, 4px) 0 clamp(4px, 2vw, 8px);
   }
-  .hero-remaining {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .hero-remaining-value {
-    font-size: 32px;
+  .hero-value {
+    display: block;
+    font-size: clamp(16px, 10vw, 32px);
     font-weight: 700;
     line-height: 1;
     letter-spacing: -1px;
-  }
-  .hero-remaining-value.low { color: var(--accent); }
-  .hero-remaining-value.medium { color: var(--warning); }
-  .hero-remaining-value.high { color: var(--danger); }
-  .hero-remaining-label {
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-  }
-  .hero-profile-info {
-    margin-bottom: 8px;
-  }
-  .hero-profile-email {
-    font-size: 11px;
-    color: var(--muted);
+    color: var(--accent);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .hero-value.low { color: var(--accent); }
+  .hero-value.medium { color: var(--warning); }
+  .hero-value.high { color: var(--danger); }
+  .hero-label {
+    display: block;
+    font-size: clamp(7px, 2.5vw, 11px);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: clamp(0.3px, 0.3vw, 1px);
+    margin-top: clamp(2px, 1vw, 4px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Hero footer - compact stats */
+  .hero-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    font-size: clamp(7px, 2.5vw, 10px);
+    color: var(--muted);
+    margin-top: clamp(2px, 1vw, 4px);
+    gap: clamp(2px, 1vw, 4px);
+  }
+  .hero-stat {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Progress bar */
+  .hero-progress {
+    height: 6px;
+    background: rgba(128,128,128,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .hero-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .hero-progress-fill.low { background: linear-gradient(90deg, var(--accent), var(--accent-hover)); }
+  .hero-progress-fill.medium { background: linear-gradient(90deg, var(--warning), #e5b84a); }
+  .hero-progress-fill.high { background: linear-gradient(90deg, var(--danger), #f06b6b); }
+  
+  /* Registration progress mode - keep detailed */
   .hero.progress {
     background: linear-gradient(135deg, rgba(63,182,139,0.08) 0%, transparent 100%);
     cursor: default;
+  }
+  .hero.progress .hero-progress {
+    margin-bottom: 8px;
   }
   .hero-header {
     display: flex;
@@ -482,31 +880,11 @@
     text-overflow: ellipsis;
     max-width: 70%;
   }
-  .hero-days {
-    font-size: 10px;
-    color: var(--muted);
-    font-weight: 500;
-  }
   .hero-step {
     font-size: 11px;
     color: var(--accent);
     font-weight: 600;
   }
-  .hero-progress {
-    height: 6px;
-    background: rgba(128,128,128,0.15);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-  .hero-progress-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.4s ease;
-  }
-  .hero-progress-fill.low { background: linear-gradient(90deg, var(--accent), var(--accent-hover)); }
-  .hero-progress-fill.medium { background: linear-gradient(90deg, var(--warning), #e5b84a); }
-  .hero-progress-fill.high { background: linear-gradient(90deg, var(--danger), #f06b6b); }
   .hero-stats {
     display: flex;
     justify-content: space-between;
@@ -593,7 +971,6 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
-  
   .hero-percent {
     font-weight: 700;
     color: var(--accent);
@@ -603,31 +980,40 @@
   .toolbar {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: clamp(2px, 1vw, 4px);
+    padding: clamp(2px, 1vw, 4px) clamp(4px, 2vw, 8px);
     border-bottom: 1px solid var(--border);
   }
   .toolbar-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    gap: clamp(2px, 1vw, 4px);
   }
   .toolbar-buttons {
     display: flex;
-    gap: 4px;
+    gap: clamp(1px, 0.5vw, 2px);
     flex-shrink: 0;
   }
   .toolbar-buttons .btn {
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: clamp(3px, 1vw, 4px) clamp(4px, 1.5vw, 6px);
+    font-size: clamp(8px, 2.5vw, 10px);
+    min-height: clamp(22px, 7vw, 28px);
   }
   .toolbar-buttons .btn-text {
     display: none;
   }
-  @media (min-width: 400px) {
+  @media (min-width: 380px) {
     .toolbar-buttons .btn-text { display: inline; }
-    .toolbar-buttons .btn { padding: 6px 10px; font-size: 11px; }
+    .toolbar-buttons .btn { padding: 5px 9px; font-size: 11px; }
   }
+  /* Compact toolbar mode */
+  .toolbar.compact {
+    gap: 3px;
+    padding: 3px 6px;
+  }
+  .toolbar.compact .toolbar-row { gap: 3px; }
+  .toolbar.compact .toolbar-buttons .btn { padding: 3px 5px; font-size: 10px; }
 
   /* === Search === */
   .search-wrapper {
@@ -635,12 +1021,13 @@
     display: flex;
     align-items: center;
     flex: 1;
-    min-width: 0;
+    min-width: clamp(50px, 30vw, 200px);
   }
   .search-input {
     width: 100%;
-    padding: 6px 28px 6px 28px;
-    font-size: 11px;
+    min-width: 50px;
+    padding: clamp(4px, 1.5vw, 6px) clamp(18px, 7vw, 28px);
+    font-size: clamp(9px, 2.5vw, 11px);
     font-family: inherit;
     background: var(--input-bg);
     color: var(--fg);
@@ -658,23 +1045,23 @@
   }
   .search-icon {
     position: absolute;
-    left: 8px;
+    left: clamp(4px, 1.5vw, 8px);
     top: 50%;
     transform: translateY(-50%);
     color: var(--muted);
     pointer-events: none;
   }
   .search-icon svg {
-    width: 12px;
-    height: 12px;
+    width: clamp(9px, 3vw, 12px);
+    height: clamp(9px, 3vw, 12px);
   }
   .search-clear {
     position: absolute;
-    right: 6px;
+    right: clamp(4px, 1.5vw, 6px);
     top: 50%;
     transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
+    width: clamp(12px, 4vw, 16px);
+    height: clamp(12px, 4vw, 16px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -683,7 +1070,7 @@
     border-radius: 50%;
     cursor: pointer;
     color: var(--muted);
-    font-size: 10px;
+    font-size: clamp(8px, 2.5vw, 10px);
     transition: all var(--transition);
   }
   .search-clear:hover {
@@ -698,21 +1085,26 @@
   .filter-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: clamp(2px, 0.8vw, 3px);
     flex-wrap: wrap;
+    overflow-x: visible;
+    overflow-y: hidden;
+    padding-bottom: clamp(1px, 0.5vw, 2px);
   }
+  .filter-group::-webkit-scrollbar { display: none; }
   .filter-label {
-    font-size: 10px;
+    font-size: clamp(8px, 2.5vw, 10px);
     font-weight: 600;
     color: var(--muted);
-    margin-right: 4px;
+    margin-right: clamp(2px, 0.8vw, 3px);
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: clamp(2px, 0.8vw, 3px);
+    flex-shrink: 0;
   }
   .filter-btn {
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: clamp(2px, 0.8vw, 3px) clamp(4px, 1.5vw, 7px);
+    font-size: clamp(8px, 2.5vw, 10px);
     font-weight: 500;
     font-family: inherit;
     background: var(--bg-elevated);
@@ -722,6 +1114,7 @@
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
+    flex-shrink: 0;
   }
   .filter-btn:hover {
     background: var(--input-bg);
@@ -736,16 +1129,74 @@
   }
   
   /* Responsive filters for narrow screens */
-  @media (max-width: 350px) {
-    .filter-label {
-      width: 100%;
-      margin-bottom: 2px;
+  @media (max-width: 380px) {
+    .filter-group {
+      max-width: 100%;
+      gap: 2px;
     }
     .filter-btn {
-      flex: 1;
-      min-width: 0;
-      padding: 4px 6px;
+      padding: 3px 5px;
       font-size: 9px;
+    }
+    .filter-label {
+      font-size: 9px;
+      margin-right: 2px;
+    }
+  }
+  @media (max-width: 320px) {
+    .filter-group {
+      gap: 2px;
+    }
+    .filter-btn {
+      padding: 2px 4px;
+      font-size: 8px;
+    }
+    .filter-label {
+      font-size: 8px;
+      display: none;
+    }
+  }
+
+  /* === Filter Select Dropdown === */
+  .filter-select {
+    padding: clamp(3px, 1.2vw, 5px) clamp(16px, 6vw, 24px) clamp(3px, 1.2vw, 5px) clamp(5px, 2vw, 8px);
+    font-size: clamp(9px, 2.5vw, 11px);
+    font-family: inherit;
+    font-weight: 500;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right clamp(4px, 2vw, 8px) center;
+    min-width: clamp(50px, 25vw, 90px);
+    flex-shrink: 0;
+  }
+  .filter-select:hover {
+    border-color: var(--accent);
+    background-color: var(--bg-elevated);
+  }
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(63,182,139,0.15);
+  }
+  .filter-select option {
+    background: var(--bg-elevated);
+    color: var(--fg);
+    padding: 8px;
+  }
+  @media (max-width: 380px) {
+    .filter-select {
+      padding: 4px 20px 4px 6px;
+      font-size: 10px;
+      min-width: 70px;
     }
   }
 
@@ -753,7 +1204,7 @@
   .list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 12px 100px;
+    padding: 6px 8px 200px; /* Increased bottom padding for logs drawer */
   }
   .list-group {
     display: flex;
@@ -812,19 +1263,27 @@
   .account {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    margin-bottom: 6px;
+    gap: clamp(5px, 2.5vw, 10px);
+    padding: clamp(6px, 3vw, 12px) clamp(7px, 3.5vw, 14px);
+    margin-bottom: clamp(3px, 1.5vw, 6px);
     background: var(--glass-bg);
     border: 2px solid var(--glass-border);
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-normal);
+    position: relative;
+    min-width: 0; /* Allow shrinking */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
   }
   .account:hover {
     border-color: rgba(63,182,139,0.5);
-    background: linear-gradient(135deg, rgba(63,182,139,0.08) 0%, transparent 100%);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(63,182,139,0.1) 0%, rgba(63,182,139,0.02) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18), 0 3px 6px rgba(63,182,139,0.15);
+  }
+  .account:active {
+    transform: scale(0.99);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
   /* ACTIVE - яркая зелёная рамка */
   .account.active {
@@ -876,14 +1335,14 @@
   }
   .account-avatar {
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: clamp(18px, 8vw, 32px);
+    height: clamp(18px, 8vw, 32px);
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: clamp(8px, 3vw, 12px);
     font-weight: 700;
     color: #fff;
     flex-shrink: 0;
@@ -897,8 +1356,8 @@
     position: absolute;
     bottom: -2px;
     right: -2px;
-    width: 12px;
-    height: 12px;
+    width: clamp(8px, 3vw, 12px);
+    height: clamp(8px, 3vw, 12px);
     border-radius: 50%;
     border: 2px solid var(--bg);
   }
@@ -908,40 +1367,52 @@
   .account-status.exhausted { background: #ff6b35; }
   .account-status.suspended { background: #8b0000; }
   .account-status.banned { background: #ff0000; box-shadow: 0 0 6px #ff0000; }
-  .account-info { flex: 1; min-width: 0; }
+  .account-info { 
+    flex: 1; 
+    min-width: 0; /* Critical for text truncation */
+    overflow: hidden;
+  }
   .account-email {
-    font-size: 11px;
+    font-size: clamp(8px, 2.8vw, 11px);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
   }
   .account-meta {
     display: flex;
-    gap: 10px;
-    margin-top: 3px;
-    font-size: 10px;
+    gap: clamp(4px, 2vw, 8px);
+    margin-top: 2px;
+    font-size: clamp(7px, 2.5vw, 10px);
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-wrap: wrap;
   }
   .account-meta span {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: clamp(2px, 1vw, 4px);
   }
-  .account-meta svg { width: 10px; height: 10px; }
+  .account-meta svg { 
+    width: clamp(7px, 2.5vw, 10px); 
+    height: clamp(7px, 2.5vw, 10px); 
+  }
   .account-actions {
     display: flex;
-    gap: 4px;
-    opacity: 0;
+    gap: clamp(2px, 0.8vw, 3px);
+    opacity: 1;
     transition: opacity var(--transition);
+    flex-shrink: 0;
   }
   .account:hover .account-actions { opacity: 1; }
   .account-btn {
-    width: 26px;
-    height: 26px;
+    min-width: clamp(18px, 7vw, 28px);
+    min-height: clamp(18px, 7vw, 28px);
+    width: clamp(18px, 7vw, 28px);
+    height: clamp(18px, 7vw, 28px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -953,13 +1424,24 @@
     transition: all var(--transition);
   }
   .account-btn:hover {
-    background: rgba(128,128,128,0.2);
+    background: rgba(128,128,128,0.25);
     color: var(--fg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transform: scale(1.05);
+  }
+  .account-btn:active {
+    transform: scale(0.95);
+    box-shadow: none;
   }
   .account-btn.danger:hover {
     background: var(--danger-dim);
     border-color: var(--danger);
     color: var(--danger);
+    box-shadow: 0 2px 8px rgba(239,83,80,0.25);
+  }
+  .account-btn.danger:active {
+    transform: scale(0.95);
+    box-shadow: none;
   }
   /* Double-click delete confirmation state */
   .account-btn.danger.confirm-delete {
@@ -1068,10 +1550,37 @@
 
   /* === Empty State === */
   .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     padding: 40px 20px;
     color: var(--muted);
   }
+  .empty-illustration {
+    margin-bottom: 16px;
+    opacity: 0.9;
+    animation: emptyFloat 3s ease-in-out infinite;
+  }
+  @keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 8px 0;
+  }
+  .empty-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+    max-width: 220px;
+    line-height: 1.5;
+  }
+  /* Legacy support for old empty state classes */
   .empty-state-icon {
     font-size: 40px;
     margin-bottom: 12px;
@@ -1184,7 +1693,85 @@
   .import-export-section .section-title {
     font-size: 12px;
     font-weight: 600;
+  }
+
+  /* === Settings Card === */
+  .settings-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+  }
+  .settings-card-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .settings-card-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .settings-card-icon {
+    font-size: 16px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+  }
+  .settings-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    flex: 1;
     color: var(--fg);
+    margin: 0;
+  }
+  .settings-card-toggle {
+    transition: transform 0.2s ease;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .settings-card.collapsed .settings-card-toggle {
+    transform: rotate(-90deg);
+  }
+  .settings-card.collapsed .settings-card-body {
+    display: none;
+  }
+  .settings-card-body {
+    padding: 14px;
+  }
+  
+  /* Compact Setting Row */
+  .setting-row-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+  .setting-row-compact:last-child {
+    border-bottom: none;
+  }
+  .setting-info-compact {
+    flex: 1;
+    margin-right: 12px;
+  }
+  .setting-label-compact {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .setting-desc-compact {
+    font-size: 10px;
+    color: var(--muted);
   }
   .import-export-section .section-desc {
     font-size: 10px;
@@ -1280,6 +1867,7 @@
     align-items: center;
     gap: 10px;
     margin-top: 8px;
+    flex-wrap: wrap;
   }
   .patch-status {
     font-size: 10px;
@@ -1300,6 +1888,14 @@
     color: var(--danger);
     background: var(--danger-dim);
   }
+  .patch-version-info {
+    font-size: 9px;
+    color: var(--muted);
+    font-family: monospace;
+  }
+  .patch-machine-id-row {
+    margin-top: 4px;
+  }
   .machine-id-preview {
     font-size: 9px;
     font-family: monospace;
@@ -1308,6 +1904,13 @@
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     cursor: help;
+  }
+  .patch-indicator.needs-update {
+    background: var(--warning);
+    color: #1a1a1a;
+  }
+  .patch-indicator.needs-update::before {
+    content: '⬆';
   }
   .btn-warning {
     background: linear-gradient(135deg, var(--warning) 0%, #d4a84a 100%);
@@ -1436,82 +2039,428 @@
     justify-content: flex-end;
   }
 
-  /* === Logs Drawer === */
-  .logs-drawer {
+  /* === Enhanced Console Drawer v2 === */
+  .console-drawer {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-elevated);
+    background: var(--vscode-terminal-background, #0d0d0d);
     border-top: 1px solid var(--border);
     z-index: 50;
-    transform: translateY(calc(100% - 36px));
-    transition: transform 0.3s ease;
+    transform: translateY(calc(100% - 32px));
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    min-height: 32px;
+    max-height: 60vh;
   }
-  .logs-drawer.open { transform: translateY(0); }
-  .logs-header {
+  .console-drawer.has-errors {
+    border-top-color: var(--danger);
+    box-shadow: 0 -4px 20px rgba(229,83,83,0.2);
+  }
+  .console-drawer.has-warnings {
+    border-top-color: var(--warning);
+  }
+  .console-drawer.open { 
+    transform: translateY(0);
+    resize: vertical;
+    overflow: hidden;
+  }
+  /* Resize handle */
+  .console-drawer.open::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    opacity: 0.5;
+    cursor: ns-resize;
+    transition: opacity 0.2s ease;
+  }
+  .console-drawer.open:hover::before {
+    opacity: 0.8;
+  }
+  
+  /* Console Header - Compact */
+  .console-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 4px 8px;
     cursor: pointer;
-    background: rgba(0,0,0,0.2);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border-subtle);
     user-select: none;
+    transition: background 0.2s ease;
+    min-height: 24px;
   }
-  .logs-header:hover { background: rgba(0,0,0,0.3); }
-  .logs-header-left {
+  .console-header:hover { background: rgba(255,255,255,0.04); }
+  .console-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .logs-title {
-    font-size: 10px;
+  .console-header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .console-title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .console-icon-indicator {
+    font-size: 6px;
+    color: var(--muted);
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+  .console-icon-indicator.has-errors {
+    color: var(--danger);
+    opacity: 1;
+    animation: indicatorPulse 1.5s ease-in-out infinite;
+  }
+  .console-icon-indicator.has-warnings {
+    color: var(--warning);
+    opacity: 1;
+  }
+  @keyframes indicatorPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+  .console-title {
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--muted);
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
   }
-  .logs-count {
-    font-size: 9px;
-    padding: 2px 6px;
-    background: var(--accent-dim);
-    color: var(--accent);
+  .console-badge {
+    font-size: 8px;
+    padding: 1px 5px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
     border-radius: 8px;
     font-weight: 600;
+    min-width: 16px;
+    text-align: center;
   }
-  .logs-count.has-errors {
+  .console-badge.error {
     background: var(--danger-dim);
     color: var(--danger);
   }
-  .logs-toggle {
-    font-size: 10px;
+  .console-badge.warning {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+  }
+  .console-new-indicator {
+    font-size: 8px;
+    color: var(--accent);
+    font-weight: 600;
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: all 0.3s ease;
+    animation: newIndicatorPulse 2s ease-in-out infinite;
+  }
+  .console-new-indicator.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  @keyframes newIndicatorPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .console-toggle-icon {
+    font-size: 9px;
     color: var(--muted);
-    transition: transform 0.3s ease;
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  .logs-drawer.open .logs-toggle { transform: rotate(180deg); }
-  .logs-actions {
+  .console-drawer.open .console-toggle-icon { transform: rotate(180deg); }
+  
+  /* Console Toolbar - Compact */
+  .console-toolbar {
     display: flex;
-    gap: 4px;
-    padding: 4px 12px;
-    justify-content: flex-end;
-    background: rgba(0,0,0,0.1);
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 8px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--border-subtle);
   }
-  .logs-content {
-    max-height: 150px;
-    overflow-y: auto;
-    padding: 8px 12px;
-    font-family: var(--vscode-editor-font-family, monospace);
+  .console-filters {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .console-filters::-webkit-scrollbar { display: none; }
+  .console-filter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 3px 6px;
+    font-size: 9px;
+    font-weight: 500;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    min-width: 24px;
+  }
+  .console-filter:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+  }
+  .console-filter.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(63,182,139,0.3);
+  }
+  .console-filter.has-items {
+    color: var(--text-secondary);
+  }
+  .filter-label {
+    font-size: 9px;
+    font-weight: 600;
+  }
+  .filter-icon { 
     font-size: 10px;
-    line-height: 1.5;
+    font-weight: bold;
+    font-family: monospace;
   }
-  .log-line {
-    white-space: pre-wrap;
+  .filter-icon.error { color: var(--danger); }
+  .filter-icon.warning { color: #ffc107; }
+  .filter-icon.success { color: var(--accent); }
+  .filter-count {
+    font-size: 8px;
+    opacity: 0.7;
+    font-weight: 600;
+  }
+  .console-actions {
+    display: flex;
+    gap: 2px;
+  }
+  .console-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.15s ease;
+    font-size: 11px;
+  }
+  .console-btn:hover {
+    background: rgba(255,255,255,0.1);
+    opacity: 1;
+  }
+  .console-btn.scroll-btn {
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .console-btn.scroll-btn.hidden {
+    display: none;
+  }
+  
+  /* Console Body */
+  .console-body {
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 8px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .console-body::-webkit-scrollbar { width: 6px; }
+  .console-body::-webkit-scrollbar-track { background: transparent; }
+  .console-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .console-body::-webkit-scrollbar-thumb:hover { background: var(--border-medium); }
+  
+  /* Console Line - Enhanced */
+  .console-line {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    margin: 1px 0;
+    animation: lineSlideIn 0.2s ease-out;
+    animation-fill-mode: both;
+    transition: background 0.15s ease;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  @keyframes lineSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .console-line:hover {
+    background: rgba(255,255,255,0.02);
+  }
+  .console-line:last-child { border-bottom: none; }
+  .console-line.hidden { display: none; }
+  
+  /* Console Line Types with border-left */
+  .console-line.error { 
+    border-left-color: var(--danger);
+    background: rgba(229,83,83,0.05);
+    color: var(--danger);
+  }
+  .console-line.error:hover {
+    background: rgba(229,83,83,0.08);
+  }
+  .console-line.error .console-icon { color: var(--danger); }
+  
+  .console-line.success { 
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  .console-line.success:hover {
+    background: rgba(63,182,139,0.05);
+  }
+  .console-line.success .console-icon { color: var(--accent); }
+  
+  .console-line.warning { 
+    border-left-color: var(--warning);
+    background: rgba(255,193,7,0.03);
+    color: #ffc107;
+  }
+  .console-line.warning:hover {
+    background: rgba(255,193,7,0.06);
+  }
+  .console-line.warning .console-icon { color: #ffc107; }
+  
+  .console-line.info { 
+    color: var(--text-secondary);
+    border-left-color: transparent;
+  }
+  .console-line.info .console-icon { color: var(--muted); }
+  
+  .console-icon {
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: bold;
+    font-family: monospace;
+    opacity: 0.8;
+  }
+  .console-time {
+    flex-shrink: 0;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: 0.5;
+    font-family: monospace;
+    min-width: 45px;
+  }
+  .console-msg {
+    flex: 1 1 0;
     word-break: break-all;
-    padding: 1px 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    display: inline;
+    overflow: hidden;
   }
-  .log-line.error { color: var(--danger); }
-  .log-line.success { color: var(--accent); }
-  .log-line.warning { color: var(--warning); }
+  .console-msg span {
+    word-break: break-all;
+    white-space: normal;
+  }
+  .console-count {
+    flex-shrink: 0;
+    font-size: 8px;
+    font-weight: 600;
+    padding: 1px 5px;
+    background: var(--bg-elevated);
+    color: var(--muted);
+    border-radius: 8px;
+    margin-left: 4px;
+  }
+  
+  /* Syntax Highlighting */
+  .console-msg .hl-path {
+    color: #6a9fb5;
+  }
+  .console-msg .hl-url {
+    color: #6a9fb5;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+  .console-msg .hl-number {
+    color: #d19a66;
+  }
+  .console-msg .hl-string {
+    color: #98c379;
+  }
+  .console-msg .hl-keyword {
+    color: #c678dd;
+    font-weight: 600;
+  }
+  .console-msg .hl-email {
+    color: #61afef;
+  }
+  
+  /* New Messages Bar */
+  .console-new-messages {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px 12px;
+    background: linear-gradient(180deg, transparent 0%, rgba(63,182,139,0.15) 100%);
+    border-top: 1px solid var(--accent);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  .console-new-messages.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .console-new-messages:hover {
+    background: linear-gradient(180deg, transparent 0%, rgba(63,182,139,0.25) 100%);
+  }
+
+  /* Legacy support - hide old classes */
+  .logs-drawer { display: none; }
 
   /* === Toast Container === */
   .toast-container {
@@ -1553,7 +2502,7 @@
   /* === Skeleton Loading === */
   .skeleton { pointer-events: none; }
   .skeleton-pulse {
-    background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.15) 50%, var(--bg-elevated) 75%);
+    background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.2) 50%, var(--bg-elevated) 75%);
     background-size: 200% 100%;
     animation: skeletonPulse 1.5s ease-in-out infinite;
   }
@@ -1561,9 +2510,145 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
-  .skeleton-line { height: 12px; border-radius: 4px; margin: 4px 0; }
+  .skeleton-line { 
+    height: 12px; 
+    border-radius: 4px; 
+    margin: 4px 0;
+    background: var(--bg-elevated);
+  }
+  .skeleton-line.skeleton-pulse {
+    background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.2) 50%, var(--bg-elevated) 75%);
+    background-size: 200% 100%;
+  }
+  /* Skeleton variants */
+  .skeleton-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+  .skeleton-text {
+    height: 10px;
+    border-radius: 3px;
+  }
+  .skeleton-text.short { width: 40%; }
+  .skeleton-text.medium { width: 60%; }
+  .skeleton-text.long { width: 80%; }
+  .skeleton-text.full { width: 100%; }
+  .skeleton-card {
+    padding: 12px 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    margin-bottom: 6px;
+  }
   .account.skeleton { opacity: 0.6; }
-  .account.skeleton .account-avatar { background: var(--bg-elevated); }
+  .account.skeleton .account-avatar { 
+    background: var(--bg-elevated);
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+    background-size: 200% 100%;
+    background-image: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.2) 50%, var(--bg-elevated) 75%);
+  }
+  .account.skeleton .account-email,
+  .account.skeleton .account-meta {
+    background: var(--bg-elevated);
+    color: transparent;
+    border-radius: 3px;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+    background-size: 200% 100%;
+    background-image: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(128,128,128,0.2) 50%, var(--bg-elevated) 75%);
+  }
+  /* Shimmer effect variant */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-elevated);
+  }
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  /* Skeleton fade out */
+  .skeleton-fade-out {
+    animation: skeletonFadeOut 0.2s ease forwards;
+  }
+  @keyframes skeletonFadeOut {
+    to { opacity: 0; transform: scale(0.95); }
+  }
+
+  /* === Tab Transition Animations === */
+  .tab-content {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .tab-content.tab-fade-out {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+  .tab-content.tab-fade-in {
+    animation: tabFadeIn 0.2s ease forwards;
+  }
+  @keyframes tabFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* === Improved Toast Animations === */
+  .toast.toast-entering {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+  .toast.toast-visible {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .toast.toast-removing {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+    transition: all 0.3s ease-in;
+  }
+  .toast.info { border-color: var(--accent); }
+  .toast {
+    cursor: pointer;
+  }
+  .toast:hover {
+    transform: translateX(-4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  /* === Keyboard Navigation Focus === */
+  .account.keyboard-focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    background: var(--accent-dim);
+    transform: scale(1.01);
+    z-index: 10;
+    position: relative;
+  }
+  .account.keyboard-focus::before {
+    content: '→';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 12px;
+    animation: focusArrowPulse 1s ease-in-out infinite;
+  }
+  @keyframes focusArrowPulse {
+    0%, 100% { opacity: 1; transform: translateY(-50%) translateX(0); }
+    50% { opacity: 0.5; transform: translateY(-50%) translateX(3px); }
+  }
 
   /* === Switching State === */
   .account.switching {
@@ -1600,8 +2685,8 @@
   /* === Tab Bar Navigation === */
   .tab-bar {
     display: flex;
-    gap: 2px;
-    padding: 4px 6px;
+    gap: clamp(0px, 0.5vw, 2px);
+    padding: clamp(1px, 0.8vw, 3px) clamp(2px, 1.2vw, 5px);
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
@@ -1620,19 +2705,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px 8px;
+    gap: clamp(2px, 1vw, 4px);
+    padding: clamp(3px, 1.2vw, 5px) clamp(4px, 1.8vw, 7px);
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
     color: var(--muted);
-    font-size: 10px;
+    font-size: clamp(8px, 2.5vw, 10px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
-    min-width: 36px;
+    min-width: clamp(20px, 8vw, 32px);
     scroll-snap-align: start;
+    position: relative;
   }
   .tab-item:hover {
     background: rgba(128,128,128,0.1);
@@ -1643,35 +2729,70 @@
     color: var(--accent);
     border-color: var(--accent);
   }
+  /* Active tab underline indicator */
+  .tab-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    box-shadow: 0 0 6px var(--accent-glow);
+  }
   .tab-icon {
-    font-size: 12px;
+    font-size: clamp(8px, 2.8vw, 11px);
     line-height: 1;
     flex-shrink: 0;
   }
   .tab-icon svg {
-    width: 12px;
-    height: 12px;
+    width: clamp(8px, 2.8vw, 11px);
+    height: clamp(8px, 2.8vw, 11px);
   }
   .tab-label {
     display: none;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 60px;
+    max-width: 50px;
   }
-  /* Show labels when width >= 360px */
+  /* Show labels when width >= 360px (controlled by responsive styles) */
   @media (min-width: 360px) {
     .tab-label { display: inline; }
-    .tab-item { padding: 6px 10px; font-size: 10px; }
+    .tab-item { padding: 5px 9px; font-size: 10px; }
+  }
+  /* Hide labels on very narrow screens, show only icons */
+  @media (max-width: 320px) {
+    .tab-item { 
+      padding: 4px 5px; 
+      min-width: 28px;
+      gap: 2px;
+    }
+    .tab-icon { font-size: 10px; }
+    .tab-icon svg { width: 10px; height: 10px; }
+    .tab-label { display: none !important; }
+    .tab-badge { display: none; }
+    .tab-item.active::after { width: 50%; }
+  }
+  @media (max-width: 380px) {
+    .tab-item { 
+      padding: 4px 6px; 
+      min-width: 30px;
+    }
+    .tab-label { display: none !important; }
+    .tab-badge { font-size: 7px; padding: 1px 3px; }
   }
   /* Wider screens */
   @media (min-width: 450px) {
-    .tab-item { padding: 8px 14px; gap: 5px; font-size: 11px; }
-    .tab-icon { font-size: 13px; }
+    .tab-item { padding: 6px 12px; gap: 5px; font-size: 11px; }
+    .tab-icon { font-size: 12px; }
+    .tab-icon svg { width: 12px; height: 12px; }
     .tab-label { max-width: none; }
   }
   @media (min-width: 550px) {
-    .tab-item { padding: 8px 16px; gap: 6px; }
-    .tab-icon { font-size: 14px; }
+    .tab-item { padding: 7px 14px; gap: 6px; }
+    .tab-icon { font-size: 13px; }
   }
   .tab-badge {
     font-size: 8px;
@@ -1698,6 +2819,47 @@
   .tab-content.active {
     display: flex;
     flex-direction: column;
+  }
+  
+  /* Tab content transition animations */
+  .tab-content.tab-fade-out {
+    animation: tabFadeOut 0.15s ease-out forwards;
+  }
+  .tab-content.tab-fade-in {
+    animation: tabFadeIn 0.15s ease-in forwards;
+  }
+  @keyframes tabFadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-10px); }
+  }
+  @keyframes tabFadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* === Embedded Settings Sections (Stats, LLM inside Settings tab) === */
+  .settings-section-embedded {
+    margin-bottom: 16px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .settings-section-embedded .stats-dashboard {
+    margin: 0;
+    border-radius: var(--radius-lg);
+  }
+  .settings-section-embedded .settings-content {
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  /* Compact stats in settings */
+  .settings-section-embedded .stats-cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media (max-width: 400px) {
+    .settings-section-embedded .stats-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   /* === Settings Tab (inline mode) === */
@@ -2244,12 +3406,13 @@
   .strategy-option {
     display: flex;
     gap: 12px;
-    padding: 12px;
+    padding: 16px;
     border: 2px solid var(--glass-border);
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-normal);
     margin-bottom: 12px;
+    position: relative;
   }
   .strategy-option:hover {
     border-color: var(--accent);
@@ -2259,10 +3422,41 @@
     border-color: var(--accent);
     background: rgba(63, 182, 139, 0.05);
   }
+  .strategy-option.strategy-safe.selected {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.08);
+  }
+  .strategy-option.strategy-risky.selected {
+    border-color: #FF9800;
+    background: rgba(255, 152, 0, 0.08);
+  }
   .strategy-option input[type="radio"] {
     margin-top: 2px;
     cursor: pointer;
   }
+  
+  /* Strategy Icon Wrapper */
+  .strategy-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .strategy-icon-safe {
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+  .strategy-icon-risky {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+  }
+  .strategy-icon {
+    font-size: 24px;
+  }
+  
   .strategy-content {
     flex: 1;
   }
@@ -2275,7 +3469,7 @@
   .strategy-desc {
     font-size: 12px;
     color: var(--muted);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     line-height: 1.4;
   }
   .strategy-meta {
@@ -2288,6 +3482,91 @@
     font-size: 11px;
     color: var(--muted);
   }
+  
+  /* Strategy Features */
+  .strategy-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin-bottom: 10px;
+  }
+  .strategy-feature {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .strategy-feature .feature-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+  }
+  .strategy-feature.feature-pro .feature-icon {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+  }
+  .strategy-feature.feature-pro {
+    color: #4CAF50;
+  }
+  .strategy-feature.feature-con .feature-icon {
+    background: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+  }
+  .strategy-feature.feature-con {
+    color: #FF9800;
+  }
+  
+  /* Risk Bar */
+  .strategy-risk-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--glass-border);
+  }
+  .risk-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .risk-meter {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .risk-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .risk-fill.risk-low {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  }
+  .risk-fill.risk-medium {
+    background: linear-gradient(90deg, #FF9800, #FFC107);
+  }
+  .risk-fill.risk-high {
+    background: linear-gradient(90deg, #FF9800, #f44336);
+  }
+  .risk-value {
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 45px;
+    text-align: right;
+  }
+  .risk-low-text { color: #4CAF50; }
+  .risk-medium-text { color: #FF9800; }
+  .risk-high-text { color: #f44336; }
 
   /* === Badge === */
   .badge {
@@ -2315,37 +3594,1450 @@
     color: #2196F3;
   }
 
+  /* === Strategy Switch (iOS Segmented Control) === */
+  .strategy-switch {
+    display: flex;
+    flex: 1;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+    position: relative;
+    min-width: 0;
+  }
+  .strategy-sw-btn {
+    flex: 1;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: inherit;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .strategy-sw-btn .sw-icon {
+    font-size: 12px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .strategy-sw-btn .sw-label {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .strategy-sw-btn:hover:not(.active) {
+    color: var(--fg);
+  }
+  .strategy-sw-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .strategy-sw-btn.active .sw-icon {
+    filter: brightness(1.1);
+  }
+  
+  /* Responsive: hide labels on narrow screens */
+  @media (max-width: 280px) {
+    .strategy-sw-btn .sw-label {
+      display: none;
+    }
+    .strategy-sw-btn {
+      padding: 5px 8px;
+    }
+  }
+  @media (max-width: 220px) {
+    .strategy-sw-btn {
+      padding: 4px 6px;
+    }
+    .strategy-sw-btn .sw-icon {
+      font-size: 10px;
+    }
+  }
+  @media (max-width: 180px) {
+    .strategy-switch {
+      padding: 1px;
+      gap: 1px;
+    }
+    .strategy-sw-btn {
+      padding: 3px 4px;
+    }
+    .strategy-sw-btn .sw-icon {
+      font-size: 9px;
+    }
+  }
+  
+  /* Legacy support */
+  .strategy-hint {
+    font-size: 16px;
+    padding: 2px 4px;
+    cursor: help;
+  }
+  .strategy-hint.low {
+    color: #4CAF50;
+  }
+  .strategy-hint.high {
+    color: #f44336;
+  }
+  .autoreg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .autoreg-row .form-group {
+    margin: 0;
+  }
+  .autoreg-row .form-group.compact {
+    width: 50px;
+  }
+  .autoreg-row .form-group.compact input {
+    padding: 6px 4px;
+    text-align: center;
+  }
+
+  /* === Batch Registration Card === */
+  .batch-reg-card {
+    margin: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all var(--transition);
+  }
+  .batch-reg-card:hover {
+    border-color: rgba(63,182,139,0.3);
+  }
+  .batch-reg-card.running {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(63,182,139,0.15);
+  }
+  .batch-reg-card.collapsed {
+    border-color: var(--border);
+  }
+  .batch-reg-card.collapsed .batch-reg-body {
+    display: none;
+  }
+  .batch-reg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .batch-reg-header:hover {
+    background: rgba(0,0,0,0.15);
+  }
+  .batch-reg-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .batch-reg-toggle {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+  }
+  .batch-reg-card.collapsed .batch-reg-toggle {
+    transform: rotate(0deg);
+  }
+  .batch-reg-icon {
+    font-size: 16px;
+  }
+  .batch-reg-badge {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .batch-reg-badge.running {
+    background: var(--accent-dim);
+    color: var(--accent);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .batch-reg-badge.complete {
+    background: rgba(76,175,80,0.2);
+    color: #4CAF50;
+  }
+  .batch-reg-body {
+    padding: 14px;
+    transition: all 0.2s ease;
+  }
+  .batch-reg-body.hidden {
+    display: none;
+  }
+  
+  /* Running state - progress display */
+  .batch-reg-status {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px;
+    background: rgba(0,0,0,0.15);
+    border-radius: var(--radius-md);
+    margin-bottom: 14px;
+  }
+  .batch-reg-progress-ring {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+  }
+  .batch-reg-progress-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .batch-reg-progress-ring .progress-bg {
+    fill: none;
+    stroke: rgba(128,128,128,0.2);
+    stroke-width: 3;
+  }
+  .batch-reg-progress-ring .progress-fill {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+  }
+  .batch-reg-progress-ring .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .batch-reg-status-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .status-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .status-label {
+    color: var(--muted);
+  }
+  .status-value {
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .status-line.timer .status-value {
+    color: var(--accent);
+    font-family: monospace;
+  }
+  
+  /* Settings state */
+  .batch-reg-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .batch-reg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .batch-reg-field > label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Count selector */
+  .batch-reg-count-group {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .count-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 18px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .count-btn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .count-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .count-input {
+    flex: 1;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    font-family: inherit;
+  }
+  .count-input:focus {
+    outline: none;
+  }
+  
+  /* Interval pills */
+  .batch-reg-interval-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .interval-pill {
+    padding: 8px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 20px;
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .interval-pill:hover {
+    border-color: var(--accent);
+    color: var(--fg);
+  }
+  .interval-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .batch-reg-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: -4px;
+  }
+  
+  /* Name mode selector */
+  .batch-reg-name-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .name-mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .name-mode-option:hover {
+    border-color: rgba(63,182,139,0.4);
+  }
+  .name-mode-option.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .name-mode-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--accent);
+  }
+  .name-mode-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .name-mode-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .name-mode-desc {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .batch-reg-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+    transition: all var(--transition);
+  }
+  .batch-reg-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(63,182,139,0.15);
+  }
+  
+  /* Preview names */
+  .batch-reg-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(63,182,139,0.08);
+    border-radius: var(--radius-sm);
+  }
+  .preview-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .preview-names {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .preview-name {
+    font-size: 11px;
+    color: var(--accent);
+    padding: 3px 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+  }
+  
+  /* Previous progress */
+  .batch-reg-previous {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255,193,7,0.1);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: #FFC107;
+  }
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .btn-link:hover {
+    color: var(--accent-hover);
+  }
+  
+  /* Buttons */
+  .btn-block {
+    width: 100%;
+  }
+  .btn-large {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  /* =============================================
+     BATCH REG RESPONSIVE - Ultra narrow screens
+     ============================================= */
+  
+  /* 250-300px - Hide preview names, compact pills */
+  @media (max-width: 300px) {
+    .batch-reg-preview {
+      display: none;
+    }
+    .batch-reg-interval-pills {
+      gap: 3px;
+    }
+    .interval-pill {
+      padding: 5px 7px;
+      font-size: 9px;
+    }
+    .name-mode-option {
+      padding: 6px 8px;
+    }
+    .name-mode-desc {
+      font-size: 8px;
+    }
+    /* Hide name mode section on narrow screens */
+    .batch-reg-name-mode {
+      gap: 4px;
+    }
+  }
+  
+  /* 180-250px - Ultra compact */
+  @media (max-width: 250px) {
+    .batch-reg-card {
+      margin: 2px;
+      border-radius: 4px;
+    }
+    .batch-reg-header {
+      padding: 4px 6px;
+    }
+    .batch-reg-title {
+      font-size: 9px;
+      gap: 3px;
+    }
+    .batch-reg-title > span:nth-child(2) {
+      /* Hide "Batch Registration" text, keep icon */
+      display: none;
+    }
+    .batch-reg-icon {
+      font-size: 10px;
+    }
+    .batch-reg-badge {
+      font-size: 6px;
+      padding: 1px 3px;
+    }
+    .batch-reg-body {
+      padding: 6px;
+    }
+    .batch-reg-settings {
+      gap: 8px;
+    }
+    .batch-reg-field > label {
+      font-size: 8px;
+    }
+    .batch-reg-interval-pills {
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+    .interval-pill {
+      padding: 4px 6px;
+      font-size: 8px;
+      border-radius: 10px;
+      flex: 1 1 auto;
+      text-align: center;
+      min-width: 0;
+    }
+    .batch-reg-hint {
+      font-size: 7px;
+      display: none;
+    }
+    .batch-reg-preview {
+      display: none;
+    }
+    .name-mode-option {
+      padding: 5px 6px;
+      gap: 4px;
+    }
+    .name-mode-title {
+      font-size: 9px;
+    }
+    .name-mode-desc {
+      display: none;
+    }
+    /* Hide name mode section completely on very narrow */
+    .batch-reg-name-mode {
+      display: none;
+    }
+    .count-btn {
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+    }
+    .count-input {
+      height: 24px;
+      font-size: 12px;
+      width: 40px;
+    }
+    .btn-large {
+      padding: 8px 10px;
+      font-size: 9px;
+    }
+  }
+  
+  /* 200-249px */
+  @media (max-width: 249px) {
+    .batch-reg-card {
+      margin: 3px;
+      border-radius: 4px;
+    }
+    .batch-reg-header {
+      padding: 6px 8px;
+    }
+    .batch-reg-title {
+      font-size: 10px;
+      gap: 4px;
+    }
+    .batch-reg-icon {
+      font-size: 12px;
+    }
+    .batch-reg-badge {
+      font-size: 7px;
+      padding: 1px 4px;
+    }
+    .batch-reg-body {
+      padding: 8px;
+    }
+    .batch-reg-status {
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+    }
+    .batch-reg-progress-ring {
+      width: 50px;
+      height: 50px;
+    }
+    .batch-reg-progress-ring .progress-text {
+      font-size: 11px;
+    }
+    .status-line {
+      font-size: 10px;
+    }
+    .batch-reg-settings {
+      gap: 10px;
+    }
+    .batch-reg-field > label {
+      font-size: 9px;
+    }
+    .count-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 14px;
+    }
+    .count-input {
+      height: 28px;
+      font-size: 14px;
+    }
+    .batch-reg-interval-pills {
+      gap: 3px;
+    }
+    .interval-pill {
+      padding: 5px 8px;
+      font-size: 9px;
+      border-radius: 12px;
+    }
+    .batch-reg-hint {
+      font-size: 8px;
+    }
+    .name-mode-option {
+      padding: 6px 8px;
+      gap: 6px;
+    }
+    .name-mode-title {
+      font-size: 10px;
+    }
+    .name-mode-desc {
+      font-size: 8px;
+    }
+    .batch-reg-input {
+      padding: 6px 8px;
+      font-size: 10px;
+    }
+    .batch-reg-preview {
+      padding: 6px 8px;
+      gap: 6px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .preview-label {
+      font-size: 8px;
+    }
+    .preview-names {
+      gap: 3px;
+    }
+    .preview-name {
+      font-size: 9px;
+      padding: 2px 5px;
+    }
+    .btn-large {
+      padding: 10px 12px;
+      font-size: 10px;
+    }
+  }
+  
+  /* 160-199px - Micro */
+  @media (max-width: 199px) {
+    .batch-reg-card {
+      margin: 2px;
+      border-radius: 3px;
+    }
+    .batch-reg-header {
+      padding: 4px 6px;
+    }
+    .batch-reg-title {
+      font-size: 9px;
+      gap: 3px;
+    }
+    .batch-reg-icon {
+      font-size: 10px;
+    }
+    .batch-reg-badge {
+      font-size: 6px;
+      padding: 1px 3px;
+    }
+    .batch-reg-body {
+      padding: 6px;
+    }
+    .batch-reg-status {
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+    }
+    .batch-reg-progress-ring {
+      width: 40px;
+      height: 40px;
+    }
+    .batch-reg-progress-ring .progress-text {
+      font-size: 9px;
+    }
+    .status-line {
+      font-size: 8px;
+    }
+    .batch-reg-settings {
+      gap: 8px;
+    }
+    .batch-reg-field > label {
+      font-size: 8px;
+    }
+    .count-btn {
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+    }
+    .count-input {
+      height: 24px;
+      font-size: 12px;
+    }
+    .batch-reg-interval-pills {
+      gap: 2px;
+    }
+    .interval-pill {
+      padding: 4px 6px;
+      font-size: 8px;
+      border-radius: 10px;
+    }
+    .batch-reg-hint {
+      font-size: 7px;
+    }
+    .name-mode-option {
+      padding: 5px 6px;
+      gap: 4px;
+    }
+    .name-mode-title {
+      font-size: 9px;
+    }
+    .name-mode-desc {
+      font-size: 7px;
+    }
+    .batch-reg-input {
+      padding: 5px 6px;
+      font-size: 9px;
+    }
+    .batch-reg-preview {
+      padding: 5px 6px;
+      gap: 4px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .preview-label {
+      font-size: 7px;
+    }
+    .preview-names {
+      gap: 2px;
+    }
+    .preview-name {
+      font-size: 8px;
+      padding: 1px 4px;
+    }
+    .btn-large {
+      padding: 8px 10px;
+      font-size: 9px;
+    }
+  }
+  
+  /* < 160px - Nano */
+  @media (max-width: 159px) {
+    .batch-reg-card {
+      margin: 1px;
+      border-radius: 2px;
+    }
+    .batch-reg-header {
+      padding: 3px 4px;
+    }
+    .batch-reg-title {
+      font-size: 8px;
+      gap: 2px;
+    }
+    .batch-reg-icon {
+      font-size: 9px;
+    }
+    .batch-reg-badge {
+      display: none;
+    }
+    .batch-reg-body {
+      padding: 4px;
+    }
+    .batch-reg-status {
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px;
+    }
+    .batch-reg-progress-ring {
+      width: 32px;
+      height: 32px;
+    }
+    .batch-reg-progress-ring .progress-text {
+      font-size: 8px;
+    }
+    .status-line {
+      font-size: 7px;
+    }
+    .batch-reg-settings {
+      gap: 6px;
+    }
+    .batch-reg-field > label {
+      font-size: 7px;
+    }
+    .count-btn {
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+    }
+    .count-input {
+      height: 20px;
+      font-size: 10px;
+    }
+    .batch-reg-interval-pills {
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+    .interval-pill {
+      padding: 3px 5px;
+      font-size: 7px;
+      border-radius: 8px;
+    }
+    .batch-reg-hint {
+      font-size: 6px;
+    }
+    .name-mode-option {
+      padding: 4px 5px;
+      gap: 3px;
+    }
+    .name-mode-title {
+      font-size: 8px;
+    }
+    .name-mode-desc {
+      display: none;
+    }
+    .batch-reg-input {
+      padding: 4px 5px;
+      font-size: 8px;
+    }
+    .batch-reg-preview {
+      display: none;
+    }
+    .btn-large {
+      padding: 6px 8px;
+      font-size: 8px;
+    }
+  }
+
+  /* =============================================
+     TOOLBAR MORE DROPDOWN - Responsive menu
+     ============================================= */
+  
+  /* More button wrapper */
+  .toolbar-more-wrapper {
+    position: relative;
+    display: none; /* Hidden by default, shown on narrow screens */
+  }
+  
+  /* More dropdown menu */
+  .toolbar-more-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 160px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-dropdown);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.95);
+    transition: all 0.15s ease;
+  }
+  
+  .toolbar-more-menu.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+  
+  .toolbar-more-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-size: 12px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  
+  .toolbar-more-item:first-child {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  
+  .toolbar-more-item:last-child {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+  }
+  
+  .toolbar-more-item:hover {
+    background: var(--bg-hover);
+  }
+  
+  .toolbar-more-item .more-icon {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+  }
+  
+  .toolbar-more-item .more-label {
+    flex: 1;
+  }
+  
+  .toolbar-more-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+  
+  /* Show more button, hide secondary buttons on narrow screens */
+  @media (max-width: 400px) {
+    .toolbar-secondary {
+      display: none;
+    }
+    .toolbar-more-wrapper {
+      display: block;
+    }
+  }
+  
+  /* Ultra narrow - compact more menu */
+  @media (max-width: 320px) {
+    .toolbar-more-menu {
+      min-width: 140px;
+    }
+    .toolbar-more-item {
+      padding: 8px 10px;
+      font-size: 11px;
+      gap: 8px;
+    }
+    .toolbar-more-item .more-icon {
+      font-size: 12px;
+      width: 16px;
+    }
+  }
+
+  /* =============================================
+     ACCOUNT LIST - Email truncation for narrow screens
+     ============================================= */
+  
+  /* Full email shown by default */
+  .account-email .email-full {
+    display: inline;
+  }
+  .account-email .email-short {
+    display: none;
+  }
+  
+  /* Usage badge hidden by default, shown on narrow */
+  .account-usage-badge {
+    display: none;
+    font-size: 9px;
+    padding: 1px 5px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 8px;
+    margin-left: 4px;
+    font-weight: 600;
+  }
+  
+  /* Narrow screens - show short email, hide full */
+  @media (max-width: 360px) {
+    .account-email .email-full {
+      display: none;
+    }
+    .account-email .email-short {
+      display: inline;
+    }
+  }
+  
+  /* Ultra narrow - show usage badge inline */
+  @media (max-width: 320px) {
+    .account-usage-badge {
+      display: inline-flex;
+    }
+    .account-meta .meta-usage {
+      display: none;
+    }
+  }
+
+  /* =============================================
+     MODERN SCROLLBARS - Thin and sleek
+     ============================================= */
+  
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+  }
+  
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--accent);
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+  }
+  
+  /* List specific scrollbar */
+  .list::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .list::-webkit-scrollbar-thumb {
+    background: rgba(63, 182, 139, 0.3);
+  }
+  
+  .list::-webkit-scrollbar-thumb:hover {
+    background: rgba(63, 182, 139, 0.5);
+  }
+  
+  /* Console scrollbar */
+  .console-body::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .console-body::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.4);
+  }
+
+  /* =============================================
+     BUTTON HOVER/ACTIVE EFFECTS - Enhanced feedback
+     ============================================= */
+  
+  .btn {
+    transition: all 0.15s ease;
+    transform: translateY(0);
+  }
+  
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(63, 182, 139, 0.3);
+  }
+  
+  .btn-danger:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(229, 83, 83, 0.3);
+  }
+  
+  /* Icon buttons */
+  .btn-icon:hover:not(:disabled) {
+    transform: scale(1.05);
+  }
+  
+  .btn-icon:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  
+  /* Account action buttons */
+  .account-btn {
+    transition: all 0.15s ease;
+  }
+  
+  .account-btn:hover {
+    transform: scale(1.1);
+  }
+  
+  .account-btn:active {
+    transform: scale(0.9);
+  }
+
+  /* =============================================
+     TAB TRANSITION ANIMATIONS - Smooth switching
+     ============================================= */
+  
+  .tab-content {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  
+  .tab-content.tab-switching-out {
+    opacity: 0;
+    transform: translateX(-10px);
+    pointer-events: none;
+  }
+  
+  .tab-content.tab-switching-in {
+    animation: tabSlideIn 0.2s ease forwards;
+  }
+  
+  @keyframes tabSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* Tab item active indicator animation */
+  .tab-item::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    transform: translateX(-50%);
+    transition: width 0.2s ease;
+  }
+  
+  .tab-item.active::after {
+    width: 60%;
+    box-shadow: 0 0 6px var(--accent-glow);
+  }
+  
+  /* Tab ripple effect on click */
+  .tab-item {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .tab-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(63, 182, 139, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+  }
+  
+  .tab-item:active::before {
+    width: 100px;
+    height: 100px;
+  }
+
     
-  /* === Auto-Reg Controls === */
+  /* === Auto-Reg Controls (Compact iOS-style) === */
   .autoreg-controls {
     display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    margin: 0 8px 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
   }
-  .autoreg-controls .form-group {
+  
+  /* Running state - Stop & Pause inline */
+  .autoreg-controls.running {
+    gap: 6px;
+  }
+  .autoreg-controls.running .btn {
     flex: 1;
-    margin-bottom: 0;
-  }
-  .autoreg-controls .form-group label {
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
-  .autoreg-controls .form-control {
-    height: 30px;
-    min-height: 30px;
-  }
-  .autoreg-controls .btn {
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 0 12px;
+    min-width: 60px;
   }
-  .autoreg-controls.running .btn {
-    flex: 1;
+  .autoreg-controls.running .btn svg {
+    flex-shrink: 0;
+  }
+  
+  /* Count input */
+  .autoreg-count {
+    width: 42px;
+    height: 28px;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    text-align: center;
+    background: var(--bg-elevated);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+  .autoreg-count:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(63,182,139,0.15);
+  }
+  .autoreg-count::-webkit-inner-spin-button,
+  .autoreg-count::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  /* Start button */
+  .btn-start {
+    height: 28px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-start svg {
+    flex-shrink: 0;
+  }
+  
+  /* Icon button style */
+  .btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-icon svg {
+    flex-shrink: 0;
+  }
+  
+  /* Responsive AutoReg - narrow screens */
+  @media (max-width: 319px) {
+    .autoreg-controls {
+      padding: 4px;
+      margin: 0 4px 4px;
+      gap: 4px;
+    }
+    .autoreg-controls.running {
+      gap: 4px;
+    }
+    .autoreg-controls.running .btn {
+      height: 24px;
+      font-size: 9px;
+      min-width: 40px;
+      padding: 0 6px;
+      gap: 3px;
+    }
+    .autoreg-controls.running .btn .btn-text { display: none; }
+    .autoreg-controls.running .btn svg { width: 10px; height: 10px; }
+    .strategy-switch {
+      flex: 1 1 100%;
+      order: 1;
+    }
+    .autoreg-count {
+      width: 36px;
+      height: 24px;
+      font-size: 10px;
+      order: 2;
+    }
+    .btn-start {
+      flex: 1;
+      height: 24px;
+      padding: 0 8px;
+      font-size: 10px;
+      order: 3;
+    }
+    .btn-start .btn-text { display: none; }
+  }
+  
+  @media (max-width: 249px) {
+    .autoreg-controls {
+      padding: 3px;
+      margin: 0 3px 3px;
+      gap: 3px;
+    }
+    .autoreg-controls.running {
+      gap: 3px;
+    }
+    .autoreg-controls.running .btn {
+      height: 22px;
+      font-size: 8px;
+      min-width: 36px;
+      padding: 0 5px;
+    }
+    .strategy-switch { 
+      padding: 1px;
+    }
+    .strategy-sw-btn {
+      padding: 2px 4px;
+      font-size: 8px;
+    }
+    .strategy-sw-btn .sw-label { display: none; }
+    .autoreg-count {
+      width: 32px;
+      height: 22px;
+      font-size: 9px;
+    }
+    .btn-start {
+      height: 22px;
+      padding: 0 6px;
+      font-size: 9px;
+    }
+  }
+  
+  @media (max-width: 199px) {
+    .autoreg-controls {
+      padding: 2px;
+      margin: 0 2px 2px;
+      gap: 2px;
+    }
+    .autoreg-controls.running {
+      gap: 2px;
+    }
+    .autoreg-controls.running .btn {
+      height: 20px;
+      font-size: 8px;
+      min-width: 28px;
+      padding: 0 4px;
+    }
+    .autoreg-controls.running .btn svg { width: 8px; height: 8px; }
+    .autoreg-controls.running .btn .btn-text { display: none; }
+    .strategy-switch { display: none; }
+    .autoreg-count {
+      width: 28px;
+      height: 20px;
+      font-size: 8px;
+      padding: 2px;
+    }
+    .btn-start {
+      height: 20px;
+      padding: 0 5px;
+      font-size: 8px;
+    }
+    .btn-start svg { width: 8px; height: 8px; }
+  }
+  
+  @media (max-width: 180px) {
+    .autoreg-controls {
+      padding: 2px;
+      margin: 0 1px 2px;
+      gap: 2px;
+    }
+    .autoreg-controls.running {
+      gap: 2px;
+    }
+    .autoreg-controls.running .btn {
+      height: 18px;
+      font-size: 7px;
+      min-width: 24px;
+      padding: 0 3px;
+    }
+    .autoreg-controls.running .btn svg { width: 7px; height: 7px; }
+    .autoreg-count {
+      width: 24px;
+      height: 18px;
+      font-size: 7px;
+      padding: 1px;
+    }
+    .btn-start {
+      height: 18px;
+      padding: 0 4px;
+      font-size: 7px;
+      flex: 1;
+    }
+    .btn-start svg { width: 7px; height: 7px; }
+  }
+  
+  @media (max-width: 159px) {
+    .autoreg-controls {
+      padding: 2px;
+      margin: 0 1px 2px;
+      gap: 2px;
+    }
+    .autoreg-controls.running .btn {
+      height: 18px;
+      font-size: 7px;
+      min-width: 28px;
+      padding: 0 3px;
+    }
+    .autoreg-controls.running .btn svg { width: 7px; height: 7px; }
+    .autoreg-count {
+      width: 24px;
+      height: 18px;
+      font-size: 7px;
+    }
+    .btn-start {
+      height: 18px;
+      padding: 0 4px;
+      font-size: 7px;
+    }
+    .btn-start svg { width: 7px; height: 7px; }
   }
 
     
@@ -3549,64 +6241,1363 @@
 
     
   /* === Responsive Design === */
+  /* Optimized for VSCode sidebar panels (150-400px typical width) */
+  /* Uses fluid typography with clamp() for smooth scaling */
   
-  /* Very narrow screens (< 300px) */
-  @media (max-width: 299px) {
-    .header { padding: 0 6px; }
-    .header-title { font-size: 12px; }
-    .header-badge { font-size: 9px; padding: 2px 5px; }
-    .hero { margin: 6px; padding: 8px; }
-    .hero-remaining-value { font-size: 24px; }
-    .account { padding: 6px; gap: 6px; }
-    .account-avatar { width: 28px; height: 28px; font-size: 11px; }
+  /* =============================================
+     CSS FLUID SCALING - Works at any width
+     ============================================= */
+  :root {
+    /* Fluid font sizes - scale smoothly from 150px to 400px viewport */
+    --fluid-xs: clamp(7px, 1.5vw + 4px, 11px);
+    --fluid-sm: clamp(8px, 1.8vw + 4px, 12px);
+    --fluid-base: clamp(9px, 2vw + 5px, 13px);
+    --fluid-md: clamp(10px, 2.2vw + 5px, 14px);
+    --fluid-lg: clamp(12px, 2.5vw + 6px, 16px);
+    --fluid-xl: clamp(16px, 4vw + 8px, 24px);
+    --fluid-2xl: clamp(20px, 6vw + 10px, 32px);
+    
+    /* Fluid spacing */
+    --fluid-space-1: clamp(2px, 0.5vw + 1px, 4px);
+    --fluid-space-2: clamp(3px, 1vw + 1px, 8px);
+    --fluid-space-3: clamp(4px, 1.5vw + 2px, 12px);
+    --fluid-space-4: clamp(6px, 2vw + 2px, 16px);
+    
+    /* Fluid icon sizes */
+    --fluid-icon-sm: clamp(8px, 1.5vw + 5px, 12px);
+    --fluid-icon-md: clamp(10px, 2vw + 6px, 16px);
+    --fluid-icon-lg: clamp(14px, 3vw + 8px, 24px);
+  }
+  
+  /* =============================================
+     NANO SCREENS (< 160px) - Extreme minimum
+     ============================================= */
+  @media (max-width: 159px) {
+    /* Header - nano */
+    .header { 
+      padding: 1px 2px; 
+      min-height: 22px;
+      gap: 2px;
+    }
+    .header-left { gap: 2px; }
+    .header-title { font-size: 8px; }
+    .header-badge { display: none; }
+    .header-actions { gap: 0; }
+    .header-actions .icon-btn { width: 16px; height: 16px; }
+    .header-actions .icon-btn svg { width: 8px; height: 8px; }
+    .patch-indicator { width: 12px; height: 12px; font-size: 6px; }
+    
+    /* Hero - nano */
+    .hero { margin: 1px; padding: 3px; border-radius: 3px; }
+    .hero-main { padding: 2px 0; }
+    .hero-value { font-size: 16px !important; letter-spacing: -0.5px; }
+    .hero-label { font-size: 6px; letter-spacing: 0.3px; margin-top: 2px; }
+    .hero-footer { font-size: 6px; margin-top: 2px; }
+    .hero-stat { font-size: 6px; }
+    .hero-progress { height: 3px; margin-top: 2px; }
+    .hero.empty { padding: 8px 4px; }
+    .step-indicators { display: none; }
+    
+    /* Tabs - nano icons only */
+    .tab-bar { padding: 1px; gap: 0; }
+    .tab-item { 
+      padding: 2px 3px; 
+      min-width: 18px; 
+      flex: 1 1 0;
+      border-radius: 2px;
+    }
+    .tab-icon { font-size: 8px; }
+    .tab-icon svg { width: 8px; height: 8px; }
+    .tab-label, .tab-badge { display: none !important; }
+    .tab-item.active::after { display: none; }
+    
+    /* Account cards - nano single line */
+    .account { 
+      padding: 3px; 
+      gap: 3px; 
+      margin-bottom: 2px;
+      border-width: 1px;
+      min-height: 28px;
+    }
+    .account-avatar { width: 14px; height: 14px; font-size: 6px; }
+    .account-status { width: 5px; height: 5px; border-width: 1px; }
+    .account-info { min-width: 0; }
+    .account-email { font-size: 7px; }
+    .account-meta { display: none !important; }
+    .account-actions { display: none; }
+    .account::after { display: none !important; }
+    
+    /* List */
+    .list { padding: 1px 1px 40px; }
+    .list-group { padding: 2px 1px; font-size: 6px; gap: 2px; }
+    .list-group-count { font-size: 5px; padding: 0 2px; }
+    .list-group-action { display: none; }
+    
+    /* Toolbar - minimal */
+    .toolbar { padding: 1px 2px; gap: 2px; }
+    .toolbar-row { gap: 2px; }
+    .toolbar-buttons { display: none; }
+    .search-wrapper { flex: 1; }
+    .search-input { padding: 2px 14px; font-size: 7px; height: 18px; }
+    .search-icon { left: 3px; }
+    .search-icon svg { width: 7px; height: 7px; }
+    .search-clear { width: 10px; height: 10px; right: 2px; font-size: 6px; }
+    .filter-select { display: none; }
+    .filter-group { display: none; }
+    .bulk-actions-bar { display: none; }
+    
+    /* AutoReg controls - nano */
+    .autoreg-controls { 
+      padding: 3px; 
+      margin: 0 2px 3px; 
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+    .strategy-switch { display: none; }
+    .autoreg-count { width: 28px; height: 20px; font-size: 9px; padding: 2px; }
+    .btn-start { height: 20px; padding: 0 6px; font-size: 8px; }
+    .btn-start svg { width: 8px; height: 8px; }
+    .btn-start .btn-text { display: none; }
+    
+    /* Console drawer - nano */
+    .console-drawer { transform: translateY(calc(100% - 20px)); min-height: 20px; }
+    .console-header { padding: 2px 4px; min-height: 16px; }
+    .console-title { font-size: 6px; letter-spacing: 0; }
+    .console-badge { font-size: 5px; padding: 0 3px; }
+    .console-toggle-icon { font-size: 6px; }
+    .console-toolbar { display: none; }
+    .console-body { max-height: 80px; padding: 2px 4px; font-size: 7px; line-height: 1.3; }
+    .console-line { 
+      padding: 1px 2px; 
+      gap: 2px; 
+      font-size: 7px; 
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      border-left-width: 1px;
+      align-items: flex-start;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .console-icon { width: 8px; font-size: 6px; flex-shrink: 0 !important; }
+    .console-time { display: none !important; }
+    .console-msg { 
+      font-size: 7px; 
+      white-space: normal !important; 
+      word-break: break-word !important;
+      overflow-wrap: anywhere !important;
+      min-width: 0 !important;
+      flex: 1 1 0 !important;
+      display: block !important;
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+    }
+    .console-count { display: none !important; }
+    
+    /* Settings - nano */
+    .settings-content { padding: 4px 3px; }
+    .settings-card { margin-bottom: 4px; }
+    .settings-card-header { padding: 4px 6px; gap: 4px; }
+    .settings-card-icon { font-size: 10px; }
+    .settings-card-title { font-size: 8px; }
+    .settings-card-body { padding: 2px 6px; }
+    .setting-row { padding: 4px 0; }
+    .setting-label { font-size: 7px; }
+    .setting-desc { font-size: 6px; }
+    .btn-sm { padding: 2px 4px; font-size: 7px; min-height: 18px; }
+    
+    /* Modals - nano */
+    .modal { width: 100%; margin: 2px; border-radius: 4px; }
+    .modal-header { padding: 6px 8px; }
+    .modal-title { font-size: 9px; }
+    .modal-close { width: 16px; height: 16px; }
+    .modal-body { padding: 6px; }
+    
+    /* Toast - nano */
+    .toast-container { top: 25px; right: 2px; }
+    .toast { padding: 4px 6px; font-size: 7px; max-width: 140px; }
+    
+    /* Empty state - nano */
+    .empty-state { padding: 12px 6px; }
+    .empty-illustration svg { width: 40px; height: 40px; }
+    .empty-title { font-size: 10px; }
+    .empty-desc { font-size: 8px; max-width: 140px; }
+  }
+  
+  /* =============================================
+     MICRO SCREENS (160-199px) - Absolute minimum
+     ============================================= */
+  @media (min-width: 160px) and (max-width: 199px) {
+    /* Header - absolute minimum */
+    .header { 
+      padding: 2px 4px; 
+      min-height: 28px;
+      gap: 4px;
+    }
+    .header-left { gap: 4px; }
+    .header-title { font-size: 10px; }
+    .header-badge { font-size: 7px; padding: 1px 3px; }
+    .header-actions { gap: 1px; }
+    .header-actions .icon-btn { 
+      width: 20px; 
+      height: 20px; 
+    }
+    .header-actions .icon-btn svg { width: 10px; height: 10px; }
+    .patch-indicator { width: 14px; height: 14px; font-size: 8px; }
+    
+    /* Hero - micro */
+    .hero { margin: 2px; padding: 4px; border-radius: 4px; }
+    .hero-value { font-size: 20px; }
+    .hero-label { font-size: 8px; letter-spacing: 0.5px; }
+    .hero-footer { font-size: 8px; }
+    .hero-stats { font-size: 8px; }
+    .hero-email { font-size: 9px; max-width: 100%; }
+    .hero-progress { height: 4px; }
+    .step-indicators { padding: 2px 1px; margin: 4px 0; gap: 0; }
+    .step-indicator { padding: 1px 2px; min-width: 20px; }
+    .step-icon { font-size: 9px; }
+    .step-dot { width: 4px; height: 4px; }
+    .step-line { min-width: 4px; max-width: 8px; }
+    
+    /* Tabs - micro icons only */
+    .tab-bar { padding: 1px 2px; gap: 0; }
+    .tab-item { 
+      padding: 3px 4px; 
+      min-width: 22px; 
+      flex: 1 1 0;
+      border-radius: 3px;
+    }
+    .tab-icon { font-size: 9px; }
+    .tab-icon svg { width: 9px; height: 9px; }
+    .tab-label { display: none !important; }
+    .tab-badge { display: none !important; }
+    
+    /* Account cards - micro compact vertical layout */
+    .account { 
+      padding: 4px; 
+      gap: 4px; 
+      margin-bottom: 3px;
+      flex-direction: column;
+      align-items: stretch;
+      border-width: 1px;
+    }
+    .account-avatar { 
+      width: 18px; 
+      height: 18px; 
+      font-size: 8px;
+      position: absolute;
+      top: 4px;
+      left: 4px;
+    }
+    .account-status { 
+      width: 6px; 
+      height: 6px; 
+      bottom: -1px; 
+      right: -1px;
+      border-width: 1px;
+    }
+    .account-info {
+      padding-left: 22px;
+    }
+    .account-email { font-size: 8px; }
+    .account-meta { 
+      font-size: 7px; 
+      gap: 3px; 
+      flex-direction: row;
+      flex-wrap: wrap;
+      margin-top: 1px;
+    }
+    .account-meta span { gap: 1px; }
+    .account-meta svg { width: 7px; height: 7px; }
+    .account-actions { 
+      opacity: 1; 
+      flex-direction: row;
+      gap: 2px;
+      justify-content: flex-end;
+      margin-top: 2px;
+      padding-top: 2px;
+      border-top: 1px solid var(--border);
+    }
+    .account-btn { width: 16px; height: 16px; }
+    .account-btn svg { width: 8px; height: 8px; }
+    .account-checkbox { width: 14px; height: 14px; margin-right: 2px; }
+    .account-checkbox .checkmark { width: 12px; height: 12px; }
+    
+    /* List */
+    .list { padding: 2px 2px 50px; }
+    .list-group { 
+      padding: 3px 2px; 
+      font-size: 7px; 
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .list-group-count { font-size: 6px; padding: 1px 3px; }
+    .list-group-action { font-size: 6px; padding: 1px 4px; }
+    
+    /* Toolbar */
+    .toolbar { padding: 2px 3px; gap: 3px; }
+    .toolbar-row { gap: 3px; }
+    .toolbar-buttons { gap: 2px; }
+    .toolbar-buttons .btn { padding: 3px 4px; font-size: 8px; }
+    .toolbar-buttons .btn svg { width: 10px; height: 10px; }
+    .toolbar-buttons .btn-text { display: none !important; }
+    .search-wrapper { min-width: 60px; }
+    .search-input { padding: 3px 18px; font-size: 8px; height: 22px; }
+    .search-icon { left: 4px; }
+    .search-icon svg { width: 9px; height: 9px; }
+    .search-clear { width: 12px; height: 12px; right: 3px; font-size: 8px; }
+    .filter-group { gap: 2px; }
+    .filter-label { font-size: 7px; margin-right: 2px; }
+    .filter-btn { padding: 2px 4px; font-size: 7px; }
+    
+    /* Bulk actions */
+    .bulk-actions-bar { padding: 4px 6px; gap: 4px; }
+    .bulk-info { font-size: 9px; }
+    .bulk-count { font-size: 8px; padding: 1px 4px; }
+    .bulk-buttons .btn { padding: 3px 6px; font-size: 8px; }
+    
+    /* Settings & other panels */
+    .settings-content { padding: 8px 6px; }
+    .settings-card { margin-bottom: 8px; }
+    .settings-card-header { padding: 8px 10px; gap: 6px; }
+    .settings-card-icon { font-size: 12px; }
+    .settings-card-title { font-size: 10px; }
+    .settings-card-body { padding: 2px 10px; }
+    .spoof-modules { grid-template-columns: 1fr; gap: 4px; }
+    .spoof-module { padding: 6px; gap: 6px; }
+    .module-icon { font-size: 12px; }
+    .module-name { font-size: 9px; }
+    .module-desc { font-size: 8px; }
+    .stats-cards { grid-template-columns: 1fr; gap: 6px; }
+    .stat-card { padding: 8px; }
+    .stat-value { font-size: 16px; }
+    .stat-label { font-size: 8px; }
+    .setting-row { padding: 6px 0; }
+    .setting-label { font-size: 9px; }
+    .setting-desc { font-size: 7px; }
+    .btn-sm { padding: 4px 8px; font-size: 9px; }
+    
+    /* Danger zone */
+    .danger-zone-card { padding: 8px 10px; gap: 8px; flex-direction: column; }
+    .danger-zone-label { font-size: 10px; }
+    .danger-zone-desc { font-size: 8px; }
+    .danger-zone-actions { width: 100%; justify-content: flex-start; }
+    
+    /* Modals */
+    .modal { width: 98%; max-width: none; margin: 4px; }
+    .modal-header { padding: 8px 10px; }
+    .modal-title { font-size: 10px; }
+    .modal-close { width: 20px; height: 20px; font-size: 14px; }
+    .modal-body { padding: 8px; }
+    .modal-hint { font-size: 9px; }
+    .modal-textarea { height: 60px; font-size: 10px; padding: 6px; }
+    
+    /* Dialog */
+    .dialog { padding: 12px; max-width: 95%; }
+    .dialog-title { font-size: 11px; }
+    .dialog-text { font-size: 10px; }
+    .dialog-actions { gap: 6px; }
+    
+    /* Profile cards */
+    .imap-profile { padding: 6px; gap: 6px; }
+    .profile-avatar { width: 24px; height: 24px; font-size: 10px; }
+    .profile-strategy-icon { font-size: 10px; }
+    .profile-name { font-size: 9px; }
+    .profile-email { font-size: 8px; }
+    .profile-meta { font-size: 7px; }
+    .profile-actions { opacity: 1; gap: 2px; }
+    .profile-btn { width: 18px; height: 18px; }
+    .profile-btn svg { width: 10px; height: 10px; }
+    
+    /* Logs drawer */
+    .console-drawer { transform: translateY(calc(100% - 28px)); }
+    .console-header { padding: 4px 8px; }
+    .console-title { font-size: 8px; letter-spacing: 0.3px; }
+    .console-badge { font-size: 7px; padding: 1px 4px; }
+    .console-body { max-height: 100px; padding: 4px 8px; font-size: 8px; line-height: 1.3; }
+    .console-line { 
+      padding: 2px 4px; 
+      gap: 3px; 
+      font-size: 8px;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      border-left-width: 1px;
+      align-items: flex-start;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .console-icon { width: 10px; font-size: 7px; flex-shrink: 0 !important; }
+    .console-time { display: none !important; }
+    .console-msg { 
+      font-size: 8px; 
+      white-space: normal !important;
+      word-break: break-word !important;
+      overflow-wrap: anywhere !important;
+      min-width: 0 !important;
+      flex: 1 1 0 !important;
+      display: block !important;
+      writing-mode: horizontal-tb !important;
+    }
+    .console-count { font-size: 6px; padding: 0 3px; display: none !important; }
+    
+    /* Toast */
+    .toast-container { top: 35px; right: 4px; }
+    .toast { padding: 6px 8px; font-size: 9px; max-width: 180px; gap: 4px; }
+    .toast-icon { font-size: 11px; }
+    
+    /* Empty state */
+    .empty-state { padding: 20px 10px; }
+    .empty-illustration { margin-bottom: 10px; }
+    .empty-illustration svg { width: 60px; height: 60px; }
+    .empty-title { font-size: 12px; margin-bottom: 6px; }
+    .empty-desc { font-size: 10px; margin-bottom: 10px; max-width: 180px; }
+    .empty-state-icon { font-size: 28px; margin-bottom: 8px; }
+    .empty-state-text { font-size: 10px; margin-bottom: 10px; }
+    
+    /* AutoReg controls - micro */
+    .autoreg-controls { 
+      padding: 4px; 
+      margin: 0 3px 4px; 
+      gap: 4px;
+    }
+    .strategy-switch { 
+      padding: 1px; 
+      gap: 1px;
+    }
+    .strategy-sw-btn { 
+      padding: 3px 5px; 
+      font-size: 9px;
+    }
+    .strategy-sw-btn .sw-icon { font-size: 10px; }
+    .strategy-sw-btn .sw-label { display: none; }
+    .autoreg-count { width: 32px; height: 22px; font-size: 10px; }
+    .btn-start { height: 22px; padding: 0 8px; font-size: 9px; }
+    .btn-start svg { width: 8px; height: 8px; }
+    .btn-start .btn-text { display: none; }
+  }
+    /* Header - absolute minimum */
+    .header { 
+      padding: 2px 4px; 
+      min-height: 28px;
+      gap: 4px;
+    }
+    .header-left { gap: 4px; }
+    .header-title { font-size: 10px; }
+    .header-badge { font-size: 7px; padding: 1px 3px; }
+    .header-actions { gap: 1px; }
+    .header-actions .icon-btn { 
+      width: 20px; 
+      height: 20px; 
+    }
+    .header-actions .icon-btn svg { width: 10px; height: 10px; }
+    .patch-indicator { width: 14px; height: 14px; font-size: 8px; }
+    
+    /* Hero - micro */
+    .hero { margin: 2px; padding: 4px; border-radius: 4px; }
+    .hero-value { font-size: 20px; }
+    .hero-label { font-size: 8px; letter-spacing: 0.5px; }
+    .hero-footer { font-size: 8px; }
+    .hero-stats { font-size: 8px; }
+    .hero-email { font-size: 9px; max-width: 100%; }
+    .hero-progress { height: 4px; }
+    .step-indicators { padding: 2px 1px; margin: 4px 0; gap: 0; }
+    .step-indicator { padding: 1px 2px; min-width: 20px; }
+    .step-icon { font-size: 9px; }
+    .step-dot { width: 4px; height: 4px; }
+    .step-line { min-width: 4px; max-width: 8px; }
+    
+    /* Tabs - micro icons only */
+    .tab-bar { padding: 1px 2px; gap: 0; }
+    .tab-item { 
+      padding: 3px 4px; 
+      min-width: 22px; 
+      flex: 1 1 0;
+      border-radius: 3px;
+    }
+    .tab-icon { font-size: 9px; }
+    .tab-icon svg { width: 9px; height: 9px; }
+    .tab-label { display: none !important; }
+    .tab-badge { display: none !important; }
+    
+    /* Account cards - micro compact vertical layout */
+    .account { 
+      padding: 4px; 
+      gap: 4px; 
+      margin-bottom: 3px;
+      flex-direction: column;
+      align-items: stretch;
+      border-width: 1px;
+    }
+    .account-avatar { 
+      width: 18px; 
+      height: 18px; 
+      font-size: 8px;
+      position: absolute;
+      top: 4px;
+      left: 4px;
+    }
+    .account-status { 
+      width: 6px; 
+      height: 6px; 
+      bottom: -1px; 
+      right: -1px;
+      border-width: 1px;
+    }
+    .account-info {
+      padding-left: 22px;
+    }
+    .account-email { font-size: 8px; }
+    .account-meta { 
+      font-size: 7px; 
+      gap: 3px; 
+      flex-direction: row;
+      flex-wrap: wrap;
+      margin-top: 1px;
+    }
+    .account-meta span { gap: 1px; }
+    .account-meta svg { width: 7px; height: 7px; }
+    .account-actions { 
+      opacity: 1; 
+      flex-direction: row;
+      gap: 2px;
+      justify-content: flex-end;
+      margin-top: 2px;
+      padding-top: 2px;
+      border-top: 1px solid var(--border);
+    }
+    .account-btn { width: 16px; height: 16px; }
+    .account-btn svg { width: 8px; height: 8px; }
+    .account-checkbox { width: 14px; height: 14px; margin-right: 2px; }
+    .account-checkbox .checkmark { width: 12px; height: 12px; }
+    
+    /* List */
+    .list { padding: 2px 2px 50px; }
+    .list-group { 
+      padding: 3px 2px; 
+      font-size: 7px; 
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .list-group-count { font-size: 6px; padding: 1px 3px; }
+    .list-group-action { font-size: 6px; padding: 1px 4px; }
+    
+    /* Toolbar */
+    .toolbar { padding: 2px 3px; gap: 3px; }
+    .toolbar-row { gap: 3px; }
+    .toolbar-buttons { gap: 2px; }
+    .toolbar-buttons .btn { padding: 3px 4px; font-size: 8px; }
+    .toolbar-buttons .btn svg { width: 10px; height: 10px; }
+    .toolbar-buttons .btn-text { display: none !important; }
+    .search-wrapper { min-width: 60px; }
+    .search-input { padding: 3px 18px; font-size: 8px; height: 22px; }
+    .search-icon { left: 4px; }
+    .search-icon svg { width: 9px; height: 9px; }
+    .search-clear { width: 12px; height: 12px; right: 3px; font-size: 8px; }
+    .filter-group { gap: 2px; }
+    .filter-label { font-size: 7px; margin-right: 2px; }
+    .filter-btn { padding: 2px 4px; font-size: 7px; }
+    
+    /* Bulk actions */
+    .bulk-actions-bar { padding: 4px 6px; gap: 4px; }
+    .bulk-info { font-size: 9px; }
+    .bulk-count { font-size: 8px; padding: 1px 4px; }
+    .bulk-buttons .btn { padding: 3px 6px; font-size: 8px; }
+    
+    /* Settings & other panels */
+    .settings-content { padding: 8px 6px; }
+    .settings-card { margin-bottom: 8px; }
+    .settings-card-header { padding: 8px 10px; gap: 6px; }
+    .settings-card-icon { font-size: 12px; }
+    .settings-card-title { font-size: 10px; }
+    .settings-card-body { padding: 2px 10px; }
+    .spoof-modules { grid-template-columns: 1fr; gap: 4px; }
+    .spoof-module { padding: 6px; gap: 6px; }
+    .module-icon { font-size: 12px; }
+    .module-name { font-size: 9px; }
+    .module-desc { font-size: 8px; }
+    .stats-cards { grid-template-columns: 1fr; gap: 6px; }
+    .stat-card { padding: 8px; }
+    .stat-value { font-size: 16px; }
+    .stat-label { font-size: 8px; }
+    .setting-row { padding: 6px 0; }
+    .setting-label { font-size: 9px; }
+    .setting-desc { font-size: 7px; }
+    .btn-sm { padding: 4px 8px; font-size: 9px; }
+    
+    /* Danger zone */
+    .danger-zone-card { padding: 8px 10px; gap: 8px; flex-direction: column; }
+    .danger-zone-label { font-size: 10px; }
+    .danger-zone-desc { font-size: 8px; }
+    .danger-zone-actions { width: 100%; justify-content: flex-start; }
+    
+    /* Modals */
+    .modal { width: 98%; max-width: none; margin: 4px; }
+    .modal-header { padding: 8px 10px; }
+    .modal-title { font-size: 10px; }
+    .modal-close { width: 20px; height: 20px; font-size: 14px; }
+    .modal-body { padding: 8px; }
+    .modal-hint { font-size: 9px; }
+    .modal-textarea { height: 60px; font-size: 10px; padding: 6px; }
+    
+    /* Dialog */
+    .dialog { padding: 12px; max-width: 95%; }
+    .dialog-title { font-size: 11px; }
+    .dialog-text { font-size: 10px; }
+    .dialog-actions { gap: 6px; }
+    
+    /* Profile cards */
+    .imap-profile { padding: 6px; gap: 6px; }
+    .profile-avatar { width: 24px; height: 24px; font-size: 10px; }
+    .profile-strategy-icon { font-size: 10px; }
+    .profile-name { font-size: 9px; }
+    .profile-email { font-size: 8px; }
+    .profile-meta { font-size: 7px; }
+    .profile-actions { opacity: 1; gap: 2px; }
+    .profile-btn { width: 18px; height: 18px; }
+    .profile-btn svg { width: 10px; height: 10px; }
+    
+    /* Logs drawer */
+    .logs-drawer { transform: translateY(calc(100% - 28px)); }
+    .logs-header { padding: 4px 8px; }
+    .logs-title { font-size: 8px; }
+    .logs-count { font-size: 7px; padding: 1px 4px; }
+    .logs-content { max-height: 100px; padding: 4px 8px; font-size: 8px; }
+    
+    /* Toast */
+    .toast-container { top: 35px; right: 4px; }
+    .toast { padding: 6px 8px; font-size: 9px; max-width: 180px; gap: 4px; }
+    .toast-icon { font-size: 11px; }
+    
+    /* Empty state */
+    .empty-state { padding: 20px 10px; }
+    .empty-illustration { margin-bottom: 10px; }
+    .empty-illustration svg { width: 60px; height: 60px; }
+    .empty-title { font-size: 12px; margin-bottom: 6px; }
+    .empty-desc { font-size: 10px; margin-bottom: 10px; max-width: 180px; }
+    .empty-state-icon { font-size: 28px; margin-bottom: 8px; }
+    .empty-state-text { font-size: 10px; margin-bottom: 10px; }
+  }
+  
+  /* =============================================
+     ULTRA NARROW SCREENS (200-249px) - Extreme compact mode
+     ============================================= */
+  @media (min-width: 200px) and (max-width: 249px) {
+    /* Header - minimal */
+    .header { 
+      padding: 3px 5px; 
+      min-height: 30px;
+    }
+    .header-left { gap: 5px; }
+    .header-title { font-size: 11px; }
+    .header-badge { font-size: 8px; padding: 1px 4px; }
+    .header-actions { gap: 2px; }
+    .header-actions .icon-btn { 
+      width: 22px; 
+      height: 22px; 
+    }
+    .header-actions .icon-btn svg { width: 11px; height: 11px; }
+    .patch-indicator { width: 16px; height: 16px; }
+    
+    /* Hero - ultra compact */
+    .hero { margin: 3px 4px; padding: 6px; }
+    .hero-value { font-size: 24px; }
+    .hero-label { font-size: 9px; }
+    .hero-footer { font-size: 9px; }
+    .hero-stats { font-size: 9px; }
+    .hero-email { font-size: 10px; }
+    .hero-progress { height: 5px; }
+    .step-indicators { padding: 3px 2px; margin: 5px 0; }
+    .step-indicator { padding: 2px 3px; min-width: 24px; }
+    .step-icon { font-size: 10px; }
+    .step-dot { width: 5px; height: 5px; }
+    .step-line { min-width: 6px; max-width: 12px; }
+    
+    /* Tabs - icons only, minimal */
+    .tab-bar { padding: 2px 3px; gap: 1px; }
+    .tab-item { 
+      padding: 4px 5px; 
+      min-width: 26px; 
+      flex: 1 1 0;
+    }
+    .tab-icon { font-size: 10px; }
+    .tab-icon svg { width: 10px; height: 10px; }
+    .tab-label { display: none !important; }
+    .tab-badge { font-size: 7px; padding: 1px 3px; }
+    
+    /* Account cards - ultra compact */
+    .account { 
+      padding: 5px 6px; 
+      gap: 5px; 
+      margin-bottom: 4px;
+      border-width: 1px;
+    }
+    .account-avatar { 
+      width: 20px; 
+      height: 20px; 
+      font-size: 9px; 
+    }
+    .account-status { 
+      width: 7px; 
+      height: 7px; 
+      bottom: -1px; 
+      right: -1px;
+      border-width: 1px;
+    }
     .account-email { font-size: 9px; }
-    .account-meta { font-size: 8px; gap: 6px; }
-    .account-actions { opacity: 1; }
-    .account-btn { width: 22px; height: 22px; }
-    .tab-item { padding: 5px 6px; min-width: 32px; }
+    .account-meta { 
+      font-size: 7px; 
+      gap: 4px; 
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 2px;
+    }
+    .account-meta span { gap: 2px; }
+    .account-meta svg { width: 8px; height: 8px; }
+    .account-actions { 
+      opacity: 1; 
+      flex-direction: column;
+      gap: 2px;
+    }
+    .account-btn { width: 18px; height: 18px; }
+    .account-btn svg { width: 9px; height: 9px; }
+    
+    /* List */
+    .list { padding: 3px 4px 55px; }
+    .list-group { padding: 4px 2px; font-size: 8px; gap: 5px; }
+    .list-group-count { font-size: 7px; padding: 1px 4px; }
+    .list-group-action { font-size: 7px; padding: 2px 5px; }
+    
+    /* Toolbar */
+    .toolbar { padding: 3px 4px; gap: 4px; }
+    .toolbar-buttons .btn { padding: 4px 5px; font-size: 9px; }
+    .toolbar-buttons .btn-text { display: none !important; }
+    .search-input { padding: 4px 20px; font-size: 9px; }
+    .search-icon svg { width: 10px; height: 10px; }
+    .filter-btn { padding: 3px 5px; font-size: 8px; }
+    
+    /* Settings & other panels */
+    .settings-content { padding: 10px 8px; }
+    .spoof-modules { grid-template-columns: 1fr; }
+    .stats-cards { grid-template-columns: 1fr; }
+    .stat-value { font-size: 18px; }
+    .setting-row { padding: 8px 0; }
+    .setting-label { font-size: 10px; }
+    .setting-desc { font-size: 8px; }
+    
+    /* Modals */
+    .modal { width: 96%; max-width: none; }
+    .modal-header { padding: 10px 12px; }
+    .modal-title { font-size: 11px; }
+    .modal-body { padding: 10px; }
+    
+    /* Profile cards */
+    .imap-profile { padding: 8px; gap: 8px; }
+    .profile-avatar { width: 26px; height: 26px; }
+    .profile-strategy-icon { font-size: 11px; }
+    .profile-name { font-size: 10px; }
+    .profile-email { font-size: 9px; }
+    .profile-actions { opacity: 1; }
+    .profile-btn { width: 20px; height: 20px; }
+  }
+  
+  /* =============================================
+     VERY NARROW SCREENS (250-299px)
+     ============================================= */
+  @media (min-width: 250px) and (max-width: 299px) {
+    /* Header */
+    .header { 
+      padding: 4px 6px; 
+      min-height: 32px;
+    }
+    .header-left { gap: 6px; }
+    .header-title { font-size: 12px; }
+    .header-badge { font-size: 8px; padding: 2px 5px; }
+    .header-actions .icon-btn { width: 24px; height: 24px; }
+    
+    /* Hero */
+    .hero { margin: 4px 5px; padding: 8px; }
+    .hero-value { font-size: 26px; }
+    .hero-label { font-size: 9px; }
+    .hero-footer { font-size: 9px; }
+    .step-indicators { padding: 4px 3px; margin: 6px 0; }
+    .step-indicator { padding: 3px 4px; min-width: 28px; }
+    .step-icon { font-size: 11px; }
+    
+    /* Tabs - icons only */
+    .tab-bar { padding: 2px 4px; gap: 1px; }
+    .tab-item { 
+      padding: 5px 6px; 
+      min-width: 28px;
+      flex: 1 1 0;
+    }
     .tab-icon { font-size: 11px; }
-    .list { padding: 4px 6px 70px; }
-    .toolbar { padding: 4px 6px; }
-    .toolbar-buttons .btn { padding: 5px 6px; }
+    .tab-label { display: none !important; }
+    .tab-badge { font-size: 7px; padding: 1px 3px; }
+    
+    /* Account cards - compact */
+    .account { 
+      padding: 6px 7px; 
+      gap: 6px; 
+      margin-bottom: 4px;
+    }
+    .account-avatar { 
+      width: 22px; 
+      height: 22px; 
+      font-size: 10px; 
+    }
+    .account-status { width: 8px; height: 8px; }
+    .account-email { font-size: 9px; }
+    .account-meta { 
+      font-size: 8px; 
+      gap: 5px;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 2px;
+    }
+    .account-meta svg { width: 9px; height: 9px; }
+    .account-actions { 
+      opacity: 1; 
+      flex-direction: column;
+      gap: 2px;
+    }
+    .account-btn { width: 20px; height: 20px; }
+    .account-btn svg { width: 10px; height: 10px; }
+    
+    /* List */
+    .list { padding: 4px 5px 60px; }
+    .list-group { padding: 5px 3px; font-size: 9px; }
+    .list-group-count { font-size: 8px; }
+    .list-group-action { font-size: 8px; padding: 2px 6px; }
+    
+    /* Toolbar */
+    .toolbar { padding: 4px 5px; gap: 4px; }
+    .toolbar-buttons .btn { padding: 5px 6px; font-size: 9px; }
+    .toolbar-buttons .btn-text { display: none !important; }
+    .search-input { padding: 5px 22px; font-size: 10px; }
+    .filter-btn { padding: 3px 6px; font-size: 8px; }
+    
+    /* Settings */
+    .settings-content { padding: 12px 8px; }
     .spoof-modules { grid-template-columns: 1fr; }
     .stats-cards { grid-template-columns: 1fr; }
     .stat-value { font-size: 20px; }
+    
+    /* Profile cards */
+    .imap-profile { padding: 8px; gap: 8px; }
+    .profile-avatar { width: 28px; height: 28px; }
+    .profile-name { font-size: 11px; }
+    .profile-email { font-size: 9px; }
+    .profile-actions { opacity: 1; }
+    .profile-btn { width: 22px; height: 22px; }
   }
   
-  /* Narrow screens (300-359px) */
+  /* =============================================
+     NARROW SCREENS (300-359px)
+     ============================================= */
   @media (min-width: 300px) and (max-width: 359px) {
+    /* Header */
+    .header { padding: 5px 8px; min-height: 34px; }
     .header-title { font-size: 13px; }
-    .hero { margin: 8px; padding: 10px; }
-    .hero-remaining-value { font-size: 28px; }
-    .account { padding: 8px; gap: 8px; }
-    .account-avatar { width: 32px; height: 32px; font-size: 12px; }
-    .account-actions { opacity: 1; gap: 2px; }
-    .account-btn { width: 24px; height: 24px; }
-    .tab-item { padding: 6px 8px; }
-    .list { padding: 6px 8px 80px; }
+    .header-badge { font-size: 9px; }
+    .header-actions .icon-btn { width: 26px; height: 26px; }
+    
+    /* Hero */
+    .hero { margin: 5px 6px; padding: 10px; }
+    .hero-value { font-size: 28px; }
+    .hero-label { font-size: 10px; }
+    .hero-footer { font-size: 10px; }
+    
+    /* Tabs - icons only on very narrow, show labels on wider */
+    .tab-bar { padding: 3px 5px; }
+    .tab-item { padding: 5px 7px; min-width: 30px; }
+    .tab-icon { font-size: 11px; }
+    .tab-label { display: none !important; }
+    
+    /* Account cards */
+    .account { padding: 7px 8px; gap: 7px; margin-bottom: 5px; }
+    .account-avatar { width: 26px; height: 26px; font-size: 11px; }
+    .account-status { width: 9px; height: 9px; }
+    .account-email { font-size: 10px; }
+    .account-meta { 
+      font-size: 9px; 
+      gap: 6px;
+      flex-wrap: wrap;
+      flex-direction: row;
+    }
+    .account-actions { opacity: 1; gap: 3px; flex-direction: row; }
+    .account-btn { width: 22px; height: 22px; }
+    
+    /* List */
+    .list { padding: 5px 6px 70px; }
+    .list-group { font-size: 9px; }
+    
+    /* Toolbar */
+    .toolbar { padding: 5px 6px; }
+    .toolbar-buttons .btn { padding: 5px 7px; font-size: 10px; }
+    .toolbar-buttons .btn-text { display: none; }
+    @media (min-width: 340px) {
+      .toolbar-buttons .btn-text { display: inline; }
+    }
+    
+    /* Settings */
+    .settings-content { padding: 14px 10px; }
     .spoof-modules { grid-template-columns: 1fr; }
+    .stats-cards { grid-template-columns: repeat(2, 1fr); }
+    
+    /* Profile cards */
+    .imap-profile { padding: 10px; gap: 10px; }
+    .profile-avatar { width: 30px; height: 30px; }
+    .profile-actions { opacity: 1; }
   }
   
-  /* Medium screens (360-449px) */
+  /* =============================================
+     MEDIUM SCREENS (360-449px)
+     ============================================= */
   @media (min-width: 360px) and (max-width: 449px) {
-    .account-actions { opacity: 0; }
+    /* Header */
+    .header { padding: 6px 10px; min-height: 36px; }
+    
+    /* Hero */
+    .hero { margin: 6px 8px; padding: 12px; }
+    .hero-value { font-size: 32px; }
+    .hero-label { font-size: 11px; }
+    .hero-footer { font-size: 10px; }
+    
+    /* Tabs - show labels */
+    .tab-bar { padding: 4px 6px; }
+    .tab-item { padding: 6px 10px; }
+    .tab-label { display: inline !important; }
+    
+    /* Account cards - show actions on hover */
+    .account { padding: 8px 10px; gap: 8px; margin-bottom: 5px; }
+    .account-avatar { width: 30px; height: 30px; font-size: 12px; }
+    .account-meta { flex-direction: row; }
+    .account-actions { opacity: 0; flex-direction: row; }
     .account:hover .account-actions { opacity: 1; }
+    
+    /* List */
+    .list { padding: 6px 8px 80px; }
+    
+    /* Settings */
+    .settings-content { padding: 16px 12px; }
     .spoof-modules { grid-template-columns: repeat(2, 1fr); }
+    .stats-cards { grid-template-columns: repeat(2, 1fr); }
+    
+    /* Profile cards - show actions on hover */
+    .profile-actions { opacity: 0; }
+    .imap-profile:hover .profile-actions { opacity: 1; }
   }
   
-  /* Wider screens (450px+) */
+  /* =============================================
+     WIDER SCREENS (450px+)
+     ============================================= */
   @media (min-width: 450px) {
-    .hero { margin: 12px; padding: 16px; }
+    .header { padding: 8px 12px; }
+    .hero { margin: 8px 10px; padding: 14px; }
+    .hero-remaining-value { font-size: 32px; }
+    .account { padding: 10px 12px; }
+    .account-avatar { width: 34px; height: 34px; font-size: 13px; }
+    .list { padding: 8px 12px 90px; }
+    .toolbar { padding: 6px 10px; }
+    .tab-item { padding: 6px 12px; }
+  }
+  
+  /* =============================================
+     LARGE SCREENS (550px+)
+     ============================================= */
+  @media (min-width: 550px) {
+    .hero { margin: 10px 12px; padding: 16px; }
     .hero-remaining-value { font-size: 36px; }
     .account { padding: 12px 14px; }
-    .account-avatar { width: 40px; height: 40px; font-size: 14px; }
+    .account-avatar { width: 38px; height: 38px; font-size: 14px; }
     .list { padding: 10px 14px 100px; }
     .toolbar { padding: 8px 12px; }
+    .tab-item { padding: 8px 16px; gap: 6px; }
   }
   
-  /* Touch devices - always show actions */
+  /* =============================================
+     TOUCH DEVICES - always show actions
+     ============================================= */
   @media (hover: none) {
-    .account-actions { opacity: 1; }
+    .account-actions { opacity: 1 !important; }
+    .profile-actions { opacity: 1 !important; }
+    .profile-card-actions { opacity: 1 !important; }
+  }
+  
+  /* =============================================
+     SECONDARY BUTTONS VISIBILITY
+     Show only primary action, hide others on narrow screens
+     ============================================= */
+  @media (max-width: 279px) {
+    /* Hide secondary account buttons, show only delete */
+    .account-btn:not(.danger) {
+      display: none;
+    }
+    .account:hover .account-btn:not(.danger),
+    .account:focus-within .account-btn:not(.danger) {
+      display: flex;
+    }
+    
+    /* Hide secondary profile buttons */
+    .profile-btn:not(.danger) {
+      display: none;
+    }
+    .imap-profile:hover .profile-btn:not(.danger),
+    .imap-profile:focus-within .profile-btn:not(.danger) {
+      display: flex;
+    }
+  }
+  
+  /* =============================================
+     ULTRA COMPACT MODE - Force compact on all narrow screens
+     ============================================= */
+  @media (max-width: 320px) {
+    /* Force single-line account cards */
+    .account {
+      flex-direction: row !important;
+      align-items: center !important;
+      padding: 4px 6px !important;
+      gap: 6px !important;
+      min-height: 36px;
+    }
+    
+    /* Smaller avatar */
+    .account-avatar {
+      width: 24px !important;
+      height: 24px !important;
+      font-size: 10px !important;
+      flex-shrink: 0;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+    }
+    
+    /* Compact info */
+    .account-info {
+      flex: 1;
+      min-width: 0;
+      padding-left: 0 !important;
+    }
+    
+    /* Single line email */
+    .account-email {
+      font-size: 10px !important;
+      line-height: 1.2;
+    }
+    
+    /* Hide meta on very narrow, show only usage */
+    .account-meta {
+      display: none !important;
+    }
+    
+    /* Show usage badge inline instead */
+    .account-usage-badge {
+      display: inline-flex !important;
+      font-size: 9px;
+      padding: 1px 4px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 8px;
+      margin-left: 4px;
+    }
+    
+    /* Compact actions - single row */
+    .account-actions {
+      flex-direction: row !important;
+      gap: 2px !important;
+      opacity: 1 !important;
+    }
+    
+    /* Smaller buttons */
+    .account-btn {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    .account-btn svg {
+      width: 10px !important;
+      height: 10px !important;
+    }
+    
+    /* Compact list groups */
+    .list-group {
+      padding: 4px 4px !important;
+      font-size: 9px !important;
+    }
+    
+    /* Compact hero */
+    .hero {
+      margin: 4px !important;
+      padding: 6px 8px !important;
+    }
+    .hero-remaining-value {
+      font-size: 20px !important;
+    }
+    .hero-remaining-label {
+      font-size: 8px !important;
+    }
+    .hero-stats {
+      font-size: 9px !important;
+    }
+    
+    /* Hide filter labels */
+    .filter-label {
+      display: none !important;
+    }
+    
+    /* Compact filter buttons */
+    .filter-btn {
+      padding: 3px 6px !important;
+      font-size: 9px !important;
+    }
+    
+    /* Compact toolbar */
+    .toolbar {
+      padding: 3px 4px !important;
+      gap: 4px !important;
+    }
+    .toolbar-row {
+      gap: 4px !important;
+    }
+  }
+  
+  /* =============================================
+     HIDE ACTIONS BY DEFAULT ON NARROW - Show on interaction
+     ============================================= */
+  @media (max-width: 359px) {
+    .account-actions {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-elevated);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+    
+    .account:hover .account-actions,
+    .account:focus-within .account-actions,
+    .account.show-actions .account-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    /* Add touch indicator */
+    .account::after {
+      content: '⋯';
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+    
+    .account:hover::after,
+    .account.show-actions::after {
+      opacity: 0;
+    }
+  }
+  
+  /* =============================================
+     CONSOLE RESPONSIVE - Fix vertical text issue
+     ============================================= */
+  
+  /* All screens - force horizontal layout */
+  .console-drawer {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .console-body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  .console-line {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .console-msg {
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    hyphens: auto;
+  }
+  .console-msg span {
+    word-break: break-all !important;
+    white-space: normal !important;
+    display: inline !important;
+  }
+  
+  /* All narrow screens - force horizontal text */
+  @media (max-width: 400px) {
+    .console-body {
+      overflow-x: hidden;
+      padding: 4px 6px;
+    }
+    .console-line {
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .console-msg {
+      word-break: break-all !important;
+      white-space: normal !important;
+      overflow-wrap: break-word !important;
+      min-width: 0 !important;
+      flex: 1 1 0 !important;
+      overflow: hidden;
+    }
+    .console-icon {
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+    }
+    .console-time {
+      display: none !important;
+    }
+    .console-count {
+      display: none !important;
+    }
+  }
+  
+  @media (max-width: 300px) {
+    .console-drawer {
+      transform: translateY(calc(100% - 24px));
+    }
+    .console-header {
+      padding: 3px 6px;
+      min-height: 20px;
+    }
+    .console-title {
+      font-size: 7px;
+      letter-spacing: 0;
+    }
+    .console-badge {
+      font-size: 6px;
+      padding: 0 3px;
+    }
+    .console-body {
+      max-height: 100px;
+      padding: 3px 4px;
+      font-size: 8px;
+    }
+    .console-line {
+      padding: 2px 3px;
+      gap: 3px;
+      font-size: 8px;
+      border-left-width: 1px;
+    }
+    .console-icon {
+      width: 10px;
+      font-size: 7px;
+    }
+    .console-msg {
+      font-size: 8px;
+      line-height: 1.3;
+    }
+    .console-toolbar {
+      display: none;
+    }
+  }
+  
+  /* 180-250px - Critical narrow screens */
+  @media (max-width: 250px) {
+    .console-drawer {
+      transform: translateY(calc(100% - 22px));
+    }
+    .console-header {
+      padding: 2px 4px;
+      min-height: 18px;
+    }
+    .console-title-group {
+      gap: 3px;
+    }
+    .console-title {
+      font-size: 7px;
+    }
+    .console-badge {
+      font-size: 5px;
+      padding: 0 2px;
+    }
+    .console-icon-indicator {
+      font-size: 5px;
+    }
+    .console-toggle-icon {
+      font-size: 6px;
+    }
+    .console-body {
+      max-height: 80px;
+      padding: 2px 3px;
+      font-size: 7px;
+      line-height: 1.2;
+    }
+    .console-line {
+      padding: 1px 2px;
+      gap: 2px;
+      font-size: 7px;
+      border-left-width: 1px;
+    }
+    .console-icon {
+      width: 8px;
+      font-size: 6px;
+    }
+    .console-msg {
+      font-size: 7px;
+      line-height: 1.2;
+      display: block !important;
+      writing-mode: horizontal-tb !important;
+    }
+    .console-new-indicator {
+      display: none;
+    }
+  }
+  
+  /* 160-180px - Micro screens */
+  @media (max-width: 180px) {
+    .console-drawer {
+      transform: translateY(calc(100% - 18px));
+      min-height: 18px;
+    }
+    .console-header {
+      padding: 1px 3px;
+      min-height: 16px;
+    }
+    .console-title {
+      font-size: 6px;
+    }
+    .console-badge {
+      font-size: 5px;
+      padding: 0 2px;
+    }
+    .console-body {
+      max-height: 60px;
+      padding: 1px 2px;
+      font-size: 6px;
+      line-height: 1.2;
+    }
+    .console-line {
+      padding: 1px;
+      gap: 2px;
+      font-size: 6px;
+    }
+    .console-icon {
+      width: 6px;
+      font-size: 5px;
+    }
+    .console-msg {
+      font-size: 6px;
+      line-height: 1.2;
+    }
   }
 
   
@@ -3954,33 +7945,55 @@
   
     
       <div class="hero empty" onclick="openSettings()">
-        <div class="hero-email">No active</div>
-        <div class="hero-hint">Click to configure</div>
+        <span class="hero-label">No active</span>
       </div>
     
     
-    <div class="toolbar">
+    <div class="toolbar compact">
       <div class="toolbar-row">
-        <div class="toolbar-buttons">
-          <button class="btn btn-secondary btn-icon" onclick="openSsoModal()" title="SSO Import">🌐</button>
-          <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="Check Health">🩺</button>
+        <!-- Primary buttons - always visible -->
+        <div class="toolbar-buttons toolbar-primary">
           <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="Select" id="selectModeBtn">☑️</button>
         </div>
+        
+        <!-- Secondary buttons - hidden on narrow screens, moved to dropdown -->
+        <div class="toolbar-buttons toolbar-secondary">
+          <button class="btn btn-secondary btn-icon" onclick="openSsoModal()" title="SSO Import">🌐</button>
+          <button class="btn btn-secondary btn-icon" onclick="checkAllAccountsHealth()" title="Check Health">🩺</button>
+        </div>
+        
+        <!-- More dropdown - visible only on narrow screens -->
+        <div class="toolbar-more-wrapper">
+          <button class="btn btn-secondary btn-icon toolbar-more-btn" onclick="toggleToolbarMore()" title="More">⋯</button>
+          <div class="toolbar-more-menu" id="toolbarMoreMenu">
+            <button class="toolbar-more-item" onclick="openSsoModal(); toggleToolbarMore();">
+              <span class="more-icon">🌐</span>
+              <span class="more-label">SSO Import</span>
+            </button>
+            <button class="toolbar-more-item" onclick="checkAllAccountsHealth(); toggleToolbarMore();">
+              <span class="more-icon">🩺</span>
+              <span class="more-label">Check Health</span>
+            </button>
+            <div class="toolbar-more-divider"></div>
+            <button class="toolbar-more-item" onclick="exportAllAccounts(); toggleToolbarMore();">
+              <span class="more-icon">📤</span>
+              <span class="more-label">Export</span>
+            </button>
+          </div>
+        </div>
+        
         <div class="search-wrapper">
           <span class="search-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l4 4 1.4-1.4-4-4zM6 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg></span>
           <input type="text" class="search-input" id="searchInput" placeholder="Search accounts..." oninput="searchAccounts(this.value)">
           <button class="search-clear" onclick="clearSearch()">×</button>
         </div>
-      </div>
-      <div class="toolbar-row">
-        <div class="filter-group">
-          <span class="filter-label"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1l-5 5v5l-4 1V8L1 3V2zm1.5 1l4.5 4.5V13l2-.5V7.5L13.5 3h-11z"/></svg> Filter:</span>
-          <button class="filter-btn active" data-filter="all" onclick="filterByTokens('all')">All</button>
-          <button class="filter-btn" data-filter="fresh" onclick="filterByTokens('fresh')">🟢 Fresh (500)</button>
-          <button class="filter-btn" data-filter="partial" onclick="filterByTokens('partial')">🟡 Partial (1-499)</button>
-          <button class="filter-btn" data-filter="trial" onclick="filterByTokens('trial')">🔵 Trial (50)</button>
-          <button class="filter-btn" data-filter="empty" onclick="filterByTokens('empty')">⚫ Empty (0)</button>
-        </div>
+        <select class="filter-select" id="tokenFilterSelect" onchange="filterByTokens(this.value)">
+          <option value="all">All</option>
+          <option value="fresh">🟢 Fresh</option>
+          <option value="partial">🟡 Partial</option>
+          <option value="trial">🔵 Trial</option>
+          <option value="empty">⚫ Empty</option>
+        </select>
       </div>
       <div class="bulk-actions-bar hidden" id="bulkActionsBar">
         <div class="bulk-info">
@@ -4003,19 +8016,58 @@
     </div>
 
     
-    <div class="logs-drawer" id="logsDrawer">
-      <div class="logs-header" onclick="toggleLogs()">
-        <div class="logs-header-left">
-          <span class="logs-title">Console</span>
-          <span class="logs-count" id="logsCount">0</span>
+    <div class="console-drawer " id="logsDrawer">
+      <div class="console-header" onclick="toggleLogs()">
+        <div class="console-header-left">
+          <span class="console-title-group">
+            <span class="console-icon-indicator ">⬤</span>
+            <span class="console-title">Console</span>
+            <span class="console-badge " id="logsCount">0</span>
+          </span>
+          <span class="console-new-indicator" id="newLogsIndicator">● New</span>
         </div>
-        <span class="logs-toggle">▲</span>
+        <div class="console-header-right">
+          <span class="console-toggle-icon">▲</span>
+        </div>
       </div>
-      <div class="logs-actions">
-        <button class="icon-btn" onclick="clearConsole()" title="Clear console output">🗑</button>
-        <button class="icon-btn" onclick="copyLogs()" title="Copy logs to clipboard">📋</button>
+      
+      <div class="console-toolbar">
+        <div class="console-filters">
+          <button class="console-filter active" data-filter="all" onclick="filterConsole('all')" title="All logs">
+            <span class="filter-label">All</span>
+            <span class="filter-count">0</span>
+          </button>
+          <button class="console-filter " data-filter="error" onclick="filterConsole('error')" title="Errors">
+            <span class="filter-icon error">✗</span>
+            
+          </button>
+          <button class="console-filter " data-filter="warning" onclick="filterConsole('warning')" title="Warnings">
+            <span class="filter-icon warning">!</span>
+            
+          </button>
+          <button class="console-filter " data-filter="success" onclick="filterConsole('success')" title="Success">
+            <span class="filter-icon success">✓</span>
+            
+          </button>
+        </div>
+        <div class="console-actions">
+          <button class="console-btn scroll-btn" onclick="scrollConsoleToBottom()" title="Scroll to bottom" id="scrollToBottomBtn">
+            <span>↓</span>
+          </button>
+          <button class="console-btn" onclick="clearConsole()" title="Clear console output">
+            <span>🗑</span>
+          </button>
+          <button class="console-btn" onclick="copyLogs()" title="Copy logs to clipboard">
+            <span>📋</span>
+          </button>
+        </div>
       </div>
-      <div class="logs-content" id="logsContent"></div>
+      
+      <div class="console-body" id="logsContent" onscroll="handleConsoleScroll()"></div>
+      
+      <div class="console-new-messages" id="newMessagesBar" onclick="scrollConsoleToBottom()">
+        <span>↓ New messages below</span>
+      </div>
     </div>
   
     
@@ -4026,6 +8078,114 @@
           <span class="overlay-title">Settings</span>
         </div>
         <div class="overlay-body">
+    <!-- Stats Section (embedded) -->
+    <div class="settings-section-embedded" id="settingsStatsSection">
+      
+    <div class="stats-dashboard">
+      <div class="stats-header">
+        <h3 class="stats-title">📊 Statistics</h3>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="stats-cards">
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">total</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-value">0</div>
+          <div class="stat-label">BANNED</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value">0</div>
+          <div class="stat-label">expired</div>
+        </div>
+      </div>
+
+      <!-- Usage Overview -->
+      <div class="stats-section">
+        <div class="stats-section-title">Today's Usage</div>
+        <div class="usage-overview">
+          <div class="usage-bar-container">
+            <div class="usage-bar-fill" style="width: 0%"></div>
+          </div>
+          <div class="usage-numbers">
+            <span class="usage-current">0</span>
+            <span class="usage-separator">/</span>
+            <span class="usage-limit">0</span>
+          </div>
+        </div>
+        <div class="usage-avg">
+          Avg per account: <strong>0</strong>
+        </div>
+      </div>
+
+      <!-- Mini Chart -->
+      <div class="stats-section">
+        <div class="stats-section-title">Weekly Usage</div>
+        <div class="mini-chart">
+          
+    <div class="chart-bar" style="height: 30%"></div>
+  
+    <div class="chart-bar" style="height: 45%"></div>
+  
+    <div class="chart-bar" style="height: 60%"></div>
+  
+    <div class="chart-bar" style="height: 80%"></div>
+  
+    <div class="chart-bar" style="height: 55%"></div>
+  
+    <div class="chart-bar" style="height: 40%"></div>
+  
+    <div class="chart-bar" style="height: 25%"></div>
+  
+        </div>
+        <div class="chart-labels">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+      </div>
+
+      <!-- Account Health -->
+      <div class="stats-section">
+        <div class="stats-section-title">Account Health</div>
+        <div class="health-bars">
+          <div class="health-row">
+            <span class="health-label">✅ Active</span>
+            <div class="health-bar">
+              <div class="health-fill success" style="width: 0%"></div>
+            </div>
+            <span class="health-percent">0%</span>
+          </div>
+          <div class="health-row">
+            <span class="health-label">⛔ BANNED</span>
+            <div class="health-bar">
+              <div class="health-fill danger" style="width: 0%"></div>
+            </div>
+            <span class="health-percent">0%</span>
+          </div>
+          <div class="health-row">
+            <span class="health-label">⏰ expired</span>
+            <div class="health-bar">
+              <div class="health-fill warning" style="width: 0%"></div>
+            </div>
+            <span class="health-percent">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    </div>
+
     <!-- Active Profile Card -->
     <div class="settings-card" id="activeProfileCard">
       <div class="settings-card-header">
@@ -4100,33 +8260,70 @@
       <div class="settings-card-body">
         <div class="setting-desc" style="margin-bottom: 16px;">Choose how to register accounts (affects ban risk)</div>
         
-        <!-- WebView Strategy -->
-        <div class="strategy-option selected" onclick="selectStrategy('webview')">
-          <input type="radio" name="strategy" value="webview" checked>
+        <!-- WebView Strategy (Safe) -->
+        <div class="strategy-option strategy-safe " onclick="selectRegistrationStrategy('webview')">
+          <div class="strategy-icon-wrapper strategy-icon-safe">
+            <span class="strategy-icon">🌐</span>
+          </div>
+          <input type="radio" name="strategy" value="webview" checked style="display: none;">
           <div class="strategy-content">
             <div class="strategy-header">
               <strong>WebView (Recommended)</strong>
-              <span class="badge badge-success">Low ban risk</span>
+              <span class="badge badge-success">✓ Low risk</span>
             </div>
             <div class="strategy-desc">Opens real browser, you enter credentials manually. Minimal ban risk.</div>
-            <div class="strategy-meta">
-              <span class="badge badge-warning">Manual input required</span>
-              <span class="strategy-risk">Low ban risk (<10%)</span>
+            <div class="strategy-features">
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>Real browser fingerprint</span>
+              </div>
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>Human-like behavior</span>
+              </div>
+              <div class="strategy-feature feature-con">
+                <span class="feature-icon">!</span>
+                <span>Manual input required</span>
+              </div>
+            </div>
+            <div class="strategy-risk-bar">
+              <div class="risk-label">Ban risk:</div>
+              <div class="risk-meter">
+                <div class="risk-fill risk-low" style="width: 10%;"></div>
+              </div>
+              <div class="risk-value risk-low-text">&lt;10%</div>
             </div>
           </div>
         </div>
         
-        <!-- Automated Strategy -->
-        <div class="strategy-option " onclick="selectStrategy('automated')">
-          <input type="radio" name="strategy" value="automated" >
+        <!-- Automated Strategy (Risky) -->
+        <div class="strategy-option strategy-risky selected" onclick="selectRegistrationStrategy('automated')">
+          <div class="strategy-icon-wrapper strategy-icon-risky">
+            <span class="strategy-icon">🤖</span>
+          </div>
+          <input type="radio" name="strategy" value="automated"  style="display: none;">
           <div class="strategy-content">
             <div class="strategy-header">
               <strong>Automated (Legacy)</strong>
-              <span class="badge badge-danger">Medium ban risk</span>
+              <span class="badge badge-danger">⚠ High risk</span>
             </div>
             <div class="strategy-desc">Automated browser with DrissionPage. Works for some users.</div>
-            <div class="strategy-meta">
-              <span class="strategy-risk">Medium-High ban risk (40-90%)</span>
+            <div class="strategy-features">
+              <div class="strategy-feature feature-pro">
+                <span class="feature-icon">✓</span>
+                <span>Fully automatic</span>
+              </div>
+              <div class="strategy-feature feature-con">
+                <span class="feature-icon">⚠</span>
+                <span>High detection risk</span>
+              </div>
+            </div>
+            <div class="strategy-risk-bar">
+              <div class="risk-label">Ban risk:</div>
+              <div class="risk-meter">
+                <div class="risk-fill risk-high" style="width: 70%;"></div>
+              </div>
+              <div class="risk-value risk-high-text">40-90%</div>
             </div>
           </div>
         </div>
@@ -4141,6 +8338,19 @@
             <input type="checkbox" checked onchange="toggleSetting('deferQuotaCheck', this.checked)">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+        
+        <!-- OAuth Provider (only for WebView) -->
+        <div id="oauthProviderOption" class="setting-row" style="margin-top: 16px; ">
+          <div>
+            <div class="setting-label">OAuth Provider</div>
+            <div class="setting-desc">Choose provider for WebView registration</div>
+          </div>
+          <select class="select" id="oauthProviderSelect" onchange="updateSetting('oauthProvider', this.value)">
+            <option value="ask" selected>Ask every time</option>
+            <option value="Google" >Google</option>
+            <option value="Github" >GitHub</option>
+          </select>
         </div>
       </div>
     </div>
@@ -4183,21 +8393,80 @@
     </div>
 
     
-    <div class="spoof-section">
-      <div class="spoof-header">
-        <div class="spoof-title">
-          <span class="spoof-icon">🛡️</span>
-          <div>
-            <div class="setting-label">Spoofing mode</div>
-            <div class="setting-desc">Randomize browser fingerprint</div>
-          </div>
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
+        <span class="settings-card-icon">🌐</span>
+        <span class="settings-card-title">Proxy</span>
+        <div class="proxy-status-badge proxy-status-unknown">
+          <span>⚪</span>
+          <span>Proxy not configured</span>
         </div>
-        <label class="toggle">
+        <span class="settings-card-toggle"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7.7-.7L6 8l5-5-.7-.7z"/></svg></span>
+      </div>
+      <div class="settings-card-body">
+        <div class="setting-desc" style="margin-bottom: 12px;">Route browser traffic through proxy server</div>
+        
+        <!-- Proxy Address Input -->
+        <div class="form-group">
+          <label class="form-label">Proxy Address</label>
+          <div class="proxy-input-row">
+            <input 
+              type="text" 
+              class="form-input proxy-input" 
+              id="proxyAddressInput"
+              placeholder="http://user:pass@host:port"
+              value=""
+              onchange="updateProxyAddress(this.value)"
+            />
+            <button 
+              class="btn btn-secondary" 
+              id="testProxyBtn"
+              onclick="testProxy()"
+              disabled
+              
+            >
+              🔍 Test Proxy
+            </button>
+          </div>
+          <div class="form-hint">Formats: host:port:user:pass, socks5://user:pass@host:port</div>
+          
+          
+        </div>
+        
+        <!-- Use Proxy for Registration -->
+        <div class="setting-row" style="margin-top: 16px;">
+          <div>
+            <div class="setting-label">Use proxy for registration</div>
+            <div class="setting-desc">Route registration traffic through proxy</div>
+          </div>
+          <label class="toggle">
+            <input 
+              type="checkbox" 
+              id="useProxyToggle"
+               
+              disabled
+              onchange="toggleSetting('useProxyForRegistration', this.checked)"
+            >
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  
+    
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
+        <span class="settings-card-icon">🛡️</span>
+        <span class="settings-card-title">Spoofing mode</span>
+        <label class="toggle" onclick="event.stopPropagation()">
           <input type="checkbox" id="spoofingToggle" checked onchange="toggleSpoofing(this.checked)">
           <span class="toggle-slider"></span>
         </label>
+        <span class="settings-card-toggle"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7.7-.7L6 8l5-5-.7-.7z"/></svg></span>
       </div>
-      <div class="spoof-details" id="spoofDetails">
+      <div class="settings-card-body">
+        <div class="setting-desc" style="margin-bottom: 12px;">Randomize browser fingerprint</div>
+        <div class="spoof-details" id="spoofDetails" style="margin-top: 0;">
         <div class="spoof-modules">
           <div class="spoof-module">
             <span class="module-icon">🤖</span>
@@ -4247,65 +8516,78 @@
           <span>Disabling may cause bot detection failures</span>
         </div>
       </div>
-    </div>
-  
-    
-    <div class="import-export-section">
-      <div class="section-header">
-        <span class="section-icon">📦</span>
-        <span class="section-title">Export Accounts</span>
-      </div>
-      <div class="section-desc">Export accounts with tokens for transfer</div>
-      <div class="import-export-actions">
-        <button class="btn btn-primary" onclick="exportAllAccounts()">
-          📤 Export All
-        </button>
-        <button class="btn btn-secondary" onclick="importAccounts()">
-          📥 Import Accounts
-        </button>
       </div>
     </div>
   
     
-    <div class="danger-zone-section">
-      <div class="danger-zone-header">
-        <span class="danger-zone-icon">⚠️</span>
-        <span class="danger-zone-title">Danger Zone</span>
+    
+    <div class="settings-card collapsed">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
+        <span class="settings-card-icon">📦</span>
+        <span class="settings-card-title">Export Accounts</span>
+        <span class="settings-card-toggle"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7.7-.7L6 8l5-5-.7-.7z"/></svg></span>
       </div>
-      
-      <div class="danger-zone-card patch-card">
-        <div class="danger-zone-info">
-          <div class="danger-zone-label">Kiro Patch</div>
-          <div class="danger-zone-desc">Patches Kiro to use custom Machine ID</div>
-          <div class="patch-status-row">
-            <span id="patchStatusText" class="patch-status">Loading...</span>
-            <span id="currentMachineId" class="machine-id-preview"></span>
+      <div class="settings-card-body">
+        <div class="section-desc" style="margin-bottom: 12px;">Export accounts with tokens for transfer</div>
+        <div class="import-export-actions">
+          <button class="btn btn-primary btn-full" onclick="exportAllAccounts()">
+            📤 Export All
+          </button>
+          <button class="btn btn-secondary btn-full" onclick="importAccounts()">
+            📥 Import Accounts
+          </button>
+        </div>
+      </div>
+    </div>
+  
+    
+    <div class="settings-card collapsed danger-card">
+      <div class="settings-card-header" onclick="toggleSettingsCard(this)">
+        <span class="settings-card-icon">⚠️</span>
+        <span class="settings-card-title">Danger Zone</span>
+        <span class="settings-card-toggle"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7.7-.7L6 8l5-5-.7-.7z"/></svg></span>
+      </div>
+      <div class="settings-card-body">
+        <div class="danger-zone-card patch-card">
+          <div class="danger-zone-info">
+            <div class="danger-zone-label">Kiro Patch</div>
+            <div class="danger-zone-desc">Patches Kiro to use custom Machine ID</div>
+            <div class="patch-status-row">
+              <span id="patchStatusText" class="patch-status">Loading...</span>
+              <span id="patchVersionInfo" class="patch-version-info"></span>
+            </div>
+            <div class="patch-machine-id-row">
+              <span id="currentMachineId" class="machine-id-preview"></span>
+            </div>
+          </div>
+          <div class="danger-zone-actions">
+            <button id="patchKiroBtn" class="btn btn-warning btn-sm" onclick="confirmPatchKiro()" title="Patch Kiro">
+              🔧 Patch
+            </button>
+            <button id="updatePatchBtn" class="btn btn-primary btn-sm" onclick="confirmPatchKiro()" style="display:none" title="Update available">
+              ⬆️ Update
+            </button>
+            <button id="unpatchKiroBtn" class="btn btn-secondary btn-sm" onclick="confirmUnpatchKiro()" style="display:none" title="Remove Patch">
+              ↩️ Remove
+            </button>
+            <button id="generateIdBtn" class="btn btn-secondary btn-sm" onclick="generateNewMachineId()" title="New ID">
+              🎲 New ID
+            </button>
           </div>
         </div>
-        <div class="danger-zone-actions">
-          <button id="patchKiroBtn" class="btn btn-warning" onclick="confirmPatchKiro()" title="Patch Kiro">
-            🔧 Patch
-          </button>
-          <button id="unpatchKiroBtn" class="btn btn-secondary" onclick="confirmUnpatchKiro()" style="display:none" title="Remove Patch">
-            ↩️ Remove
-          </button>
-          <button id="generateIdBtn" class="btn btn-secondary" onclick="generateNewMachineId()" title="New ID">
-            🎲 New ID
+        
+        <div class="danger-zone-card">
+          <div class="danger-zone-info">
+            <div class="danger-zone-label">Reset Machine ID</div>
+            <div class="danger-zone-desc">Generate new telemetry IDs for Kiro. Use if account is banned.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="confirmResetMachineId()" title="Reset machineId, sqmId, devDeviceId and serviceMachineId">
+            🔄 Reset
           </button>
         </div>
-      </div>
-      
-      <div class="danger-zone-card">
-        <div class="danger-zone-info">
-          <div class="danger-zone-label">Reset Machine ID</div>
-          <div class="danger-zone-desc">Generate new telemetry IDs for Kiro. Use if account is banned.</div>
+        <div class="danger-zone-hint">
+          💡 Restart Kiro after reset
         </div>
-        <button class="btn btn-danger" onclick="confirmResetMachineId()" title="Reset machineId, sqmId, devDeviceId and serviceMachineId">
-          🔄 Reset
-        </button>
-      </div>
-      <div class="danger-zone-hint">
-        💡 Restart Kiro after reset
       </div>
     </div>
   
@@ -4344,7 +8626,7 @@
         <div class="dialog-text" id="dialogText">Are you sure you want to delete this account?</div>
         <div class="dialog-actions">
           <button class="btn btn-secondary" onclick="closeDialog()">Cancel</button>
-          <button class="btn btn-danger" onclick="dialogAction()">Delete</button>
+          <button class="btn btn-danger" id="dialogConfirmBtn" onclick="dialogAction()">Delete</button>
         </div>
       </div>
     </div>
@@ -4505,7 +8787,7 @@
     // Standalone Web App Script
     // Auto-generated from VS Code extension components
     
-    const T = {"kiroAccounts":"Kiro Accounts","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","remaining":"remaining","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Register","autoRegTip":"Start automatic account registration","autoRegCountLabel":"Count","autoRegCountPlaceholder":"Number of accounts","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","filterByTokens":"Filter","fresh":"Fresh","partial":"Partial","trial":"Trial","empty":"Empty","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","step":"Step","connected":"Connected","confirm":"Confirm","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patch":"Patch","removePatch":"Remove","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Close Kiro first! Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","proxy":"Proxy","proxyEnabled":"Use Proxy","proxyUrl":"Proxy URL","proxyUrlPlaceholder":"socks5://user:pass@host:port","proxyHint":"Supports: socks5://user:pass@host:port or host:port:user:pass","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","emailsAdded":"{count} emails added","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","llmSettings":"LLM API","llmBaseUrl":"Base URL","llmPort":"Port","llmApiKey":"API Key (optional)","llmApiKeyDesc":"If set, all requests must include this key in the Authorization header.","llmModel":"Default Model","llmModelDesc":"Default chat model to use for completions.","llmServer":"LLM Server","llmServerDesc":"Start or stop the local OpenAI-compatible server.","startServer":"Start Server","stopServer":"Stop Server","restartServer":"Restart Server","serverStatus":"Server Status","serverStatusRunning":"Running","serverStatusStopped":"Stopped","serverStatusError":"Error","proxySettings":"Proxy","proxySettingsDesc":"Route browser traffic through proxy server","proxyUrlHint":"Formats: host:port:user:pass, socks5://user:pass@host:port","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All","selectMode":"Select","selected":"selected","selectAll":"Select All","deselectAll":"Deselect All","refreshSelected":"Refresh Tokens","deleteSelected":"Delete Selected","deleteSelectedConfirm":"Delete {count} selected accounts?","selectedAccountsDeleted":"{count} accounts deleted","refreshingTokens":"Refreshing tokens...","checkHealth":"Check Health","checkingHealth":"Checking accounts health...","ready":"Ready","clickToConfigure":"Click to configure","noAccountsFound":"No accounts found","clearSearch":"Clear search","automation":"Automation","interface":"Interface","autoSwitchThreshold":"Switch threshold","autoSwitchThresholdDesc":"Switch when remaining < this value","settings":"Settings","accounts":"Accounts","profiles":"Profiles","pause":"Pause","statistics":"Statistics","weeklyUsage":"Weekly Usage","avgPerAccount":"Avg per account","accountHealth":"Account Health","registrationStrategy":"Registration Strategy","registrationStrategyDesc":"Choose how to register accounts (affects ban risk)","strategyWebView":"WebView (Recommended)","strategyWebViewDesc":"Opens real browser, you enter credentials manually. Minimal ban risk.","strategyWebViewBanRisk":"Low ban risk (<10%)","strategyAutomated":"Automated (Legacy)","strategyAutomatedDesc":"Automated browser with DrissionPage. Works for some users.","strategyAutomatedBanRisk":"Medium-High ban risk (40-90%)","deferQuotaCheck":"Defer quota check","deferQuotaCheckDesc":"Do NOT check quota immediately after registration (reduces ban risk)","manualInputRequired":"Manual input required","lowBanRisk":"Low ban risk","mediumBanRisk":"Medium ban risk","highBanRisk":"High ban risk"};
+    const T = {"kiroAccounts":"Kiro Accounts","accounts":"Accounts","registration":"Registration","llm":"AI/LLM","profiles":"Profiles","settings":"Settings","compactViewTip":"Shrink cards to show more accounts","settingsTip":"Configure auto-switch, browser mode, logging","back":"Back","valid":"valid","expired":"expired","total":"total","noActive":"No active","validFilter":"Valid","expiredFilter":"Expired","activeGroup":"Active","readyGroup":"Ready","badGroup":"Expired / Exhausted","expiredGroup":"Expired","exhaustedGroup":"Exhausted","bannedGroup":"Banned","banned":"BANNED","refreshAll":"Refresh all","deleteAll":"Delete all","todaysUsage":"Today's Usage","used":"used","daysLeft":"days left","remaining":"remaining","resetsAtMidnight":"Resets at midnight","autoReg":"Auto-Register","autoRegTip":"Start automatic account registration","autoRegCountLabel":"Count","autoRegCountPlaceholder":"Number of accounts","import":"Import","importTip":"Import existing token from JSON file","refresh":"Refresh","refreshTip":"Reload accounts and update token status","export":"Export","exportTip":"Save all accounts to JSON file","running":"Running...","stop":"Stop","all":"All","byUsage":"By Usage","byExpiry":"By Expiry","byDate":"By Date","searchPlaceholder":"Search accounts...","newBadge":"NEW","filterByTokens":"Filter","fresh":"Fresh","partial":"Partial","trial":"Trial","empty":"Empty","more":"More","active":"Active","copyTokenTip":"Copy access token to clipboard","refreshTokenTip":"Refresh expired token","viewQuotaTip":"Show usage statistics for this account","deleteTip":"Remove account and token file","noAccounts":"No accounts yet","createFirst":"Create First Account","console":"Console","clearTip":"Clear console output","openLogTip":"Open full log file in editor","copyLogsTip":"Copy logs to clipboard","scrollToBottom":"Scroll to bottom","newMessagesBelow":"New messages below","step":"Step","connected":"Connected","confirm":"Confirm","apply":"Apply","cancel":"Cancel","deleteTitle":"Delete Account","deleteConfirm":"Are you sure you want to delete this account?","areYouSure":"Are you sure?","settingsTitle":"Settings","autoSwitch":"Auto-switch on expiry","autoSwitchDesc":"Automatically switch to next valid account","hideExhausted":"Hide exhausted","hideExhaustedDesc":"Hide accounts with 100% usage","headless":"Headless mode","headlessDesc":"Run browser in background","verbose":"Verbose logging","verboseDesc":"Show detailed logs","screenshots":"Screenshots on error","screenshotsDesc":"Save screenshots when errors occur","spoofing":"Spoofing mode","spoofingDesc":"Randomize browser fingerprint","deviceFlow":"Device Flow auth","deviceFlowDesc":"Use device code instead of local server","language":"Language","languageDesc":"Interface language","spoofAutomation":"Automation","spoofAutomationDesc":"Hides webdriver flags","spoofCanvas":"Canvas/WebGL","spoofCanvasDesc":"Randomizes fingerprint","spoofNavigator":"Navigator","spoofNavigatorDesc":"Spoofs hardware info","spoofAudio":"Audio/Fonts","spoofAudioDesc":"Masks audio context","spoofWebrtc":"WebRTC","spoofWebrtcDesc":"Hides local IP","spoofBehavior":"Behavior","spoofBehaviorDesc":"Human-like actions","spoofWarning":"Disabling may cause bot detection failures","kiroPatch":"Kiro Patch","kiroPatchDesc":"Patches Kiro to use custom Machine ID","patchStatusLoading":"Loading...","patchStatusActive":"Patched","patchStatusNotPatched":"Not patched","patchStatusOutdated":"Outdated","patchVersion":"Patch","patchVersionInstalled":"installed","patchVersionLatest":"latest","patchUpdateAvailable":"Update available","kiroVersion":"Kiro","patch":"Patch","removePatch":"Remove","updatePatch":"Update","newMachineId":"New ID","patchKiroTitle":"Patch Kiro","patchKiroConfirm":"This will patch Kiro to use custom Machine ID. Restart Kiro after patching. Continue?","removePatchTitle":"Remove Patch","removePatchConfirm":"This will restore original Kiro files. Continue?","newProfile":"New Profile","editProfile":"Edit Profile","profileName":"Profile Name","profileNamePlaceholder":"My Gmail","server":"Server","port":"Port","password":"Password","testConnection":"Test","proxy":"Proxy","proxyEnabled":"Use Proxy","proxyUrl":"Proxy URL","proxyUrlPlaceholder":"socks5://user:pass@host:port","proxyHint":"Supports: socks5://user:pass@host:port or host:port:user:pass","testing":"Testing...","emailStrategy":"Email Strategy","emailStrategyDesc":"Choose how to generate emails for registration","save":"Save","createProfile":"Create Profile","enterYourEmail":"Enter your email","detected":"Detected","chooseStrategy":"Choose strategy","recommended":"Recommended","otherOptions":"Other options","useAppPassword":"Use App Password","imapConnection":"IMAP Connection","optional":"optional","checkConnection":"Check connection","strategySingleName":"Single Email","strategySingleDesc":"Uses your IMAP email directly. Only 1 account per email.","strategySingleExample":"your@gmail.com → your@gmail.com","strategyPlusAliasName":"Plus Alias","strategyPlusAliasDesc":"Adds +random to your email. All emails arrive to same inbox. Works with Gmail, Outlook, Yandex.","strategyPlusAliasExample":"your@gmail.com → your+kiro5x7@gmail.com","strategyCatchAllName":"Catch-All Domain","strategyCatchAllDesc":"Generates random emails on your domain. Requires catch-all configured on mail server.","strategyCatchAllExample":"JohnSmith4521@yourdomain.com","strategyCatchAllHint":"Enter domain with catch-all configured. All emails to any@domain will arrive to your IMAP inbox.","strategyCatchAllDomain":"Registration Domain","strategyPoolName":"Email Pool","strategyPoolDesc":"Use a list of your email addresses. Each email is used once in order.","strategyPoolHint":"Add email addresses to use in order. Each email = 1 account. Format: email:password","strategyPoolAdd":"email:password or email...","strategyPoolFromFile":"From file","strategyPoolPaste":"Paste","poolEmpty":"Add at least one email to pool","emailsAdded":"{count} emails added","example":"Example","unlimitedAccounts":"Unlimited accounts","allEmailsOneInbox":"All emails in one inbox","noOwnDomain":"No own domain needed","notAllProvidersSupport":"Not all providers support","uniqueEmails":"Unique email addresses","needOwnDomain":"Need own domain","needCatchAllSetup":"Need catch-all setup","easyToSetup":"Easy to setup","worksEverywhere":"Works everywhere","oneAccountPerEmail":"Only 1 account per email","worksWithAnyProvider":"Works with any provider","controlOverList":"Control over list","needManyEmails":"Need many emails","requiresDomain":"Requires own domain","providerNoAlias":"does not support aliases","activeProfile":"Active Profile","change":"Change","noProfileConfigured":"No profile configured","configure":"Configure","emailProfiles":"Email Profiles","noProfiles":"No profiles configured","addProfile":"Add Profile","success":"Success","failed":"Failed","strategySingleShort":"One account per email","strategyPlusAliasShort":"user+random@domain","strategyCatchAllShort":"Any email on domain","strategyPoolShort":"Your email list","dangerZone":"Danger Zone","resetMachineId":"Reset Machine ID","resetMachineIdDesc":"Generate new telemetry IDs for Kiro. Use if account is banned.","resetMachineIdTip":"Reset machineId, sqmId, devDeviceId and serviceMachineId","reset":"Reset","restartAfterReset":"Restart Kiro after reset","resetMachineIdTitle":"Reset Machine ID","resetMachineIdConfirm":"This will reset Kiro telemetry IDs. You need to restart Kiro after. Continue?","llmSettings":"LLM API","llmBaseUrl":"Base URL","llmPort":"Port","llmApiKey":"API Key (optional)","llmApiKeyDesc":"If set, all requests must include this key in the Authorization header.","llmModel":"Default Model","llmModelDesc":"Default chat model to use for completions.","llmServer":"LLM Server","llmServerDesc":"Start or stop the local OpenAI-compatible server.","startServer":"Start Server","stopServer":"Stop Server","restartServer":"Restart Server","starting":"Starting...","stopping":"Stopping...","restarting":"Restarting...","serverStatus":"Server Status","serverStatusRunning":"Running","serverStatusStopped":"Stopped","serverStatusError":"Error","proxySettings":"Proxy","proxySettingsDesc":"Route browser traffic through proxy server","proxyUrlHint":"Formats: host:port:user:pass, socks5://user:pass@host:port","delete":"Delete","checkUpdates":"Check Updates","newVersion":"New version!","download":"Download","edit":"Edit","unnamed":"Unnamed","customDomain":"Custom Domain","emailPasswordHint":"Use your email password","ssoImport":"SSO Import","ssoHint":"1. Open view.awsapps.com/start\n2. DevTools → Application → Cookies\n3. Copy x-amz-sso_authn","pasteCookie":"Paste cookie...","providerGmail":"Gmail","providerYandex":"Yandex","providerMailru":"Mail.ru","providerOutlook":"Outlook","providerCustom":"Custom Domain","gmailPasswordHint":"Use App Password from Google Account settings","yandexPasswordHint":"Use app password from Yandex settings","mailruPasswordHint":"Create app password in Mail.ru settings","outlookPasswordHint":"Use your Microsoft account password","accountDeleted":"Account deleted","badAccountsDeleted":"Bad accounts deleted","resettingMachineId":"Resetting Machine ID...","patchingKiro":"Patching Kiro...","removingPatch":"Removing patch...","profileCreated":"Profile created","profileUpdated":"Profile updated","profileDeleted":"Profile deleted","tokenCopied":"Token copied to clipboard","logsCopied":"Logs copied to clipboard","fillAllFields":"Please fill all IMAP fields","clipboardError":"Failed to read clipboard","deleteProfileConfirm":"Delete this profile?","deleteBadAccountsConfirm":"Delete all expired/exhausted accounts?","deleteBannedAccountsConfirm":"Delete all banned accounts?","bannedAccountsDeleted":"Banned accounts deleted","emailsImported":"Imported {count} emails","exportAccounts":"Export Accounts","exportAccountsDesc":"Export accounts with tokens for transfer","importAccounts":"Import Accounts","importAccountsDesc":"Import accounts from export file","exportSelected":"Export Selected","exportAll":"Export All","selectMode":"Select","selected":"selected","selectAll":"Select All","deselectAll":"Deselect All","refreshSelected":"Refresh Tokens","deleteSelected":"Delete Selected","deleteSelectedConfirm":"Delete {count} selected accounts?","selectedAccountsDeleted":"{count} accounts deleted","refreshingTokens":"Refreshing tokens...","checkHealth":"Check Health","checkingHealth":"Checking accounts health...","ready":"Ready","clickToConfigure":"Click to configure","noAccountsFound":"No accounts found","clearSearch":"Clear search","emptyAccountsTitle":"No accounts yet","emptyAccountsDesc":"Create your first account to get started with Kiro","emptySearchTitle":"No results found","emptySearchDesc":"Try a different search term","emptyBannedTitle":"No banned accounts","emptyBannedDesc":"All your accounts are in good standing","automation":"Automation","interface":"Interface","autoSwitchThreshold":"Switch threshold","autoSwitchThresholdDesc":"Switch when remaining < this value","pause":"Pause","statistics":"Statistics","weeklyUsage":"Weekly Usage","avgPerAccount":"Avg per account","accountHealth":"Account Health","registrationStrategy":"Registration Strategy","registrationStrategyDesc":"Choose how to register accounts (affects ban risk)","strategyWebView":"WebView (Recommended)","strategyWebViewDesc":"Opens real browser, you enter credentials manually. Minimal ban risk.","strategyWebViewBanRisk":"Low ban risk (<10%)","strategyWebViewFeature1":"Real browser fingerprint","strategyWebViewFeature2":"Human-like behavior","strategyAutomated":"Automated (Legacy)","strategyAutomatedDesc":"Automated browser with DrissionPage. Works for some users.","strategyAutomatedBanRisk":"Medium-High ban risk (40-90%)","strategyAutomatedFeature1":"Fully automatic","strategyAutomatedFeature2":"High detection risk","deferQuotaCheck":"Defer quota check","deferQuotaCheckDesc":"Do NOT check quota immediately after registration (reduces ban risk)","manualInputRequired":"Manual input required","lowBanRisk":"Low risk","mediumBanRisk":"Medium risk","highBanRisk":"High risk","banRiskLabel":"Ban risk","auto":"Auto","manual":"Manual","oauthProvider":"OAuth Provider","oauthProviderDesc":"Choose provider for WebView registration","oauthProviderGoogle":"Google","oauthProviderGithub":"GitHub","oauthProviderAsk":"Ask every time","oauthProviderAskDesc":"Show provider selection dialog","selectOAuthProvider":"Select OAuth Provider","selectOAuthProviderDesc":"Choose how to sign in to Kiro","batchRegistration":"Batch Registration","scheduledRegistration":"Scheduled Registration","scheduledRegistrationDesc":"Auto-register accounts at intervals","loginTemplate":"Login Template","loginTemplatePlaceholder":"Account_{N}","loginTemplateHint":"Use {N} for number (001, 002...)","startNumber":"Start #","scheduleInterval":"Interval","scheduleIntervalManual":"Manual","scheduleIntervalMinutes":"min","maxAccounts":"Limit","maxAccountsHint":"Max accounts to register","startSchedule":"Start","stopSchedule":"Stop","scheduleActive":"Active","scheduleNextIn":"Next in","complete":"Complete","preview":"Preview","nextNumber":"Next #","interval":"Interval","minutes":"min","hour":"hour","hours":"hours","startScheduled":"Start","resetProgress":"Reset counter to start","noTimer":"No timer","noTimerHint":"Click Start for each registration","custom":"Custom","upcoming":"Upcoming","startFrom":"Start #","enableFirst":"Enable toggle first","registerOne":"Register","accountsToRegister":"Accounts to register","intervalBetween":"Interval between registrations","noDelay":"No delay","noDelayHint":"Registrations will run one after another","withDelayHint":"Safer for avoiding rate limits","accountNames":"Account names","randomNames":"Random names","randomNamesDesc":"Realistic first + last names","customPrefix":"Custom prefix","customPrefixDesc":"Your prefix + number","enterPrefix":"Enter prefix (e.g. MyAcc)","exampleNames":"Example names","previousProgress":"Previous progress","startBatchReg":"Start Registration","stopRegistration":"Stop Registration","completed":"Completed","batchRemaining":"Remaining","nextIn":"Next in","proxyAddress":"Proxy Address","proxyAddressPlaceholder":"http://user:pass@host:port","testProxy":"Test Proxy","testingProxy":"Testing...","proxyWorking":"Proxy is working","proxyNotWorking":"Proxy is not working","proxyNotConfigured":"Proxy not configured","proxyResponseTime":"Response time","proxyIpAddress":"IP Address","useProxyForRegistration":"Use proxy for registration","useProxyForRegistrationDesc":"Route registration traffic through proxy","proxyTestSuccess":"Proxy test successful","proxyTestFailed":"Proxy test failed"};
     
     // WebSocket connection
     let ws = null;

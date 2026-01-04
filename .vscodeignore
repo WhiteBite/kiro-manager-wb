@@ -20,6 +20,9 @@ test_out.txt
 test-*.js
 *.log
 
+# INCLUDE bundled executable (dist/bin/kiro-manager.exe)
+!dist/bin/**
+
 # Include autoreg in VSIX (bundled for auto-extraction)
 # Exclude only unnecessary files
 autoreg/__pycache__/**

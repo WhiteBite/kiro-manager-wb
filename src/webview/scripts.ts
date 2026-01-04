@@ -5,6 +5,18 @@
 import { generateStateScript } from './state';
 import { Translations } from './i18n/types';
 
+/**
+ * Generates the complete client-side JavaScript for the webview.
+ * Includes all UI interactions, tab navigation, account management,
+ * console logging, and VS Code API communication.
+ * @param _totalAccounts - Total number of accounts (currently unused, reserved for future use)
+ * @param _bannedCount - Number of banned accounts (currently unused, reserved for future use)
+ * @param t - Translations object for internationalization
+ * @returns Complete JavaScript code as a string to be injected into the webview
+ * @example
+ * const script = generateWebviewScript(10, 2, translations);
+ * // Returns JS code with embedded translations
+ */
 export function generateWebviewScript(_totalAccounts: number, _bannedCount: number, t: Translations): string {
   // Serialize translations for client-side use
   const T = JSON.stringify(t);
@@ -15,8 +27,8 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     const vscode = acquireVsCodeApi();
     let pendingAction = null;
     
-    // Escape HTML to prevent XSS
-    function escapeHtml(text) {
+    // Client-side HTML escaping (uses DOM API, different from server-side helpers.ts version)
+    function escapeHtmlClient(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
@@ -56,6 +68,9 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     let currentTab = 'accounts';
     
     function switchTab(tabId) {
+      if (currentTab === tabId) return;
+      
+      const previousTab = currentTab;
       currentTab = tabId;
       
       // Update tab buttons
@@ -63,10 +78,30 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
         btn.classList.toggle('active', btn.dataset.tab === tabId);
       });
       
-      // Update tab content
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.toggle('active', content.id === 'tab-' + tabId);
-      });
+      // Animate tab content transition
+      const previousContent = document.getElementById('tab-' + previousTab);
+      const newContent = document.getElementById('tab-' + tabId);
+      
+      // Fade out previous
+      if (previousContent) {
+        previousContent.classList.add('tab-fade-out');
+        previousContent.classList.remove('active');
+      }
+      
+      // Fade in new
+      if (newContent) {
+        newContent.classList.add('tab-fade-in');
+        newContent.classList.add('active');
+        
+        // Scroll to top
+        newContent.scrollTop = 0;
+        
+        // Remove animation classes after transition
+        setTimeout(() => {
+          if (previousContent) previousContent.classList.remove('tab-fade-out');
+          newContent.classList.remove('tab-fade-in');
+        }, 200);
+      }
       
       // FAB visibility - only show on accounts tab
       const fab = document.getElementById('fabContainer');
@@ -74,15 +109,22 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
         fab.style.display = tabId === 'accounts' ? '' : 'none';
       }
       
+      // Reset keyboard navigation when switching tabs
+      focusedAccountIndex = -1;
+      document.querySelectorAll('.account.keyboard-focus').forEach(acc => {
+        acc.classList.remove('keyboard-focus');
+      });
+      
       // Load data for specific tabs
-      if (tabId === 'llm') {
-        getLLMSettings();
-        vscode.postMessage({ command: 'getLLMServerStatus' });
-      } else if (tabId === 'profiles') {
+      if (tabId === 'profiles') {
         vscode.postMessage({ command: 'loadProfiles' });
         vscode.postMessage({ command: 'getActiveProfile' });
       } else if (tabId === 'settings') {
+        // Settings tab now includes Stats and LLM
         vscode.postMessage({ command: 'getPatchStatus' });
+        vscode.postMessage({ command: 'getActiveProfile' });
+        getLLMSettings();
+        vscode.postMessage({ command: 'getLLMServerStatus' });
       }
     }
     
@@ -222,6 +264,21 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     
     function changeLanguage(lang) {
       vscode.postMessage({ command: 'setLanguage', language: lang });
+    }
+
+    function toggleSettingsCard(header, event) {
+      if (event) {
+        // Prevent toggle if clicking on a button or input inside the header
+        const target = event.target;
+        if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.closest('.toggle')) {
+          return;
+        }
+        event.stopPropagation();
+      }
+      const card = header.closest('.settings-card');
+      if (card) {
+        card.classList.toggle('collapsed');
+      }
     }
     
     function checkUpdates() {
@@ -480,6 +537,26 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       drawer?.classList.toggle('open');
     }
     
+    // === Batch Registration Toggle ===
+    
+    function toggleBatchReg(event) {
+      if (event) {
+        const target = event.target;
+        if (target.tagName === 'BUTTON' || target.tagName === 'INPUT') {
+          return;
+        }
+        event.stopPropagation();
+      }
+      const card = document.getElementById('scheduledRegCard');
+      if (card) {
+        card.classList.toggle('collapsed');
+        const toggle = card.querySelector('.batch-reg-toggle');
+        if (toggle) {
+          toggle.textContent = card.classList.contains('collapsed') ? '▼' : '▲';
+        }
+      }
+    }
+    
     function clearConsole() {
       const content = document.getElementById('logsContent');
       if (content) content.innerHTML = '';
@@ -498,7 +575,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       }
     }
     
-    function filterConsole(type: string) {
+    function filterConsole(type) {
       const content = document.getElementById('logsContent');
       const filters = document.querySelectorAll('.console-filter');
       
@@ -535,22 +612,123 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       }
     }
     
-    function appendLogLine(log: string) {
+    // Track if user has scrolled up
+    let isScrolledToBottom = true;
+    let hasNewMessages = false;
+    
+    function handleConsoleScroll() {
+      const content = document.getElementById('logsContent');
+      if (!content) return;
+      
+      const threshold = 50; // pixels from bottom
+      const scrolledToBottom = content.scrollHeight - content.scrollTop - content.clientHeight < threshold;
+      isScrolledToBottom = scrolledToBottom;
+      
+      // Update scroll button visibility
+      const scrollBtn = document.getElementById('scrollToBottomBtn');
+      if (scrollBtn) {
+        scrollBtn.classList.toggle('hidden', scrolledToBottom);
+      }
+      
+      // Hide new messages bar if scrolled to bottom
+      if (scrolledToBottom) {
+        hasNewMessages = false;
+        const newMsgBar = document.getElementById('newMessagesBar');
+        newMsgBar?.classList.remove('visible');
+        const newIndicator = document.getElementById('newLogsIndicator');
+        newIndicator?.classList.remove('visible');
+      }
+    }
+    
+    function scrollConsoleToBottom() {
+      const content = document.getElementById('logsContent');
+      if (content) {
+        content.scrollTo({
+          top: content.scrollHeight,
+          behavior: 'smooth'
+        });
+        isScrolledToBottom = true;
+        hasNewMessages = false;
+        
+        // Hide indicators
+        const newMsgBar = document.getElementById('newMessagesBar');
+        newMsgBar?.classList.remove('visible');
+        const newIndicator = document.getElementById('newLogsIndicator');
+        newIndicator?.classList.remove('visible');
+        const scrollBtn = document.getElementById('scrollToBottomBtn');
+        scrollBtn?.classList.add('hidden');
+      }
+    }
+    
+    function showNewMessagesIndicator() {
+      if (!isScrolledToBottom) {
+        hasNewMessages = true;
+        const newMsgBar = document.getElementById('newMessagesBar');
+        newMsgBar?.classList.add('visible');
+        const newIndicator = document.getElementById('newLogsIndicator');
+        newIndicator?.classList.add('visible');
+      }
+    }
+    
+    // Syntax highlighting helper
+    function highlightLogMessage(message) {
+      let highlighted = escapeHtmlClient(message);
+      
+      // Highlight paths
+      highlighted = highlighted.replace(
+        /([A-Za-z]:)?[\\/][\\w\\-\\.\\/\\\\]+/g,
+        '<span class="hl-path">$&</span>'
+      );
+      
+      // Highlight URLs
+      highlighted = highlighted.replace(
+        /(https?:\\/\\/[^\\s<]+)/g,
+        '<span class="hl-url">$1</span>'
+      );
+      
+      // Highlight numbers
+      highlighted = highlighted.replace(
+        /\\b(\\d+(?:\\.\\d+)?)\\b/g,
+        '<span class="hl-number">$1</span>'
+      );
+      
+      // Highlight quoted strings
+      highlighted = highlighted.replace(
+        /(&quot;[^&]*&quot;|&#39;[^&]*&#39;|"[^"]*"|'[^']*')/g,
+        '<span class="hl-string">$1</span>'
+      );
+      
+      // Highlight keywords
+      highlighted = highlighted.replace(
+        /\\b(SUCCESS|FAIL|ERROR|WARN|OK|DONE|START|STOP|TRUE|FALSE|NULL|NONE)\\b/gi,
+        '<span class="hl-keyword">$1</span>'
+      );
+      
+      // Highlight email addresses
+      highlighted = highlighted.replace(
+        /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})/g,
+        '<span class="hl-email">$1</span>'
+      );
+      
+      return highlighted;
+    }
+    
+    function appendLogLine(log) {
       const content = document.getElementById('logsContent');
       if (!content) return;
       
       // Determine log type
       let type = 'info';
-      let icon = '→';
+      let icon = '›';
       if (log.includes('ERROR') || log.includes('FAIL') || log.includes('✗') || log.includes('❌')) {
         type = 'error';
-        icon = '❌';
+        icon = '✗';
       } else if (log.includes('SUCCESS') || log.includes('✓') || log.includes('✅') || log.includes('[OK]')) {
         type = 'success';
         icon = '✓';
       } else if (log.includes('WARN') || log.includes('⚠') || log.includes('⛔')) {
         type = 'warning';
-        icon = '⚠';
+        icon = '!';
       }
       
       // Extract time if present
@@ -558,18 +736,50 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       const time = timeMatch ? timeMatch[1] : '';
       const message = timeMatch ? log.slice(timeMatch[0].length).trim() : log;
       
-      // Create line element
+      // Check for duplicate message (grouping)
+      const lastLine = content.lastElementChild;
+      if (lastLine) {
+        const lastMsg = lastLine.querySelector('.console-msg')?.textContent;
+        const lastType = lastLine.getAttribute('data-type');
+        if (lastMsg === message && lastType === type) {
+          // Increment count badge
+          let countBadge = lastLine.querySelector('.console-count');
+          if (countBadge) {
+            const count = parseInt(countBadge.textContent || '1') + 1;
+            countBadge.textContent = count.toString();
+          } else {
+            countBadge = document.createElement('span');
+            countBadge.className = 'console-count';
+            countBadge.textContent = '2';
+            lastLine.appendChild(countBadge);
+          }
+          // Update time
+          const timeEl = lastLine.querySelector('.console-time');
+          if (timeEl && time) {
+            timeEl.textContent = time;
+          }
+          return;
+        }
+      }
+      
+      // Create line element with animation
       const line = document.createElement('div');
       line.className = \`console-line \${type}\`;
       line.setAttribute('data-type', type);
       line.innerHTML = \`
         <span class="console-icon">\${icon}</span>
         \${time ? \`<span class="console-time">\${time}</span>\` : ''}
-        <span class="console-msg">\${escapeHtml(message)}</span>
+        <span class="console-msg">\${highlightLogMessage(message)}</span>
       \`;
       
       content.appendChild(line);
-      content.scrollTop = content.scrollHeight;
+      
+      // Auto-scroll only if already at bottom
+      if (isScrolledToBottom) {
+        content.scrollTop = content.scrollHeight;
+      } else {
+        showNewMessagesIndicator();
+      }
       
       // Check current filter
       const activeFilter = document.querySelector('.console-filter.active');
@@ -584,10 +794,35 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       }
       
       updateLogsCount();
+      updateConsoleStatus();
       
       // Auto-open on errors
       if (type === 'error') {
         document.getElementById('logsDrawer')?.classList.add('open');
+      }
+    }
+    
+    function updateConsoleStatus() {
+      const content = document.getElementById('logsContent');
+      const drawer = document.getElementById('logsDrawer');
+      if (!content || !drawer) return;
+      
+      const hasErrors = content.querySelector('.console-line.error') !== null;
+      const hasWarnings = content.querySelector('.console-line.warning') !== null;
+      
+      drawer.classList.remove('has-errors', 'has-warnings');
+      if (hasErrors) {
+        drawer.classList.add('has-errors');
+      } else if (hasWarnings) {
+        drawer.classList.add('has-warnings');
+      }
+      
+      // Update indicator
+      const indicator = drawer.querySelector('.console-icon-indicator');
+      if (indicator) {
+        indicator.classList.remove('has-errors', 'has-warnings');
+        if (hasErrors) indicator.classList.add('has-errors');
+        else if (hasWarnings) indicator.classList.add('has-warnings');
       }
     }
 
@@ -717,10 +952,9 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     function filterByTokens(filter) {
       tokenFilter = filter;
       
-      // Update button states
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.filter === filter);
-      });
+      // Update select value (for dropdown)
+      const select = document.getElementById('tokenFilterSelect');
+      if (select) select.value = filter;
       
       applyFilters();
     }
@@ -794,14 +1028,68 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       
       const toast = document.createElement('div');
       toast.className = 'toast ' + type;
-      const icons = { success: '✓', error: '✗', warning: '⚠️' };
+      const icons = { success: '✓', error: '✗', warning: '⚠️', info: 'ℹ' };
       toast.innerHTML = '<span class="toast-icon">' + (icons[type] || '•') + '</span><span class="toast-message">' + message + '</span>';
+      
+      // Add entering animation class
+      toast.classList.add('toast-entering');
       container.appendChild(toast);
       
+      // Trigger reflow for animation
+      toast.offsetHeight;
+      
+      // Remove entering class to start animation
+      requestAnimationFrame(() => {
+        toast.classList.remove('toast-entering');
+        toast.classList.add('toast-visible');
+      });
+      
+      // Auto-dismiss after 3 seconds
       setTimeout(() => {
-        toast.classList.add('removing');
-        setTimeout(() => toast.remove(), 200);
+        toast.classList.add('toast-removing');
+        toast.classList.remove('toast-visible');
+        setTimeout(() => toast.remove(), 300);
       }, 3000);
+      
+      // Allow manual dismiss on click
+      toast.addEventListener('click', () => {
+        toast.classList.add('toast-removing');
+        toast.classList.remove('toast-visible');
+        setTimeout(() => toast.remove(), 300);
+      });
+    }
+    
+    // === Skeleton Loading ===
+    
+    function renderSkeletonCards(count = 3) {
+      let html = '';
+      for (let i = 0; i < count; i++) {
+        html += \`
+          <div class="account skeleton">
+            <div class="account-avatar skeleton-pulse"></div>
+            <div class="account-info">
+              <div class="skeleton-line skeleton-pulse" style="width: 70%"></div>
+              <div class="skeleton-line skeleton-pulse" style="width: 40%"></div>
+            </div>
+          </div>
+        \`;
+      }
+      return html;
+    }
+    
+    function showSkeletonLoading() {
+      const list = document.getElementById('accountList');
+      if (list) {
+        list.innerHTML = renderSkeletonCards(3);
+      }
+    }
+    
+    function hideSkeletonLoading() {
+      const skeletons = document.querySelectorAll('.account.skeleton');
+      skeletons.forEach(skeleton => {
+        skeleton.classList.add('skeleton-fade-out');
+        setTimeout(() => skeleton.remove(), 200);
+      });
     }
 
     // === Message Handler ===
@@ -854,6 +1142,9 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
           break;
         case 'scheduledRegState':
           updateScheduledRegState(msg.state);
+          break;
+        case 'imapTestResult':
+          updateImapTestResult(msg);
           break;
       }
     });
@@ -1105,16 +1396,131 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     
     // === Keyboard Shortcuts ===
     
+    let focusedAccountIndex = -1;
+    
     document.addEventListener('keydown', (e) => {
+      const target = e.target;
+      const isInputFocused = target instanceof HTMLInputElement || 
+                             target instanceof HTMLTextAreaElement ||
+                             target instanceof HTMLSelectElement;
+      
+      // Escape - close modals/drawer
       if (e.key === 'Escape') {
-        closeDialog();
-        closeSettings();
-        closeSsoModal();
+        // Close in order of priority
+        const logsDrawer = document.getElementById('logsDrawer');
+        if (logsDrawer?.classList.contains('open')) {
+          logsDrawer.classList.remove('open');
+          return;
+        }
+        if (document.getElementById('ssoModal')?.classList.contains('visible')) {
+          closeSsoModal();
+          return;
+        }
+        if (document.getElementById('profileEditor')?.classList.contains('visible')) {
+          closeProfileEditor();
+          return;
+        }
+        if (document.getElementById('dialogOverlay')?.classList.contains('visible')) {
+          closeDialog();
+          return;
+        }
+        // Clear search if has value
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value) {
+          clearSearch();
+          searchInput.blur();
+          return;
+        }
       }
+      
+      // Cmd/Ctrl+K - focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+      
+      // Cmd/Ctrl+F - also focus search (legacy)
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();
-        document.getElementById('searchInput')?.focus();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
       }
+      
+      // Cmd/Ctrl+R - refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refresh();
+        showToast(T.refreshing || 'Refreshing...', 'success');
+      }
+      
+      // Arrow keys - navigate accounts (only when not in input)
+      if (!isInputFocused && currentTab === 'accounts') {
+        const accounts = Array.from(document.querySelectorAll('.account:not([style*="display: none"])'));
+        
+        if (e.key === 'ArrowDown' || e.key === 'j') {
+          e.preventDefault();
+          focusedAccountIndex = Math.min(focusedAccountIndex + 1, accounts.length - 1);
+          focusAccount(accounts, focusedAccountIndex);
+        }
+        
+        if (e.key === 'ArrowUp' || e.key === 'k') {
+          e.preventDefault();
+          focusedAccountIndex = Math.max(focusedAccountIndex - 1, 0);
+          focusAccount(accounts, focusedAccountIndex);
+        }
+        
+        // Enter - switch to focused account
+        if (e.key === 'Enter' && focusedAccountIndex >= 0 && focusedAccountIndex < accounts.length) {
+          e.preventDefault();
+          const account = accounts[focusedAccountIndex];
+          const filename = account.getAttribute('data-filename');
+          if (filename) switchAccount(filename);
+        }
+        
+        // Delete/Backspace - delete focused account
+        if ((e.key === 'Delete' || e.key === 'Backspace') && focusedAccountIndex >= 0 && focusedAccountIndex < accounts.length) {
+          e.preventDefault();
+          const account = accounts[focusedAccountIndex];
+          const filename = account.getAttribute('data-filename');
+          if (filename) confirmDelete(filename);
+        }
+      }
+      
+      // Tab navigation with numbers (1-4)
+      if (!isInputFocused && e.key >= '1' && e.key <= '4') {
+        const tabs = ['accounts', 'profiles', 'llm', 'settings'];
+        const tabIndex = parseInt(e.key) - 1;
+        if (tabs[tabIndex]) {
+          switchTab(tabs[tabIndex]);
+        }
+      }
+    });
+    
+    function focusAccount(accounts, index) {
+      // Remove focus from all
+      accounts.forEach(acc => acc.classList.remove('keyboard-focus'));
+      
+      // Add focus to current
+      if (index >= 0 && index < accounts.length) {
+        const account = accounts[index];
+        account.classList.add('keyboard-focus');
+        account.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    
+    // Reset focus index when clicking
+    document.addEventListener('click', () => {
+      focusedAccountIndex = -1;
+      document.querySelectorAll('.account.keyboard-focus').forEach(acc => {
+        acc.classList.remove('keyboard-focus');
+      });
     });
     
     // === IMAP Profiles ===
@@ -1746,6 +2152,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     window.openSettings = openSettings;
     window.closeSettings = closeSettings;
     window.toggleLogs = toggleLogs;
+    window.toggleBatchReg = toggleBatchReg;
     window.clearConsole = clearConsole;
     window.filterConsole = filterConsole;
     window.copyLogs = copyLogs;
@@ -1811,6 +2218,42 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     window.selectStrategy = selectStrategy;
     window.selectRegistrationStrategy = selectRegistrationStrategy;
     window.updateSetting = updateSetting;
+    window.showSkeletonLoading = showSkeletonLoading;
+    window.hideSkeletonLoading = hideSkeletonLoading;
+    window.renderSkeletonCards = renderSkeletonCards;
+    window.focusAccount = focusAccount;
+    window.switchTab = switchTab;
+    window.filterByTokens = filterByTokens;
+    window.filterConsole = filterConsole;
+    window.handleConsoleScroll = handleConsoleScroll;
+    window.scrollConsoleToBottom = scrollConsoleToBottom;
+    
+    // === Toolbar More Dropdown ===
+    
+    function toggleToolbarMore() {
+      const menu = document.getElementById('toolbarMoreMenu');
+      if (menu) {
+        menu.classList.toggle('visible');
+        
+        // Close on click outside
+        if (menu.classList.contains('visible')) {
+          setTimeout(() => {
+            document.addEventListener('click', closeToolbarMoreOnClickOutside);
+          }, 10);
+        }
+      }
+    }
+    
+    function closeToolbarMoreOnClickOutside(e) {
+      const menu = document.getElementById('toolbarMoreMenu');
+      const btn = document.querySelector('.toolbar-more-btn');
+      if (menu && !menu.contains(e.target) && !btn?.contains(e.target)) {
+        menu.classList.remove('visible');
+        document.removeEventListener('click', closeToolbarMoreOnClickOutside);
+      }
+    }
+    
+    window.toggleToolbarMore = toggleToolbarMore;
     
     // === Initialization ===
     // Load profiles after DOM is ready so they're available when user switches to profiles tab
@@ -1915,8 +2358,8 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       // Update progress ring if running
       const progressFill = card.querySelector('.progress-fill');
       if (progressFill && state.maxAccounts > 0) {
-        const percent = Math.min(100, (state.registeredCount / state.maxAccounts) * 100);
-        progressFill.setAttribute('stroke-dasharray', percent + ', 100');
+        const percent = Math.round((state.registeredCount / state.maxAccounts) * 100);
+        progressFill.setAttribute('stroke-dasharray', Math.min(100, percent) + ', 100');
       }
       
       // Update progress text

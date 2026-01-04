@@ -1,38 +1,57 @@
 /**
  * Styles Index - Combines all style modules
  * 
- * Architecture:
- * - variables.ts: CSS custom properties (design tokens)
+ * Responsive Architecture (100px - 1000px):
+ * - variables.ts: CSS custom properties with fluid scaling
  * - base.ts: Reset, typography, utilities
- * - components.ts: Buttons, inputs, toggles
- * - layout.ts: Hero, toolbar, list, overlays, modals, logs
+ * - components.ts: Buttons, inputs, toggles (touch-friendly)
+ * - layout/: Layout modules with breakpoint-specific styles
  * - profiles.ts: IMAP profiles specific styles
  */
 
 import { variables } from './variables';
 import { base } from './base';
 import { components } from './components';
-import { layout, autoRegStyles, settingsCardStyles, statsStyles, responsiveStyles } from './layout';
+import { 
+  getLayoutStyles,
+  autoRegStyles, 
+  settingsCardStyles, 
+  statsStyles, 
+  responsiveStyles,
+  strategyStyles,
+  batchRegStyles
+} from './layout/index';
 import { profiles } from './profiles';
 
-// Re-export individual modules for selective imports
-export { variables, base, components, layout, autoRegStyles, settingsCardStyles, statsStyles, responsiveStyles, profiles };
+// Re-export individual modules
+export { variables, base, components, profiles };
+
+// Re-export layout modules
+export { 
+  getLayoutStyles,
+  autoRegStyles, 
+  settingsCardStyles, 
+  statsStyles, 
+  responsiveStyles,
+  strategyStyles,
+  batchRegStyles
+} from './layout/index';
+
+// Legacy export for backward compatibility
+export const layout = getLayoutStyles();
 
 /**
- * Get all styles combined
- * Used by the main webview
+ * Combines all style modules into a single CSS string.
+ * Includes fluid variables, base styles, components, layout, and responsive overrides.
+ * @returns Complete CSS string containing all styles
  */
 export function getAllStyles(): string {
   return `
     ${variables}
     ${base}
     ${components}
-    ${layout}
-    ${settingsCardStyles}
-    ${statsStyles}
-    ${autoRegStyles}
+    ${getLayoutStyles()}
     ${profiles}
-    ${responsiveStyles}
   `;
 }
 
@@ -40,8 +59,8 @@ export function getAllStyles(): string {
 export const getStyles = getAllStyles;
 
 /**
- * Get profile-related styles only
- * Used when rendering profile editor in isolation
+ * Gets only profile-related styles for isolated rendering.
+ * @returns CSS string containing profile-related styles only
  */
 export function getProfileStyles(): string {
   return `
