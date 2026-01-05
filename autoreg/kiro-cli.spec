@@ -116,15 +116,12 @@ hiddenimports = [
     'DrissionPage.common',
     'DrissionPage.configs',
     'DrissionPage.errors',
-]
     
     # Argparse для CLI
     'argparse',
-    
     # Subprocess для Kiro process management
     'subprocess',
     'psutil',
-    
     # Windows registry для machine ID
     'winreg',
 ]
