@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "6.8.1",
+  "version": "7.0.0",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
