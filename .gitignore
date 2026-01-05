@@ -82,3 +82,7 @@ autoreg/scripts/analyze_*.py
 autoreg/scripts/find_*.py
 autoreg/scripts/check_*.py
 autoreg/scripts/test_*.py
+
+# Electron
+electron/node_modules/
+dist-electron/

@@ -550,4 +550,11 @@ export interface Translations {
   batchRemaining: string;
   nextIn: string;
   current: string;
+
+  // ============================================
+  // UX Improvements
+  // ============================================
+  addAccount?: string;
+  deleteDoubleClick?: string;
+  addFirstAccount?: string;
 }

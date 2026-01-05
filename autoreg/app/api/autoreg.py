@@ -19,6 +19,39 @@ router = APIRouter()
 _autoreg_process: Optional[subprocess.Popen] = None
 
 
+async def _broadcast_accounts_update(ws):
+    """Broadcast updated accounts list to all clients"""
+    try:
+        from services.token_service import TokenService
+        token_service = TokenService()
+        tokens = token_service.list_tokens()
+        current = token_service.get_current_token()
+        current_refresh = current.raw_data.get('refreshToken') if current else None
+        
+        accounts = []
+        for t in tokens:
+            accounts.append({
+                "filename": t.path.name,
+                "isActive": t.raw_data.get('refreshToken') == current_refresh if current_refresh else False,
+                "isExpired": t.is_expired,
+                "needsRefresh": t.needs_refresh,
+                "tokenData": {
+                    "accountName": t.account_name,
+                    "email": t.email,
+                    "expiresAt": t.expires_at.isoformat() if t.expires_at else None
+                },
+                "usage": {
+                    "currentUsage": -1,
+                    "usageLimit": 500,
+                    "percentageUsed": 0
+                }
+            })
+        
+        await ws.broadcast({"type": "accountsLoaded", "accounts": accounts})
+    except Exception as e:
+        await ws.broadcast_log(f"⚠️ Failed to refresh accounts: {e}", "warning")
+
+
 class AutoRegConfig(BaseModel):
     headless: bool = False
     spoofing: bool = True
@@ -142,6 +175,8 @@ async def run_autoreg(config: AutoRegConfig):
         exit_code = _autoreg_process.returncode
         if exit_code == 0:
             await ws.broadcast_log("✅ Registration complete!", "success")
+            # Refresh accounts list after successful registration
+            await _broadcast_accounts_update(ws)
         else:
             stderr = _autoreg_process.stderr.read()
             if stderr:
@@ -206,6 +241,8 @@ async def sso_import(request: SsoImportRequest):
         
         if result.success:
             await ws.broadcast_log(f"✅ Imported: {result.email}", "success")
+            # Refresh accounts list after successful import
+            await _broadcast_accounts_update(ws)
             return {
                 "success": True,
                 "email": result.email,

@@ -473,4 +473,9 @@ export const ru: Translations = {
   useProxyForRegistrationDesc: 'Направлять трафик регистрации через прокси',
   proxyTestSuccess: 'Тест прокси успешен',
   proxyTestFailed: 'Тест прокси не пройден',
+
+  // UX Improvements
+  addAccount: 'Добавить аккаунт',
+  deleteDoubleClick: 'Кликните дважды для удаления',
+  addFirstAccount: 'Добавьте первый аккаунт',
 };

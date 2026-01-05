@@ -16,6 +16,7 @@ export function renderToolbar({ isRunning, t }: ToolbarProps): string {
       <div class="toolbar-row">
         <!-- Primary buttons - always visible -->
         <div class="toolbar-buttons toolbar-primary">
+          <button class="btn btn-primary btn-icon" onclick="startQuickAutoReg()" title="${t.addAccount || 'Add Account'}">➕</button>
           <button class="btn btn-secondary btn-icon" onclick="toggleSelectionMode()" title="${t.selectMode}" id="selectModeBtn">☑️</button>
         </div>
         

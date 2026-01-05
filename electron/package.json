@@ -1,0 +1,55 @@
+{
+  "name": "kiro-manager-desktop",
+  "version": "7.0.1",
+  "description": "Kiro Account Manager Desktop App",
+  "main": "main.js",
+  "author": "WhiteBite",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.whitebite.kiro-manager",
+    "productName": "Kiro Manager",
+    "directories": {
+      "output": "../dist-electron"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../autoreg/**/*",
+      "../images/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../autoreg",
+        "to": "autoreg",
+        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]
+      }
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "../images/icon.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "../images/icon.png"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "../images/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

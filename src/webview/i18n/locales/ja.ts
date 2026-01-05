@@ -470,4 +470,9 @@ export const ja: Translations = {
   oauthProviderAskDesc: 'プロバイダー選択ダイアログを表示',
   selectOAuthProvider: 'OAuthプロバイダーを選択',
   selectOAuthProviderDesc: 'Kiroへのログイン方法を選択',
+
+  // UX Improvements
+  addAccount: 'アカウントを追加',
+  deleteDoubleClick: 'ダブルクリックで削除',
+  addFirstAccount: '最初のアカウントを追加して始めましょう',
 };

@@ -470,4 +470,9 @@ export const es: Translations = {
   oauthProviderAskDesc: 'Mostrar diálogo de selección',
   selectOAuthProvider: 'Seleccionar proveedor OAuth',
   selectOAuthProviderDesc: 'Elegir cómo iniciar sesión en Kiro',
+
+  // UX Improvements
+  addAccount: 'Añadir cuenta',
+  deleteDoubleClick: 'Haz clic dos veces para eliminar',
+  addFirstAccount: 'Añade tu primera cuenta para comenzar',
 };

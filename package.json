@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "7.0.1",
+  "version": "7.0.2",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
@@ -285,7 +285,11 @@
     "release:patch": "npx ts-node scripts/release.ts patch",
     "release:minor": "npx ts-node scripts/release.ts minor",
     "release:major": "npx ts-node scripts/release.ts major",
-    "build:executable": "npx ts-node scripts/build-executable.ts"
+    "build:executable": "npx ts-node scripts/build-executable.ts",
+    "electron:install": "cd electron && npm install",
+    "electron:dev": "cd electron && npm start",
+    "electron:build": "cd electron && npm run build",
+    "electron:build:win": "cd electron && npm run build:win"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",

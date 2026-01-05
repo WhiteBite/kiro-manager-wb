@@ -470,4 +470,9 @@ export const ko: Translations = {
   oauthProviderAskDesc: '제공자 선택 대화상자 표시',
   selectOAuthProvider: 'OAuth 제공자 선택',
   selectOAuthProviderDesc: 'Kiro 로그인 방법 선택',
+
+  // UX Improvements
+  addAccount: '계정 추가',
+  deleteDoubleClick: '두 번 클릭하여 삭제',
+  addFirstAccount: '시작하려면 첫 번째 계정을 추가하세요',
 };

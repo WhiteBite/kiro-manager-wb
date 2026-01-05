@@ -472,4 +472,9 @@ export const fr: Translations = {
   useProxyForRegistrationDesc: 'Acheminer le trafic d\'inscription via le proxy',
   proxyTestSuccess: 'Test du proxy réussi',
   proxyTestFailed: 'Test du proxy échoué',
+
+  // UX Improvements
+  addAccount: 'Ajouter un compte',
+  deleteDoubleClick: 'Cliquez deux fois pour supprimer',
+  addFirstAccount: 'Ajoutez votre premier compte pour commencer',
 };

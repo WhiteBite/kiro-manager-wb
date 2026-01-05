@@ -164,10 +164,19 @@ async def handle_command(command: str, data: Dict[str, Any], websocket: WebSocke
                             token.raw_data.get('refreshToken') == current_refresh)
                 accounts.append({
                     "filename": token.path.name,
-                    "email": token.raw_data.get('email') if token.raw_data else token.account_name,
                     "isActive": is_active,
                     "isExpired": token.is_expired,
-                    "region": token.region
+                    "needsRefresh": token.needs_refresh,
+                    "tokenData": {
+                        "accountName": token.account_name,
+                        "email": token.email,
+                        "expiresAt": token.expires_at.isoformat() if token.expires_at else None
+                    },
+                    "usage": {
+                        "currentUsage": -1,
+                        "usageLimit": 500,
+                        "percentageUsed": 0
+                    }
                 })
             
             await ws.send_json({

@@ -471,4 +471,9 @@ export const de: Translations = {
   oauthProviderAskDesc: 'Anbieterauswahl anzeigen',
   selectOAuthProvider: 'OAuth-Anbieter auswählen',
   selectOAuthProviderDesc: 'Wählen Sie, wie Sie sich bei Kiro anmelden',
+
+  // UX Improvements
+  addAccount: 'Konto hinzufügen',
+  deleteDoubleClick: 'Zweimal klicken zum Löschen',
+  addFirstAccount: 'Fügen Sie Ihr erstes Konto hinzu, um zu beginnen',
 };

@@ -470,4 +470,9 @@ export const hi: Translations = {
   oauthProviderAskDesc: 'प्रदाता चयन संवाद दिखाएं',
   selectOAuthProvider: 'OAuth प्रदाता चुनें',
   selectOAuthProviderDesc: 'Kiro में साइन इन करने का तरीका चुनें',
+
+  // UX Improvements
+  addAccount: 'खाता जोड़ें',
+  deleteDoubleClick: 'हटाने के लिए दो बार क्लिक करें',
+  addFirstAccount: 'शुरू करने के लिए अपना पहला खाता जोड़ें',
 };

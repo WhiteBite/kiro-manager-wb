@@ -230,11 +230,17 @@ export const logsStyles = `
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: var(--font-size-xs);
     line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
   }
   
   /* === Console Line === */
   .console-line {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: flex-start;
     gap: var(--space-2);
     padding: var(--space-1) var(--space-2);
@@ -244,6 +250,10 @@ export const logsStyles = `
     margin: 1px 0;
     animation: fadeIn 0.2s ease-out;
     transition: background var(--transition);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .console-line:hover {
@@ -275,6 +285,7 @@ export const logsStyles = `
   
   .console-icon {
     flex-shrink: 0;
+    flex-grow: 0;
     width: var(--space-3);
     text-align: center;
     font-size: var(--font-size-xs);
@@ -285,6 +296,7 @@ export const logsStyles = `
   
   .console-time {
     flex-shrink: 0;
+    flex-grow: 0;
     font-size: 9px;
     color: var(--muted);
     opacity: 0.5;
@@ -293,13 +305,26 @@ export const logsStyles = `
   }
   
   .console-msg {
-    flex: 1;
-    word-break: break-word;
+    flex: 1 1 0;
     min-width: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    display: inline;
+  }
+  
+  .console-msg span {
+    word-break: break-word;
+    white-space: normal;
+    writing-mode: horizontal-tb;
+    display: inline;
   }
   
   .console-count {
     flex-shrink: 0;
+    flex-grow: 0;
     font-size: 9px;
     font-weight: 600;
     padding: 1px 5px;
@@ -309,11 +334,81 @@ export const logsStyles = `
     margin-left: var(--space-1);
   }
   
+  /* === Narrow screens - force horizontal text === */
+  @media (max-width: 400px) {
+    .console-body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .console-line {
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+    }
+    .console-time {
+      display: none;
+    }
+    .console-count {
+      display: none;
+    }
+    .console-msg {
+      white-space: normal !important;
+      writing-mode: horizontal-tb !important;
+      word-break: break-all !important;
+    }
+  }
+  
+  @media (max-width: 250px) {
+    .console-icon {
+      width: 10px;
+      font-size: 8px;
+    }
+    .console-msg {
+      font-size: 8px;
+    }
+  }
+  
   /* === Syntax Highlighting === */
-  .console-msg .hl-path { color: #6a9fb5; }
-  .console-msg .hl-url { color: #6a9fb5; text-decoration: underline dotted; }
-  .console-msg .hl-number { color: #d19a66; }
-  .console-msg .hl-string { color: #98c379; }
-  .console-msg .hl-keyword { color: #c678dd; font-weight: 600; }
-  .console-msg .hl-email { color: #61afef; }
+  .console-msg .hl-path { 
+    color: #6a9fb5; 
+    word-break: break-all;
+    display: inline;
+  }
+  .console-msg .hl-url { 
+    color: #6a9fb5; 
+    text-decoration: underline dotted;
+    word-break: break-all;
+    display: inline;
+  }
+  .console-msg .hl-number { 
+    color: #d19a66;
+    display: inline;
+  }
+  .console-msg .hl-string { 
+    color: #98c379;
+    word-break: break-word;
+    display: inline;
+  }
+  .console-msg .hl-keyword { 
+    color: #c678dd; 
+    font-weight: 600;
+    display: inline;
+  }
+  .console-msg .hl-email { 
+    color: #61afef;
+    word-break: break-all;
+    display: inline;
+  }
+  
+  /* === Force horizontal text in all console elements === */
+  .console-drawer,
+  .console-drawer *,
+  .console-body,
+  .console-body *,
+  .console-line,
+  .console-line *,
+  .console-msg,
+  .console-msg * {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+  }
 `;

@@ -470,4 +470,9 @@ export const zh: Translations = {
   oauthProviderAskDesc: '显示提供商选择对话框',
   selectOAuthProvider: '选择OAuth提供商',
   selectOAuthProviderDesc: '选择如何登录Kiro',
+
+  // UX Improvements
+  addAccount: '添加账户',
+  deleteDoubleClick: '双击删除',
+  addFirstAccount: '添加您的第一个账户以开始使用',
 };

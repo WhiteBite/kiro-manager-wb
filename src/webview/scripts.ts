@@ -474,6 +474,11 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       vscode.postMessage({ command: 'startAutoReg', count: count > 1 ? count : undefined });
     }
     
+    function startQuickAutoReg() {
+      // Quick autoreg - always 1 account with current strategy
+      vscode.postMessage({ command: 'startAutoReg', count: 1 });
+    }
+    
     function stopAutoReg() {
       vscode.postMessage({ command: 'stopAutoReg' });
     }
@@ -1124,6 +1129,11 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
               list.innerHTML = msg.html;
             }
 
+            // Remove switching state from all accounts after update
+            document.querySelectorAll('.account.switching').forEach(el => {
+              el.classList.remove('switching');
+            });
+
             // Update header badge counts if provided
             const badge = document.querySelector('.header-badge');
             if (badge && typeof msg.validCount === 'number' && typeof msg.totalCount === 'number') {
@@ -1132,6 +1142,49 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
 
             // Optional: update tab badges by triggering a light state write (tab bar is static HTML)
             // If full rerender is needed for badges, keep it out of hot path.
+          }
+          break;
+        case 'accountsLoaded':
+          // Standalone WebSocket sends accountsLoaded with accounts array
+          if (msg.accounts && Array.isArray(msg.accounts)) {
+            const list = document.getElementById('accountList');
+            if (list) {
+              if (msg.accounts.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><h3 class="empty-title">' + (T.noAccounts || 'No accounts yet') + '</h3><p class="empty-desc">' + (T.addFirstAccount || 'Add your first account') + '</p><button class="btn btn-primary" onclick="startQuickAutoReg()">➕ ' + (T.addAccount || 'Add Account') + '</button></div>';
+              } else {
+                // Render accounts from JSON data
+                list.innerHTML = msg.accounts.map(function(acc) {
+                  const isActive = acc.isActive ? 'active' : '';
+                  const statusClass = acc.isExpired ? 'expired' : (acc.needsRefresh ? 'warning' : 'valid');
+                  const name = acc.tokenData?.accountName || acc.filename || 'Unknown';
+                  const email = acc.tokenData?.email || '';
+                  const usage = acc.usage || {};
+                  const usageText = usage.currentUsage >= 0 ? usage.currentUsage + '/' + (usage.usageLimit || 500) : '—';
+                  const usagePercent = usage.percentageUsed || 0;
+                  
+                  return '<div class="account ' + isActive + ' ' + statusClass + '" data-filename="' + acc.filename + '" onclick="switchAccount(\\'' + acc.filename + '\\')">' +
+                    '<div class="account-info">' +
+                      '<div class="account-name">' + name + '</div>' +
+                      '<div class="account-email">' + email + '</div>' +
+                    '</div>' +
+                    '<div class="account-usage">' +
+                      '<div class="usage-bar"><div class="usage-fill" style="width:' + usagePercent + '%"></div></div>' +
+                      '<div class="usage-text">' + usageText + '</div>' +
+                    '</div>' +
+                    '<div class="account-actions">' +
+                      '<button class="btn btn-sm" onclick="event.stopPropagation(); refreshToken(\\'' + acc.filename + '\\')">🔄</button>' +
+                      '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); confirmDelete(\\'' + acc.filename + '\\')">🗑️</button>' +
+                    '</div>' +
+                  '</div>';
+                }).join('');
+              }
+            }
+            // Update header badge
+            const badge = document.querySelector('.header-badge');
+            if (badge) {
+              const valid = msg.accounts.filter(function(a) { return !a.isExpired; }).length;
+              badge.textContent = valid + '/' + msg.accounts.length;
+            }
           }
           break;
         case 'updateUsage':
@@ -2261,6 +2314,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     window.confirmDelete = confirmDelete;
     window.copyToken = copyToken;
     window.startAutoReg = startAutoReg;
+    window.startQuickAutoReg = startQuickAutoReg;
     window.stopAutoReg = stopAutoReg;
     window.togglePauseAutoReg = togglePauseAutoReg;
     window.openSsoModal = openSsoModal;

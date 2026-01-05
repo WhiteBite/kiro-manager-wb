@@ -121,11 +121,35 @@ export const accountListStyles = `
     transform: scale(0.99);
   }
   
-  /* Account States */
+  /* === Account States */
   .account.active {
     border-color: var(--accent);
     background: linear-gradient(135deg, rgba(72, 187, 120, 0.12) 0%, rgba(72, 187, 120, 0.02) 100%);
     box-shadow: 0 0 12px var(--accent-glow);
+  }
+  
+  .account.switching {
+    pointer-events: none;
+    opacity: 0.7;
+    position: relative;
+  }
+
+  .account.switching::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 20px;
+    height: 20px;
+    margin-top: -10px;
+    border: 2px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
   
   .account.expired { 

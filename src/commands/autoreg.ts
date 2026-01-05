@@ -733,23 +733,36 @@ export async function checkPatchStatus(context: vscode.ExtensionContext): Promis
   
   if (isExecutableAvailable(context)) {
     try {
+      console.log('[PatchStatus] Using executable method');
       const result = await runExecutable(context, ['patch', 'status', '--json']);
-      if (result.success && result.output) {
+      
+      // Try to parse JSON even if exit code is non-zero (CLI may return valid JSON with non-zero exit)
+      if (result.output) {
         try {
           const parsed = JSON.parse(result.output.trim());
+          console.log('[PatchStatus] Parsed result:', JSON.stringify(parsed));
+          
+          // Handle error: null correctly - treat null as no error
+          const hasError = parsed.error !== null && parsed.error !== undefined && parsed.error !== '';
+          
           return {
             isPatched: parsed.isPatched || false,
             kiroVersion: parsed.kiroVersion,
             patchVersion: parsed.patchVersion,
+            latestPatchVersion: parsed.latestPatchVersion,
             currentMachineId: parsed.currentMachineId,
-            error: parsed.error
+            needsUpdate: parsed.needsUpdate,
+            updateReason: parsed.updateReason,
+            error: hasError ? parsed.error : undefined
           };
-        } catch {
+        } catch (parseErr) {
           // JSON parse failed, continue to Python fallback
+          console.log('[PatchStatus] JSON parse failed:', parseErr);
         }
       }
-    } catch {
+    } catch (execErr) {
       // Executable failed, continue to Python fallback
+      console.log('[PatchStatus] Executable failed:', execErr);
     }
   }
 

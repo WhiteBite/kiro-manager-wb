@@ -473,4 +473,9 @@ export const en: Translations = {
   useProxyForRegistrationDesc: 'Route registration traffic through proxy',
   proxyTestSuccess: 'Proxy test successful',
   proxyTestFailed: 'Proxy test failed',
+
+  // UX Improvements
+  addAccount: 'Add Account',
+  deleteDoubleClick: 'Click twice to delete',
+  addFirstAccount: 'Add your first account to get started',
 };
