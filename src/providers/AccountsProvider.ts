@@ -747,18 +747,35 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     });
   }
 
-  async refresh() {
+  private _isRefreshing = false;
+
+  async refresh(reloadFromDisk = true) {
     if (this._view) {
-        const start = performance.now();
+        // Prevent recursive refresh when loadAccounts() fires onDidAccountsChange
+        if (this._isRefreshing) {
+            return;
+        }
+        this._isRefreshing = true;
 
-        await this.refreshAccounts();
-        await this.refreshUsage();
-        this._availableUpdate = getAvailableUpdate(this._context);
-        this.renderWebview();
+        try {
+            const start = performance.now();
 
-        const duration = performance.now() - start;
-        if (duration > 100) {
-            console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
+            // Reload accounts from disk if requested (e.g., after registration)
+            if (reloadFromDisk) {
+                this._accountService.loadAccounts();
+            }
+
+            await this.refreshAccounts();
+            await this.refreshUsage();
+            this._availableUpdate = getAvailableUpdate(this._context);
+            this.renderWebview();
+
+            const duration = performance.now() - start;
+            if (duration > 100) {
+                console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
+            }
+        } finally {
+            this._isRefreshing = false;
         }
     }
   }
@@ -768,6 +785,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     // loadAccounts() emits onDidAccountsChange, which triggers provider.refresh() from extension.ts.
     // Calling loadAccounts() during refresh creates an infinite recursion and crashes the extension host.
     this._accounts = this._accountService.getAccounts();
+    console.log(`[AccountsProvider] refreshAccounts() - got ${this._accounts.length} accounts from service`);
     this._stateManager.updateAccounts(this._accounts);
   }
 
@@ -826,6 +844,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   private _doRenderWebview() {
     if (!this._view) return;
     const start = performance.now();
+
+    console.log(`[AccountsProvider] _doRenderWebview() - accounts count: ${this._accounts.length}`);
 
     const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
     const autoSwitchEnabled = config.get<boolean>('autoSwitch.enabled', false);

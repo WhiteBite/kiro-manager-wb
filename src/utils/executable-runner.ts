@@ -11,6 +11,36 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { spawn, ChildProcess } from 'child_process';
 
+/**
+ * Get Kiro installation path dynamically from vscode.env.appRoot
+ * This works regardless of where Kiro is installed
+ */
+export function getKiroInstallPath(): string | null {
+  try {
+    // vscode.env.appRoot points to something like:
+    // Windows: S:\Kiro\resources\app
+    // macOS: /Applications/Kiro.app/Contents/Resources/app
+    // Linux: /usr/share/kiro/resources/app
+    const appRoot = vscode.env.appRoot;
+    
+    if (!appRoot) {
+      return null;
+    }
+    
+    // Go up from resources/app to get Kiro root
+    // appRoot = S:\Kiro\resources\app -> we want S:\Kiro
+    const kiroRoot = path.resolve(appRoot, '..', '..');
+    
+    if (fs.existsSync(kiroRoot)) {
+      return kiroRoot;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export interface ExecutableResult {
   success: boolean;
   output: string;
@@ -50,9 +80,11 @@ function _chmodExecutableIfNeeded(filePath: string): void {
  */
 export function getExecutablePath(context: vscode.ExtensionContext, type: ExecutableType = 'cli'): string | null {
   const filenames = getExecutableFilenames(type);
+  console.log(`[ExecutableRunner] Looking for ${type} executable, filenames:`, filenames);
 
   for (const filename of filenames) {
     const bundledPath = path.join(context.extensionPath, 'dist', 'bin', filename);
+    console.log(`[ExecutableRunner] Checking bundled: ${bundledPath}, exists: ${fs.existsSync(bundledPath)}`);
     if (fs.existsSync(bundledPath)) {
       return bundledPath;
     }
@@ -60,22 +92,16 @@ export function getExecutablePath(context: vscode.ExtensionContext, type: Execut
 
   for (const filename of filenames) {
     const homePath = path.join(os.homedir(), '.kiro-manager-wb', 'bin', filename);
+    console.log(`[ExecutableRunner] Checking home: ${homePath}, exists: ${fs.existsSync(homePath)}`);
     if (fs.existsSync(homePath)) {
       return homePath;
     }
   }
 
-  // Fallback for CLI: allow using manager binary as a legacy CLI runner
-  if (type === 'cli') {
-    for (const filename of getExecutableFilenames('manager')) {
-      const legacyBundled = path.join(context.extensionPath, 'dist', 'bin', filename);
-      if (fs.existsSync(legacyBundled)) return legacyBundled;
-    }
-    for (const filename of getExecutableFilenames('manager')) {
-      const legacyHome = path.join(os.homedir(), '.kiro-manager-wb', 'bin', filename);
-      if (fs.existsSync(legacyHome)) return legacyHome;
-    }
-  }
+  // NOTE: kiro-manager.exe is a web app, NOT a CLI tool.
+  // Do NOT use it as fallback for CLI commands - it doesn't support them.
+  // If kiro-cli.exe is not found, return null to trigger Python fallback.
+  console.log(`[ExecutableRunner] ${type} executable not found`);
 
   return null;
 }
@@ -131,14 +157,8 @@ export function ensureExecutable(context: vscode.ExtensionContext, type: Executa
     }
   }
 
-  // Fallback for CLI: try legacy kiro-manager.exe
-  if (type === 'cli') {
-    const legacyResult = ensureExecutable(context, 'manager');
-    if (legacyResult) {
-      console.log(`[ExecutableRunner] Using legacy kiro-manager.exe for CLI commands`);
-      return legacyResult;
-    }
-  }
+  // NOTE: kiro-manager.exe is a web app, NOT a CLI tool.
+  // Do NOT use it as fallback for CLI commands.
 
   return null;
 }
@@ -171,8 +191,16 @@ export async function runExecutable(
   }
 
   return new Promise((resolve) => {
+    // Auto-inject KIRO_PATH so CLI can find Kiro installation
+    const kiroPath = getKiroInstallPath();
+    const finalEnv = { 
+      ...process.env, 
+      ...env,
+      ...(kiroPath ? { KIRO_PATH: kiroPath } : {})
+    };
+    
     const proc = spawn(exePath, args, {
-      env: { ...process.env, ...env },
+      env: finalEnv,
       shell: false
     });
 

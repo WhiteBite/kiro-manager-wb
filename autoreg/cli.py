@@ -24,7 +24,15 @@ from pathlib import Path
 # Добавляем путь к модулям
 sys.path.insert(0, str(Path(__file__).parent))
 
-from cli_registration import setup_registration_commands
+# Registration commands are optional (not available in minimal CLI build)
+try:
+    from cli_registration import setup_registration_commands
+    HAS_REGISTRATION = True
+except ImportError:
+    HAS_REGISTRATION = False
+    def setup_registration_commands(subparsers):
+        pass  # No-op if registration not available
+
 from core.paths import get_paths
 from core.config import get_config
 from services.token_service import TokenService

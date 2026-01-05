@@ -45,6 +45,47 @@ export const headerStyles = `
     flex-shrink: 0;
   }
   
+  /* === Patch Status Indicator === */
+  .patch-indicator {
+    display: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .patch-indicator.visible {
+    display: inline-block;
+  }
+  
+  .patch-indicator.patched {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+  
+  .patch-indicator.needs-update {
+    background: var(--warning);
+    box-shadow: 0 0 6px var(--warning);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  .patch-indicator.not-patched {
+    background: var(--muted);
+    opacity: 0.5;
+  }
+  
+  .patch-indicator.error {
+    background: var(--danger);
+    box-shadow: 0 0 6px var(--danger);
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+  }
+  
   .header-actions {
     display: flex;
     gap: var(--space-1);

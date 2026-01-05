@@ -555,6 +555,58 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       drawer?.classList.toggle('open');
     }
     
+    // === Console Resize ===
+    let consoleResizing = false;
+    let consoleStartY = 0;
+    let consoleStartHeight = 200;
+    
+    function initConsoleResize() {
+      const handle = document.getElementById('consoleResizeHandle');
+      const body = document.getElementById('logsContent');
+      if (!handle || !body) return;
+      
+      // Load saved height
+      const savedHeight = localStorage.getItem('consoleHeight');
+      if (savedHeight) {
+        body.style.setProperty('--console-height', savedHeight + 'px');
+        body.style.height = savedHeight + 'px';
+      }
+      
+      handle.addEventListener('mousedown', (e) => {
+        consoleResizing = true;
+        consoleStartY = e.clientY;
+        consoleStartHeight = body.offsetHeight;
+        handle.classList.add('dragging');
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (!consoleResizing) return;
+        const delta = consoleStartY - e.clientY;
+        const newHeight = Math.min(Math.max(consoleStartHeight + delta, 100), window.innerHeight * 0.7);
+        body.style.height = newHeight + 'px';
+      });
+      
+      document.addEventListener('mouseup', () => {
+        if (!consoleResizing) return;
+        consoleResizing = false;
+        const handle = document.getElementById('consoleResizeHandle');
+        handle?.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        // Save height
+        const body = document.getElementById('logsContent');
+        if (body) {
+          localStorage.setItem('consoleHeight', String(body.offsetHeight));
+        }
+      });
+    }
+    
+    // Initialize resize on load
+    setTimeout(initConsoleResize, 100);
+    
     // === Batch Registration Toggle ===
     
     function toggleBatchReg(event) {

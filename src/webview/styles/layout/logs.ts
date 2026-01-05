@@ -223,7 +223,9 @@ export const logsStyles = `
   
   /* === Console Body === */
   .console-body {
-    max-height: 200px;
+    height: var(--console-height, 200px);
+    min-height: 100px;
+    max-height: 60vh;
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--space-2) var(--space-3);
@@ -231,18 +233,52 @@ export const logsStyles = `
     font-size: var(--font-size-xs);
     line-height: 1.5;
     width: 100%;
+    min-width: 100px;
     box-sizing: border-box;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
   }
   
+  /* === Console Resize Handle === */
+  .console-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    background: transparent;
+    transition: background 0.2s ease;
+    z-index: 10;
+  }
+  
+  .console-resize-handle:hover,
+  .console-resize-handle.dragging {
+    background: var(--accent);
+    opacity: 0.5;
+  }
+  
+  .console-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: var(--muted);
+    border-radius: 2px;
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+  }
+  
+  .console-resize-handle:hover::before {
+    opacity: 0.8;
+  }
+  
   /* === Console Line === */
   .console-line {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: var(--space-2);
+    display: block;
     padding: var(--space-1) var(--space-2);
     font-size: var(--font-size-xs);
     border-left: 2px solid transparent;
@@ -254,6 +290,9 @@ export const logsStyles = `
     max-width: 100%;
     box-sizing: border-box;
     overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
   }
   
   .console-line:hover {
@@ -305,20 +344,15 @@ export const logsStyles = `
   }
   
   .console-msg {
-    flex: 1 1 0;
-    min-width: 0;
+    display: inline;
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: normal;
-    writing-mode: horizontal-tb;
-    text-orientation: mixed;
-    display: inline;
   }
   
   .console-msg span {
     word-break: break-word;
     white-space: normal;
-    writing-mode: horizontal-tb;
     display: inline;
   }
   

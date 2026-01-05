@@ -100,8 +100,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // Listen for account changes from the service
+  // When loadAccounts() is called, it fires onDidAccountsChange.
+  // Pass reloadFromDisk=false to avoid re-reading files that were just loaded.
   accountService.onDidAccountsChange(() => {
-    accountsProvider?.refresh();
+    accountsProvider?.refresh(false);
     updateStatusBar();
   });
 

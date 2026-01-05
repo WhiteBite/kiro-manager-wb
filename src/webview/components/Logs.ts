@@ -31,45 +31,57 @@ interface ParsedLog {
 
 /**
  * Apply syntax highlighting to log message
+ * Uses placeholders to prevent regex from matching already-highlighted content
  */
 function highlightMessage(message: string): string {
   let highlighted = escapeHtml(message);
 
-  // Highlight paths (e.g., /path/to/file or C:\path\to\file)
-  highlighted = highlighted.replace(
-    /([A-Za-z]:)?[\/\\][\w\-\.\/\\]+/g,
-    '<span class="hl-path">$&</span>'
-  );
+  // Use placeholders to protect already-highlighted content
+  const placeholders: string[] = [];
+  const savePlaceholder = (content: string): string => {
+    const idx = placeholders.length;
+    placeholders.push(content);
+    return `\x00PH${idx}\x00`;
+  };
 
-  // Highlight URLs
+  // Highlight URLs first (most specific)
   highlighted = highlighted.replace(
     /(https?:\/\/[^\s<]+)/g,
-    '<span class="hl-url">$1</span>'
-  );
-
-  // Highlight numbers
-  highlighted = highlighted.replace(
-    /\b(\d+(?:\.\d+)?)\b/g,
-    '<span class="hl-number">$1</span>'
-  );
-
-  // Highlight quoted strings
-  highlighted = highlighted.replace(
-    /(&quot;[^&]*&quot;|&#39;[^&]*&#39;|"[^"]*"|'[^']*')/g,
-    '<span class="hl-string">$1</span>'
-  );
-
-  // Highlight keywords
-  highlighted = highlighted.replace(
-    /\b(SUCCESS|FAIL|ERROR|WARN|OK|DONE|START|STOP|TRUE|FALSE|NULL|NONE)\b/gi,
-    '<span class="hl-keyword">$1</span>'
+    (match) => savePlaceholder(`<span class="hl-url">${match}</span>`)
   );
 
   // Highlight email addresses
   highlighted = highlighted.replace(
     /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
-    '<span class="hl-email">$1</span>'
+    (match) => savePlaceholder(`<span class="hl-email">${match}</span>`)
   );
+
+  // Highlight paths (e.g., /path/to/file or C:\path\to\file)
+  highlighted = highlighted.replace(
+    /([A-Za-z]:)?[\/\\][\w\-\.\/\\]+/g,
+    (match) => savePlaceholder(`<span class="hl-path">${match}</span>`)
+  );
+
+  // Highlight quoted strings
+  highlighted = highlighted.replace(
+    /(&quot;[^&]*&quot;|&#39;[^&]*&#39;|"[^"]*"|'[^']*')/g,
+    (match) => savePlaceholder(`<span class="hl-string">${match}</span>`)
+  );
+
+  // Highlight keywords
+  highlighted = highlighted.replace(
+    /\b(SUCCESS|FAIL|ERROR|WARN|OK|DONE|START|STOP|TRUE|FALSE|NULL|NONE)\b/gi,
+    (match) => savePlaceholder(`<span class="hl-keyword">${match}</span>`)
+  );
+
+  // Highlight numbers (only standalone numbers)
+  highlighted = highlighted.replace(
+    /\b(\d+(?:\.\d+)?)\b/g,
+    (match) => savePlaceholder(`<span class="hl-number">${match}</span>`)
+  );
+
+  // Restore placeholders
+  highlighted = highlighted.replace(/\x00PH(\d+)\x00/g, (_, idx) => placeholders[parseInt(idx, 10)]);
 
   return highlighted;
 }
@@ -169,6 +181,7 @@ export function renderLogs({ logs, t }: LogsProps): string {
 
   return `
     <div class="console-drawer ${statusClass}" id="logsDrawer">
+      <div class="console-resize-handle" id="consoleResizeHandle"></div>
       <div class="console-header" onclick="toggleLogs()">
         <div class="console-header-left">
           <span class="console-title-group">

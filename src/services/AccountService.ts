@@ -65,8 +65,13 @@ export class AccountService {
         const usageStats = loadUsageStats();
         const allUsage = getAllCachedUsage();
 
+        console.log(`[AccountService] loadAccounts() - tokensDir: ${tokensDir}`);
+        console.log(`[AccountService] loadAccounts() - dir exists: ${fs.existsSync(tokensDir)}`);
+
         if (fs.existsSync(tokensDir)) {
-            const files = fs.readdirSync(tokensDir).filter(f => f.startsWith('token-') && f.endsWith('.json'));
+            const allFiles = fs.readdirSync(tokensDir);
+            const files = allFiles.filter(f => f.startsWith('token-') && f.endsWith('.json'));
+            console.log(`[AccountService] loadAccounts() - total files: ${allFiles.length}, token files: ${files.length}`);
             for (const file of files) {
                 try {
                     const filepath = path.join(tokensDir, file);
@@ -122,6 +127,7 @@ export class AccountService {
             return dateB - dateA;
         });
 
+        console.log(`[AccountService] loadAccounts() - loaded ${accounts.length} accounts`);
         this._accounts = accounts;
         this._onDidAccountsChange.fire();
     }
