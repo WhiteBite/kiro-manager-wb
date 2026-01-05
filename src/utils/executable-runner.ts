@@ -24,10 +24,23 @@ export interface ExecutableResult {
 export type ExecutableType = 'cli' | 'manager';
 
 /**
- * Get executable filename by type
+ * Get executable filenames by type (platform-aware)
  */
-function getExecutableFilename(type: ExecutableType): string {
-  return type === 'cli' ? 'kiro-cli.exe' : 'kiro-manager.exe';
+function getExecutableFilenames(type: ExecutableType): string[] {
+  const base = type === 'cli' ? 'kiro-cli' : 'kiro-manager';
+  // Prefer native naming for current platform, but also check the other one for compatibility.
+  if (process.platform === 'win32') {
+    return [`${base}.exe`, base];
+  }
+  return [base, `${base}.exe`];
+}
+
+function _chmodExecutableIfNeeded(filePath: string): void {
+  if (process.platform === 'win32') return;
+  try {
+    fs.chmodSync(filePath, 0o755);
+  } catch {
+  }
 }
 
 /**
@@ -36,29 +49,31 @@ function getExecutableFilename(type: ExecutableType): string {
  * @param type Executable type: 'cli' for CLI commands, 'manager' for web app
  */
 export function getExecutablePath(context: vscode.ExtensionContext, type: ExecutableType = 'cli'): string | null {
-  const filename = getExecutableFilename(type);
-  
-  // Check bundled executable in extension
-  const bundledPath = path.join(context.extensionPath, 'dist', 'bin', filename);
-  if (fs.existsSync(bundledPath)) {
-    return bundledPath;
-  }
+  const filenames = getExecutableFilenames(type);
 
-  // Check in home directory
-  const homePath = path.join(os.homedir(), '.kiro-manager-wb', 'bin', filename);
-  if (fs.existsSync(homePath)) {
-    return homePath;
-  }
-
-  // Fallback: check for legacy kiro-manager.exe if looking for cli
-  if (type === 'cli') {
-    const legacyBundled = path.join(context.extensionPath, 'dist', 'bin', 'kiro-manager.exe');
-    if (fs.existsSync(legacyBundled)) {
-      return legacyBundled;
+  for (const filename of filenames) {
+    const bundledPath = path.join(context.extensionPath, 'dist', 'bin', filename);
+    if (fs.existsSync(bundledPath)) {
+      return bundledPath;
     }
-    const legacyHome = path.join(os.homedir(), '.kiro-manager-wb', 'bin', 'kiro-manager.exe');
-    if (fs.existsSync(legacyHome)) {
-      return legacyHome;
+  }
+
+  for (const filename of filenames) {
+    const homePath = path.join(os.homedir(), '.kiro-manager-wb', 'bin', filename);
+    if (fs.existsSync(homePath)) {
+      return homePath;
+    }
+  }
+
+  // Fallback for CLI: allow using manager binary as a legacy CLI runner
+  if (type === 'cli') {
+    for (const filename of getExecutableFilenames('manager')) {
+      const legacyBundled = path.join(context.extensionPath, 'dist', 'bin', filename);
+      if (fs.existsSync(legacyBundled)) return legacyBundled;
+    }
+    for (const filename of getExecutableFilenames('manager')) {
+      const legacyHome = path.join(os.homedir(), '.kiro-manager-wb', 'bin', filename);
+      if (fs.existsSync(legacyHome)) return legacyHome;
     }
   }
 
@@ -71,13 +86,14 @@ export function getExecutablePath(context: vscode.ExtensionContext, type: Execut
  * @param type Executable type: 'cli' for CLI commands, 'manager' for web app
  */
 export function ensureExecutable(context: vscode.ExtensionContext, type: ExecutableType = 'cli'): string | null {
-  const filename = getExecutableFilename(type);
-  const bundledPath = path.join(context.extensionPath, 'dist', 'bin', filename);
+  const preferredFilename = getExecutableFilenames(type)[0];
+  const candidateBundledPaths = getExecutableFilenames(type).map((f) => path.join(context.extensionPath, 'dist', 'bin', f));
   const homeBinDir = path.join(os.homedir(), '.kiro-manager-wb', 'bin');
-  const homePath = path.join(homeBinDir, filename);
+  const homePath = path.join(homeBinDir, preferredFilename);
 
   // If bundled exists, copy to home
-  if (fs.existsSync(bundledPath)) {
+  const bundledPath = candidateBundledPaths.find((p) => fs.existsSync(p));
+  if (bundledPath) {
     try {
       if (!fs.existsSync(homeBinDir)) {
         fs.mkdirSync(homeBinDir, { recursive: true });
@@ -94,19 +110,25 @@ export function ensureExecutable(context: vscode.ExtensionContext, type: Executa
       
       if (needsCopy) {
         fs.copyFileSync(bundledPath, homePath);
-        console.log(`[ExecutableRunner] Copied ${filename} to ${homePath}`);
+        _chmodExecutableIfNeeded(homePath);
+        console.log(`[ExecutableRunner] Copied ${preferredFilename} to ${homePath}`);
       }
       
       return homePath;
     } catch (err) {
       console.error(`[ExecutableRunner] Failed to copy executable:`, err);
+      _chmodExecutableIfNeeded(bundledPath);
       return bundledPath; // Use bundled directly
     }
   }
 
-  // Check if already in home
-  if (fs.existsSync(homePath)) {
-    return homePath;
+  // Check if already in home (either preferred filename or other compatible names)
+  for (const filename of getExecutableFilenames(type)) {
+    const candidateHome = path.join(homeBinDir, filename);
+    if (fs.existsSync(candidateHome)) {
+      _chmodExecutableIfNeeded(candidateHome);
+      return candidateHome;
+    }
   }
 
   // Fallback for CLI: try legacy kiro-manager.exe
@@ -139,11 +161,11 @@ export async function runExecutable(
   const exePath = ensureExecutable(context, type);
   
   if (!exePath) {
-    const filename = getExecutableFilename(type);
+    const filenames = getExecutableFilenames(type);
     return {
       success: false,
       output: '',
-      error: `Executable ${filename} not found. Please reinstall the extension.`,
+      error: `Executable ${filenames.join(' or ')} not found. Please reinstall the extension.`,
       code: -1
     };
   }

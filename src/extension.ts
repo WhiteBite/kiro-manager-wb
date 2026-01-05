@@ -6,18 +6,74 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { loadAccounts, switchToAccount, refreshAccountToken, refreshAllAccounts } from './accounts';
+import { getAccountService } from './services/AccountService';
 import { getTokensDir } from './utils';
 import { checkForUpdates } from './update-checker';
 import { KiroAccountsProvider } from './providers';
 import { ImapProfileProvider } from './providers/ImapProfileProvider';
 import { checkPatchStatus } from './commands/autoreg';
+import { getLogService } from './services/LogService';
 
 let statusBarItem: vscode.StatusBarItem;
-let accountsProvider: KiroAccountsProvider;
+let accountsProvider: KiroAccountsProvider | undefined;
 let imapProfileProvider: ImapProfileProvider;
 
+const logService = getLogService();
+const accountService = getAccountService();
+
+let _consoleCaptured = false;
+
+function _formatConsoleArgs(args: unknown[]): string {
+  try {
+    return args.map((a) => {
+      if (a instanceof Error) return a.stack || a.message;
+      if (typeof a === 'string') return a;
+      try { return JSON.stringify(a); } catch { return String(a); }
+    }).join(' ');
+  } catch {
+    return '[unformattable log args]';
+  }
+}
+
+function captureConsoleToFile(): void {
+  if (_consoleCaptured) return;
+  _consoleCaptured = true;
+
+  const origLog = console.log;
+  const origWarn = console.warn;
+  const origError = console.error;
+
+  console.log = (...args: unknown[]) => {
+    try { logService.add(_formatConsoleArgs(args)); } catch { }
+    origLog.apply(console, args as any);
+  };
+
+  console.warn = (...args: unknown[]) => {
+    try { logService.warn(_formatConsoleArgs(args)); } catch { }
+    origWarn.apply(console, args as any);
+  };
+
+  console.error = (...args: unknown[]) => {
+    try { logService.error(_formatConsoleArgs(args)); } catch { }
+    origError.apply(console, args as any);
+  };
+
+  process.on('unhandledRejection', (reason) => {
+    try { logService.error(`unhandledRejection: ${_formatConsoleArgs([reason])}`); } catch { }
+  });
+
+  process.on('uncaughtException', (err) => {
+    try { logService.error(`uncaughtException: ${_formatConsoleArgs([err])}`); } catch { }
+  });
+}
+
+function addLog(message: string): void {
+  if (accountsProvider) accountsProvider.addLog(message);
+  else logService.add(message);
+}
+
 export function activate(context: vscode.ExtensionContext) {
+  captureConsoleToFile();
   console.log('Kiro Account Switcher activated');
 
   // Check for updates in background
@@ -43,14 +99,20 @@ export function activate(context: vscode.ExtensionContext) {
     accountsProvider // Register for disposal to prevent memory leaks
   );
 
+  // Listen for account changes from the service
+  accountService.onDidAccountsChange(() => {
+    accountsProvider?.refresh();
+    updateStatusBar();
+  });
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand('kiroAccountSwitcher.switchAccount', () => quickSwitch()),
-    vscode.commands.registerCommand('kiroAccountSwitcher.listAccounts', () => accountsProvider.refresh()),
+    vscode.commands.registerCommand('kiroAccountSwitcher.listAccounts', () => accountsProvider?.refresh()),
     vscode.commands.registerCommand('kiroAccountSwitcher.importToken', () => importToken()),
     vscode.commands.registerCommand('kiroAccountSwitcher.currentAccount', () => showCurrentAccount()),
     vscode.commands.registerCommand('kiroAccountSwitcher.signOut', () => signOut()),
-    vscode.commands.registerCommand('kiroAccountSwitcher.refreshAccounts', () => accountsProvider.refresh()),
+    vscode.commands.registerCommand('kiroAccountSwitcher.refreshAccounts', () => accountsProvider?.refresh()),
     vscode.commands.registerCommand('kiroAccountSwitcher.openSettings', () => openSettings()),
     vscode.commands.registerCommand('kiroAccountSwitcher.switchTo', (name: string) => doSwitch(name)),
     vscode.commands.registerCommand('kiroAccountSwitcher.refreshToken', (name: string) => doRefresh(name)),
@@ -66,7 +128,7 @@ export function deactivate() { }
 
 // Quick switch via command palette
 async function quickSwitch() {
-  const accounts = loadAccounts();
+  const accounts = accountService.getAccounts();
   if (accounts.length === 0) {
     accountsProvider?.addLog('⚠️ No accounts found');
     return;
@@ -89,14 +151,13 @@ async function quickSwitch() {
 }
 
 async function doSwitch(name: string) {
-  await switchToAccount(name);
-  accountsProvider?.refresh();
-  updateStatusBar();
+  await accountService.switchToAccount(name);
+  // UI will be updated via onDidAccountsChange event
 }
 
 async function doRefresh(name: string) {
-  await refreshAccountToken(name);
-  accountsProvider?.refresh();
+  await accountService.refreshAccountToken(name);
+  // UI will be updated via onDidAccountsChange event
 }
 
 // Track failed switch attempts to prevent infinite loops
@@ -117,7 +178,7 @@ async function switchToNextAvailable(): Promise<boolean> {
   }
   lastSwitchAttemptTime = now;
 
-  const accounts = loadAccounts();
+  const accounts = accountService.getAccounts();
   const currentActive = accounts.find(a => a.isActive);
 
   // Find available accounts (not expired, not banned, not previously failed)
@@ -142,8 +203,7 @@ async function switchToNextAvailable(): Promise<boolean> {
   accountsProvider?.addLog(`⚠️ Current account banned/suspended. Auto-switching to: ${accountName}`);
 
   try {
-    // Use returnDetails=true to get ban status
-    const result = await switchToAccount(next.filename, true);
+    const result = await accountService.switchToAccount(next.filename);
 
     // If switch failed (account was banned), mark it as failed
     if (!result.success && result.isBanned) {
@@ -158,8 +218,7 @@ async function switchToNextAvailable(): Promise<boolean> {
     // Success - clear failed attempts
     if (result.success) {
       failedSwitchAttempts.clear();
-      accountsProvider?.refresh();
-      updateStatusBar();
+      // UI updated via event
       return true;
     }
 
@@ -200,8 +259,7 @@ async function importToken() {
 }
 
 function showCurrentAccount() {
-  const accounts = loadAccounts();
-  const active = accounts.find(a => a.isActive);
+  const active = accountService.getActiveAccount();
   if (active) {
     accountsProvider?.addLog(`ℹ️ Current account: ${active.tokenData.accountName || active.filename}`);
   } else {
@@ -223,8 +281,7 @@ function openSettings() {
 }
 
 function updateStatusBar() {
-  const accounts = loadAccounts();
-  const active = accounts.find(a => a.isActive);
+  const active = accountService.getActiveAccount();
 
   if (active) {
     const name = active.tokenData.accountName || active.filename;
@@ -244,15 +301,13 @@ function setupAutoSwitch(context: vscode.ExtensionContext) {
 
   if (enabled) {
     const interval = setInterval(async () => {
-      const accounts = loadAccounts();
-      const active = accounts.find(a => a.isActive);
+      const active = accountService.getActiveAccount();
 
       if (active && active.isExpired) {
+        const accounts = accountService.getAccounts();
         const validAccounts = accounts.filter(a => !a.isExpired && !a.isActive);
         if (validAccounts.length > 0) {
-          await switchToAccount(validAccounts[0].filename);
-          accountsProvider?.refresh();
-          updateStatusBar();
+          await accountService.switchToAccount(validAccounts[0].filename);
           accountsProvider?.addLog(`✅ Auto-switched to ${validAccounts[0].tokenData.accountName}`);
         }
       }
@@ -269,16 +324,9 @@ async function checkPatchOnStartup(context: vscode.ExtensionContext) {
 
     // If patch needs update (version mismatch or Kiro updated)
     if (status.needsUpdate && status.updateReason) {
-      const action = await vscode.window.showWarningMessage(
-        `Kiro patch needs update: ${status.updateReason}`,
-        'Update Now',
-        'Later'
-      );
-
-      if (action === 'Update Now') {
-        // Hot-patch without closing Kiro - file is not locked on Windows
-        await applyHotPatch(context);
-      }
+      addLog(`⚠️ Kiro patch needs update: ${status.updateReason}`);
+      // Hot-patch without closing Kiro - file is not locked on Windows
+      await applyHotPatch(context);
       return;
     }
 
@@ -289,15 +337,8 @@ async function checkPatchOnStartup(context: vscode.ExtensionContext) {
 
       // Check if Kiro version changed
       if (status.kiroVersion && status.kiroVersion !== lastKiroVersion) {
-        const action = await vscode.window.showWarningMessage(
-          `Kiro was updated to ${status.kiroVersion}. The Machine ID patch needs to be re-applied.`,
-          'Apply Patch',
-          'Ignore'
-        );
-
-        if (action === 'Apply Patch') {
-          await applyHotPatch(context);
-        }
+        addLog(`⚠️ Kiro was updated to ${status.kiroVersion}. Re-applying Machine ID patch...`);
+        await applyHotPatch(context);
 
         // Save current version
         await config.update('patch.lastKiroVersion', status.kiroVersion, vscode.ConfigurationTarget.Global);
@@ -325,13 +366,9 @@ async function applyHotPatch(context: vscode.ExtensionContext) {
   });
 
   if (result.success) {
-    const action = await vscode.window.showInformationMessage(
-      'Patch applied! Restart Kiro to activate the changes.',
-      'Restart Later'
-    );
-    // User decides when to restart - we don't force it
+    addLog('✅ Patch applied! Restart Kiro to activate the changes.');
   } else {
-    vscode.window.showErrorMessage(`Patch failed: ${result.error}`);
+    addLog(`❌ Patch failed: ${result.error}`);
   }
 }
 
@@ -341,7 +378,7 @@ async function testImapFromSettings() {
   const profiles = config.get<any[]>('imap.profiles', []);
 
   if (profiles.length === 0) {
-    vscode.window.showWarningMessage('No IMAP profiles configured in settings');
+    addLog('⚠️ No IMAP profiles configured in settings');
     return;
   }
 
@@ -361,7 +398,7 @@ async function testImapFromSettings() {
   const profile = selected.profile;
   
   if (!profile.email || !profile.password || !profile.host) {
-    vscode.window.showErrorMessage('Profile is missing required fields (email, password, host)');
+    addLog('❌ Profile is missing required fields (email, password, host)');
     return;
   }
 
@@ -431,7 +468,7 @@ async function testImapFromSettings() {
         });
       });
 
-      vscode.window.showInformationMessage(`✅ IMAP test successful: ${profile.email}`);
+      addLog(`✅ IMAP test successful: ${profile.email}`);
 
     } catch (error: any) {
       let errorMsg = error.message || 'Unknown error';
@@ -441,7 +478,7 @@ async function testImapFromSettings() {
         errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
       }
 
-      vscode.window.showErrorMessage(`❌ IMAP test failed: ${errorMsg}`);
+      addLog(`❌ IMAP test failed: ${errorMsg}`);
     }
   });
 }

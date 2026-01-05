@@ -18,10 +18,17 @@ export const components = `
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: background-color var(--transition),
+                color var(--transition),
+                border-color var(--transition),
+                box-shadow var(--transition),
+                transform var(--transition-fast);
     white-space: nowrap;
     position: relative;
     overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
   
   .btn:disabled { 
@@ -36,6 +43,18 @@ export const components = `
   
   .btn:active:not(:disabled) { 
     transform: translateY(0) scale(0.98); 
+  }
+
+  .btn:focus { outline: none; }
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (hover: none) {
+    .btn:hover:not(:disabled) {
+      transform: none;
+    }
   }
   
   .btn svg { 

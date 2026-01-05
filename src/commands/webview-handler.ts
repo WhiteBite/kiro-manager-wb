@@ -5,16 +5,17 @@
 
 import * as vscode from 'vscode';
 import { KiroAccountsProvider } from '../providers/AccountsProvider';
-import { switchToAccount, refreshAccountToken, refreshAllAccounts, deleteAccount } from '../accounts';
+import { getAccountService } from '../services/AccountService';
 import { runAutoReg, importSsoToken, resetMachineId, patchKiro, unpatchKiro, generateMachineId, getPatchStatus } from '../commands/autoreg';
 import { WebviewCommand, isWebviewCommand } from '../webview/messages';
 
 export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: Record<string, unknown>) {
+  const accountService = getAccountService();
   const command = msg.command as string;
 
   switch (command) {
     case 'switch':
-      await switchToAccount(msg.account as string);
+      await accountService.switchToAccount(msg.account as string);
       // Force refresh usage after account switch
       await provider.refreshUsageAfterSwitch();
       break;
@@ -25,7 +26,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'delete':
-      await deleteAccount(msg.account as string);
+      await accountService.deleteAccount(msg.account as string);
       provider.refresh();
       break;
 
@@ -43,8 +44,8 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'refreshAll':
-      await refreshAllAccounts();
-      provider.refresh();
+      await provider.refreshAllTokens();
+      break;
       break;
 
     case 'openDashboard':
@@ -102,7 +103,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'switchAccount': {
-      const switchResult = await switchToAccount(msg.email as string, true);
+      const switchResult = await accountService.switchToAccount(msg.email as string);
       if (switchResult.isBanned) {
         // Mark account as banned and update UI
         provider.markAccountAsBanned(msg.email as string, switchResult.errorMessage);
@@ -128,8 +129,8 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'deleteAccount':
-      await deleteAccount(msg.email as string);
-      provider.refresh();
+      await accountService.deleteAccount(msg.email as string);
+      break;
       break;
 
     case 'startAutoReg':
@@ -268,7 +269,7 @@ export async function handleWebviewMessage(provider: KiroAccountsProvider, msg: 
       break;
 
     case 'checkAllAccountsHealth':
-      await provider.checkAllAccountsHealth();
+      await provider.checkAllAccountsHealthWithProgress();
       break;
 
     // === LLM Server ===

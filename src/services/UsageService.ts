@@ -3,9 +3,8 @@
  * Handles usage refresh, caching, and account usage tracking
  */
 
-import { KiroUsageData, getKiroUsageFromDB, clearUsageCache, invalidateAccountUsage } from '../utils';
-import { updateActiveAccountUsage, loadSingleAccountUsage } from '../accounts';
-import { AccountInfo } from '../types';
+import { KiroUsageData, getKiroUsageFromDB, clearUsageCache, invalidateAccountUsage, getCachedAccountUsage, isUsageStale, saveAccountUsage } from '../utils';
+import { AccountInfo, AccountUsage } from '../types';
 
 export interface UsageRefreshOptions {
     maxRetries?: number;
@@ -90,7 +89,7 @@ export class UsageService {
 
             if (usage) {
                 this._currentUsage = usage;
-                updateActiveAccountUsage(newAccountName, usage);
+                saveAccountUsage(newAccountName, usage);
                 this._notifyListeners();
                 return usage;
             }
@@ -110,15 +109,34 @@ export class UsageService {
      */
     updateForAccount(accountName: string, usage: KiroUsageData): void {
         this._currentUsage = usage;
-        updateActiveAccountUsage(accountName, usage);
+        saveAccountUsage(accountName, usage);
         this._notifyListeners();
     }
 
     /**
      * Load usage for a specific account from cache
      */
-    async loadForAccount(accountName: string): Promise<KiroUsageData | null> {
-        return loadSingleAccountUsage(accountName);
+    async getUsage(accountName: string): Promise<AccountUsage | null> {
+        const cached = getCachedAccountUsage(accountName);
+
+        if (cached?.isBanned) {
+            return {
+                currentUsage: cached.currentUsage ?? -1,
+                usageLimit: cached.usageLimit ?? 500,
+                percentageUsed: cached.percentageUsed ?? 0,
+                daysRemaining: cached.daysRemaining ?? -1,
+                loading: false,
+                isBanned: true,
+                banReason: cached.banReason,
+                suspended: cached.suspended
+            };
+        }
+
+        if (cached && !isUsageStale(accountName)) {
+            return { ...cached, loading: false };
+        }
+
+        return null;
     }
 
     /**

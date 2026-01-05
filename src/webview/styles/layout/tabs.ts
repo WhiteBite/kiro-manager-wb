@@ -36,10 +36,22 @@ export const tabsStyles = `
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: background-color var(--transition),
+                color var(--transition),
+                box-shadow var(--transition),
+                transform var(--transition-fast);
     white-space: nowrap;
     min-width: 0;
     position: relative;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .tab-item:focus { outline: none; }
+  .tab-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   
   .tab-item:hover {

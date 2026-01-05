@@ -60,6 +60,27 @@ function updatePackageJson(version: string): void {
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
 }
 
+function getDefaultRemoteBranch(): string {
+    try {
+        // Example: refs/remotes/origin/main
+        const ref = exec('git symbolic-ref refs/remotes/origin/HEAD');
+        const parts = ref.trim().split('/');
+        return parts[parts.length - 1] || 'main';
+    } catch {
+        return 'main';
+    }
+}
+
+function getCurrentBranch(): string | null {
+    try {
+        const branch = exec('git rev-parse --abbrev-ref HEAD').trim();
+        if (!branch || branch === 'HEAD') return null;
+        return branch;
+    } catch {
+        return null;
+    }
+}
+
 function main(): void {
     const type = process.argv[2] || 'patch';
     const currentVersion = getCurrentVersion();
@@ -84,7 +105,8 @@ function main(): void {
         exec(`git tag v${newVersion}`);
         console.log(`✅ Created tag v${newVersion}`);
 
-        exec('git push origin master');
+        const branch = getCurrentBranch() || getDefaultRemoteBranch();
+        exec(`git push origin ${branch}`);
         exec(`git push origin v${newVersion} --force`);
         console.log(`✅ Pushed to origin`);
 

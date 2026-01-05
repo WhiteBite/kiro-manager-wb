@@ -159,7 +159,7 @@ async function runAutoRegWithCli(context: vscode.ExtensionContext, provider: Kir
   const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
   const headless = config.get<boolean>('autoreg.headless', false);
   const spoofing = config.get<boolean>('autoreg.spoofing', true);
-  const strategy = config.get<string>('autoreg.strategy', 'webview');
+  const strategy = config.get<string>('autoreg.strategy', 'automated');
 
   const profileProvider = ImapProfileProvider.getInstance(context);
   await profileProvider.load();
@@ -228,7 +228,7 @@ async function runAutoRegWithPython(context: vscode.ExtensionContext, provider: 
   const headless = config.get<boolean>('autoreg.headless', false);
   const spoofing = config.get<boolean>('autoreg.spoofing', true);
   const deviceFlow = config.get<boolean>('autoreg.deviceFlow', false);
-  const strategy = config.get<string>('autoreg.strategy', 'webview');
+  const strategy = config.get<string>('autoreg.strategy', 'automated');
   const deferQuotaCheck = config.get<boolean>('autoreg.deferQuotaCheck', true);
 
   // Get IMAP settings from active profile ONLY (no fallback to VS Code settings)
@@ -237,13 +237,9 @@ async function runAutoRegWithPython(context: vscode.ExtensionContext, provider: 
   const activeProfile = profileProvider.getActive();
 
   if (!activeProfile) {
-    const result = await vscode.window.showWarningMessage(
-      'No IMAP profile configured. Create a profile first.',
-      'Open Settings', 'Cancel'
-    );
-    if (result === 'Open Settings') {
-      vscode.commands.executeCommand('kiroAccountSwitcher.focus');
-    }
+    provider.addLog('⚠️ No IMAP profile configured. Create a profile first.');
+    // Focus the webview so user can configure IMAP profiles
+    vscode.commands.executeCommand('kiroAccountSwitcher.focus');
     return false;
   }
 

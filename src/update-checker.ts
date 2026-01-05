@@ -48,8 +48,6 @@ export async function checkForUpdates(context: vscode.ExtensionContext, force: b
         url: latestRelease.html_url,
         name: latestRelease.name
       });
-
-      showUpdateNotification(latestVersion, latestRelease.html_url);
     } else {
       await context.globalState.update('availableUpdate', null);
     }
@@ -130,13 +128,6 @@ function isNewerVersion(latest: string, current: string): boolean {
 }
 
 function showUpdateNotification(version: string, url: string): void {
-  vscode.window.showInformationMessage(
-    `Kiro Account Switcher v${version} available!`,
-    'Download',
-    'Later'
-  ).then((selection) => {
-    if (selection === 'Download') {
-      vscode.env.openExternal(vscode.Uri.parse(url));
-    }
-  });
+  void version;
+  void url;
 }

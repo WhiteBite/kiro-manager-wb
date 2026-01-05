@@ -7,19 +7,23 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { loadAccounts, loadAccountsWithUsage, loadSingleAccountUsage, updateActiveAccountUsage, switchToAccount, refreshAccountToken, deleteAccount, markUsageStale } from '../accounts';
+import { getAccountService, AccountService } from '../services/AccountService';
 import { getTokensDir, getKiroUsageFromDB, KiroUsageData, isUsageStale, invalidateAccountUsage, clearUsageCache } from '../utils';
 import { generateWebviewHtml } from '../webview/index';
+import { getTranslations } from '../webview/i18n';
+import { renderAccountList } from '../webview/components/AccountList';
 import { getAvailableUpdate, forceCheckForUpdates } from '../update-checker';
 import { AccountInfo, ImapProfile } from '../types';
 import { Language } from '../webview/i18n';
 import { autoregProcess, llmServerProcess } from '../process-manager';
 import { getAutoregDir, runAutoReg } from '../commands/autoreg';
+import type { PatchStatusResult } from '../commands/autoreg';
 import { getStateManager, StateManager, StateUpdate } from '../state/StateManager';
 import { ImapProfileProvider } from './ImapProfileProvider';
 import { getLogService, LogService } from '../services/LogService';
 import { getUsageService, UsageService } from '../services/UsageService';
 import { CONFIG } from '../constants';
+import type { ProviderHint } from '../webview/messages';
 
 // Simple performance measurement
 function perf<T>(name: string, fn: () => T): T {
@@ -57,6 +61,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   // Services
   private _logService: LogService;
   private _usageService: UsageService;
+  private _accountService: AccountService;
+  private _profileProvider?: ImapProfileProvider;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -68,6 +74,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     // Initialize services
     this._logService = getLogService();
     this._usageService = getUsageService();
+    this._accountService = getAccountService();
 
     // Subscribe to state changes for incremental updates
     this._unsubscribe = this._stateManager.subscribe((update) => {
@@ -102,7 +109,23 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         this._view.webview.postMessage({ type: 'updateUsage', usage: update.data.kiroUsage });
         break;
       case 'accounts':
-        this._view.webview.postMessage({ type: 'updateAccounts', accounts: update.data.accounts });
+        {
+          const accounts = (update.data.accounts || []) as AccountInfo[];
+          const t = getTranslations(this._language);
+          const bannedAccounts = accounts.filter(a => a.usage?.isBanned);
+          const visibleAccounts = accounts.filter(a => !a.usage?.isBanned);
+          const validCount = visibleAccounts.filter(a => !a.isExpired).length;
+          const totalCount = visibleAccounts.length;
+
+          const html = renderAccountList({ accounts: visibleAccounts, t });
+          this._view.webview.postMessage({
+            type: 'updateAccounts',
+            html,
+            validCount,
+            totalCount,
+            bannedCount: bannedAccounts.length
+          });
+        }
         break;
       case 'status':
         this._view.webview.postMessage({ type: 'updateStatus', status: update.data.autoRegStatus });
@@ -118,7 +141,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   get accounts(): AccountInfo[] {
-    return this._accounts;
+    return this._accountService.getAccounts();
   }
 
   addLog(message: string): string {
@@ -150,6 +173,191 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     } else {
       this.addLog('⚠️ Log file not found');
     }
+  }
+
+  sendPatchStatus(status: PatchStatusResult): void {
+    this._view?.webview.postMessage({
+      type: 'patchStatus',
+      ...status
+    });
+  }
+
+  async toggleSetting(setting: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+    const current = config.get<boolean>(setting as any);
+    await config.update(setting, !current, vscode.ConfigurationTarget.Global);
+    this.refresh();
+  }
+
+  async updateSetting(key: string, value: boolean): Promise<void> {
+    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+    await config.update(key, value, vscode.ConfigurationTarget.Global);
+    this.refresh();
+  }
+
+  async importAccounts(): Promise<void> {
+    const fileUri = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectMany: false,
+      filters: { 'JSON': ['json'] },
+      title: 'Import Accounts'
+    });
+
+    if (!fileUri?.[0]) return;
+
+    try {
+      const content = fs.readFileSync(fileUri[0].fsPath, 'utf8');
+      const parsed = JSON.parse(content) as { version?: number; accounts?: unknown[] };
+
+      const accounts = Array.isArray(parsed.accounts) ? parsed.accounts : [];
+      if (accounts.length === 0) {
+        this.addLog('⚠️ No accounts found in import file');
+        return;
+      }
+
+      const tokensDir = getTokensDir();
+      const now = Date.now();
+
+      for (let i = 0; i < accounts.length; i++) {
+        const tokenData = accounts[i] as Record<string, unknown>;
+        const name = (tokenData.accountName as string) || (tokenData.email as string) || `account_${i + 1}`;
+        const safe = name.replace(/[^a-zA-Z0-9._-]+/g, '_');
+        const filename = `imported_${now}_${i + 1}_${safe}.json`;
+        const outPath = path.join(tokensDir, filename);
+        fs.writeFileSync(outPath, JSON.stringify(tokenData, null, 2));
+      }
+
+      this.addLog(`✅ Imported ${accounts.length} account(s)`);
+      // Reload service state from disk (will emit onDidAccountsChange)
+      this._accountService.loadAccounts();
+    } catch (err) {
+      this.addLog(`❌ Import failed: ${err}`);
+    }
+  }
+
+  private _getSecretKeyForAccount(accountId: string): string {
+    return `kiroAccountPassword:${accountId}`;
+  }
+
+  private async _getAccountPassword(accountId: string): Promise<string | undefined> {
+    return this._context.secrets.get(this._getSecretKeyForAccount(accountId));
+  }
+
+  private async _saveAccountPassword(accountId: string, password: string): Promise<void> {
+    await this._context.secrets.store(this._getSecretKeyForAccount(accountId), password);
+  }
+
+  async copyPassword(accountId: string): Promise<void> {
+    const pwd = await this._getAccountPassword(accountId);
+    if (!pwd) {
+      this.addLog('⚠️ No password saved for this account');
+      return;
+    }
+    await vscode.env.clipboard.writeText(pwd);
+    this.addLog('🔑 Password copied to clipboard');
+  }
+
+  async copyToken(identifier: string): Promise<void> {
+    const account = this._accountService.getAccountByFilename(identifier)
+      || this._accountService.getAccounts().find(a => a.tokenData.email === identifier || a.tokenData.accountName === identifier);
+
+    if (!account?.tokenData?.accessToken) {
+      this.addLog('⚠️ Token not found');
+      return;
+    }
+
+    await vscode.env.clipboard.writeText(account.tokenData.accessToken);
+    this.addLog('🎫 Token copied to clipboard');
+  }
+
+  async viewQuota(identifier: string): Promise<void> {
+    const account = identifier
+      ? (this._accountService.getAccountByFilename(identifier)
+        || this._accountService.getAccounts().find(a => a.tokenData.email === identifier || a.tokenData.accountName === identifier))
+      : this._accountService.getActiveAccount();
+
+    if (!account) {
+      this.addLog('⚠️ Account not found');
+      return;
+    }
+
+    const usage = await this._usageService.getUsage(account.filename);
+    if (!usage) {
+      this.addLog('ℹ️ No usage data available');
+      return;
+    }
+
+    this.addLog(`📊 Usage: ${usage.currentUsage}/${usage.usageLimit} (${usage.percentageUsed}%)`);
+  }
+
+  async refreshSingleToken(identifier: string): Promise<void> {
+    const account = this._accountService.getAccountByFilename(identifier)
+      || this._accountService.getAccounts().find(a => a.tokenData.email === identifier || a.tokenData.accountName === identifier);
+
+    if (!account) {
+      this.addLog('⚠️ Account not found');
+      return;
+    }
+
+    const accountName = account.tokenData.accountName || account.filename;
+    this.addLog(`🔄 Refreshing token: ${accountName}`);
+
+    const result = await this._accountService.refreshAccountToken(account.filename);
+    if (result.isBanned) {
+      this.markAccountAsBanned(account.filename, result.errorMessage);
+      this.addLog(`⛔ BANNED (OIDC): ${accountName}`);
+      this.refresh();
+      return;
+    }
+
+    if (!result.success) {
+      this.addLog(`✗ Refresh failed: ${accountName} - ${result.errorMessage || result.error}`);
+      return;
+    }
+
+    this.addLog(`✓ Token refreshed: ${accountName}`);
+    this.refresh();
+  }
+
+  async refreshAllTokens(): Promise<void> {
+    const candidates = this._accountService.getAccounts().filter((a: AccountInfo) => !a.usage?.isBanned);
+    await this.refreshSelectedTokens(candidates.map(a => a.filename));
+  }
+
+  setLanguage(language: Language): void {
+    this._language = language;
+    this._context.globalState.update('language', language);
+    this.refresh();
+  }
+
+  async checkForUpdatesManual(): Promise<void> {
+    this._availableUpdate = await forceCheckForUpdates(this._context);
+    this.refresh();
+  }
+
+  async deleteExhaustedAccounts(): Promise<void> {
+    const accounts = this._accountService.getAccounts().filter(a => {
+      const usage = a.usage;
+      return usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
+    });
+
+    for (const acc of accounts) {
+      await this._accountService.deleteAccount(acc.filename);
+    }
+
+    this.addLog(`🗑 Deleted ${accounts.length} exhausted account(s)`);
+    this.refresh();
+  }
+
+  async deleteBannedAccounts(): Promise<void> {
+    const accounts = this._accountService.getAccounts().filter(a => a.usage?.isBanned);
+
+    for (const acc of accounts) {
+      await this._accountService.deleteAccount(acc.filename);
+    }
+
+    this.addLog(`🗑 Deleted ${accounts.length} banned account(s)`);
+    this.refresh();
   }
 
   setStatus(status: string) {
@@ -204,7 +412,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
   // Export accounts (full tokens for transfer)
   async exportAccounts(selectedOnly: string[] = []) {
-    const accounts = loadAccounts();
+    const accounts = this._accountService.getAccounts();
     if (accounts.length === 0) {
       this.addLog('⚠️ No accounts to export');
       return;
@@ -212,7 +420,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
     // Filter if specific accounts selected
     const toExport = selectedOnly.length > 0
-      ? accounts.filter(a => selectedOnly.includes(a.tokenData.accountName || a.filename))
+      ? accounts.filter((a: AccountInfo) => selectedOnly.includes(a.tokenData.accountName || a.filename))
       : accounts;
 
     if (toExport.length === 0) {
@@ -223,232 +431,175 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     // Export full token data for transfer
     const exportData = {
       version: 1,
-      exportedAt: new Date().toISOString(),
-      accounts: toExport.map(a => ({
-        filename: a.filename,
-        tokenData: a.tokenData,
-        // Include password from accounts.json if available
-        password: this.getAccountPassword(a.tokenData.accountName || a.filename)
-      }))
+      accounts: toExport.map((acc: AccountInfo) => acc.tokenData)
     };
 
-    const content = JSON.stringify(exportData, null, 2);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const uri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(`kiro-accounts-export-${timestamp}.json`),
-      filters: { 'JSON': ['json'] }
-    });
+    // Save to file
+    const exportFile = path.join(os.homedir(), 'kiro-accounts-export.json');
+    fs.writeFileSync(exportFile, JSON.stringify(exportData, null, 2));
 
-    if (uri) {
-      fs.writeFileSync(uri.fsPath, content);
-      this.addLog(`✅ Exported ${toExport.length} accounts to ${uri.fsPath}`);
-    }
+    this.addLog(`✅ Exported ${toExport.length} accounts to ${exportFile}`);
   }
 
-  // Import accounts from export file
-  async importAccounts() {
-    const uri = await vscode.window.showOpenDialog({
-      canSelectMany: false,
-      filters: { 'JSON': ['json'] },
-      openLabel: 'Import Accounts'
-    });
+  async loadProfiles(): Promise<void> {
+    const provider = this.getProfileProvider();
+    await provider.load();
+    const profiles = provider.getAll();
+    const active = provider.getActive();
 
-    if (!uri || uri.length === 0) return;
+    this._view?.webview.postMessage({
+      type: 'profilesLoaded',
+      profiles,
+      activeProfileId: active?.id
+    });
+  }
+
+  async getActiveProfile(): Promise<void> {
+    const provider = this.getProfileProvider();
+    const profile = provider.getActive() || null;
+    this._view?.webview.postMessage({ type: 'activeProfileLoaded', profile });
+  }
+
+  async getProfile(profileId: string): Promise<void> {
+    const provider = this.getProfileProvider();
+    const profile = provider.getById(profileId);
+    if (!profile) {
+      this.addLog('⚠️ Profile not found');
+      return;
+    }
+    this._view?.webview.postMessage({ type: 'profileLoaded', profile });
+  }
+
+  async createProfile(profile: Record<string, unknown>): Promise<void> {
+    const provider = this.getProfileProvider();
+    await provider.create(profile as any);
+    await this.loadProfiles();
+    await this.getActiveProfile();
+  }
+
+  async updateProfile(profile: Record<string, unknown>): Promise<void> {
+    const provider = this.getProfileProvider();
+    const id = profile.id as string | undefined;
+    if (!id) {
+      this.addLog('⚠️ Profile id is required');
+      return;
+    }
+    await provider.update(id, profile as any);
+    await this.loadProfiles();
+    await this.getProfile(id);
+  }
+
+  async deleteProfile(profileId: string): Promise<void> {
+    const provider = this.getProfileProvider();
+    await provider.delete(profileId);
+    await this.loadProfiles();
+    await this.getActiveProfile();
+  }
+
+  async setActiveProfile(profileId: string): Promise<void> {
+    const provider = this.getProfileProvider();
+    await provider.setActive(profileId);
+    await this.loadProfiles();
+    await this.getActiveProfile();
+  }
+
+  async detectProvider(email: string): Promise<void> {
+    const provider = this.getProfileProvider();
+    const hint = provider.getProviderHint(email) as ProviderHint | undefined;
+    const recommendedStrategy = provider.getRecommendedStrategy(email);
+
+    this._view?.webview.postMessage({
+      type: 'providerDetected',
+      hint: hint || null,
+      recommendedStrategy: recommendedStrategy || null
+    });
+  }
+
+  async testImapConnection(msg: { server: string; user: string; password: string; port: number }): Promise<void> {
+    this._view?.webview.postMessage({ type: 'imapTestResult', status: 'testing', message: 'Testing...' });
 
     try {
-      const content = fs.readFileSync(uri[0].fsPath, 'utf8');
-      const data = JSON.parse(content);
+      const tls = require('tls');
 
-      if (!data.accounts || !Array.isArray(data.accounts)) {
-        this.addLog('❌ Invalid export file format');
-        return;
-      }
+      await new Promise<void>((resolve, reject) => {
+        const socket = tls.connect({
+          host: msg.server,
+          port: msg.port || 993,
+          timeout: 10000
+        });
 
-      const tokensDir = getTokensDir();
-      if (!fs.existsSync(tokensDir)) {
-        fs.mkdirSync(tokensDir, { recursive: true });
-      }
+        let buffer = '';
+        let stage: 'greeting' | 'login' | 'list' = 'greeting';
 
-      let imported = 0;
-      let skipped = 0;
+        socket.on('data', (data: Buffer) => {
+          buffer += data.toString();
+          const lines = buffer.split('\r\n');
+          buffer = lines.pop() || '';
 
-      for (const acc of data.accounts) {
-        if (!acc.tokenData) continue;
+          for (const line of lines) {
+            if (stage === 'greeting' && line.includes('* OK')) {
+              stage = 'login';
+              socket.write(`A001 LOGIN "${msg.user}" "${msg.password}"\r\n`);
+            } else if (stage === 'login' && line.includes('A001 OK')) {
+              stage = 'list';
+              socket.write('A002 LIST "" "*"\r\n');
+            } else if (stage === 'list' && line.includes('A002 OK')) {
+              socket.write('A003 LOGOUT\r\n');
+              socket.end();
+              resolve();
+            } else if (line.includes('A001 NO') || line.includes('A001 BAD')) {
+              reject(new Error('Authentication failed. Check your credentials.'));
+            }
+          }
+        });
 
-        // Generate new filename to avoid conflicts
-        const accountName = acc.tokenData.accountName || 'imported';
-        const timestamp = Date.now();
-        const newFilename = `token-BuilderId-IdC-${accountName.replace(/[^a-zA-Z0-9_-]/g, '_')}-${timestamp}.json`;
-        const targetPath = path.join(tokensDir, newFilename);
-
-        // Check if account already exists
-        const existing = loadAccounts().find(a =>
-          a.tokenData.accountName === acc.tokenData.accountName ||
-          a.tokenData.refreshToken === acc.tokenData.refreshToken
-        );
-
-        if (existing) {
-          skipped++;
-          continue;
-        }
-
-        // Save token file
-        fs.writeFileSync(targetPath, JSON.stringify(acc.tokenData, null, 2));
-        imported++;
-
-        // Save password to accounts.json if available
-        if (acc.password) {
-          this.saveAccountPassword(acc.tokenData.accountName, acc.password, acc.tokenData.email);
-        }
-      }
-
-      this.addLog(`✅ Imported ${imported} accounts${skipped > 0 ? `, skipped ${skipped} duplicates` : ''}`);
-      this.refresh();
-
-    } catch (err) {
-      this.addLog(`❌ Import failed: ${err}`);
-    }
-  }
-
-  // Get password from accounts.json
-  private getAccountPassword(accountName: string): string | undefined {
-    const autoregDir = this.getAutoregDir();
-    const accountsFile = path.join(autoregDir, 'accounts.json');
-
-    if (fs.existsSync(accountsFile)) {
-      try {
-        const accounts = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
-        const acc = accounts.find((a: any) =>
-          a.email?.includes(accountName) || a.name?.includes(accountName)
-        );
-        return acc?.password;
-      } catch { }
-    }
-    return undefined;
-  }
-
-  // Save password to accounts.json
-  private saveAccountPassword(accountName: string, password: string, email?: string) {
-    const autoregDir = this.getAutoregDir();
-    if (!autoregDir) return;
-
-    const accountsFile = path.join(autoregDir, 'accounts.json');
-    let accounts: any[] = [];
-
-    if (fs.existsSync(accountsFile)) {
-      try {
-        accounts = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
-      } catch { }
-    }
-
-    // Check if already exists
-    const existing = accounts.find((a: any) => a.name === accountName || a.email === email);
-    if (!existing) {
-      accounts.push({
-        email: email || accountName,
-        password,
-        name: accountName,
-        created_at: new Date().toISOString(),
-        status: 'imported'
+        socket.on('error', (err: Error) => reject(err));
+        socket.on('timeout', () => reject(new Error('Connection timeout')));
       });
-      fs.writeFileSync(accountsFile, JSON.stringify(accounts, null, 2));
+
+      this._view?.webview.postMessage({
+        type: 'imapTestResult',
+        status: 'success',
+        message: 'IMAP connected successfully'
+      });
+    } catch (err: any) {
+      this._view?.webview.postMessage({
+        type: 'imapTestResult',
+        status: 'error',
+        message: err?.message || String(err)
+      });
     }
   }
 
-  async copyPassword(accountName: string) {
-    const autoregDir = this.getAutoregDir();
-    const accountsFile = path.join(autoregDir, 'accounts.json');
+  async importEmailsFromFile(): Promise<void> {
+    const fileUri = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectMany: false,
+      filters: { 'Text': ['txt', 'csv'] },
+      title: 'Import Emails'
+    });
 
-    if (fs.existsSync(accountsFile)) {
-      try {
-        const accounts = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
-        const acc = accounts.find((a: any) =>
-          a.email?.includes(accountName) || a.name?.includes(accountName)
-        );
-        if (acc?.password) {
-          await vscode.env.clipboard.writeText(acc.password);
-          this.addLog('📋 Password copied to clipboard');
-          return;
-        }
-      } catch { }
+    if (!fileUri?.[0]) return;
+
+    try {
+      const content = fs.readFileSync(fileUri[0].fsPath, 'utf8');
+      const emails = content
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      this._view?.webview.postMessage({
+        type: 'emailsImported',
+        emails
+      });
+    } catch (err) {
+      this.addLog(`❌ Failed to import emails: ${err}`);
     }
-    this.addLog('⚠️ Password not found for this account');
   }
 
-  private getAutoregDir(): string {
-    const homePath = path.join(os.homedir(), '.kiro-manager-wb');
-    return homePath;
-  }
-
-  // Delete all accounts with exhausted usage limits or suspended
-  async deleteExhaustedAccounts() {
-    const badAccounts = this._accounts.filter(
-      a => a.usage && (
-        // Exhausted (100% usage)
-        (a.usage.currentUsage !== -1 && a.usage.percentageUsed >= 100) ||
-        // Suspended by AWS
-        a.usage.suspended === true
-      )
-    );
-
-    if (badAccounts.length === 0) {
-      this.addLog('ℹ️ No exhausted/suspended accounts to delete');
-      return;
-    }
-
-    let deleted = 0;
-    for (const acc of badAccounts) {
-      const accountName = acc.tokenData.accountName || acc.filename;
-      const reason = acc.usage?.suspended ? '🚫 suspended' : '📊 exhausted';
-      try {
-        // Delete token file directly (skip confirmation since we already confirmed)
-        if (fs.existsSync(acc.path)) {
-          fs.unlinkSync(acc.path);
-          deleted++;
-          this.addLog(`🗑 Deleted (${reason}): ${accountName}`);
-        }
-      } catch (err) {
-        this.addLog(`✗ Failed to delete ${accountName}: ${err}`);
-      }
-    }
-
-    this.addLog(`✅ Deleted ${deleted} exhausted/suspended account(s)`);
-    this.refresh();
-  }
-
-  // Delete all banned accounts
-  async deleteBannedAccounts() {
-    const bannedAccounts = this._accounts.filter(
-      a => a.usage?.isBanned === true
-    );
-
-    if (bannedAccounts.length === 0) {
-      this.addLog('ℹ️ No banned accounts to delete');
-      return;
-    }
-
-    let deleted = 0;
-    for (const acc of bannedAccounts) {
-      const accountName = acc.tokenData.accountName || acc.filename;
-      try {
-        if (fs.existsSync(acc.path)) {
-          fs.unlinkSync(acc.path);
-          deleted++;
-          this.addLog(`🗑 Deleted (⛔ banned): ${accountName}`);
-        }
-      } catch (err) {
-        this.addLog(`✗ Failed to delete ${accountName}: ${err}`);
-      }
-    }
-
-    this.addLog(`✅ Deleted ${deleted} banned account(s)`);
-    this.refresh();
-  }
-
-  // Refresh all expired tokens
   async refreshAllExpiredTokens() {
     // Find expired accounts (token expired but not exhausted/suspended/banned)
-    const expiredAccounts = this._accounts.filter(acc => {
+    const expiredAccounts = this._accountService.getAccounts().filter((acc: AccountInfo) => {
       const usage = acc.usage;
       const isBanned = usage?.isBanned === true;
       const isSuspended = usage?.suspended === true;
@@ -482,7 +633,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         });
 
         try {
-          const result = await refreshAccountToken(acc.filename, true);
+          const result = await this._accountService.refreshAccountToken(acc.filename);
 
           if (result.isBanned) {
             failed++;
@@ -498,19 +649,13 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
           }
 
           // OIDC succeeded - check via CodeWhisperer API
-          const accounts = loadAccounts();
-          const freshAcc = accounts.find(a => a.filename === acc.filename);
+          const freshAcc = this._accountService.getAccountByFilename(acc.filename);
 
           if (freshAcc?.tokenData.accessToken) {
-            const { checkAccountBanViaAPI } = await import('../accounts');
-            const banCheck = await checkAccountBanViaAPI(
-              freshAcc.tokenData.accessToken,
-              freshAcc.tokenData.region || 'us-east-1'
-            );
-
+            const banCheck = await this._accountService.checkAccountBanStatus(freshAcc.filename);
             if (banCheck.isBanned) {
               failed++;
-              this.markAccountAsBanned(acc.filename, banCheck.message);
+              this.markAccountAsBanned(acc.filename, banCheck.errorMessage);
               this.addLog(`⛔ BANNED (API): ${accountName}`);
               continue;
             }
@@ -530,138 +675,13 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     this.refresh();
   }
 
-  // Webview provider implementation
-  resolveWebviewView(webviewView: vscode.WebviewView) {
-    this._view = webviewView;
-    webviewView.webview.options = { enableScripts: true };
-
-    this.refresh();
-
-    // Auto-check health of active account on startup (with delay to not block UI)
-    setTimeout(() => this.checkActiveAccountHealth(), 2000);
-
-    webviewView.webview.onDidReceiveMessage(async (msg) => {
-      await this.handleMessage(msg);
-    });
-  }
-
-  // Check health of currently active account silently
-  // Uses CodeWhisperer API to detect bans (OIDC refresh doesn't detect bans!)
-  async checkActiveAccountHealth() {
-    const activeAccount = this._accounts.find(a => a.isActive);
-    if (!activeAccount) return;
-
-    // Use checkAccountBanStatus which checks via CodeWhisperer API
-    const { checkAccountBanStatus } = await import('../accounts');
-    const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
-
-    try {
-      const status = await checkAccountBanStatus(accountName);
-
-      if (status.isBanned) {
-        this.markAccountAsBanned(activeAccount.filename, status.errorMessage);
-        this.addLog(`⛔ Active account "${accountName}" is BANNED! Consider switching to another account.`);
-        this.refresh();
-      } else if (!status.isHealthy && status.error) {
-        this.addLog(`⚠️ Active account issue: ${status.errorMessage || status.error}`);
-      }
-    } catch (e) {
-      // Silent fail - don't block startup
-    }
-  }
-
-  async handleMessage(msg: any) {
-    console.log('[Webview] Received message:', msg.command, msg);
-    // Import handlers dynamically to avoid circular deps
-    const { handleWebviewMessage } = await import('../commands/webview-handler');
-    await handleWebviewMessage(this, msg);
-  }
-
-  async copyToken(filename: string) {
-    const accounts = loadAccounts();
-    const account = accounts.find(a => a.filename === filename || a.filename.includes(filename));
-    if (account) {
-      await vscode.env.clipboard.writeText(account.tokenData.accessToken || '');
-      this.addLog('📋 Token copied to clipboard');
-    }
-  }
-
-  async viewQuota(filename: string) {
-    const account = this._accounts.find(a => a.filename === filename || a.filename.includes(filename));
-    if (account?.usage) {
-      this.addLog(
-        `📊 ${account.tokenData.accountName || filename}: ${account.usage.currentUsage}/${account.usage.usageLimit} (${account.usage.percentageUsed.toFixed(1)}%)`
-      );
-    } else {
-      const accountName = account?.tokenData.accountName || filename;
-      const cachedUsage = await loadSingleAccountUsage(accountName);
-      if (cachedUsage) {
-        this.addLog(
-          `📊 ${accountName}: ${cachedUsage.currentUsage}/${cachedUsage.usageLimit} (${cachedUsage.percentageUsed.toFixed(1)}%)`
-        );
-      } else {
-        this.addLog('⚠️ No usage data available. Switch to this account and refresh to load usage.');
-      }
-    }
-  }
-
-  async refreshSingleToken(filename: string) {
-    const account = this._accounts.find(a => a.filename === filename || a.filename.includes(filename));
-    const accountName = account?.tokenData.accountName || filename.replace(/^token-BuilderId-IdC-/, '').replace(/-\d+\.json$/, '').replace(/_/g, ' ');
-
-    await vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: `Checking ${accountName}...`,
-      cancellable: false
-    }, async () => {
-      const result = await refreshAccountToken(filename, true);
-
-      if (result.isBanned) {
-        // OIDC detected ban
-        this.markAccountAsBanned(filename, result.errorMessage);
-        this.addLog(`⛔ BANNED (OIDC): ${accountName}`);
-        return;
-      }
-
-      if (!result.success) {
-        // Other error - already shown by refreshAccountToken
-        return;
-      }
-
-      // OIDC refresh succeeded - now check via CodeWhisperer API for real ban detection
-      // Reload account to get fresh token
-      const accounts = loadAccounts();
-      const freshAccount = accounts.find(a => a.filename === filename || a.filename.includes(filename));
-
-      if (freshAccount?.tokenData.accessToken) {
-        const { checkAccountBanViaAPI } = await import('../accounts');
-        const banCheck = await checkAccountBanViaAPI(
-          freshAccount.tokenData.accessToken,
-          freshAccount.tokenData.region || 'us-east-1'
-        );
-
-        if (banCheck.isBanned) {
-          this.markAccountAsBanned(filename, banCheck.message || 'TEMPORARILY_SUSPENDED');
-          this.addLog(`⛔ BANNED (API): ${accountName}`);
-          this.refresh();
-          return;
-        }
-      }
-
-      // All good!
-      this.addLog(`✓ Healthy: ${accountName}`);
-      this.refresh();
-    });
-  }
-
   // Mark account as banned in usage cache
   markAccountAsBanned(identifier: string, reason?: string) {
     // Find account by filename, accountName, or email
-    const account = this._accounts.find(a =>
+    const account = this._accountService.getAccounts().find((a: AccountInfo) =>
       a.filename === identifier ||
       a.tokenData.accountName === identifier ||
-      a.tokenData.email === identifier ||
-      a.filename.includes(identifier)
+      a.tokenData.email === identifier
     );
 
     if (!account) {
@@ -671,6 +691,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     }
 
     const accName = account.tokenData.accountName || account.tokenData.email || identifier;
+    const cacheKey = account.filename;
 
     // Update usage with banned flag
     if (account.usage) {
@@ -699,7 +720,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     };
 
     console.log(`[BAN] Saving ban status for ${accName}:`, usageData);
-    saveAccountUsage(accName, usageData);
+    saveAccountUsage(cacheKey, usageData);
 
     this.addLog(`⛔ Account marked as BANNED: ${accName}`);
 
@@ -707,181 +728,87 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     this.renderWebview();
   }
 
-  async toggleSetting(setting: string) {
-    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+  // ... (rest of the code remains the same)
 
-    switch (setting) {
-      case 'autoRefresh':
-        const autoRefresh = config.get<boolean>('autoSwitch.enabled', false);
-        await config.update('autoSwitch.enabled', !autoRefresh, vscode.ConfigurationTarget.Global);
-        break;
-      case 'headless':
-        const headless = config.get<boolean>('autoreg.headless', false);
-        await config.update('autoreg.headless', !headless, vscode.ConfigurationTarget.Global);
-        break;
-      case 'verbose':
-        const verbose = config.get<boolean>('debug.verbose', false);
-        await config.update('debug.verbose', !verbose, vscode.ConfigurationTarget.Global);
-        break;
-      case 'screenshots':
-        const screenshots = config.get<boolean>('debug.screenshotsOnError', true);
-        await config.update('debug.screenshotsOnError', !screenshots, vscode.ConfigurationTarget.Global);
-        break;
-    }
-    // Don't call refresh() - it resets the view to main page
-  }
+  private _renderDebounceTimer: NodeJS.Timeout | null = null;
+  private _renderDebounceMs: number = CONFIG.RENDER_DEBOUNCE_MS;
 
-  async updateSetting(key: string, value: boolean | number | string) {
-    const config = vscode.workspace.getConfiguration('kiroAccountSwitcher');
+  resolveWebviewView(webviewView: vscode.WebviewView) {
+    this._view = webviewView;
+    webviewView.webview.options = { enableScripts: true };
 
-    switch (key) {
-      case 'headless':
-        await config.update('autoreg.headless', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'verbose':
-        await config.update('debug.verbose', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'screenshotsOnError':
-        await config.update('debug.screenshotsOnError', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'spoofing':
-        await config.update('autoreg.spoofing', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'deviceFlow':
-        await config.update('autoreg.deviceFlow', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'autoSwitchThreshold':
-        await config.update('autoSwitch.usageThreshold', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'strategy':
-        await config.update('autoreg.strategy', value, vscode.ConfigurationTarget.Global);
-        break;
-      case 'deferQuotaCheck':
-        await config.update('autoreg.deferQuotaCheck', value, vscode.ConfigurationTarget.Global);
-        break;
-    }
-    // Don't call refresh() - it resets the view to main page
-    // Settings are saved, UI state is already updated by the toggle
-  }
-
-  setLanguage(lang: Language) {
-    this._language = lang;
-    this._context.globalState.update('language', lang);
     this.refresh();
+
+    // Auto-check health of active account on startup (with delay to not block UI)
+    setTimeout(() => this.checkActiveAccountHealth(), 2000);
+
+    webviewView.webview.onDidReceiveMessage(async (msg) => {
+      await this.handleMessage(msg);
+    });
   }
 
-  async checkForUpdatesManual() {
-    const update = await forceCheckForUpdates(this._context);
-    this._availableUpdate = update;
-    if (update) {
-      this.addLog(`🆕 New version ${update.version} available!`);
-      // Still show dialog for download action
-      vscode.window.showInformationMessage(`New version ${update.version} available!`, 'Download').then(sel => {
-        if (sel === 'Download') vscode.env.openExternal(vscode.Uri.parse(update.url));
-      });
-    } else {
-      this.addLog('✓ You have the latest version!');
-    }
-    this.refresh();
-  }
-
-  // Full refresh - reloads everything
   async refresh() {
     if (this._view) {
-      const start = performance.now();
+        const start = performance.now();
 
-      await this.refreshAccounts();
-      await this.refreshUsage();
-      this._availableUpdate = getAvailableUpdate(this._context);
-      this.renderWebview();
+        await this.refreshAccounts();
+        await this.refreshUsage();
+        this._availableUpdate = getAvailableUpdate(this._context);
+        this.renderWebview();
 
-      const duration = performance.now() - start;
-      if (duration > 100) {
-        console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
-      }
+        const duration = performance.now() - start;
+        if (duration > 100) {
+            console.log(`[PERF] Full refresh: ${duration.toFixed(1)}ms`);
+        }
     }
   }
 
-  // Partial refresh - accounts only (fast)
-  async refreshAccounts() {
-    this._accounts = perf('loadAccounts', () => loadAccounts());
+  private async refreshAccounts(): Promise<void> {
+    // IMPORTANT: do not call loadAccounts() here.
+    // loadAccounts() emits onDidAccountsChange, which triggers provider.refresh() from extension.ts.
+    // Calling loadAccounts() during refresh creates an infinite recursion and crashes the extension host.
+    this._accounts = this._accountService.getAccounts();
     this._stateManager.updateAccounts(this._accounts);
   }
 
-  // Partial refresh - usage only (uses UsageService)
-  async refreshUsage() {
+  private async refreshUsage(): Promise<void> {
     this._kiroUsage = await perfAsync('refreshUsage', () => this._usageService.refresh());
 
-    if (this._kiroUsage) {
-      const activeAccount = this._accounts.find(a => a.isActive);
-      if (activeAccount) {
-        const accountName = activeAccount.tokenData.accountName || activeAccount.filename;
-        this._usageService.updateForAccount(accountName, this._kiroUsage);
-      }
+    const activeAccount = this._accountService.getActiveAccount();
+    if (activeAccount && this._kiroUsage) {
+      this._usageService.applyToAccount(activeAccount, this._kiroUsage);
     }
 
     this._stateManager.updateUsage(this._kiroUsage);
   }
 
-  // Refresh usage data after account switch - uses UsageService with retry logic
-  async refreshUsageAfterSwitch() {
-    if (!this._view) return;
+  async checkActiveAccountHealth(): Promise<void> {
+    const activeAccount = this._accountService.getActiveAccount();
+    if (!activeAccount) return;
 
-    // Get old account name before refresh
-    const oldActiveAccount = this._accounts.find(a => a.isActive);
-    const oldAccountName = oldActiveAccount
-      ? (oldActiveAccount.tokenData.accountName || oldActiveAccount.filename)
-      : null;
+    try {
+      const status = await this._accountService.checkAccountBanStatus(activeAccount.filename);
 
-    // Reset current usage display
-    this._kiroUsage = null;
-    this._stateManager.updateUsage(null);
-
-    // Reload accounts to get new active state
-    await this.refreshAccounts();
-
-    // Get new account name
-    const newActiveAccount = this._accounts.find(a => a.isActive);
-    const newAccountName = newActiveAccount
-      ? (newActiveAccount.tokenData.accountName || newActiveAccount.filename)
-      : '';
-
-    // Use UsageService for refresh with retry
-    const usage = await this._usageService.refreshAfterSwitch(
-      oldAccountName,
-      newAccountName,
-      {
-        maxRetries: CONFIG.USAGE_REFRESH_MAX_RETRIES,
-        retryDelays: [...CONFIG.USAGE_REFRESH_DELAYS],
-        onRetry: (attempt, max) => {
-          console.log(`Usage not ready, retrying (${attempt}/${max})...`);
-        }
+      if (status.isBanned) {
+        this.markAccountAsBanned(activeAccount.filename, status.errorMessage);
+        this.refresh();
       }
-    );
-
-    if (usage) {
-      this._kiroUsage = usage;
-
-      // Update the account's usage in memory
-      if (newActiveAccount) {
-        this._usageService.applyToAccount(newActiveAccount, usage);
-      }
-
-      this._stateManager.updateUsage(this._kiroUsage);
+    } catch {
+      // Best-effort only
     }
-
-    this._availableUpdate = getAvailableUpdate(this._context);
-
-    // Full re-render with updated data
-    this._stateManager.updateFull({
-      accounts: this._accounts,
-      kiroUsage: this._kiroUsage,
-      activeAccount: this._accounts.find(a => a.isActive) || null
-    });
   }
 
-  private _renderDebounceTimer: NodeJS.Timeout | null = null;
-  private _renderDebounceMs: number = CONFIG.RENDER_DEBOUNCE_MS;
+  private async handleMessage(msg: Record<string, unknown>): Promise<void> {
+    const { handleWebviewMessage } = await import('../commands/webview-handler');
+    await handleWebviewMessage(this, msg);
+  }
+
+  private getProfileProvider(): ImapProfileProvider {
+    if (!this._profileProvider) {
+      this._profileProvider = ImapProfileProvider.getInstance(this._context);
+    }
+    return this._profileProvider;
+  }
 
   private renderWebview() {
     if (!this._view) return;
@@ -947,7 +874,8 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     if (!this._view) return;
 
     try {
-      this._accounts = await loadAccountsWithUsage();
+      this._accountService.loadAccounts();
+      this._accounts = this._accountService.getAccounts();
       this.renderWebview();
     } catch (err) {
       console.error('Failed to load all usage:', err);
@@ -958,9 +886,9 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     if (!this._view) return;
 
     try {
-      const usage = await loadSingleAccountUsage(accountName);
+      const usage = await this._usageService.getUsage(accountName);
       if (usage) {
-        const acc = this._accounts.find(a =>
+        const acc = this._accountService.getAccounts().find((a: AccountInfo) =>
           a.tokenData.accountName === accountName ||
           a.filename.includes(accountName)
         );
@@ -974,333 +902,63 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     }
   }
 
-  // ============================================
-  // IMAP Profiles Management
-  // ============================================
+  // ... (rest of the code remains the same)
 
-  private _profileProvider?: ImapProfileProvider;
-
-  private getProfileProvider(): ImapProfileProvider {
-    if (!this._profileProvider) {
-      this._profileProvider = ImapProfileProvider.getInstance(this._context);
-    }
-    return this._profileProvider;
-  }
-
-  async loadProfiles() {
+  // Refresh usage data after account switch - uses UsageService with retry logic
+  async refreshUsageAfterSwitch() {
     if (!this._view) return;
 
-    const provider = this.getProfileProvider();
-    const profiles = provider.getAll();
-    const activeProfile = provider.getActive();
-    const activeId = activeProfile?.id;
+    // Get old account name before refresh
+    const activeAccount = this._accountService.getActiveAccount();
+    const oldAccountName = activeAccount ? activeAccount.filename : null;
 
-    this._view.webview.postMessage({
-      type: 'profilesLoaded',
-      profiles,
-      activeProfileId: activeId
-    });
+    // Reset current usage display
+    this._kiroUsage = null;
+    this._stateManager.updateUsage(null);
 
-    // Also send active profile for settings display
-    this._view.webview.postMessage({
-      type: 'activeProfileLoaded',
-      profile: activeProfile || null
-    });
-  }
+    // Reload accounts to get new active state (but do not push update yet)
+    this._accountService.loadAccounts();
+    this._accounts = this._accountService.getAccounts();
 
-  async getActiveProfile() {
-    if (!this._view) return;
+    // Get new account name
+    const newActiveAccount = this._accountService.getActiveAccount();
+    const newAccountName = newActiveAccount ? newActiveAccount.filename : '';
 
-    const provider = this.getProfileProvider();
-    const profile = provider.getActive();
-
-    this._view.webview.postMessage({
-      type: 'activeProfileLoaded',
-      profile: profile || null
-    });
-  }
-
-  async getProfile(profileId: string) {
-    if (!this._view) return;
-
-    const provider = this.getProfileProvider();
-    const profile = provider.getById(profileId);
-
-    if (profile) {
-      this._view.webview.postMessage({
-        type: 'profileLoaded',
-        profile
-      });
-    }
-  }
-
-  async createProfile(profileData: Partial<ImapProfile>) {
-    this.addLog(`Creating profile: ${JSON.stringify(profileData)}`);
-    const provider = this.getProfileProvider();
-
-    try {
-      const profile = await provider.create({
-        name: profileData.name || 'New Profile',
-        imap: profileData.imap || { server: '', user: '', password: '' },
-        strategy: profileData.strategy || { type: 'single' },
-        proxy: profileData.proxy,
-        status: 'active'
-      });
-
-      this.addLog(`✓ Created profile: ${profile.name} (${profile.id})`);
-      
-      // Send success toast to UI
-      this._view?.webview.postMessage({
-        type: 'toast',
-        message: `Profile "${profile.name}" created successfully!`,
-        toastType: 'success'
-      });
-      
-      await this.loadProfiles();
-    } catch (err) {
-      this.addLog(`✗ Failed to create profile: ${err}`);
-      
-      // Send error toast to UI
-      this._view?.webview.postMessage({
-        type: 'toast',
-        message: `Failed to create profile: ${err}`,
-        toastType: 'error'
-      });
-    }
-  }
-
-  async updateProfile(profileData: Partial<ImapProfile>) {
-    if (!profileData.id) return;
-
-    const provider = this.getProfileProvider();
-
-    try {
-      const profile = await provider.update(profileData.id, profileData);
-      if (profile) {
-        this.addLog(`✓ Updated profile: ${profile.name}`);
-        
-        // Send success toast to UI
-        this._view?.webview.postMessage({
-          type: 'toast',
-          message: `Profile "${profile.name}" updated successfully!`,
-          toastType: 'success'
-        });
-        
-        await this.loadProfiles();
-      }
-    } catch (err) {
-      this.addLog(`❌ Failed to update profile: ${err}`);
-      
-      // Send error toast to UI
-      this._view?.webview.postMessage({
-        type: 'toast',
-        message: `Failed to update profile: ${err}`,
-        toastType: 'error'
-      });
-    }
-  }
-
-  async deleteProfile(profileId: string) {
-    const provider = this.getProfileProvider();
-    const profile = provider.getById(profileId);
-
-    if (!profile) return;
-
-    try {
-      await provider.delete(profileId);
-      this.addLog(`✅ Deleted profile: ${profile.name}`);
-      await this.loadProfiles();
-    } catch (err) {
-      this.addLog(`❌ Failed to delete profile: ${err}`);
-    }
-  }
-
-  async setActiveProfile(profileId: string) {
-    const provider = this.getProfileProvider();
-
-    try {
-      await provider.setActive(profileId);
-      const profile = provider.getById(profileId);
-      if (profile) {
-        this.addLog(`✓ Active profile: ${profile.name}`);
-        // Update settings view with new active profile
-        this._view?.webview.postMessage({
-          type: 'activeProfileLoaded',
-          profile
-        });
-      }
-      await this.loadProfiles();
-    } catch (err) {
-      this.addLog(`✗ Failed to set active profile: ${err}`);
-    }
-  }
-
-  async detectProvider(email: string) {
-    if (!this._view || !email) return;
-
-    const provider = this.getProfileProvider();
-    const hint = provider.getProviderHint(email);
-    const recommended = provider.getRecommendedStrategy(email);
-
-    this._view.webview.postMessage({
-      type: 'providerDetected',
-      hint,
-      recommendedStrategy: recommended
-    });
-  }
-
-  async testImapConnection(params: { server: string; user: string; password: string; port: number }) {
-    if (!this._view) return;
-
-    this.addLog(`🔌 Testing IMAP: ${params.server}:${params.port} as ${params.user}...`);
-
-    // Send testing status to UI
-    this._view.webview.postMessage({
-      type: 'imapTestResult',
-      status: 'testing',
-      message: 'Connecting...'
-    });
-
-    try {
-      // Use Node.js built-in modules instead of Python
-      const net = require('net');
-      const tls = require('tls');
-
-      await new Promise<void>((resolve, reject) => {
-        const socket = tls.connect({
-          host: params.server,
-          port: params.port,
-          timeout: 15000,
-          rejectUnauthorized: false // Allow self-signed certificates
-        });
-
-        let buffer = '';
-        let authenticated = false;
-        let folderCount = 0;
-
-        socket.on('data', (data: Buffer) => {
-          buffer += data.toString();
-          const lines = buffer.split('\r\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            console.log('IMAP Response:', line);
-            
-            if (line.includes('* OK') && !authenticated) {
-              // Server ready, try to login
-              socket.write(`A001 LOGIN "${params.user}" "${params.password}"\r\n`);
-            } else if (line.includes('A001 OK') && line.toLowerCase().includes('login')) {
-              // Login successful
-              authenticated = true;
-              socket.write('A002 LIST "" "*"\r\n');
-            } else if (line.startsWith('* LIST')) {
-              // Count folders
-              folderCount++;
-            } else if (line.includes('A002 OK') && authenticated) {
-              // List command completed
-              socket.write('A003 LOGOUT\r\n');
-              setTimeout(() => resolve(), 500); // Give time for logout
-            } else if (line.includes('A001 NO') || line.includes('A001 BAD')) {
-              // Login failed
-              socket.destroy();
-              reject(new Error('Authentication failed. Check your credentials.'));
-            }
-          }
-        });
-
-        socket.on('error', (err: Error) => {
-          socket.destroy();
-          reject(new Error(`Connection failed: ${err.message}`));
-        });
-
-        socket.on('timeout', () => {
-          socket.destroy();
-          reject(new Error('Connection timeout (15s)'));
-        });
-
-        socket.on('close', () => {
-          if (authenticated) {
-            resolve();
-          }
-        });
-      });
-
-      this.addLog(`✅ IMAP connected! Found folders`);
-      this._view?.webview.postMessage({
-        type: 'imapTestResult',
-        status: 'success',
-        message: `Connected successfully! IMAP server is working.`
-      });
-
-    } catch (error: any) {
-      let errorMsg = error.message || 'Unknown error';
-      
-      // Improve error messages for common issues
-      if (errorMsg.includes('Authentication failed')) {
-        if (params.server.includes('gmail')) {
-          errorMsg = 'Gmail requires App Password (not regular password). Go to Google Account → Security → App passwords';
-        } else if (params.server.includes('yandex')) {
-          errorMsg = 'Check your Yandex credentials. Make sure IMAP is enabled in Yandex Mail settings.';
-        } else {
-          errorMsg = 'Authentication failed. Check your username and password.';
+    // Use UsageService for refresh with retry
+    const usage = await this._usageService.refreshAfterSwitch(
+      oldAccountName,
+      newAccountName,
+      {
+        maxRetries: CONFIG.USAGE_REFRESH_MAX_RETRIES,
+        retryDelays: [...CONFIG.USAGE_REFRESH_DELAYS],
+        onRetry: (attempt, max) => {
+          console.log(`Usage not ready, retrying (${attempt}/${max})...`);
         }
-      } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
-        errorMsg = `Cannot resolve server ${params.server}. Check server address and internet connection.`;
-      } else if (errorMsg.includes('ECONNREFUSED')) {
-        errorMsg = `Connection refused by ${params.server}:${params.port}. Check server and port.`;
-      } else if (errorMsg.includes('timeout')) {
-        errorMsg = `Connection timeout. Server ${params.server} is not responding.`;
+      }
+    );
+
+    if (usage) {
+      this._kiroUsage = usage;
+
+      // Update the account's usage in memory
+      if (newActiveAccount) {
+        this._usageService.applyToAccount(newActiveAccount, usage);
       }
 
-      this.addLog(`❌ IMAP failed: ${errorMsg}`);
-      this._view?.webview.postMessage({
-        type: 'imapTestResult',
-        status: 'error',
-        message: errorMsg
-      });
+      // Push updated accounts list so active card shows correct remaining
+      this._stateManager.updateAccounts(this._accounts);
+      this._stateManager.updateUsage(this._kiroUsage);
+    } else {
+      // Still push accounts so active highlight changes without full rerender
+      this._stateManager.updateAccounts(this._accounts);
     }
+
+    this._availableUpdate = getAvailableUpdate(this._context);
+
+    // Avoid full re-render - it causes visible UI freezes in VS Code webview
   }
 
-  async importEmailsFromFile() {
-    const uris = await vscode.window.showOpenDialog({
-      canSelectMany: false,
-      filters: { 'Text files': ['txt', 'csv'] },
-      title: 'Select file with email list'
-    });
-
-    if (!uris || uris.length === 0) return;
-
-    try {
-      const content = fs.readFileSync(uris[0].fsPath, 'utf8');
-      const emails = content
-        .split(/[\n,;]+/)
-        .map(e => e.trim())
-        .filter(e => e.includes('@'));
-
-      if (emails.length > 0 && this._view) {
-        this._view.webview.postMessage({
-          type: 'emailsImported',
-          emails
-        });
-        this.addLog(`✅ Imported ${emails.length} emails`);
-      } else {
-        this.addLog('⚠️ No valid emails found in file');
-      }
-    } catch (err) {
-      this.addLog(`❌ Failed to read file: ${err}`);
-    }
-  }
-
-  sendPatchStatus(status: { isPatched: boolean; kiroVersion?: string; patchVersion?: string; latestPatchVersion?: string; currentMachineId?: string; needsUpdate?: boolean; updateReason?: string; error?: string }) {
-    if (this._view) {
-      this._view.webview.postMessage({
-        type: 'patchStatus',
-        ...status
-      });
-    }
-  }
-
-  // === Bulk Actions ===
+  // ... (rest of the code remains the same)
 
   // Refresh tokens for selected accounts
   async refreshSelectedTokens(filenames: string[]) {
@@ -1322,11 +980,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     }, async (progress) => {
       for (let i = 0; i < filenames.length; i++) {
         const filename = filenames[i];
-        const account = this._accounts.find(a =>
-          a.filename === filename ||
-          a.tokenData.accountName === filename ||
-          a.filename.includes(filename)
-        );
+        const account = this._accountService.getAccountByFilename(filename);
 
         if (!account) continue;
 
@@ -1338,7 +992,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         });
 
         try {
-          const result = await refreshAccountToken(account.filename, true);
+          const result = await this._accountService.refreshAccountToken(account.filename);
 
           if (result.isBanned) {
             failed++;
@@ -1355,20 +1009,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
           }
 
           // OIDC succeeded - check via CodeWhisperer API
-          const accounts = loadAccounts();
-          const freshAcc = accounts.find(a => a.filename === account.filename);
+          const freshAcc = this._accountService.getAccountByFilename(account.filename);
 
           if (freshAcc?.tokenData.accessToken) {
-            const { checkAccountBanViaAPI } = await import('../accounts');
-            const banCheck = await checkAccountBanViaAPI(
-              freshAcc.tokenData.accessToken,
-              freshAcc.tokenData.region || 'us-east-1'
-            );
-
+            const banCheck = await this._accountService.checkAccountBanStatus(freshAcc.filename);
             if (banCheck.isBanned) {
               failed++;
               banned++;
-              this.markAccountAsBanned(account.filename, banCheck.message);
+              this.markAccountAsBanned(account.filename, banCheck.errorMessage);
               this.addLog(`⛔ BANNED (API): ${accountName}`);
               continue;
             }
@@ -1400,11 +1048,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
 
     let deleted = 0;
     for (const filename of filenames) {
-      const account = this._accounts.find(a =>
-        a.filename === filename ||
-        a.tokenData.accountName === filename ||
-        a.filename.includes(filename)
-      );
+      const account = this._accountService.getAccountByFilename(filename);
 
       if (account && fs.existsSync(account.path)) {
         try {
@@ -1419,14 +1063,15 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     }
 
     this.addLog(`✅ Deleted ${deleted} account(s)`);
-    this.refresh();
+
   }
 
   // Check health of all accounts (detect bans and issues)
   // Uses CodeWhisperer API to detect bans (OIDC refresh doesn't detect bans!)
-  async checkAllAccountsHealth() {
+
+  async checkAllAccountsHealthWithProgress() {
     // Filter out banned and exhausted accounts - no point checking them
-    const accountsToCheck = this._accounts.filter(acc => {
+    const accountsToCheck = this._accountService.getAccounts().filter((acc: AccountInfo) => {
       const usage = acc.usage;
       const isBanned = usage?.isBanned === true;
       const isExhausted = usage && usage.currentUsage !== -1 && usage.percentageUsed >= 100;
@@ -1450,8 +1095,6 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
       title: `Checking ${accountsToCheck.length} accounts...`,
       cancellable: true
     }, async (progress, token) => {
-      // Use checkAccountBanStatus which checks via CodeWhisperer API (not just OIDC)
-      const { checkAccountBanStatus } = await import('../accounts');
 
       for (let i = 0; i < accountsToCheck.length; i++) {
         if (token.isCancellationRequested) break;
@@ -1465,7 +1108,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
         });
 
         // checkAccountBanStatus does OIDC refresh + CodeWhisperer API check
-        const status = await checkAccountBanStatus(accountName);
+        const status = await this._accountService.checkAccountBanStatus(acc.filename);
 
         if (status.isHealthy) {
           healthy++;
@@ -1475,7 +1118,7 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
             acc.usage.banReason = undefined;
             // PERSIST cleared ban status to disk
             const { saveAccountUsage } = require('../utils');
-            saveAccountUsage(accountName, {
+            saveAccountUsage(acc.filename, {
               ...acc.usage,
               isBanned: false,
               banReason: undefined
@@ -1486,14 +1129,17 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
           // Update usage after health check
           if (status.usage) {
             const { saveAccountUsage } = require('../utils');
-            saveAccountUsage(accountName, status.usage);
+            saveAccountUsage(acc.filename, status.usage);
             this.addLog(`📊 Updated usage: ${accountName} - ${status.usage.currentUsage}/${status.usage.usageLimit}`);
           }
         } else if (status.isBanned) {
           banned++;
           this.markAccountAsBanned(acc.filename, status.errorMessage);
           this.addLog(`⛔ BANNED: ${accountName}`);
-        } else if (!status.hasCredentials) {
+        } else if (status.isExpired) {
+          expired++;
+          this.addLog(`⏰ Expired: ${accountName}`);
+        } else if (status.error === 'InvalidClientException') {
           noCredentials++;
         } else if (status.isExpired) {
           expired++;
@@ -1890,8 +1536,14 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     // Generate login name based on mode
     let loginName: string;
     if (settings.useCustomName && settings.customNamePrefix) {
-      // Custom prefix + number
-      loginName = `${settings.customNamePrefix} ${settings.currentNumber}`;
+      // Custom template/prefix
+      // If the user provided a template with {N}, substitute it.
+      // Otherwise default to N_prefix (e.g. 1_qq@whitebite)
+      if (settings.customNamePrefix.includes('{N}')) {
+        loginName = settings.customNamePrefix.replace(/\{N\}/g, String(settings.currentNumber));
+      } else {
+        loginName = `${settings.currentNumber}_${settings.customNamePrefix}`;
+      }
     } else {
       // Random realistic name
       loginName = this._generateRandomName();

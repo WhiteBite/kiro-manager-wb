@@ -68,6 +68,24 @@ function formatTimeRemaining(nextRunAt: string | undefined): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+function getCustomPreviewNames(prefix: string, currentNumber: number): string[] {
+  if (!prefix) return [];
+
+  if (prefix.includes('{N}')) {
+    return [
+      prefix.replace(/\{N\}/g, String(currentNumber)),
+      prefix.replace(/\{N\}/g, String(currentNumber + 1)),
+      prefix.replace(/\{N\}/g, String(currentNumber + 2))
+    ];
+  }
+
+  return [
+    `${currentNumber}_${prefix}`,
+    `${currentNumber + 1}_${prefix}`,
+    `${currentNumber + 2}_${prefix}`
+  ];
+}
+
 export function renderScheduledReg({ settings, t, collapsed = false }: ScheduledRegProps): string {
   const {
     interval,
@@ -87,7 +105,7 @@ export function renderScheduledReg({ settings, t, collapsed = false }: Scheduled
 
   // Preview names - stable preview using currentNumber
   const previewNames = useCustomName && customNamePrefix
-    ? [`${customNamePrefix} ${settings.currentNumber}`, `${customNamePrefix} ${settings.currentNumber + 1}`, `${customNamePrefix} ${settings.currentNumber + 2}`]
+    ? getCustomPreviewNames(customNamePrefix, settings.currentNumber)
     : generatePreviewNames(3);
 
   // Collapsible state - default collapsed when not running

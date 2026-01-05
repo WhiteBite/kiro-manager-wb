@@ -9,6 +9,8 @@ interface WebviewState {
   settingsOpen: boolean;
   searchQuery: string;
   scrollPosition: number;
+  activeTab: string;
+  disableToasts: boolean;
 }
 
 const DEFAULT_STATE: WebviewState = {
@@ -18,6 +20,8 @@ const DEFAULT_STATE: WebviewState = {
   settingsOpen: false,
   searchQuery: '',
   scrollPosition: 0,
+  activeTab: 'accounts',
+  disableToasts: true,
 };
 
 // Generate state initialization script for webview

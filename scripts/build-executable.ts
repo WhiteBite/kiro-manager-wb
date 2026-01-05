@@ -12,6 +12,15 @@ const ROOT_DIR = join(__dirname, '..');
 const AUTOREG_DIR = join(ROOT_DIR, 'autoreg');
 const DIST_DIR = join(ROOT_DIR, 'dist');
 const EXECUTABLE_DIR = join(DIST_DIR, 'executable');
+const BIN_DIR = join(DIST_DIR, 'bin');
+
+function isWindows(): boolean {
+    return process.platform === 'win32';
+}
+
+function getBinName(base: string): string {
+    return isWindows() ? `${base}.exe` : base;
+}
 
 console.log('\n🔨 Building Kiro Manager Executable');
 console.log('=====================================\n');
@@ -64,9 +73,14 @@ function createDirectories() {
     if (existsSync(EXECUTABLE_DIR)) {
         rmSync(EXECUTABLE_DIR, { recursive: true, force: true });
     }
+    if (existsSync(BIN_DIR)) {
+        rmSync(BIN_DIR, { recursive: true, force: true });
+    }
     
     mkdirSync(EXECUTABLE_DIR, { recursive: true });
+    mkdirSync(BIN_DIR, { recursive: true });
     console.log(`✅ Created: ${EXECUTABLE_DIR}`);
+    console.log(`✅ Created: ${BIN_DIR}`);
 }
 
 // Компилируем с PyInstaller
@@ -81,12 +95,15 @@ function buildExecutable() {
     execSync(command, { stdio: 'inherit' });
     
     // Копируем результат
-    const sourceExe = join(AUTOREG_DIR, 'dist', 'kiro-manager.exe');
-    const targetExe = join(EXECUTABLE_DIR, 'kiro-manager.exe');
+    const sourceExe = join(AUTOREG_DIR, 'dist', getBinName('kiro-manager'));
+    const targetExe = join(EXECUTABLE_DIR, getBinName('kiro-manager'));
+    const targetBin = join(BIN_DIR, getBinName('kiro-manager'));
     
     if (existsSync(sourceExe)) {
         copyFileSync(sourceExe, targetExe);
+        copyFileSync(sourceExe, targetBin);
         console.log(`✅ Executable created: ${targetExe}`);
+        console.log(`✅ Bundled binary copied: ${targetBin}`);
     } else {
         console.error('❌ Executable not found after build');
         process.exit(1);
@@ -104,12 +121,15 @@ function buildCliExecutable() {
     
     execSync(command, { stdio: 'inherit' });
     
-    const sourceExe = join(AUTOREG_DIR, 'dist', 'kiro-cli.exe');
-    const targetExe = join(EXECUTABLE_DIR, 'kiro-cli.exe');
+    const sourceExe = join(AUTOREG_DIR, 'dist', getBinName('kiro-cli'));
+    const targetExe = join(EXECUTABLE_DIR, getBinName('kiro-cli'));
+    const targetBin = join(BIN_DIR, getBinName('kiro-cli'));
     
     if (existsSync(sourceExe)) {
         copyFileSync(sourceExe, targetExe);
+        copyFileSync(sourceExe, targetBin);
         console.log(`✅ CLI executable created: ${targetExe}`);
+        console.log(`✅ Bundled binary copied: ${targetBin}`);
     } else {
         console.error('❌ CLI executable not found after build');
         process.exit(1);
@@ -120,6 +140,7 @@ function buildCliExecutable() {
 function createReadme() {
     console.log('\n📝 Creating README...');
     
+    const binName = getBinName('kiro-manager');
     const readme = `# Kiro Manager Executable
 
 Standalone executable для управления Kiro аккаунтами.
@@ -129,33 +150,33 @@ Standalone executable для управления Kiro аккаунтами.
 
 \`\`\`bash
 # Общий статус
-kiro-manager.exe status
+${binName} status
 
 # Список токенов
-kiro-manager.exe tokens list
+${binName} tokens list
 
 # Переключить аккаунт
-kiro-manager.exe tokens switch <name>
+${binName} tokens switch <name>
 
 # Проверить квоты
-kiro-manager.exe quota
-kiro-manager.exe quota --all
+${binName} quota
+${binName} quota --all
 
 # Управление Machine ID
-kiro-manager.exe machine status
-kiro-manager.exe machine reset
+${binName} machine status
+${binName} machine reset
 
 # Патчинг Kiro
-kiro-manager.exe patch status
-kiro-manager.exe patch apply
-kiro-manager.exe patch restart
+${binName} patch status
+${binName} patch apply
+${binName} patch restart
 
 # Управление Kiro IDE
-kiro-manager.exe kiro status
-kiro-manager.exe kiro restart
+${binName} kiro status
+${binName} kiro restart
 
 # Импорт SSO аккаунта
-kiro-manager.exe sso-import
+${binName} sso-import
 \`\`\`
 
 ## IMAP Профили
@@ -213,7 +234,7 @@ IMAP_PASSWORD=your-imap-app-password
 
 // Показываем размер файла
 function showFileSize() {
-    const exePath = join(EXECUTABLE_DIR, 'kiro-manager.exe');
+    const exePath = join(EXECUTABLE_DIR, getBinName('kiro-manager'));
     if (existsSync(exePath)) {
         const stats = require('fs').statSync(exePath);
         const sizeMB = (stats.size / 1024 / 1024).toFixed(1);
@@ -236,9 +257,9 @@ async function main() {
         console.log('\n🎉 Build completed successfully!');
         console.log(`📁 Output directory: ${EXECUTABLE_DIR}`);
         console.log('\n💡 Next steps:');
-        console.log('1. Copy kiro-manager.exe to target machine');
+        console.log(`1. Copy ${getBinName('kiro-manager')} to target machine`);
         console.log('2. Create .env file with IMAP settings');
-        console.log('3. Run: kiro-manager.exe status');
+        console.log(`3. Run: ${getBinName('kiro-manager')} status`);
         
     } catch (error) {
         console.error('\n❌ Build failed:', error);

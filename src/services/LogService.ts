@@ -18,6 +18,8 @@ export class LogService {
     private _logs: string[] = [];
     private _logFile: string;
     private _maxLogs: number = 200;
+    private _maxFileSizeBytes: number = 2 * 1024 * 1024;
+    private _maxBackups: number = 3;
     private _listeners: Set<(log: string) => void> = new Set();
 
     private constructor() {
@@ -140,9 +142,37 @@ export class LogService {
 
     private _writeToFile(line: string): void {
         try {
+            this._rotateIfNeeded();
             fs.appendFileSync(this._logFile, line + '\n');
         } catch (err) {
             // Silently fail - don't want logging to break the app
+        }
+    }
+
+    private _rotateIfNeeded(): void {
+        try {
+            if (!fs.existsSync(this._logFile)) return;
+            const stat = fs.statSync(this._logFile);
+            if (!stat.isFile()) return;
+            if (stat.size < this._maxFileSizeBytes) return;
+
+            for (let i = this._maxBackups - 1; i >= 1; i--) {
+                const src = `${this._logFile}.${i}`;
+                const dest = `${this._logFile}.${i + 1}`;
+                if (fs.existsSync(dest)) {
+                    try { fs.unlinkSync(dest); } catch { }
+                }
+                if (fs.existsSync(src)) {
+                    try { fs.renameSync(src, dest); } catch { }
+                }
+            }
+
+            const firstBackup = `${this._logFile}.1`;
+            if (fs.existsSync(firstBackup)) {
+                try { fs.unlinkSync(firstBackup); } catch { }
+            }
+            try { fs.renameSync(this._logFile, firstBackup); } catch { }
+        } catch {
         }
     }
 

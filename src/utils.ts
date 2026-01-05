@@ -61,6 +61,9 @@ export interface KiroUsageData {
   banReason?: string;  // Reason for ban if known
 }
 
+let _betterSqlite3Available: boolean | undefined;
+let _loggedBetterSqlite3Failure = false;
+
 export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
   try {
     // Cross-platform Kiro DB path
@@ -99,20 +102,34 @@ export async function getKiroUsageFromDB(): Promise<KiroUsageData | null> {
     let result: KiroUsageData | null = null;
 
     try {
-      // Try better-sqlite3 first (works if native module is properly built)
-      const Database = require('better-sqlite3');
-      const db = new Database(tempDb, { readonly: true });
+      if (_betterSqlite3Available !== false) {
+        const Database = require('better-sqlite3');
+        _betterSqlite3Available = true;
+        const db = new Database(tempDb, { readonly: true });
 
-      try {
-        const row = db.prepare("SELECT value FROM ItemTable WHERE key = 'kiro.kiroAgent'").get() as { value: string } | undefined;
-        if (row) {
-          result = parseKiroUsageData(row.value);
+        try {
+          const row = db.prepare("SELECT value FROM ItemTable WHERE key = 'kiro.kiroAgent'").get() as { value: string } | undefined;
+          if (row) {
+            result = parseKiroUsageData(row.value);
+          }
+        } finally {
+          db.close();
         }
-      } finally {
-        db.close();
       }
     } catch (sqliteErr) {
-      console.log('better-sqlite3 failed, trying Python fallback:', sqliteErr);
+      const errStr = sqliteErr instanceof Error ? `${sqliteErr.name}: ${sqliteErr.message}` : String(sqliteErr);
+      if (
+        errStr.includes('NODE_MODULE_VERSION') ||
+        errStr.includes('compiled against a different Node.js version') ||
+        errStr.includes('Cannot find module')
+      ) {
+        _betterSqlite3Available = false;
+      }
+
+      if (!_loggedBetterSqlite3Failure) {
+        _loggedBetterSqlite3Failure = true;
+        console.log('better-sqlite3 failed, trying Python fallback:', sqliteErr);
+      }
 
       // Fallback to Python script
       result = await getKiroUsageViaPython(tempDb);
@@ -159,29 +176,44 @@ except Exception as e:
 
     const proc = spawn(pythonCmd, ['-c', pythonCode, dbPath]);
     let output = '';
+    let done = false;
+    const finish = (val: KiroUsageData | null) => {
+      if (done) return;
+      done = true;
+      resolve(val);
+    };
+
+    const timeout = setTimeout(() => {
+      try { proc.kill(); } catch { }
+      finish(null);
+    }, 5000);
 
     proc.stdout.on('data', (data: Buffer) => { output += data.toString(); });
     proc.on('close', () => {
+      clearTimeout(timeout);
       try {
-        const ft = JSON.parse(output.trim());
+        const trimmed = output.trim();
+        if (!trimmed) return finish(null);
+        const ft = JSON.parse(trimmed);
         if (ft.currentUsage !== undefined) {
-          resolve({
+          return finish({
             currentUsage: ft.currentUsage || 0,
             usageLimit: ft.usageLimit || 500,
             percentageUsed: ft.percentageUsed || 0,
             daysRemaining: ft.daysRemaining || 0,
             expiryDate: ft.expiryDate
           });
-        } else {
-          resolve(null);
         }
+        return finish(null);
       } catch {
-        resolve(null);
+        return finish(null);
       }
     });
 
-    proc.on('error', () => resolve(null));
-    setTimeout(() => resolve(null), 5000); // Timeout
+    proc.on('error', () => {
+      clearTimeout(timeout);
+      finish(null);
+    });
   });
 }
 

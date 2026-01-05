@@ -276,6 +276,24 @@ export const accountListStyles = `
     border-color: var(--danger);
     color: var(--danger);
   }
+
+  .account-btn.danger.confirm-delete {
+    background: linear-gradient(135deg, var(--danger) 0%, #fc8181 100%);
+    border-color: var(--danger);
+    color: #fff;
+    box-shadow: 0 0 0 2px rgba(245, 101, 101, 0.25), 0 6px 18px rgba(245, 101, 101, 0.25);
+    animation: confirmDeletePulse 1s ease-in-out infinite;
+  }
+
+  .account-btn.danger.confirm-delete:hover {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 2px rgba(245, 101, 101, 0.35), 0 10px 22px rgba(245, 101, 101, 0.35);
+  }
+
+  @keyframes confirmDeletePulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.08); }
+  }
   
   .account-btn svg { 
     width: 14px;

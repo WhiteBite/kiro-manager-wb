@@ -56,6 +56,71 @@ export interface UsageStats {
 }
 
 // ============================================
+// OIDC & API Result Types
+// ============================================
+
+export interface OIDCError {
+  error?: string;
+  error_description?: string;
+  message?: string;
+}
+
+export type OIDCErrorType =
+  | 'InvalidGrantException'
+  | 'AccessDeniedException'
+  | 'ExpiredTokenException'
+  | 'InvalidClientException'
+  | 'UnauthorizedClientException'
+  | 'InvalidRequestException'
+  | 'SlowDownException'
+  | 'AuthorizationPendingException'
+  | 'InternalServerException'
+  | 'NetworkError'
+  | 'UnknownError';
+
+export interface RefreshResult {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  error?: OIDCErrorType;
+  errorMessage?: string;
+  isBanned?: boolean;
+  isInvalidCredentials?: boolean;
+  isRateLimited?: boolean;
+}
+
+export interface SwitchAccountResult {
+  success: boolean;
+  error?: OIDCErrorType;
+  errorMessage?: string;
+  isBanned?: boolean;
+}
+
+export interface BanCheckResult {
+  isBanned: boolean;
+  reason?: string;
+  message?: string;
+  error?: string;
+  usageData?: {
+    currentUsage: number;
+    usageLimit: number;
+    percentageUsed: number;
+    resetDate?: string;
+  };
+}
+
+export interface AccountHealthStatus {
+  isHealthy: boolean;
+  isBanned?: boolean;
+  isExpired?: boolean;
+  needsRefresh?: boolean;
+  error?: OIDCErrorType;
+  errorMessage?: string;
+  usage?: AccountUsage;
+}
+
+// ============================================
 // IMAP Profiles & Email Strategies
 // ============================================
 

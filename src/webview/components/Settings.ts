@@ -523,7 +523,7 @@ export function renderSettings({ autoSwitchEnabled, settings, lang, t, version, 
     
     <div class="settings-footer">
       <span class="settings-version">v${version}</span>
-      <a href="https://t.me/whitebite_devsoft" class="btn btn-secondary" style="text-decoration:none" title="Telegram">📢 TG</a>
+      <button class="btn btn-secondary" onclick="openUpdateUrl('https://t.me/whitebite_devsoft')" title="Telegram">📢 TG</button>
       <button class="btn btn-secondary" onclick="checkUpdates()">${t.checkUpdates}</button>
     </div>
   `;

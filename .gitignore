@@ -55,6 +55,7 @@ desktop.ini
 # Logs
 *.log
 npm-debug.log*
+logs.txt
 
 # Runtime files
 autoreg/.env

@@ -141,7 +141,7 @@
         },
         "kiroAccountSwitcher.autoreg.headless": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Run browser in headless mode"
         },
         "kiroAccountSwitcher.autoreg.spoofing": {
@@ -170,7 +170,7 @@
             "webview",
             "automated"
           ],
-          "default": "webview",
+          "default": "automated",
           "enumDescriptions": [
             "WebView (Recommended): Opens real browser, manual input, low ban risk (<10%)",
             "Automated (Legacy): DrissionPage automation, higher ban risk (40-90%)"

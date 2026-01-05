@@ -26,6 +26,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
    
     const vscode = acquireVsCodeApi();
     let pendingAction = null;
+    let focusedAccountIndex = -1;
     
     // Client-side HTML escaping (uses DOM API, different from server-side helpers.ts version)
     function escapeHtmlClient(text) {
@@ -72,6 +73,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       
       const previousTab = currentTab;
       currentTab = tabId;
+      setState({ activeTab: tabId });
       
       // Update tab buttons
       document.querySelectorAll('.tab-item').forEach(btn => {
@@ -508,6 +510,17 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     function openUpdateUrl(url) {
       vscode.postMessage({ command: 'openUrl', url: url });
     }
+
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      const link = target?.closest?.('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openUpdateUrl(href);
+    }, true);
     
     // === SSO Modal ===
     
@@ -1023,6 +1036,7 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     // === Toast ===
     
     function showToast(message, type = 'success') {
+      if (getState()?.disableToasts) return;
       const container = document.getElementById('toastContainer');
       if (!container) return;
       
@@ -1104,14 +1118,26 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
           updateStatus(msg.status);
           break;
         case 'updateAccounts':
-          // Incremental account list update - just update the list without full refresh
-          // Don't send refresh command - it resets the view to main tab
+          {
+            const list = document.getElementById('accountList');
+            if (list && typeof msg.html === 'string') {
+              list.innerHTML = msg.html;
+            }
+
+            // Update header badge counts if provided
+            const badge = document.querySelector('.header-badge');
+            if (badge && typeof msg.validCount === 'number' && typeof msg.totalCount === 'number') {
+              badge.textContent = msg.validCount + '/' + msg.totalCount;
+            }
+
+            // Optional: update tab badges by triggering a light state write (tab bar is static HTML)
+            // If full rerender is needed for badges, keep it out of hot path.
+          }
           break;
         case 'updateUsage':
           // Incremental usage update - refresh hero section
-          if (msg.usage) {
-            updateHeroUsage(msg.usage);
-          }
+          if (msg.usage) updateHeroUsage(msg.usage);
+          else clearHeroUsage();
           break;
         case 'toast':
           showToast(msg.message, msg.toastType || 'success');
@@ -1152,16 +1178,58 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     function updateHeroUsage(usage) {
       const hero = document.querySelector('.hero');
       if (!hero || hero.classList.contains('progress')) return;
-      
-      const usageEl = hero.querySelector('.hero-usage');
-      const percentEl = hero.querySelector('.hero-percent');
+
+      const current = typeof usage.currentUsage === 'number' ? usage.currentUsage : 0;
+      const limit = typeof usage.usageLimit === 'number' ? usage.usageLimit : 500;
+      const percent = typeof usage.percentageUsed === 'number' ? usage.percentageUsed : 0;
+      const remaining = limit - current;
+
+      const usageClass = percent >= 95 ? 'high' : percent >= 80 ? 'medium' : 'low';
+      const isLow = remaining < 50;
+      const isCritical = remaining < 10;
+
+      hero.classList.toggle('warning', isLow && !isCritical);
+      hero.classList.toggle('critical', isCritical);
+
+      const valueEl = hero.querySelector('.hero-value');
+      if (valueEl) {
+        valueEl.textContent = remaining.toLocaleString();
+        valueEl.className = 'hero-value ' + usageClass;
+      }
+
       const fillEl = hero.querySelector('.hero-progress-fill');
-      
-      if (usageEl) usageEl.textContent = usage.currentUsage + ' / ' + usage.usageLimit;
-      if (percentEl) percentEl.textContent = usage.percentageUsed + '%';
       if (fillEl) {
-        fillEl.style.width = usage.percentageUsed + '%';
-        fillEl.className = 'hero-progress-fill ' + (usage.percentageUsed >= 90 ? 'high' : usage.percentageUsed >= 50 ? 'medium' : 'low');
+        fillEl.style.width = Math.min(percent, 100) + '%';
+        fillEl.className = 'hero-progress-fill ' + usageClass;
+      }
+
+      const footerStats = hero.querySelectorAll('.hero-footer .hero-stat');
+      if (footerStats && footerStats.length > 0) {
+        footerStats[0].textContent = current.toLocaleString() + '/' + limit + ' ' + (T.used || 'used');
+      }
+    }
+
+    function clearHeroUsage() {
+      const hero = document.querySelector('.hero');
+      if (!hero || hero.classList.contains('progress')) return;
+
+      hero.classList.remove('warning', 'critical');
+
+      const valueEl = hero.querySelector('.hero-value');
+      if (valueEl) {
+        valueEl.textContent = '?';
+        valueEl.className = 'hero-value';
+      }
+
+      const fillEl = hero.querySelector('.hero-progress-fill');
+      if (fillEl) {
+        fillEl.style.width = '0%';
+        fillEl.className = 'hero-progress-fill';
+      }
+
+      const footerStats = hero.querySelectorAll('.hero-footer .hero-stat');
+      if (footerStats && footerStats.length > 0) {
+        footerStats[0].textContent = '—';
       }
     }
     
@@ -1396,7 +1464,6 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
     
     // === Keyboard Shortcuts ===
     
-    let focusedAccountIndex = -1;
     
     document.addEventListener('keydown', (e) => {
       const target = e.target;
@@ -2145,6 +2212,11 @@ export function generateWebviewScript(_totalAccounts: number, _bannedCount: numb
       
       // Load patch status on init
       vscode.postMessage({ command: 'getPatchStatus' });
+
+      const savedTab = getState()?.activeTab;
+      if (savedTab && typeof savedTab === 'string') {
+        switchTab(savedTab);
+      }
     });
     
     // Export functions to window for onclick handlers
