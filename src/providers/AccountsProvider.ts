@@ -865,8 +865,16 @@ export class KiroAccountsProvider implements vscode.WebviewViewProvider, vscode.
     const profileProvider = this.getProfileProvider();
     const activeProfile = profileProvider?.getActive() || null;
 
-    // Get scheduled registration settings
+    // Get scheduled registration settings and sync with actual process state
     const scheduledRegSettings = this.getScheduledRegSettings();
+    
+    // Sync isRunning with actual process state to handle webview recreation
+    if (scheduledRegSettings.isRunning !== autoregProcess.isRunning) {
+      scheduledRegSettings.isRunning = autoregProcess.isRunning;
+      if (!autoregProcess.isRunning) {
+        scheduledRegSettings.nextRunAt = undefined;
+      }
+    }
 
     const html = perf('generateWebviewHtml', () => generateWebviewHtml({
       accounts: this._accounts,
