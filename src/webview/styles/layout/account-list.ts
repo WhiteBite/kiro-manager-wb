@@ -234,6 +234,13 @@ export const accountListStyles = `
     text-overflow: ellipsis;
   }
   
+  /* Show full email by default, hide short version */
+  .email-full { display: inline; }
+  .email-short { display: none; }
+  
+  /* Usage badge - hidden by default, shown on narrow screens */
+  .account-usage-badge { display: none; }
+  
   .account-meta {
     display: flex;
     gap: var(--space-2);
