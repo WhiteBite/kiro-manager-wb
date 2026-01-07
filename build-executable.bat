@@ -85,7 +85,7 @@ echo Next steps:
 echo 1. Copy kiro-manager.exe to target machine
 echo 2. Create .env file with IMAP settings:
 echo    IMAP_SERVER=imap.yandex.ru
-echo    IMAP_USER=testmail@example.com
+echo    IMAP_USER=your-email@example.com
 echo    IMAP_PASSWORD=your-imap-app-password
 echo 3. Test: kiro-manager.exe imap test
 echo.

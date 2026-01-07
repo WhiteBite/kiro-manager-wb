@@ -54,7 +54,7 @@
 2. Создать файл `.env` рядом с executable:
    ```env
    IMAP_SERVER=imap.yandex.ru
-   IMAP_USER=testmail@example.com
+   IMAP_USER=your-email@example.com
    IMAP_PASSWORD=your-imap-app-password
    ```
 3. Тестировать: `kiro-manager.exe imap test`

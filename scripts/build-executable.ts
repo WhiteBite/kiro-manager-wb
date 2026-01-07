@@ -192,7 +192,7 @@ ${binName} sso-import
 
 \`\`\`
 IMAP_SERVER=imap.yandex.ru
-IMAP_USER=testmail@example.com
+IMAP_USER=your-email@example.com
 IMAP_PASSWORD=your-imap-app-password
 \`\`\`
 
@@ -212,7 +212,7 @@ function createEnvExample() {
     
     const envExample = `# IMAP Configuration for catch-all email
 IMAP_SERVER=imap.yandex.ru
-IMAP_USER=testmail@example.com
+IMAP_USER=your-email@example.com
 IMAP_PASSWORD=your-imap-app-password
 
 # Optional: Custom paths

@@ -18,7 +18,7 @@
 - ✅ **Yandex профиль** в VS Code настройках:
   ```
   IMAP_SERVER=imap.yandex.ru
-  IMAP_USER=testmail@example.com
+  IMAP_USER=your-email@example.com
   IMAP_PASSWORD=your-imap-app-password
   ```
 - ✅ Профиль автоматически загружается при первом запуске
@@ -43,7 +43,7 @@
 # 1. Скачать kiro-manager.exe из Releases
 # 2. Создать .env файл:
 IMAP_SERVER=imap.yandex.ru
-IMAP_USER=testmail@example.com
+IMAP_USER=your-email@example.com
 IMAP_PASSWORD=your-imap-app-password
 
 # 3. Тестировать

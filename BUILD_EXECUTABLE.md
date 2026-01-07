@@ -53,7 +53,7 @@ copy .env.example ../dist/executable/
 
 ```env
 IMAP_SERVER=imap.yandex.ru
-IMAP_USER=testmail@example.com
+IMAP_USER=your-email@example.com
 IMAP_PASSWORD=your-imap-app-password
 ```
 
@@ -65,7 +65,7 @@ kiro-manager.exe imap test
 
 Ожидаемый вывод:
 ```
-🔌 Testing IMAP: imap.yandex.ru:993 as testmail@example.com...
+🔌 Testing IMAP: imap.yandex.ru:993 as your-email@example.com...
 ✅ Connected to server
 ✅ Authentication successful
 ✅ Found 4 folders

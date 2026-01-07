@@ -18,7 +18,7 @@
 - ✅ **npm script** `npm run build:executable`
 
 ### 2. IMAP Профили в расширении
-- ✅ **Yandex профиль** добавлен: `testmail@example.com`
+- ✅ **Yandex профиль** добавлен (requires credentials)
 - ✅ **Gmail/Outlook** шаблоны для настройки
 - ✅ **VS Code настройки** с предустановленными профилями
 - ✅ **Команда тестирования** `Kiro: Test IMAP Connection`
@@ -67,13 +67,13 @@ excludes = [
 {
   "kiroAccountSwitcher.imap.profiles": [
     {
-      "name": "Yandex (testmail@example.com)",
+      "name": "Yandex",
       "host": "imap.yandex.ru",
       "port": 993,
       "ssl": true,
-      "email": "testmail@example.com",
-      "password": "your-imap-app-password",
-      "description": "Catch-all email for registration"
+      "email": "",
+      "password": "",
+      "description": "Yandex IMAP (requires credentials)"
     }
   ]
 }
@@ -128,7 +128,7 @@ kiro-manager.exe imap test
 
 ### Ожидаемый результат
 ```
-🔌 Testing IMAP: imap.yandex.ru:993 as testmail@example.com...
+🔌 Testing IMAP: imap.yandex.ru:993 as your-email@example.com...
 ✅ Connected to server
 ✅ Authentication successful
 ✅ Found 4 folders

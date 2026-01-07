@@ -2,7 +2,7 @@
   "name": "kiro-manager-wb",
   "displayName": "Kiro Manager WB",
   "description": "Manage multiple Kiro accounts with beautiful UI",
-  "version": "7.0.3",
+  "version": "7.0.4",
   "publisher": "whitebite",
   "icon": "images/icon.png",
   "repository": {
@@ -206,13 +206,13 @@
           "type": "array",
           "default": [
             {
-              "name": "Yandex (testmail@example.com)",
+              "name": "Yandex",
               "host": "imap.yandex.ru",
               "port": 993,
               "ssl": true,
-              "email": "testmail@example.com",
-              "password": "your-imap-app-password",
-              "description": "Catch-all email for registration"
+              "email": "",
+              "password": "",
+              "description": "Yandex IMAP (requires credentials)"
             },
             {
               "name": "Gmail",

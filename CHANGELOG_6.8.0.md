@@ -10,7 +10,7 @@
 
 ### 🔌 IMAP Профили в расширении
 - Добавлены предустановленные IMAP профили в VS Code настройки
-- **Yandex**: `testmail@example.com` (catch-all) - готов к использованию
+- **Yandex**: (requires credentials)
 - **Gmail**: шаблон для настройки (требует App Password)
 - **Outlook**: шаблон для настройки
 - Новая команда: `Kiro: Test IMAP Connection`
@@ -71,13 +71,13 @@ kiro-manager.exe patch apply        # Применить патч
 {
   "kiroAccountSwitcher.imap.profiles": [
     {
-      "name": "Yandex (testmail@example.com)",
+      "name": "Yandex",
       "host": "imap.yandex.ru",
       "port": 993,
       "ssl": true,
-      "email": "testmail@example.com",
-      "password": "your-imap-app-password",
-      "description": "Catch-all email for registration"
+      "email": "",
+      "password": "",
+      "description": "Yandex IMAP (requires credentials)"
     }
   ]
 }
@@ -87,7 +87,7 @@ kiro-manager.exe patch apply        # Применить патч
 ```env
 # IMAP Configuration for catch-all email
 IMAP_SERVER=imap.yandex.ru
-IMAP_USER=testmail@example.com
+IMAP_USER=your-email@example.com
 IMAP_PASSWORD=your-imap-app-password
 
 # Optional: Custom Machine ID

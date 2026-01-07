@@ -597,7 +597,7 @@ def cmd_imap_test(args):
         print("Set IMAP_USER and IMAP_PASSWORD environment variables")
         print("\nExample .env:")
         print("IMAP_SERVER=imap.yandex.ru")
-        print("IMAP_USER=testmail@example.com")
+        print("IMAP_USER=your-email@example.com")
         print("IMAP_PASSWORD=your-imap-app-password")
         return
     
